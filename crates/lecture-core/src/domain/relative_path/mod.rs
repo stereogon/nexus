@@ -29,6 +29,9 @@
 //! storage adapter, not to pure domain logic. Until that lands, this type is the barrier
 //! against hostile *text*, not against a hostile *filesystem*.
 
+mod limits;
+
+use std::cmp::Ordering;
 use std::fmt;
 use std::iter;
 use std::path::{Path, PathBuf};
@@ -36,46 +39,9 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 
 use crate::domain::Slug;
+
 use crate::error::CoreError;
-
-/// How deep a *lecture directory* may sit inside the vault.
-///
-/// This is the cap the spec sets on organisational nesting — `year/course/module/week/
-/// lecture` and no deeper. Enforced in the domain rather than at the UI because a path
-/// can also arrive from a hand-edited manifest, where an unbounded depth turns a vault
-/// walk into an unbounded recursion.
-pub const MAX_BUNDLE_DEPTH: usize = 5;
-
-/// How much of [`MAX_DEPTH`] is reserved for the path *inside* a bundle.
-///
-/// Real ones are two segments (`source/document.pdf`, `assets/figure.png`); three leaves
-/// room for a subfolder of assets without inviting a filing system inside a lecture.
-///
-/// This is headroom in the total, **not** a separately enforced cap on an in-bundle
-/// path. Nothing checks a manifest's `source.document` against it, because containment
-/// does not depend on depth: an in-bundle path is a sequence of `Slug`s and so cannot
-/// walk upward however long it is. The number exists to make [`MAX_DEPTH`] a stated sum
-/// rather than a figure someone has to reverse-engineer.
-pub const MAX_WITHIN_BUNDLE_DEPTH: usize = 3;
-
-/// The deepest a vault-relative path may go, in segments.
-///
-/// It must be the *sum* of the two caps above, not either one alone. Conflating them was
-/// a real bug: with this set to 5, a bundle sitting at the five levels the spec allows
-/// could not address its own `manifest.json`, because that path is six segments — so a
-/// legitimate vault layout produced a lecture the app could not open at all. The
-/// assertion below is what stops the two drifting apart again.
-pub const MAX_DEPTH: usize = MAX_BUNDLE_DEPTH + MAX_WITHIN_BUNDLE_DEPTH;
-
-const _: () = assert!(MAX_DEPTH == MAX_BUNDLE_DEPTH + MAX_WITHIN_BUNDLE_DEPTH);
-
-// The invariant that makes the original bug unrepresentable rather than merely fixed:
-// with no headroom, a bundle at the deepest allowed level could not name a single file
-// inside itself, and the app could not open it.
-const _: () = assert!(
-    MAX_WITHIN_BUNDLE_DEPTH > 0,
-    "a bundle must have room to address its own files"
-);
+pub use limits::{MAX_BUNDLE_DEPTH, MAX_DEPTH, MAX_WITHIN_BUNDLE_DEPTH};
 
 /// The separator used in stored paths, on every platform.
 ///
@@ -88,7 +54,7 @@ const SEPARATOR: char = '/';
 ///
 /// Always names something: the trailing segment is part of the structure, so there is no
 /// such thing as an empty `RelativePath`.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
 pub struct RelativePath {
     /// Containing folders, outermost first. Empty when this names something
@@ -121,6 +87,25 @@ impl fmt::Display for RelativePath {
             f.write_str(segment.as_str())?;
         }
         Ok(())
+    }
+}
+
+/// Orders by path, comparing segment by segment.
+///
+/// **Not derived.** The derive would compare `parents` first and `name` second, which
+/// puts every root-level path before every nested one — so `quick-note` would sort ahead
+/// of `cs454/raft`. Comparing the whole segment sequence gives the order a person
+/// expects and that any other tool would produce, and it matters because this type is
+/// sorted for display and used as a key.
+impl Ord for RelativePath {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.segments().cmp(other.segments())
+    }
+}
+
+impl PartialOrd for RelativePath {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
     }
 }
 

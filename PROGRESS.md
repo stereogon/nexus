@@ -75,8 +75,14 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
       asks for by name. 11 tests.
 - [x] **Depth-cap bug fixed** — `MAX_BUNDLE_DEPTH` (organisational nesting, 5) split
       from `MAX_DEPTH` (total path segments, 8). See the decision log.
-- [ ] Vault walk — prunes at the first `manifest.json`, rejects nested lectures
-      — **next substep**
+- [x] Vault walk — `scan_vault` behind a new `VaultDirectory` port, so the rules live in
+      the domain and the tests need no filesystem. Prunes at the first `manifest.json`,
+      enforces `MAX_BUNDLE_DEPTH`, and **reports** rather than omits: an unusable folder
+      name, a folder nested past the cap, an unreadable directory, and a lecture buried
+      inside another lecture. 16 tests against an in-memory tree.
+- [ ] `lecture-fs` adapter implementing `VaultDirectory`, and loading a scan into
+      `BundleRef`s — **next substep**
+- [ ] `.nexus/` rebuildable cache, including per-device view state
 - [x] `AnnotationStore` — the atomic load/save path for `annotations.json`. A missing
       file loads as an empty set (the normal state of a freshly imported lecture) while
       an unreadable one is an error, so a corrupt file can never read back as "no
@@ -255,39 +261,85 @@ There was `child(Slug)` for one segment and no way to append a path to a path �
 why the depth caps were conflated: nothing ever composed two paths, so the sum never
 came up.
 
-**2026-10-28 · Four-space indented code blocks: scheduled, with the reason it is not now**
-The user asked whether the citation scanner's indented-code-block gap will be fixed. It
-will, but the naive fix would be **worse than the gap**, which is worth writing down.
+**2026-10-28 · The vault walk is domain logic, so only directory *reading* is a port**
+Which directories are lectures, how deep nesting may go, and what to do about a folder
+whose name cannot be used are all rules, and none of them depend on how a directory is
+read. So `scan_vault` lives in `lecture-core` behind a `VaultDirectory` port that does
+nothing but list entries.
 
-A rule of "four or more leading spaces means code" would break this, which is ordinary
-in study notes:
+Two things fall out. The iPadOS app implements one trait and inherits the walk instead of
+reimplementing it — which is the whole point of the §3 constraint. And the tests describe
+a hostile tree in memory rather than creating thousands of real directories, which is
+both faster and more thorough: a vault where one folder refuses to be read is three lines
+to express.
 
-```text
-- Some point
-    - Nested point citing [a](cite://hl-x)
-```
+The port hands back `String` names rather than `Slug`s on purpose. The walk has to be
+able to *see* a name it cannot use in order to report it; validating at the boundary would
+throw away the only thing worth telling someone about.
 
-That is a nested list item, not a code block, and the citation in it would stop working.
-Silently. Nested bullet lists are far more common in lecture notes than indented code
-blocks — especially in a file where fenced code is the natural way to write code — so the
-naive rule trades a rare false positive for a frequent false negative.
+**2026-10-28 · Nothing is silently omitted, because a missing lecture looks like data loss**
+If a lecture disappeared from the sidebar with no explanation, the reasonable conclusion
+is that the app lost it. So the walk reports four cases with a remediation sentence each:
+a folder name that cannot be used on a device the vault syncs to, a folder nested past
+the cap, a directory that cannot be read, and a lecture buried inside another lecture.
 
-Doing it correctly means CommonMark block structure: an indented code block cannot
-interrupt a paragraph, and inside a list item the content indent is measured from the
-marker, so code needs marker-width plus four. That is the block-parsing half of a
-Markdown parser.
+The last one is the easiest mistake to make — dragging one lecture into another — and the
+only one that costs anything to detect, since pruning means the walk never descends there.
+It does one bounded sweep inside each bundle specifically to find it. Worth the cost:
+pruning is *correct* (everything under a lecture is that lecture's content), but being
+correct and silent would still look like the app eating a lecture.
 
-Two routes, and the choice needs the user because one of them is a dependency:
+Two deliberate quietnesses. Hidden directories — `.nexus`, `.git`, `.DS_Store` — are
+skipped without comment, because reporting expected things is the noise that makes real
+warnings get ignored. And a folder past the depth cap is only reported if something is
+actually inside it; warning about an empty deep folder would be warning about nothing.
 
-1. Implement the block rules directly — roughly 200 lines plus tests, no dependency.
-2. Adopt `pulldown-cmark` — CommonMark-compliant, pure Rust, no platform dependencies,
-   so it does not threaten the iOS constraint. One permanent dependency.
+Failures are scoped: an unreadable directory is recorded and the walk carries on, so one
+folder mid-sync cannot make a whole vault unopenable. Only an unreadable *root* is an
+error, because then there is no vault to scan.
 
-**Scheduled for the notes milestone**, when the Markdown pipeline lands and there is a
-second consumer (search indexing over notes prose). Deciding it then means deciding once
-for both, instead of choosing a parser now for a single caller. The severity until then
-is low: on the Rust side the gap affects the orphan report and search, not the editor
-decorations a person actually clicks.
+**2026-10-28 · `RelativePath` was ordering by field layout, not by path**
+`Ord` was derived, so it compared `parents` and then `name` as separate fields — which
+puts every root-level path ahead of every nested one. `quick-note` sorted before
+`cs454/raft`. Found because a scan test asserted the order a person would expect and got
+something else.
+
+Not incorrect as a total order, but wrong for a path type, and latent anywhere this is
+sorted for display or used as a `BTreeMap` key. Now implemented rather than derived,
+comparing the whole segment sequence, which gives the order any other tool would produce.
+There is a test pinning it next to a comment saying why it is not derived.
+
+**2026-10-28 · Four more files split at the 300-line limit**
+`relative_path.rs` (308) split into the type and `limits.rs` — the depth constants carry
+more reasoning than the code they govern, and "how deep may things go" is a different
+concern from "what is a path". The scan and path test files split along their own seams,
+with the in-memory vault harness moved to `tests/support/` so both scan files share one
+copy rather than duplicating it.
+
+The harness uses `pub(crate)` rather than `pub`: inside a test binary that is the right
+visibility, and it satisfies `unreachable_pub` honestly instead of with an `allow`.
+
+**2026-10-28 · Four-space code blocks: dissolved by the editor, not parsed around**
+I had this scheduled as a fix needing either ~200 lines of CommonMark block parsing or a
+`pulldown-cmark` dependency. The user's question closed it instead:
+
+> *"why are we doing this hacky thing that 4 spaces mean code blocks, why not an explicit
+> code block option that would represent a code block... for the note taker, it should be
+> like they select code block option, and paste in the block."*
+
+Correct, and it removes the problem at the source. Four-space indentation is a **legacy**
+Markdown form; the editor's code-block affordance inserts a *fence*, so notes written in
+Nexus never contain an indented code block. I was about to write a parser for a form the
+app will never produce — solving the symptom, which §1.5 says not to do.
+
+The only residual path is pasting foreign Markdown containing both a four-space block
+*and* a `cite://` inside it. Since `cite://` only occurs in Nexus's own notes, that means
+pasting Nexus markdown as a code sample. The cost if it ever happens is a stray badge or
+one spurious orphan entry — not a reason for a permanent dependency. **Accepted, not
+deferred.**
+
+The real deliverable is therefore a requirement on the editor rather than on the scanner,
+recorded below so it is not rediscovered later.
 
 **2026-10-27 · A citation carries a line number and deliberately nothing finer**
 `cite://<id>` is the one value in a bundle that a person's *prose* depends on —
@@ -922,11 +974,10 @@ the user's instruction, 2026-10-27), local only, never pushed without being aske
   CodeMirror, KaTeX, Mermaid and Chart.js in the milestones that use them, rather than
   installing the whole stack up front.
 
-- **Indented code blocks are not skipped by the citation scanner.** Fenced and inline
-  code are handled. **Scheduled for the notes milestone**, not left open-ended — see the
-  decision log for why the naive four-space rule would be worse than the gap (it would
-  break citations inside nested bullet lists) and for the two routes to doing it
-  properly, one of which needs a dependency decision from the user.
+- **Editor requirement (notes milestone):** the code-block affordance must insert a
+  *fenced* block (```` ``` ````), never four-space indentation. This is what makes the
+  citation scanner's fenced-only handling complete rather than partial, so it is a
+  correctness requirement and not a style preference. Same for any paste-as-code path.
 - **`@eslint/js` is not installed**, so ESLint's own `recommended` set is not applied;
   only `typescript-eslint`'s `strictTypeChecked`. Most of what it adds (undefined names,
   duplicate keys, unreachable code) the compiler already rejects under the strict flags,

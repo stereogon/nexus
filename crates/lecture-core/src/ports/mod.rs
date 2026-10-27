@@ -11,5 +11,7 @@
 //! being tested.
 
 mod clock;
+mod vault_directory;
 
 pub use clock::{Clock, FixedClock};
+pub use vault_directory::{DirectoryEntry, EntryKind, VaultDirectory};

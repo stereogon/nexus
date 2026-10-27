@@ -23,7 +23,8 @@ pub use domain::{
     Conversion, ConversionState, Excerpt, Facets, HighlightSemantic, Label, LectureBundle,
     MANIFEST_FILE_NAME, MAX_BUNDLE_DEPTH, MAX_DEPTH, MAX_WITHIN_BUNDLE_DEPTH, Manifest,
     NOTES_FILE_NAME, NormalizedRect, OrderKey, PageNumber, RelativePath, SOURCE_DIR_NAME,
-    SchemaProbe, Slug, Source, Timestamp, citation_link,
+    SchemaProbe, SkipReason, SkippedDirectory, Slug, Source, Timestamp, VaultScan, citation_link,
+    scan_vault,
 };
 pub use error::{BackupOutcome, CoreError};
-pub use ports::{Clock, FixedClock};
+pub use ports::{Clock, DirectoryEntry, EntryKind, FixedClock, VaultDirectory};

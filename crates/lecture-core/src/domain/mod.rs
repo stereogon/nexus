@@ -23,6 +23,7 @@ mod slug;
 mod source;
 mod text;
 mod timestamp;
+mod vault_scan;
 
 pub use annotation::Annotation;
 pub use annotation_id::AnnotationId;
@@ -42,3 +43,4 @@ pub use schema::SchemaProbe;
 pub use slug::Slug;
 pub use source::{Conversion, ConversionState, Source};
 pub use timestamp::Timestamp;
+pub use vault_scan::{SkipReason, SkippedDirectory, VaultScan, scan_vault};
