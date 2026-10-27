@@ -7,9 +7,11 @@
 mod normalized_rect;
 mod order_key;
 mod slug;
+mod timestamp;
 mod vault_path;
 
 pub use normalized_rect::NormalizedRect;
 pub use order_key::OrderKey;
 pub use slug::Slug;
+pub use timestamp::Timestamp;
 pub use vault_path::{MAX_DEPTH, VaultRelativePath};

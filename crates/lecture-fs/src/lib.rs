@@ -16,8 +16,11 @@
 mod error;
 mod staging;
 
+pub mod clock;
+
 pub mod storage;
 pub mod vault_root;
 
+pub use clock::SystemClock;
 pub use storage::AtomicFsStorage;
 pub use vault_root::{ResolvedPath, VaultRoot};

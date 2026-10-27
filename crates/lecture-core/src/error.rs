@@ -107,6 +107,15 @@ pub enum CoreError {
         source: std::io::Error,
     },
 
+    /// A string was not a timestamp in the one canonical stored form.
+    #[error("`{value}` is not a usable timestamp: {reason}")]
+    InvalidTimestamp {
+        /// The rejected text, or the offending value for a clock out of range.
+        value: String,
+        /// Which rule it broke.
+        reason: &'static str,
+    },
+
     /// A string was not a well-formed order key.
     #[error("`{key}` is not a valid order key: {reason}")]
     InvalidOrderKey {
@@ -148,6 +157,7 @@ impl CoreError {
                 "ERR_INVALID_COORDINATE"
             }
             Self::InvalidName { .. } => "ERR_INVALID_NAME",
+            Self::InvalidTimestamp { .. } => "ERR_INVALID_TIMESTAMP",
             Self::VaultRootUnusable { .. } => "ERR_VAULT_ROOT_UNUSABLE",
             Self::SymlinkRefused { .. } => "ERR_SYMLINK_REFUSED",
             Self::PathEscapesVault { .. } => "ERR_PATH_ESCAPES_VAULT",
@@ -206,6 +216,11 @@ impl CoreError {
                 "That folder sits more than five levels deep inside your vault, which is \
                  further than Nexus will follow. Nothing was moved. Drag it nearer the \
                  top of the vault, then try again."
+            }
+            Self::InvalidTimestamp { .. } => {
+                "A date recorded in this lecture could not be read, so it has been left \
+                 out rather than shown wrongly. Nothing was deleted. If you edited a \
+                 file by hand, a backup is beside it."
             }
             Self::InvalidOrderKey { .. } => {
                 "One lecture's saved position could not be read, so it has been sorted \

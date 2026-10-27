@@ -33,7 +33,17 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
 - [x] `OrderKey` (fractional index) — integer part keeps appends compact, fraction
       handles inserts between neighbours; validated on construction and on deserialize
       (16 tests, including 1000 appends, 1000 prepends and 300 inserts into one gap)
-- [ ] Domain: `LectureBundle`, `Annotation`, `Citation`, `Taxonomy`, `Facets`, `BundleRef`
+- [x] `Timestamp` — one canonical stored form (`YYYY-MM-DDTHH:MM:SSZ`, UTC, whole
+      seconds), so byte order equals chronological order and sorting needs no date
+      library. Hand-written Gregorian arithmetic (Hinnant's `civil_from_days`), verified
+      against `date -u -r` over 20,000 instants spanning 1930–2129 with zero mismatches;
+      boundary vectors pinned in the suite. 14 tests.
+- [x] First port: `Clock` in `lecture-core::ports`, with `FixedClock` for deterministic
+      tests and `SystemClock` in `lecture-fs`. Establishes the shape
+      `DocumentConverterPort` follows in Milestone 2.
+- [ ] Domain: `Manifest` (facets, sequence, source/conversion provenance,
+      `schemaVersion`) — **next substep**
+- [ ] Domain: `Annotation`, `Citation`, `LectureBundle`, `BundleRef`
 - [x] `Slug` — one safe path segment. Rejects separators, control and invisible
       characters, Windows device names, leading dots/hyphens, trailing dots and spaces;
       normalises to NFC (never NFKC — see decision log); 200-byte cap so atomic staging
@@ -157,6 +167,44 @@ The tree was not rustfmt-clean, and the first run of the check turned up a misin
 doc comment in `order_key/mod.rs` that four green test runs had not. Formatting is the
 cheapest class of thing to enforce mechanically, so it is now in `CLAUDE.md` §5 rather
 than left to whoever is reading the diff.
+
+**2026-10-27 · Timestamps are stored in exactly one form, and nothing else is accepted**
+`2026-10-27T16:00:00+01:00` and `2026-10-27T16:00:00.5Z` are both valid RFC 3339 and both
+refused. The reason is that one canonical form makes **byte order equal chronological
+order**, so sorting lectures by date is a plain string sort with no parsing and no date
+library. Accepting a second spelling would break that property silently — the symptom
+would be a mis-ordered list, not an error — so strictness is the feature. Local time is
+never stored either: a vault syncing between a laptop and an iPad across time zones would
+otherwise record instants that cannot be compared.
+
+**2026-10-27 · Calendar arithmetic hand-written instead of adding a date crate**
+The only calendar operation this app performs is rendering the current instant, so a date
+library would be a permanent dependency for one function. Implemented with Hinnant's
+`civil_from_days` — exact integer arithmetic, no floating point, no month table, and no
+special case for leap years because it shifts the year to start in March.
+
+Hand-rolled date maths is a classic source of silent data corruption, so it was checked
+against an independent oracle rather than against itself: `date -u -r` over 20,000
+pseudorandom instants spanning 1930 to 2129, zero mismatches. The vectors kept in the
+suite are the boundaries — epoch, day rollovers, 2000-02-29 (leap century), 2024-02-29,
+2100-03-01 (non-leap century), year ends, and two pre-epoch instants that would land on
+the wrong day under truncating division instead of floor division.
+
+The revisit trigger is recorded in the code: if parsing arbitrary formats, date
+arithmetic or time zones are ever needed, adopt a real date library rather than extend
+this.
+
+**2026-10-27 · `Clock` is the first port, and sets the pattern**
+Reading the time is a platform call, so it is a trait in `lecture-core::ports` with
+`SystemClock` in `lecture-fs`. Two gains: the domain crate stays free of platform calls,
+and anything that stamps a record can be tested against a known instant instead of
+against whenever the suite happens to run. `FixedClock` lives beside the trait rather
+than in a test module so adapter crates can use it too. `DocumentConverterPort` will
+follow this shape.
+
+Note that the *arithmetic* stayed in the domain and only `SystemTime::now()` sits in the
+adapter. That keeps the part most likely to harbour a bug under pure, deterministic test,
+and the iPadOS adapter inherits it unchanged.
 
 **2026-10-27 · The parent directory is flushed after the rename, not just the file**
 `sync_all` on the staging file makes its *contents* durable; it says nothing about the
