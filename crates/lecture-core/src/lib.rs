@@ -19,9 +19,10 @@ pub mod ports;
 
 pub use domain::{
     ANNOTATIONS_FILE_NAME, ANNOTATIONS_SCHEMA_VERSION, Annotation, AnnotationId, AnnotationSet,
-    CURRENT_SCHEMA_VERSION, Conversion, ConversionState, Excerpt, Facets, HighlightSemantic, Label,
-    MANIFEST_FILE_NAME, MAX_DEPTH, Manifest, NormalizedRect, OrderKey, PageNumber, RelativePath,
-    SchemaProbe, Slug, Source, Timestamp,
+    CITATION_SCHEME, CURRENT_SCHEMA_VERSION, Citation, CitationIndex, Conversion, ConversionState,
+    Excerpt, Facets, HighlightSemantic, Label, MANIFEST_FILE_NAME, MAX_DEPTH, Manifest,
+    NormalizedRect, OrderKey, PageNumber, RelativePath, SchemaProbe, Slug, Source, Timestamp,
+    citation_link,
 };
 pub use error::{BackupOutcome, CoreError};
 pub use ports::{Clock, FixedClock};

@@ -65,7 +65,11 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
 - [x] `Annotation` + `AnnotationSet` — the three annotation kinds as a tagged enum,
       with `AnnotationId`, `PageNumber`, `Excerpt` and `HighlightSemantic`. Five
       departures from the spec's example, all amended there. 21 tests.
-- [ ] `Citation`, `LectureBundle`, `BundleRef`
+- [x] `Citation` + `CitationIndex` — scans `cite://<id>` out of Markdown, skipping
+      fenced and inline code so an example is never mistaken for a link. Resolves
+      against an `AnnotationSet` into orphans (reported, never repaired) and unlinked
+      highlights. 21 tests.
+- [ ] `LectureBundle`, `BundleRef`
 - [x] `AnnotationStore` — the atomic load/save path for `annotations.json`. A missing
       file loads as an empty set (the normal state of a freshly imported lecture) while
       an unreadable one is an error, so a corrupt file can never read back as "no
@@ -205,6 +209,83 @@ The tree was not rustfmt-clean, and the first run of the check turned up a misin
 doc comment in `order_key/mod.rs` that four green test runs had not. Formatting is the
 cheapest class of thing to enforce mechanically, so it is now in `CLAUDE.md` §5 rather
 than left to whoever is reading the diff.
+
+**2026-10-27 · A citation carries a line number and deliberately nothing finer**
+`cite://<id>` is the one value in a bundle that a person's *prose* depends on —
+everything else can be rebuilt from a vault scan.
+
+A byte or character offset within the line was considered and rejected. Rust counts
+bytes, a `char` is a Unicode scalar value, and `CodeMirror` counts UTF-16 code units:
+three different numbers for the same position. The spec's own citation template contains
+an emoji (📌), so the disagreement would not be hypothetical — every citation after it
+would be placed wrongly, and the bug would look like the editor misbehaving rather than
+like a units mismatch. Line counting is the one measure both languages agree on, and it
+is all the bidirectional link needs: clicking a highlight scrolls the editor to a line,
+and clicking a citation badge needs only the identifier already under the cursor.
+
+If in-line positioning is ever wanted, it should be decided with the encoding question
+faced directly rather than inherited by accident.
+
+**2026-10-27 · The scanner skips code, because a `cite://` in a fence is an example**
+A regex over the whole file would treat `cite://hl-x` inside a code fence as live. Two
+costs: the viewer scrolls to the wrong place, and — much worse — if citations are ever
+rewritten to mark an orphan, the rewrite would edit someone's code sample. So fenced
+blocks and inline code spans are skipped, with the fence rules CommonMark specifies
+(matching character, closing run at least as long, no info string, up to three spaces of
+indent).
+
+Two subtleties have tests because getting either wrong corrupts reading silently: a
+shorter backtick run does not close a longer fence, and an *unterminated* inline backtick
+is literal text rather than swallowing the rest of the line — otherwise one stray
+backtick would unlink everything after it.
+
+**Known limitation:** indented (four-space) code blocks are not detected. Telling one
+from a list continuation or a wrapped paragraph needs real Markdown block parsing, and a
+Markdown parser dependency is out of proportion here. A `cite://` inside an indented
+block reads as a live citation.
+
+**2026-10-27 · The identifier ends at the first character it cannot contain**
+In `[Slide/Page 4](cite://hl-9f8a7b6c)` the `)` must terminate the identifier. Taking the
+maximal run of `AnnotationId`'s alphabet does that for free, and for every other
+terminator — space, comma, quote, full stop — without a list of delimiters to keep in
+sync. This is why `AnnotationId` is restricted to characters needing no URL escaping: the
+same property that makes it safe in a link makes it unambiguous to scan back out.
+
+A malformed occurrence (`cite://` with nothing after it, or an over-long identifier) is
+skipped rather than collected. It cannot name any annotation, and a list of malformed
+citations that nothing consumes would be the field-nothing-fills pattern already
+criticised in the spec.
+
+**2026-10-27 · An orphaned citation is reported, never repaired**
+A citation whose annotation is missing stays exactly where it is. Usually the highlight
+was deleted; but on a synced vault it can simply mean the notes arrived before the
+annotations, in which case the link starts working on its own. Either way the text
+belongs to the person who typed it, so the UI's job is to show it as broken, not to
+remove it. There is a test asserting the orphan is still in the index after being
+reported.
+
+The reverse — an annotation nothing cites — is not a problem at all. Highlighting without
+writing about it is the common case, so `unlinked` exists to offer "link this to your
+notes", not to warn.
+
+**2026-10-27 · Two §4 line-limit violations I had let drift**
+`error.rs` had grown to 357 lines and two test files past 300, against the 300-line limit
+in §4. Owned rather than quietly left: `error.rs` split into `error/mod.rs` (the variants
+— what can go wrong) and `error/guidance.rs` (`code` and `remediation` — how it is said),
+which is a real seam, since the two change for different reasons. `tests/annotation.rs`
+split into the single-annotation and the set cases; `tests/citation.rs` into scanning and
+resolution. All files are now within the limit, and a check for it is part of the gate
+run rather than something to notice later.
+
+**2026-10-28 · The UI will eventually need its own citation scanner — plan recorded now**
+Live `cite://` decorations in the editor cannot round-trip through IPC on every keystroke,
+so the TypeScript side will one day need a scanner of its own, and then the two could
+disagree exactly as the wire format could have. Not written yet, because the editor does
+not exist and a scanner nothing calls is dead code.
+
+When it is written, it gets the same treatment as the wire format: a fixture holding a
+notes file and its expected citations, asserted by both languages. Recording the
+mechanism now means that is a decided plan rather than a hole discovered later.
 
 **2026-10-27 · One shape, two languages, and a fixture to stop them drifting**
 `manifest.json` and `annotations.json` are now described twice: by the Rust types that
@@ -762,6 +843,9 @@ the user's instruction, 2026-10-27), local only, never pushed without being aske
   CodeMirror, KaTeX, Mermaid and Chart.js in the milestones that use them, rather than
   installing the whole stack up front.
 
+- **Indented code blocks are not skipped by the citation scanner.** Four-space blocks
+  need real Markdown block parsing to tell from a list continuation; fenced and inline
+  code are handled. A `cite://` inside an indented block reads as live.
 - **`@eslint/js` is not installed**, so ESLint's own `recommended` set is not applied;
   only `typescript-eslint`'s `strictTypeChecked`. Most of what it adds (undefined names,
   duplicate keys, unreachable code) the compiler already rejects under the strict flags,

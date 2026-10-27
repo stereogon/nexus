@@ -7,6 +7,7 @@
 mod annotation;
 mod annotation_id;
 mod annotation_set;
+mod citation;
 mod excerpt;
 mod facets;
 mod highlight_semantic;
@@ -25,6 +26,7 @@ mod timestamp;
 pub use annotation::Annotation;
 pub use annotation_id::AnnotationId;
 pub use annotation_set::{ANNOTATIONS_FILE_NAME, ANNOTATIONS_SCHEMA_VERSION, AnnotationSet};
+pub use citation::{CITATION_SCHEME, Citation, CitationIndex, citation_link};
 pub use excerpt::Excerpt;
 pub use facets::Facets;
 pub use highlight_semantic::HighlightSemantic;
