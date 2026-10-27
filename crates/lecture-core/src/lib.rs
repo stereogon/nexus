@@ -16,5 +16,5 @@
 pub mod domain;
 pub mod error;
 
-pub use domain::{NormalizedRect, OrderKey, Slug};
+pub use domain::{MAX_DEPTH, NormalizedRect, OrderKey, Slug, VaultRelativePath};
 pub use error::CoreError;

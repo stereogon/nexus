@@ -39,8 +39,15 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
       characters, Windows device names, leading dots/hyphens, trailing dots and spaces;
       normalises to NFC (never NFKC — see decision log); 200-byte cap so atomic staging
       paths stay legal. `from_title` derives a tidy slug from a human title. 17 tests.
-- [ ] Multi-segment path containment: depth cap 5, `..` refused outright, symlink
-      refusal, canonicalised under the vault root — **next substep**
+- [x] `VaultRelativePath` — **lexical** containment: relative only, no empty segments,
+      every segment a `Slug` (so `.`/`..`/separators cannot occur), depth capped at 5,
+      non-emptiness structural. `join_onto` is pure, so a not-yet-created bundle can be
+      located before it exists. 17 tests, including a containment property over hostile
+      inputs with a guard against passing vacuously.
+- [ ] **Filesystem** containment: canonicalise the deepest existing ancestor, assert it
+      stays under the canonical root, refuse symlinked components. Belongs with
+      `AtomicFsStorage`, since it needs I/O and `lecture-core` stays pure — **next
+      substep**
 - [ ] Vault walk — prunes at first `manifest.json`; rejects nested lectures
 - [ ] `schemaVersion` 1 → 2 migration
 - [ ] `tracing` + `tracing-appender` to `~/Library/Logs/LectureVault/app.log`
@@ -139,6 +146,36 @@ The tree was not rustfmt-clean, and the first run of the check turned up a misin
 doc comment in `order_key/mod.rs` that four green test runs had not. Formatting is the
 cheapest class of thing to enforce mechanically, so it is now in `CLAUDE.md` §5 rather
 than left to whoever is reading the diff.
+
+**2026-10-27 · Path safety is split across two layers, on purpose**
+"Sanitise paths" is really two problems with different natures. *Lexical* containment —
+is this text a usable vault-relative path at all — is pure logic, and lives in
+`VaultRelativePath` in the domain. *Filesystem* containment — does it resolve inside the
+root once symlinks are followed — needs I/O, and so belongs in the storage adapter, since
+`lecture-core` is required to stay platform-free. Keeping them together would have
+dragged `std::fs` into the domain layer and made the pure half untestable without a
+temp directory.
+
+The consequence is stated in the type's own doc comment rather than left implicit:
+`VaultRelativePath` is the barrier against hostile *text*, not against a hostile
+*filesystem*. If a vault folder is a symlink to `/etc`, `lectures/passwd` is a valid
+`VaultRelativePath`. That gap closes with `AtomicFsStorage`, and it is listed as open in
+§1 until it does.
+
+**2026-10-27 · `..` is refused, never resolved**
+The common approach — normalise the path lexically, then check it still starts with the
+root — is the classic broken one, because lexical normalisation and symlink resolution
+disagree. Nexus never needs `..` in a vault-relative path, so it is rejected outright and
+that entire class of bug cannot arise. `Slug` already refuses `.` and `..` as names, so
+this falls out of reusing it per segment rather than needing its own rule.
+
+**2026-10-27 · Non-emptiness made structural, not checked**
+The first draft stored `Vec<Slug>` and `name()` had to answer for an empty vector that
+`parse` already made impossible — the sketch reached for a fallback singleton to stay
+panic-free, which is a smell. Storing the final segment as its own field instead means a
+path naming nothing cannot be constructed, so `name()` returns `&Slug` with no fallback,
+no `unwrap`, and no `debug_assert`. Making the illegal state unrepresentable beat
+defending against it.
 
 **2026-10-27 · Names are normalised NFC, never NFKC**
 NFKC folds compatibility characters, and some fold *into* ASCII punctuation: U+FF0F

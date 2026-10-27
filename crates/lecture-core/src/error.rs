@@ -45,6 +45,26 @@ pub enum CoreError {
         reason: &'static str,
     },
 
+    /// A path could not be used as a location inside the vault.
+    #[error("`{path}` is not a usable location inside the vault: {reason}")]
+    InvalidVaultPath {
+        /// The rejected path.
+        path: String,
+        /// Which rule it broke.
+        reason: &'static str,
+    },
+
+    /// A path sat deeper below the vault root than the depth cap allows.
+    #[error("`{path}` is {depth} levels deep, past the limit of {max}")]
+    VaultPathTooDeep {
+        /// The rejected path.
+        path: String,
+        /// How deep it actually was.
+        depth: usize,
+        /// The cap it passed.
+        max: usize,
+    },
+
     /// A string was not a well-formed order key.
     #[error("`{key}` is not a valid order key: {reason}")]
     InvalidOrderKey {
@@ -86,6 +106,8 @@ impl CoreError {
                 "ERR_INVALID_COORDINATE"
             }
             Self::InvalidName { .. } => "ERR_INVALID_NAME",
+            Self::InvalidVaultPath { .. } => "ERR_INVALID_VAULT_PATH",
+            Self::VaultPathTooDeep { .. } => "ERR_VAULT_PATH_TOO_DEEP",
             Self::InvalidOrderKey { .. } => "ERR_INVALID_ORDER_KEY",
             Self::OrderKeysNotAscending { .. } => "ERR_ORDER_KEYS_NOT_ASCENDING",
             Self::OrderSpaceExhausted { .. } => "ERR_ORDER_SPACE_EXHAUSTED",
@@ -109,6 +131,15 @@ impl CoreError {
                 "That name cannot be used for a folder on disk. Nothing was created or \
                  renamed. Try a shorter name, or one without punctuation such as \
                  slashes or colons."
+            }
+            Self::InvalidVaultPath { .. } => {
+                "That location cannot be used inside your vault. Nothing was created or \
+                 moved. Choose a folder inside the vault and try again."
+            }
+            Self::VaultPathTooDeep { .. } => {
+                "That folder sits more than five levels deep inside your vault, which is \
+                 further than Nexus will follow. Nothing was moved. Drag it nearer the \
+                 top of the vault, then try again."
             }
             Self::InvalidOrderKey { .. } => {
                 "One lecture's saved position could not be read, so it has been sorted \

@@ -12,6 +12,12 @@ PPT / PPTX / DOC / DOCX) beside deeply linked Markdown notes. Full requirements 
 A Phase 2 iPadOS companion app is planned. That is not a someday-maybe; it constrains
 real decisions today. See **Locked decisions**.
 
+**Scope of audience.** Nexus is being built for one person's own use and is not planned
+as a shipped product. That narrows what is *required* — there is no telemetry, no
+accounts, no multi-user concurrency, no App Store compliance work, and no obligation to
+support data written by a stranger's older copy. It does not narrow the quality bar by
+one inch; see **1.10 Responsible**.
+
 ---
 
 ## 1. The values we work by
@@ -87,6 +93,23 @@ what to follow when the word alone is ambiguous.
 - No recursive deletes outside the scratchpad. No `rm -rf` with a variable in the path.
 - No command whose failure mode is unbounded. If the blast radius is unclear, it is too
   large.
+
+### 1.10 Responsible
+- Write code at professional standard, judged at both levels. **Low level:** names that
+  say what the thing is, errors handled where they occur, no function doing three jobs,
+  no cleverness a reader has to decode. **High level:** module boundaries that match the
+  domain, dependencies pointing one way, a change to one concern touching one place.
+- Use the established pattern when one fits, and name it in the comment or commit so the
+  next reader recognises it. Do not invent a bespoke mechanism where a known one is
+  clearer — but do not reach for a pattern larger than the problem either. The right
+  answer is proportionate, not impressive.
+- Own the consequences of a decision. If a tradeoff was made, it goes in `PROGRESS.md`
+  with its reasoning, so it can be revisited on purpose rather than rediscovered by
+  accident.
+- Quality is not a function of audience. This app has one user and no ship date, which
+  removes *requirements* — no telemetry, no multi-tenancy, no App Store review, no
+  migration story for strangers' data. It removes no *standards*. "It's only for me" is
+  never a reason for a weaker test, a swallowed error, or a shortcut left unrecorded.
 
 ---
 
