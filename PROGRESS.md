@@ -84,7 +84,11 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
       filesystem, composed with `ManifestStore` so a scan becomes loaded bundles. One
       corrupt manifest costs that lecture and nothing else. 10 tests on real
       directories, including real symlinks.
-- [ ] `.nexus/` rebuildable cache, including per-device view state — **next substep**
+- [x] `.nexus/index.json` — the rebuildable cache, never trusted: it exists for a fast
+      first paint and the scan always overrides it. `CLAUDE.md` §3's "deleting `.nexus/`
+      must fully reconstruct" is now an executable test, and a byte-identical one.
+- [ ] Per-device view state (last page, scroll) — **next substep**, and see the open
+      question below about where it belongs
 - [ ] `.nexus/` rebuildable cache, including per-device view state
 - [x] `AnnotationStore` — the atomic load/save path for `annotations.json`. A missing
       file loads as an empty set (the normal state of a freshly imported lecture) while
@@ -263,6 +267,79 @@ There was `child(Slug)` for one segment and no way to append a path to a path �
 "bundle directory plus `source/document.pdf`" had no expression. Its absence is probably
 why the depth caps were conflated: nothing ever composed two paths, so the sum never
 came up.
+
+**2026-10-28 · The cache is never trusted, which deletes the hard problem**
+`.nexus/index.json` is not consulted to decide what is in the vault. It exists so the
+sidebar can paint instantly at startup; the walk runs straight afterwards and replaces
+whatever it showed. The scan is always the authority.
+
+That removes the thing caches usually get wrong. There is no staleness scheme, no vault
+fingerprint, no mtime comparison — nothing to be subtly wrong about. Someone who
+reorganises their vault in Finder with the app closed cannot produce a wrong answer, only
+a briefly out-of-date first paint. It is also what makes §3's requirement literally true:
+every field is derived from a `manifest.json` that stays the source of truth, so deleting
+the cache costs one slow startup and nothing else. There is a test that deletes it and
+asserts the rebuild is byte-identical.
+
+Because nothing is trusted, `load` is **infallible** rather than usually-succeeding. Every
+failure — missing, corrupt, from a newer build, unreadable — has the same answer, which is
+to scan. Returning `Result` would invite a future caller to treat a missing cache as a
+problem and refuse to start.
+
+**2026-10-28 · A corrupt cache is discarded, where a corrupt manifest is preserved**
+Deliberately opposite to the rule everywhere else, including the *newer-version* rule: a
+manifest from a newer build is left strictly alone because misreading it could corrupt
+work, while a newer cache is ignored and rebuilt.
+
+The distinction is **does this file contain work**, not what kind of file it is. A manifest
+and an annotation set hold things that exist nowhere else, so damaged bytes are copied to
+`.bak` first. The cache holds nothing the vault does not already hold, so a `.bak` would
+be litter in a folder someone is trying to study in.
+
+Concretely this meant *not* routing `VaultIndexStore::load` through `versioned`, which
+exists to share the back-up-then-continue behaviour. Reusing it would have been the
+obvious move and would have quietly produced `index.json.bak` files. Both rules now have
+a test asserting the backup is there, and asserting it is not.
+
+**2026-10-28 · `Slug` was conflating safety rules with presentation rules**
+Found immediately: `RelativePath::parse(".nexus/index.json")` fails, so the cache path
+could not be expressed at all. The leading-dot rule was blocking it.
+
+Those rules are two kinds of rule wearing one coat. Most are about *safety* — no
+separators, no `.` or `..`, no control or invisible characters, no Windows device name, no
+trailing dot or surrounding whitespace — and they are what make a segment safe to join
+onto a path. One, refusing a leading dot, is about *presentation*: a hidden folder is one
+a person cannot find when something goes wrong. For a name Nexus chooses for itself, being
+hidden is the point.
+
+So `Slug::internal` lifts exactly that one rule and no other, with a test that walks the
+whole unsafe list and asserts each is still refused — because the risk of a second
+constructor is that it becomes the lax one people reach for. The leading-hyphen rule stays
+in the safety set, since it is about a name reading as a command-line option when the
+converter adapters shell out.
+
+**2026-10-28 · Open question: `.nexus/` inside the vault, when a sync client arrives**
+The cache sits in the vault, which keeps a vault self-describing and portable and matches
+every other locked decision. That is right today, because nothing syncs the vault — cloud
+drives are deferred to 2.0.
+
+It becomes a question then. A synced `.nexus/` would produce `index (conflicted copy).json`
+litter in someone's study folder. Harmless, since the file is never trusted, but ugly.
+The alternative is `~/Library/Application Support/`, keyed by vault path, which never
+syncs but stops the vault being self-contained. Not deciding it now, and not building for
+it speculatively; it is the natural first question when 2.0 starts.
+
+The related one is live: per-device view state (which page you were on) **cannot** be
+derived from a scan, so it is not cache, and two devices at different pages is correct
+rather than a conflict. That is the next substep, and it is where the location question
+actually has to be answered.
+
+**2026-10-28 · Recorded gap: `BundleRef` crosses IPC but has no fixture yet**
+`BundleRef` became serialisable for the cache, and the sidebar will receive it over IPC in
+M2. The fixtures under `fixtures/` exist so the Rust types and the Zod schemas cannot
+drift, and this type now belongs in that set. Not done here: it needs a Zod schema and
+both-language assertions, and half-doing it would be worse than recording it. `index.json`
+itself needs no fixture — TypeScript never reads it, since first paint comes over IPC.
 
 **2026-10-28 · A refused link and an unreadable folder need opposite advice**
 The walk mapped every listing failure to `Unreadable`, whose remediation says the folder

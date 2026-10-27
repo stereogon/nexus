@@ -18,6 +18,7 @@ mod staging;
 
 pub mod annotation_store;
 pub mod clock;
+mod index_store;
 mod manifest_store;
 mod versioned;
 
@@ -27,6 +28,7 @@ pub mod vault_root;
 
 pub use annotation_store::AnnotationStore;
 pub use clock::SystemClock;
+pub use index_store::VaultIndexStore;
 pub use manifest_store::ManifestStore;
 pub use storage::AtomicFsStorage;
 pub use vault::{FsVaultDirectory, LoadedVault, UnloadableLecture, VaultLoader};

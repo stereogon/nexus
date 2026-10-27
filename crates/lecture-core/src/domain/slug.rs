@@ -49,6 +49,24 @@ const RESERVED_STEMS: &[&str] = &[
     "com8", "com9", "lpt0", "lpt1", "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9",
 ];
 
+/// Whether a name must be visible in Finder.
+///
+/// The distinction exists because [`Slug`]'s rules are two kinds of rule wearing one
+/// coat. Most of them are about *safety* — no separators, no traversal, no control
+/// characters, no name a filesystem will mangle — and they apply to every segment
+/// without exception. One of them, refusing a leading dot, is about *presentation*: a
+/// hidden folder is a folder a person cannot find when something goes wrong.
+///
+/// For a name Nexus chooses for itself, being hidden is the point rather than a hazard,
+/// so that one rule is lifted and no other is.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Visibility {
+    /// Refuses a leading dot. For anything derived from a person's input.
+    Visible,
+    /// Permits a leading dot. For names hardcoded by the app.
+    MayBeHidden,
+}
+
 /// A validated single path segment, normalized to NFC.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(try_from = "String")]
@@ -80,7 +98,28 @@ impl Slug {
     /// a Windows reserved device name.
     pub fn parse(raw: &str) -> Result<Self, CoreError> {
         let normalized: String = raw.nfc().collect();
-        Self::validate(raw, &normalized)?;
+        Self::validate(raw, &normalized, Visibility::Visible)?;
+        Ok(Self(normalized))
+    }
+
+    /// Validates a name that Nexus itself chose, which may be hidden.
+    ///
+    /// For the app's own directories — `.nexus`, the rebuildable cache — where a leading
+    /// dot is deliberate: the cache is not the user's to manage, and a visible folder of
+    /// derived data in the middle of someone's study material is clutter they would
+    /// reasonably try to delete.
+    ///
+    /// **Every safety rule still applies.** No separators, no `.` or `..`, no control or
+    /// invisible characters, no Windows device name, no trailing dot, no surrounding
+    /// whitespace, and the same length cap. Only the rule about being findable in Finder
+    /// is lifted, so this cannot be used to smuggle a traversal through.
+    ///
+    /// # Errors
+    ///
+    /// As [`Slug::parse`], minus the leading-dot rule.
+    pub fn internal(raw: &str) -> Result<Self, CoreError> {
+        let normalized: String = raw.nfc().collect();
+        Self::validate(raw, &normalized, Visibility::MayBeHidden)?;
         Ok(Self(normalized))
     }
 
@@ -134,7 +173,7 @@ impl Slug {
         &self.0
     }
 
-    fn validate(original: &str, candidate: &str) -> Result<(), CoreError> {
+    fn validate(original: &str, candidate: &str, visibility: Visibility) -> Result<(), CoreError> {
         let reject = |reason: &'static str| {
             Err(CoreError::InvalidName {
                 name: original.to_owned(),
@@ -151,7 +190,7 @@ impl Slug {
         if candidate == "." || candidate == ".." {
             return reject("refers to a directory rather than naming one");
         }
-        if candidate.starts_with('.') {
+        if visibility == Visibility::Visible && candidate.starts_with('.') {
             return reject("a leading dot would hide it from Finder");
         }
         if candidate.starts_with('-') {

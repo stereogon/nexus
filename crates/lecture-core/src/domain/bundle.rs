@@ -18,6 +18,8 @@
 //! by Finder while the app is closed.
 
 use crate::domain::{ANNOTATIONS_FILE_NAME, MANIFEST_FILE_NAME};
+use serde::{Deserialize, Serialize};
+
 use crate::domain::{Facets, Label, Manifest, OrderKey, RelativePath, Slug};
 use crate::error::CoreError;
 
@@ -159,7 +161,11 @@ impl LectureBundle {
 /// This is also exactly what `.nexus/` caches. The cache is rebuildable precisely
 /// because every field here is derived from a `manifest.json` that remains the source of
 /// truth.
-#[derive(Debug, Clone, PartialEq, Eq)]
+///
+/// Serialisable because this is exactly what `.nexus/index.json` stores. Every field is
+/// derived from a `manifest.json`, which is what makes that cache rebuildable.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct BundleRef {
     directory: RelativePath,
     title: Label,

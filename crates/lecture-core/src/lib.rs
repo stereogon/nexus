@@ -19,12 +19,13 @@ pub mod ports;
 
 pub use domain::{
     ANNOTATIONS_FILE_NAME, ANNOTATIONS_SCHEMA_VERSION, ASSETS_DIR_NAME, Annotation, AnnotationId,
-    AnnotationSet, BundleRef, CITATION_SCHEME, CURRENT_SCHEMA_VERSION, Citation, CitationIndex,
-    Conversion, ConversionState, Excerpt, Facets, HighlightSemantic, Label, LectureBundle,
-    MANIFEST_FILE_NAME, MAX_BUNDLE_DEPTH, MAX_DEPTH, MAX_WITHIN_BUNDLE_DEPTH, Manifest,
-    NOTES_FILE_NAME, NormalizedRect, OrderKey, PageNumber, RelativePath, SOURCE_DIR_NAME,
-    SchemaProbe, SkipReason, SkippedDirectory, Slug, Source, Timestamp, VaultScan, citation_link,
-    scan_vault,
+    AnnotationSet, BundleRef, CACHE_DIR_NAME, CITATION_SCHEME, CURRENT_SCHEMA_VERSION, Citation,
+    CitationIndex, Conversion, ConversionState, Excerpt, Facets, HighlightSemantic,
+    INDEX_FILE_NAME, INDEX_SCHEMA_VERSION, Label, LectureBundle, MANIFEST_FILE_NAME,
+    MAX_BUNDLE_DEPTH, MAX_DEPTH, MAX_WITHIN_BUNDLE_DEPTH, Manifest, NOTES_FILE_NAME,
+    NormalizedRect, OrderKey, PageNumber, RelativePath, SOURCE_DIR_NAME, SchemaProbe, SkipReason,
+    SkippedDirectory, Slug, Source, Timestamp, VaultIndex, VaultScan, cache_dir_segment,
+    citation_link, scan_vault,
 };
 pub use error::{BackupOutcome, CoreError};
 pub use ports::{Clock, DirectoryEntry, EntryKind, FixedClock, VaultDirectory};
