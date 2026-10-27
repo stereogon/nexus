@@ -12,7 +12,34 @@
 //! The enum is `#[non_exhaustive]`: variants are added as the code that raises them
 //! lands, so this list always describes failures that can genuinely occur.
 
+use std::fmt;
+
 use thiserror::Error;
+
+/// What happened to the copy of a damaged file.
+///
+/// Carried in the error so the message can state the truth. Static remediation text that
+/// promised a `.bak` would be a lie whenever the copy itself failed, and being told
+/// accurately where their work is, is the one thing a person needs to trust at that
+/// moment.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum BackupOutcome {
+    /// A copy was saved at this path.
+    Saved(String),
+    /// A copy could not be saved, so the original is all there is -- and it is intact.
+    Failed,
+}
+
+impl fmt::Display for BackupOutcome {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Saved(path) => write!(f, "a copy of it has been saved as `{path}`"),
+            Self::Failed => f.write_str(
+                "a copy of it could not be saved, so the original has been left exactly as it is",
+            ),
+        }
+    }
+}
 
 /// Every way a domain operation can fail.
 #[derive(Debug, Error)]
@@ -116,6 +143,33 @@ pub enum CoreError {
         reason: &'static str,
     },
 
+    /// A manifest parsed but described something that cannot be true.
+    #[error("this lecture's manifest is inconsistent: {reason}")]
+    InvalidManifest {
+        /// Which invariant it broke.
+        reason: &'static str,
+    },
+
+    /// A manifest's bytes could not be parsed.
+    #[error("this lecture's manifest could not be read: {detail}; {backup}")]
+    ManifestUnreadable {
+        /// What the parser objected to, including where. Kept because "could not be
+        /// read" alone is not something anyone can act on, and a line and column turns
+        /// a broken hand-edit into a ten-second fix.
+        detail: String,
+        /// Whether the damaged file was copied aside, and to where.
+        backup: BackupOutcome,
+    },
+
+    /// A manifest was written by a build that uses a different schema version.
+    #[error("this lecture was saved by Nexus schema v{found}; this build reads v{supported}")]
+    ManifestVersionUnsupported {
+        /// The version the file claims.
+        found: u32,
+        /// The version this build understands.
+        supported: u32,
+    },
+
     /// A string was not a well-formed order key.
     #[error("`{key}` is not a valid order key: {reason}")]
     InvalidOrderKey {
@@ -156,6 +210,9 @@ impl CoreError {
             Self::InvalidCoordinate { .. } | Self::RectOutOfBounds { .. } => {
                 "ERR_INVALID_COORDINATE"
             }
+            Self::InvalidManifest { .. } => "ERR_INVALID_MANIFEST",
+            Self::ManifestUnreadable { .. } => "ERR_MANIFEST_UNREADABLE",
+            Self::ManifestVersionUnsupported { .. } => "ERR_MANIFEST_VERSION_UNSUPPORTED",
             Self::InvalidName { .. } => "ERR_INVALID_NAME",
             Self::InvalidTimestamp { .. } => "ERR_INVALID_TIMESTAMP",
             Self::VaultRootUnusable { .. } => "ERR_VAULT_ROOT_UNUSABLE",
@@ -182,6 +239,21 @@ impl CoreError {
                  than drawn in the wrong place. Your notes and the rest of your \
                  highlights are untouched. If you edited annotations.json by hand, a \
                  backup is beside it."
+            }
+            Self::InvalidManifest { .. } => {
+                "This lecture's details contradict each other, so it was left alone \
+                 rather than loaded wrongly. Nothing was deleted. The message above \
+                 says which detail does not add up."
+            }
+            Self::ManifestUnreadable { .. } => {
+                "This lecture could not be loaded, and nothing on disk has been \
+                 changed. The message above says what went wrong and where a copy of \
+                 the file was kept, which you can open in any text editor."
+            }
+            Self::ManifestVersionUnsupported { .. } => {
+                "This lecture was saved by a newer version of Nexus. It has been left \
+                 completely untouched rather than rewritten, so updating Nexus will \
+                 open it normally."
             }
             Self::InvalidName { .. } => {
                 "That name cannot be used for a folder on disk. Nothing was created or \

@@ -51,8 +51,17 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
       *bundle*-relative paths (`source/document.pdf`) and the type never assumed the
       vault — `join_onto` always took the base. Error variants and codes renamed to
       match before anything ships.
-- [ ] Domain: `Manifest` (sequence, source/conversion provenance, `schemaVersion`) and
-      its load/save path with `.bak` — **next substep**
+- [x] `Manifest` + `Source`/`Conversion` — title, authoritative `sequence`, facets, and
+      conversion provenance. Cross-field invariants enforced through a raw-struct
+      `try_from`, so a hand-edited file cannot produce an incoherent manifest in memory.
+      17 tests.
+- [x] `ManifestStore` in `lecture-fs` — pretty-printed deterministic JSON through the
+      atomic write path; holds the clock so a save cannot forget to stamp the change
+      time. 12 tests.
+- [x] `.bak` has its first real caller: a corrupt manifest is copied aside, a manifest
+      from a newer schema version is left strictly untouched.
+- [ ] Source hashes in the manifest — **deliberately deferred to Milestone 2**, see the
+      decision log. Will bump `schemaVersion` to 2 and be the first real migration.
 - [ ] Domain: `Annotation`, `Citation`, `LectureBundle`, `BundleRef`
 - [x] `Slug` — one safe path segment. Rejects separators, control and invisible
       characters, Windows device names, leading dots/hyphens, trailing dots and spaces;
@@ -177,6 +186,43 @@ The tree was not rustfmt-clean, and the first run of the check turned up a misin
 doc comment in `order_key/mod.rs` that four green test runs had not. Formatting is the
 cheapest class of thing to enforce mechanically, so it is now in `CLAUDE.md` §5 rather
 than left to whoever is reading the diff.
+
+**2026-10-27 · Corrupt and from-the-future are opposite cases, not one case**
+Two load failures look alike and must be handled in opposite ways, and getting this
+backwards would be the most destructive bug in the storage layer.
+
+A *corrupt* manifest — truncated, hand-edited into nonsense, internally inconsistent — is
+copied to `.bak` before anything else happens, so the bytes someone had are preserved
+even if a later repair overwrites the original. A manifest from a *newer build* is left
+strictly alone: no backup, no rewrite, nothing. It is not damaged, merely newer than this
+reader, and treating it as corrupt would destroy data an updated Nexus could read
+perfectly — then propagate that damage back to the device that wrote it. There is a test
+asserting that the newer file's bytes are unchanged *and* that no `.bak` appears.
+
+Reading the version therefore happens in its own pass, through a `SchemaProbe` that
+allows unknown fields. A file from a newer build need not deserialise as the current
+shape at all, so asking the full parser first would report it as corrupt — the one
+verdict that must not be reached.
+
+**2026-10-27 · Error messages carry the parser's own detail and the real backup outcome**
+A first draft discarded the `serde_json` error and relied on static remediation text that
+promised a `.bak`. Both were wrong. "Could not be read" is not something anyone can act
+on, whereas a line and column turns a broken hand-edit into a ten-second fix — so the
+parser's message is carried through. And the static text would have *lied* on the
+occasions when making the copy also failed, which is the one moment a person most needs
+to be told accurately where their work is. `BackupOutcome` now records whether the copy
+was made and where, and the message states whichever is true.
+
+**2026-10-27 · Source hashes deferred to Milestone 2, accepting a migration**
+The spec lists hashes in `manifest.json`. They are not there yet, because the importer
+that would compute them lands in Milestone 2, and declaring a field now would mean
+inventing its algorithm and shape before knowing the use — a field nothing computes is
+worse than a planned migration.
+
+The cost is explicit: because unknown fields are denied, adding the field will bump
+`schemaVersion` to 2. That is accepted deliberately. It makes the first schema migration
+a small, well-understood one rather than something first attempted under pressure on a
+format already holding real data.
 
 **2026-10-27 · `manifest.json` does not hold view state — spec amended**
 The spec described `manifest.json` as holding "last opened page/scroll state". Raised

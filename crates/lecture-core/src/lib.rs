@@ -18,7 +18,9 @@ pub mod error;
 pub mod ports;
 
 pub use domain::{
-    Facets, Label, MAX_DEPTH, NormalizedRect, OrderKey, RelativePath, Slug, Timestamp,
+    CURRENT_SCHEMA_VERSION, Conversion, ConversionState, Facets, Label, MANIFEST_FILE_NAME,
+    MAX_DEPTH, Manifest, NormalizedRect, OrderKey, RelativePath, SchemaProbe, Slug, Source,
+    Timestamp,
 };
-pub use error::CoreError;
+pub use error::{BackupOutcome, CoreError};
 pub use ports::{Clock, FixedClock};

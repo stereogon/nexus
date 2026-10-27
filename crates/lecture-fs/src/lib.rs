@@ -17,10 +17,12 @@ mod error;
 mod staging;
 
 pub mod clock;
+pub mod manifest_store;
 
 pub mod storage;
 pub mod vault_root;
 
 pub use clock::SystemClock;
+pub use manifest_store::ManifestStore;
 pub use storage::AtomicFsStorage;
 pub use vault_root::{ResolvedPath, VaultRoot};

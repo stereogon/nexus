@@ -144,17 +144,19 @@ impl Facets {
         Ok(())
     }
 
-    /// Returns a copy with the tag set put back into canonical order.
+    /// Puts the tag set back into canonical order.
     ///
     /// Used when loading a hand-edited manifest: rather than refusing a file whose tags
     /// are merely out of order, the order is corrected. Nothing the person wrote is
     /// lost, and the next save stores the canonical form.
+    ///
+    /// Consumes the facets rather than cloning, so a caller that already owns them is
+    /// not charged for a copy it does not need.
     #[must_use]
-    pub fn canonicalised(&self) -> Self {
-        let mut copy = self.clone();
-        copy.tags.sort();
-        copy.tags.dedup();
-        copy
+    pub fn canonicalised(mut self) -> Self {
+        self.tags.sort();
+        self.tags.dedup();
+        self
     }
 
     /// The course, if set.
