@@ -83,7 +83,7 @@ impl OrderKey {
     ///
     /// `None` for `lower` means "before everything"; `None` for `upper` means "after
     /// everything". Both `None` yields the same key as [`OrderKey::first`]. Neither
-        /// neighbour is modified, so the caller writes exactly one manifest.
+    /// neighbour is modified, so the caller writes exactly one manifest.
     ///
     /// # Errors
     ///
@@ -170,11 +170,10 @@ impl OrderKey {
             return Ok(format!("{low_integer}{mid}"));
         }
 
-        let stepped = integer::increment(low_integer).ok_or_else(|| {
-            CoreError::OrderSpaceExhausted {
+        let stepped =
+            integer::increment(low_integer).ok_or_else(|| CoreError::OrderSpaceExhausted {
                 bound: low.to_owned(),
-            }
-        })?;
+            })?;
         if stepped.as_str() < high {
             return Ok(stepped);
         }

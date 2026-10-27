@@ -159,9 +159,18 @@ fn serializes_to_the_field_names_the_schema_specifies() {
 #[test]
 fn deserialization_cannot_bypass_validation() {
     let cases = [
-        (r#"{"x":-0.5,"y":0.1,"width":0.1,"height":0.1}"#, "negative x"),
-        (r#"{"x":1.5,"y":0.1,"width":0.1,"height":0.1}"#, "x past page"),
-        (r#"{"x":0.1,"y":0.1,"width":0.0,"height":0.1}"#, "zero width"),
+        (
+            r#"{"x":-0.5,"y":0.1,"width":0.1,"height":0.1}"#,
+            "negative x",
+        ),
+        (
+            r#"{"x":1.5,"y":0.1,"width":0.1,"height":0.1}"#,
+            "x past page",
+        ),
+        (
+            r#"{"x":0.1,"y":0.1,"width":0.0,"height":0.1}"#,
+            "zero width",
+        ),
         (
             r#"{"x":0.1,"y":0.1,"width":-0.3,"height":0.1}"#,
             "negative width",

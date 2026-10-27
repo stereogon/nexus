@@ -21,6 +21,10 @@ license = "MIT"
 [workspace.dependencies]
 thiserror = "2.0.21"
 serde = { version = "1.0.229", features = ["derive"] }
+# NFC normalization for names written to disk. HFS+ normalizes to NFD while APFS
+# preserves what it is given, so without this a folder named "Café" created on one
+# device can appear as a second, distinct folder on another once the vault syncs.
+unicode-normalization = "0.1.26"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

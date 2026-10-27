@@ -223,7 +223,7 @@ than not shipping. A known gap is a manageable problem; a hidden one is not.
 A milestone is complete only when all of these have been **run and observed**:
 
 ```
-cargo test && cargo clippy --all-targets -- -D warnings
+cargo fmt --check && cargo test && cargo clippy --all-targets -- -D warnings
 npm run typecheck && npm run lint && npm run test
 ```
 

@@ -36,6 +36,15 @@ pub enum CoreError {
         reach: f64,
     },
 
+    /// A name could not be used as a single path segment on disk.
+    #[error("`{name}` cannot be used as a file or folder name: {reason}")]
+    InvalidName {
+        /// The rejected text.
+        name: String,
+        /// Which rule it broke.
+        reason: &'static str,
+    },
+
     /// A string was not a well-formed order key.
     #[error("`{key}` is not a valid order key: {reason}")]
     InvalidOrderKey {
@@ -76,6 +85,7 @@ impl CoreError {
             Self::InvalidCoordinate { .. } | Self::RectOutOfBounds { .. } => {
                 "ERR_INVALID_COORDINATE"
             }
+            Self::InvalidName { .. } => "ERR_INVALID_NAME",
             Self::InvalidOrderKey { .. } => "ERR_INVALID_ORDER_KEY",
             Self::OrderKeysNotAscending { .. } => "ERR_ORDER_KEYS_NOT_ASCENDING",
             Self::OrderSpaceExhausted { .. } => "ERR_ORDER_SPACE_EXHAUSTED",
@@ -94,6 +104,11 @@ impl CoreError {
                  than drawn in the wrong place. Your notes and the rest of your \
                  highlights are untouched. If you edited annotations.json by hand, a \
                  backup is beside it."
+            }
+            Self::InvalidName { .. } => {
+                "That name cannot be used for a folder on disk. Nothing was created or \
+                 renamed. Try a shorter name, or one without punctuation such as \
+                 slashes or colons."
             }
             Self::InvalidOrderKey { .. } => {
                 "One lecture's saved position could not be read, so it has been sorted \

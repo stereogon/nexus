@@ -35,16 +35,19 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
       (16 tests, including 1000 appends, 1000 prepends and 300 inserts into one gap)
 - [ ] Domain: `LectureBundle`, `Annotation`, `Citation`, `Taxonomy`, `Facets`, `BundleRef`
 - [ ] `AtomicFsStorage` — temp → `sync_all` → `rename`; `.bak` on parse failure
-- [ ] Path sanitisation for nested vault paths (depth cap 5, `..`, symlinks, null bytes,
-      macOS reserved characters), per segment, canonicalised under vault root
+- [x] `Slug` — one safe path segment. Rejects separators, control and invisible
+      characters, Windows device names, leading dots/hyphens, trailing dots and spaces;
+      normalises to NFC (never NFKC — see decision log); 200-byte cap so atomic staging
+      paths stay legal. `from_title` derives a tidy slug from a human title. 17 tests.
+- [ ] Multi-segment path containment: depth cap 5, `..` refused outright, symlink
+      refusal, canonicalised under the vault root — **next substep**
 - [ ] Vault walk — prunes at first `manifest.json`; rejects nested lectures
-- [ ] Fractional `OrderKey` (insert between two siblings writes one manifest)
 - [ ] `schemaVersion` 1 → 2 migration
 - [ ] `tracing` + `tracing-appender` to `~/Library/Logs/LectureVault/app.log`
 - [ ] `aarch64-apple-ios` target check wired into CI
 - [ ] Tests: coordinate validation, atomic/crash safety, order-key invariants, path
       traversal, index rebuild-from-scan, bundle-move link integrity
-- [ ] `cargo test` + `cargo clippy -D warnings` green
+- [ ] `cargo fmt --check` + `cargo test` + `cargo clippy -D warnings` green
 
 ### [ ] Milestone 2 — Importer and PPTX/DOCX→PDF converter
 - [ ] `DocumentConverterPort` trait + state machine (`Queued → Converting → Ready |
@@ -131,6 +134,47 @@ Obsidian's (and OneNote's), and Obsidian is the closest adjacent tool. Magenta i
 hue both unclaimed in this product space and outside the semantic set. The light value is
 deep because magenta is intrinsically high-luminance; brighter variants failed 4.5:1.
 
+**2026-10-27 · `cargo fmt --check` added to the definition of done**
+The tree was not rustfmt-clean, and the first run of the check turned up a misindented
+doc comment in `order_key/mod.rs` that four green test runs had not. Formatting is the
+cheapest class of thing to enforce mechanically, so it is now in `CLAUDE.md` §5 rather
+than left to whoever is reading the diff.
+
+**2026-10-27 · Names are normalised NFC, never NFKC**
+NFKC folds compatibility characters, and some fold *into* ASCII punctuation: U+FF0F
+FULLWIDTH SOLIDUS becomes a plain `/`. Normalising with NFKC would therefore manufacture
+a path separator out of a name that contained none — a directory-traversal vector created
+by the very step meant to make the name safe. NFC does not do this. Validation also runs
+strictly *after* normalisation, so nothing normalisation produces can bypass a check.
+There is a test named for this specifically, because it would be a vulnerability if it
+regressed and the ordinary tests would still pass.
+
+**2026-10-27 · Added `unicode-normalization` (and `tinyvec` transitively)**
+HFS+ normalises filenames to NFD, APFS preserves what it is handed, and iCloud and
+Syncthing have both been inconsistent about it. Without normalisation a lecture folder
+named `Café` created on one device becomes a *second*, distinct folder on another once
+the vault syncs — silent duplication, in the one place this app must not be careless.
+`std` has no normalisation, so this cannot be done without a dependency. Licences
+verified from `cargo metadata`, not from memory: `unicode-normalization` is
+`(MIT OR Apache-2.0) AND Unicode-3.0`, `tinyvec` is `Zlib OR Apache-2.0 OR MIT`. Both are
+distribution-compatible; the `Unicode-3.0` term requires an attribution notice to be
+shipped, which the existing `unicode-ident` already obliges us to do.
+
+**2026-10-27 · Slug names are capped at 200 bytes, not 255**
+APFS and HFS+ allow 255 bytes per name, but atomic saving stages work at
+`<name>.tmp.<uuid>`, which adds 41 bytes, and recovery adds `.bak`. A 255-byte name would
+pass validation and then fail at *save* time — the worst possible moment, with the
+person's unsaved work in the balance. Capping the name instead means the staging path is
+legal by construction. A test asserts the arithmetic rather than trusting the comment.
+
+**2026-10-27 · Stricter than macOS requires, on purpose**
+`Slug` refuses Windows reserved device names (`con`, `nul`, `com1`…), the Windows/exFAT
+forbidden character set, and trailing dots and spaces — all of which are perfectly legal
+on APFS. The vault is built to sync, and a name that is legal here but illegal on the
+other device syncs successfully and then fails to materialise, which reads as data loss.
+`Slug` also refuses invisible characters (RTL overrides, zero-width joiners, a BOM):
+those are legal filenames but let one lecture impersonate another in the sidebar.
+
 **2026-10-27 · Order keys carry an integer part, not a bare fraction**
 A purely fractional key is far simpler, but every append halves the remaining gap, so
 keys grow about one character per six appends — hundreds of characters over a long
@@ -207,8 +251,8 @@ Consequences:
 ### Resolved
 All four Milestone 1 blockers were approved and actioned on 2026-10-27: `git init`,
 dependency fetching, `rustup target add aarch64-apple-ios`, and registry read access.
-Commits happen at each verified milestone boundary, local only, never pushed without
-being asked.
+Commits happen at each complete, verified substep (widened from milestone boundaries on
+the user's instruction, 2026-10-27), local only, never pushed without being asked.
 
 ### Still to decide
 - **Frontend dependency set.** The Rust side is underway; `npm install` has not been run
@@ -216,6 +260,11 @@ being asked.
   Vitest, Zod, ESLint + typescript-eslint, Tauri API/CLI) and add `pdfjs-dist`,
   CodeMirror, KaTeX, Mermaid and Chart.js in the milestones that use them, rather than
   installing the whole stack up front.
+
+- **Third-party notices file.** Two crates in the tree carry the `Unicode-3.0` term,
+  which is attribution-only but does require a notice to ship with the binary. Nothing
+  generates one yet. Belongs with the `cargo deny` work so it is produced from the real
+  dependency tree rather than maintained by hand.
 
 ### Design questions still open
 - **Page thumbnails.** §2.3 asks for them in the sidebar, but the sidebar already carries
@@ -242,6 +291,7 @@ Rust dependencies in use, with the version resolved on 2026-10-27:
 | `thiserror` | 2.0.21 | MIT OR Apache-2.0 | typed error enums with codes |
 | `serde` | 1.0.229 | MIT OR Apache-2.0 | bundle files are plain JSON |
 | `serde_json` | 1.0.154 | MIT OR Apache-2.0 | dev-dependency only, so far |
+| `unicode-normalization` | 0.1.26 | (MIT OR Apache-2.0) AND Unicode-3.0 | NFC for names written to disk, so one lecture is one folder across devices |
 
 Full resolved tree, read from `cargo metadata` on 2026-10-27 (not from memory):
 
@@ -255,12 +305,15 @@ Full resolved tree, read from `cargo metadata` on 2026-10-27 (not from memory):
 | `serde_derive` | 1.0.229 | MIT OR Apache-2.0 |
 | `syn` | 3.0.9 | MIT OR Apache-2.0 |
 | `thiserror-impl` | 2.0.21 | MIT OR Apache-2.0 |
+| `tinyvec` | 1.13.3 | Zlib OR Apache-2.0 OR MIT |
 | `unicode-ident` | 1.0.27 | (MIT OR Apache-2.0) AND Unicode-3.0 |
+| `unicode-normalization` | 0.1.26 | (MIT OR Apache-2.0) AND Unicode-3.0 |
 | `zmij` | 1.0.23 | MIT |
 
-All permissive and compatible with distributing a binary. `unicode-ident` is the only one
-carrying an additional term (Unicode-3.0, which is attribution-only). `lecture-core`
-itself is MIT.
+All permissive and compatible with distributing a binary. `unicode-ident` and
+`unicode-normalization` carry an additional term (Unicode-3.0, attribution-only), so the
+shipped app must include a notices file; that is an open task, listed in §4.
+`lecture-core` itself is MIT.
 
 To be re-checked with `cargo deny` once the dependency set settles — the point of that
 tool being that this table should never again be written by hand.

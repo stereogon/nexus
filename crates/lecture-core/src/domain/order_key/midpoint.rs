@@ -32,7 +32,10 @@ pub(super) fn between(lower: &str, upper: Option<&str>) -> Option<String> {
 
         if shared > 0 {
             let prefix = upper.get(..shared)?;
-            let rest = between(lower.get(shared..).unwrap_or(""), Some(upper.get(shared..)?))?;
+            let rest = between(
+                lower.get(shared..).unwrap_or(""),
+                Some(upper.get(shared..)?),
+            )?;
             return Some(format!("{prefix}{rest}"));
         }
     }

@@ -6,6 +6,8 @@
 
 mod normalized_rect;
 mod order_key;
+mod slug;
 
 pub use normalized_rect::NormalizedRect;
 pub use order_key::OrderKey;
+pub use slug::Slug;

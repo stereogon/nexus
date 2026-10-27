@@ -16,5 +16,5 @@
 pub mod domain;
 pub mod error;
 
-pub use domain::{NormalizedRect, OrderKey};
+pub use domain::{NormalizedRect, OrderKey, Slug};
 pub use error::CoreError;

@@ -97,7 +97,11 @@ fn inserting_between_neighbours_never_touches_them() {
 
     assert!(third < inserted, "inserted key must follow its predecessor");
     assert!(inserted < fourth, "inserted key must precede its successor");
-    assert_eq!(keys.get(2).unwrap(), &third, "predecessor must be unchanged");
+    assert_eq!(
+        keys.get(2).unwrap(),
+        &third,
+        "predecessor must be unchanged"
+    );
     assert_eq!(keys.get(3).unwrap(), &fourth, "successor must be unchanged");
 }
 
@@ -114,8 +118,14 @@ fn survives_repeated_insertion_into_the_same_gap() {
     for round in 0..300 {
         let next = OrderKey::between(Some(&start), Some(&upper))
             .unwrap_or_else(|e| panic!("round {round} failed: {e}"));
-        assert!(start < next, "round {round}: must stay above the lower bound");
-        assert!(next < upper, "round {round}: must stay below the upper bound");
+        assert!(
+            start < next,
+            "round {round}: must stay above the lower bound"
+        );
+        assert!(
+            next < upper,
+            "round {round}: must stay below the upper bound"
+        );
         produced.push(next.clone());
         upper = next;
     }
