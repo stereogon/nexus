@@ -18,11 +18,12 @@ pub mod error;
 pub mod ports;
 
 pub use domain::{
-    ANNOTATIONS_FILE_NAME, ANNOTATIONS_SCHEMA_VERSION, Annotation, AnnotationId, AnnotationSet,
-    CITATION_SCHEME, CURRENT_SCHEMA_VERSION, Citation, CitationIndex, Conversion, ConversionState,
-    Excerpt, Facets, HighlightSemantic, Label, MANIFEST_FILE_NAME, MAX_DEPTH, Manifest,
-    NormalizedRect, OrderKey, PageNumber, RelativePath, SchemaProbe, Slug, Source, Timestamp,
-    citation_link,
+    ANNOTATIONS_FILE_NAME, ANNOTATIONS_SCHEMA_VERSION, ASSETS_DIR_NAME, Annotation, AnnotationId,
+    AnnotationSet, BundleRef, CITATION_SCHEME, CURRENT_SCHEMA_VERSION, Citation, CitationIndex,
+    Conversion, ConversionState, Excerpt, Facets, HighlightSemantic, Label, LectureBundle,
+    MANIFEST_FILE_NAME, MAX_BUNDLE_DEPTH, MAX_DEPTH, MAX_WITHIN_BUNDLE_DEPTH, Manifest,
+    NOTES_FILE_NAME, NormalizedRect, OrderKey, PageNumber, RelativePath, SOURCE_DIR_NAME,
+    SchemaProbe, Slug, Source, Timestamp, citation_link,
 };
 pub use error::{BackupOutcome, CoreError};
 pub use ports::{Clock, FixedClock};

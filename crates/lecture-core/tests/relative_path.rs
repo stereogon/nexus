@@ -7,7 +7,7 @@
 
 use std::path::{Component, Path};
 
-use lecture_core::{CoreError, MAX_DEPTH, RelativePath, Slug};
+use lecture_core::{CoreError, MAX_BUNDLE_DEPTH, MAX_DEPTH, RelativePath, Slug};
 
 fn parse(raw: &str) -> RelativePath {
     RelativePath::parse(raw).unwrap_or_else(|e| panic!("`{raw}` should parse: {e}"))
@@ -133,8 +133,8 @@ fn reports_the_offending_segment_rather_than_a_generic_failure() {
 
 #[test]
 fn enforces_the_depth_cap() {
-    let at_cap = "a/b/c/d/e";
-    let past_cap = "a/b/c/d/e/f";
+    let at_cap = "a/b/c/d/e/f/g/h";
+    let past_cap = "a/b/c/d/e/f/g/h/i";
 
     assert_eq!(parse(at_cap).depth(), MAX_DEPTH);
 
@@ -143,8 +143,8 @@ fn enforces_the_depth_cap() {
     assert!(matches!(
         err,
         CoreError::RelativePathTooDeep {
-            depth: 6,
-            max: 5,
+            depth: 9,
+            max: MAX_DEPTH,
             ..
         }
     ));
@@ -213,15 +213,34 @@ fn walks_up_to_the_root_and_stops() {
 
 #[test]
 fn appends_a_child_and_respects_the_cap() {
-    let path = parse("a/b/c/d");
-    let name = Slug::parse("e").unwrap();
+    let path = parse("a/b/c/d/e/f/g");
+    let name = Slug::parse("h").unwrap();
 
     let child = path.child(name.clone()).unwrap();
-    assert_eq!(child.to_string(), "a/b/c/d/e");
+    assert_eq!(child.to_string(), "a/b/c/d/e/f/g/h");
     assert_eq!(child.depth(), MAX_DEPTH);
 
     let err = child.child(name).unwrap_err();
     assert_eq!(err.code(), "ERR_RELATIVE_PATH_TOO_DEEP");
+}
+
+/// The regression guard for a real bug.
+#[test]
+fn the_path_cap_leaves_room_for_a_deep_bundle_to_address_its_own_files() {
+    // These are two different limits, and this test exists because they were once one
+    // number. A lecture may nest MAX_BUNDLE_DEPTH levels deep; its files then need
+    // further segments on top. With the caps conflated, the deepest legal lecture could
+    // not name its own manifest.json, so the app could not open it.
+    let deepest_bundle = "a/b/c/d/e";
+    assert_eq!(deepest_bundle.split('/').count(), MAX_BUNDLE_DEPTH);
+
+    for inside in ["manifest.json", "notes.md", "source/document.pdf"] {
+        let full = format!("{deepest_bundle}/{inside}");
+        assert!(
+            RelativePath::parse(&full).is_ok(),
+            "`{full}` is a legitimate vault path and must be accepted"
+        );
+    }
 }
 
 #[test]
@@ -241,7 +260,7 @@ fn a_path_always_names_something() {
 
 #[test]
 fn errors_carry_a_code_and_plain_language_remediation() {
-    let too_deep = RelativePath::parse("a/b/c/d/e/f").unwrap_err();
+    let too_deep = RelativePath::parse("a/b/c/d/e/f/g/h/i").unwrap_err();
     assert!(too_deep.remediation().contains("Nothing was moved"));
 
     let invalid = RelativePath::parse("/etc").unwrap_err();
@@ -268,7 +287,7 @@ fn deserialization_cannot_bypass_validation() {
         r#""../../etc/passwd""#,
         r#""/etc/passwd""#,
         r#""""#,
-        r#""a/b/c/d/e/f""#,
+        r#""a/b/c/d/e/f/g/h/i""#,
         r#""a//b""#,
         r#""week/notes:draft""#,
     ] {

@@ -69,7 +69,14 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
       fenced and inline code so an example is never mistaken for a link. Resolves
       against an `AnnotationSet` into orphans (reported, never repaired) and unlinked
       highlights. 21 tests.
-- [ ] `LectureBundle`, `BundleRef`
+- [x] `LectureBundle` + `BundleRef` — a lecture's location plus its manifest, and the
+      small projection the sidebar groups and orders on. Derives every in-bundle path,
+      and the locked "moving a bundle rewrites nothing" decision now has the test §3
+      asks for by name. 11 tests.
+- [x] **Depth-cap bug fixed** — `MAX_BUNDLE_DEPTH` (organisational nesting, 5) split
+      from `MAX_DEPTH` (total path segments, 8). See the decision log.
+- [ ] Vault walk — prunes at the first `manifest.json`, rejects nested lectures
+      — **next substep**
 - [x] `AnnotationStore` — the atomic load/save path for `annotations.json`. A missing
       file loads as an empty set (the normal state of a freshly imported lecture) while
       an unreadable one is an error, so a corrupt file can never read back as "no
@@ -209,6 +216,78 @@ The tree was not rustfmt-clean, and the first run of the check turned up a misin
 doc comment in `order_key/mod.rs` that four green test runs had not. Formatting is the
 cheapest class of thing to enforce mechanically, so it is now in `CLAUDE.md` §5 rather
 than left to whoever is reading the diff.
+
+**2026-10-28 · A real bug: one depth cap was doing two jobs**
+`MAX_DEPTH` was 5, documented as "the cap the spec sets for vault nesting", with the
+added remark that it "doubles as a sane bound inside a bundle". That remark was the bug.
+The two are different limits and they *compose*:
+
+- A lecture may sit five levels deep — `y1/cs454/consensus/week-03/raft` — which the
+  spec explicitly allows.
+- Its own files then need further segments: `…/raft/manifest.json` is six,
+  `…/raft/source/document.pdf` is seven.
+
+With the cap at 5, both were refused. So a vault laid out exactly as the spec permits
+produced a lecture **the app could not open at all** — not a warning, not a degraded
+view; `manifest.json` was unaddressable. Found while building `LectureBundle`, by
+checking what the deepest legal bundle could actually name rather than assuming.
+
+Now `MAX_BUNDLE_DEPTH` (5, organisational nesting, and what the vault walk will enforce)
+and `MAX_WITHIN_BUNDLE_DEPTH` (3, headroom reserved for paths inside a bundle) sum to
+`MAX_DEPTH` (8). Two compile-time assertions keep them honest: one that the total really
+is the sum, and one that the headroom is non-zero — the second makes the original bug
+*unrepresentable* rather than merely fixed, since zero headroom is exactly the condition
+under which a nested bundle cannot name its own files.
+
+`MAX_WITHIN_BUNDLE_DEPTH` is deliberately **not** enforced separately on an in-bundle
+path. Containment does not depend on depth: an in-bundle path is a sequence of `Slug`s,
+so it cannot walk upward however long it is. The constant exists so `MAX_DEPTH` is a
+stated sum rather than a number someone has to reverse-engineer.
+
+Four existing tests had encoded the old behaviour and were updated — they now assert the
+*distinction* rather than a single number, so the two caps cannot quietly become one
+again. One of them I first wrote wrongly, asserting that 5 + 3 was refused when 8 is
+exactly the limit; the implementation was right and the test was wrong.
+
+**2026-10-28 · `RelativePath::join`, which should have existed from the start**
+There was `child(Slug)` for one segment and no way to append a path to a path — so
+"bundle directory plus `source/document.pdf`" had no expression. Its absence is probably
+why the depth caps were conflated: nothing ever composed two paths, so the sum never
+came up.
+
+**2026-10-28 · Four-space indented code blocks: scheduled, with the reason it is not now**
+The user asked whether the citation scanner's indented-code-block gap will be fixed. It
+will, but the naive fix would be **worse than the gap**, which is worth writing down.
+
+A rule of "four or more leading spaces means code" would break this, which is ordinary
+in study notes:
+
+```text
+- Some point
+    - Nested point citing [a](cite://hl-x)
+```
+
+That is a nested list item, not a code block, and the citation in it would stop working.
+Silently. Nested bullet lists are far more common in lecture notes than indented code
+blocks — especially in a file where fenced code is the natural way to write code — so the
+naive rule trades a rare false positive for a frequent false negative.
+
+Doing it correctly means CommonMark block structure: an indented code block cannot
+interrupt a paragraph, and inside a list item the content indent is measured from the
+marker, so code needs marker-width plus four. That is the block-parsing half of a
+Markdown parser.
+
+Two routes, and the choice needs the user because one of them is a dependency:
+
+1. Implement the block rules directly — roughly 200 lines plus tests, no dependency.
+2. Adopt `pulldown-cmark` — CommonMark-compliant, pure Rust, no platform dependencies,
+   so it does not threaten the iOS constraint. One permanent dependency.
+
+**Scheduled for the notes milestone**, when the Markdown pipeline lands and there is a
+second consumer (search indexing over notes prose). Deciding it then means deciding once
+for both, instead of choosing a parser now for a single caller. The severity until then
+is low: on the Rust side the gap affects the orphan report and search, not the editor
+decorations a person actually clicks.
 
 **2026-10-27 · A citation carries a line number and deliberately nothing finer**
 `cite://<id>` is the one value in a bundle that a person's *prose* depends on —
@@ -843,9 +922,11 @@ the user's instruction, 2026-10-27), local only, never pushed without being aske
   CodeMirror, KaTeX, Mermaid and Chart.js in the milestones that use them, rather than
   installing the whole stack up front.
 
-- **Indented code blocks are not skipped by the citation scanner.** Four-space blocks
-  need real Markdown block parsing to tell from a list continuation; fenced and inline
-  code are handled. A `cite://` inside an indented block reads as live.
+- **Indented code blocks are not skipped by the citation scanner.** Fenced and inline
+  code are handled. **Scheduled for the notes milestone**, not left open-ended — see the
+  decision log for why the naive four-space rule would be worse than the gap (it would
+  break citations inside nested bullet lists) and for the two routes to doing it
+  properly, one of which needs a dependency decision from the user.
 - **`@eslint/js` is not installed**, so ESLint's own `recommended` set is not applied;
   only `typescript-eslint`'s `strictTypeChecked`. Most of what it adds (undefined names,
   duplicate keys, unreachable code) the compiler already rejects under the strict flags,
