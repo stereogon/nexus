@@ -62,7 +62,12 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
       from a newer schema version is left strictly untouched.
 - [ ] Source hashes in the manifest — **deliberately deferred to Milestone 2**, see the
       decision log. Will bump `schemaVersion` to 2 and be the first real migration.
-- [ ] Domain: `Annotation`, `Citation`, `LectureBundle`, `BundleRef`
+- [x] `Annotation` + `AnnotationSet` — the three annotation kinds as a tagged enum,
+      with `AnnotationId`, `PageNumber`, `Excerpt` and `HighlightSemantic`. Five
+      departures from the spec's example, all amended there. 21 tests.
+- [ ] `Citation`, `LectureBundle`, `BundleRef`
+- [ ] `AnnotationStore` — the atomic load/save path for `annotations.json`
+      — **next substep**
 - [x] `Slug` — one safe path segment. Rejects separators, control and invisible
       characters, Windows device names, leading dots/hyphens, trailing dots and spaces;
       normalises to NFC (never NFKC — see decision log); 200-byte cap so atomic staging
@@ -186,6 +191,86 @@ The tree was not rustfmt-clean, and the first run of the check turned up a misin
 doc comment in `order_key/mod.rs` that four green test runs had not. Formatting is the
 cheapest class of thing to enforce mechanically, so it is now in `CLAUDE.md` §5 rather
 than left to whoever is reading the diff.
+
+**2026-10-27 · The spec is a draft — standing permission to argue with it**
+The user's instruction, verbatim: *"you don't need to always follow what the claude md
+spec says regarding the product specification. i mean if you feel that there is something
+wrong written, you bring it up to me. don't worry. it is possible some requirements were
+written wrongly."*
+
+Recorded as `CLAUDE.md` §1.7. The shape of it matters: raise it, do not deviate silently,
+and amend `claude-spec.md` with a dated note beside the original wording so nobody later
+has to guess whether a difference was intentional or a bug. It is permission to question
+requirements, not licence to redesign the product.
+
+**2026-10-27 · `annotations.json` stores the meaning of a highlight, not its colour**
+The spec's example annotation carries `"color": "#FACC15"`. Three things are wrong with
+that, and one of them is that the spec disagrees with itself: §2.2 defines the four
+highlights *semantically* ("Yellow = Key Concept, Green = Definition, Red =
+Exam/Important, Blue = Question"), and `CLAUDE.md` §3 locks the actual palette — which
+`#FACC15` is not part of. It appears to be a leftover from a generic colour ramp.
+
+Storing the hex would have cost:
+
+- **The meaning.** "Show me everything exam-relevant before Thursday" is the single most
+  valuable query this app can answer, and against stored hexes it becomes a reverse
+  colour lookup that breaks the moment two semantics are near-neighbours.
+- **The ability to change the palette.** Retuning amber for contrast would leave every
+  already-saved highlight on the old hex, so one vault would show two ambers with no way
+  to tell which was meant.
+- **The accessibility guarantee.** `CLAUDE.md` §3 requires a K/D/E/Q glyph precisely so
+  the set does not rely on hue alone. A glyph cannot be derived from a colour.
+
+So the enum stores `key` | `definition` | `exam` | `question`, and carries no hex at all.
+Colour is a design token and belongs to whichever UI is rendering — which also means the
+Phase 2 iPad app maps the same enum to its own tokens instead of inheriting a macOS
+stylesheet through the domain crate.
+
+**2026-10-27 · A tagged enum instead of one wide record**
+The spec sketches every annotation carrying every field, with `"freeText": null` on a
+highlight. In that shape nothing stops a file claiming `textHighlight` while holding a
+text box's `freeText` and no rectangles — the invariants become checks somebody has to
+remember to run, on a file format that is plain JSON in a folder people browse.
+
+Each kind now carries exactly its own fields, so the contradictory record cannot be
+described, let alone loaded. A test feeds seven hand-edited files in and asserts each is
+refused on read, including a text highlight covering nothing, page zero, a rectangle
+running off the page, and two annotations sharing an id — which would mean a `cite://`
+link in the notes resolving to two different places with nothing to say which was meant.
+
+**2026-10-27 · `boundingRect` is derived; `documentId` and `inkStrokes` are not stored**
+`boundingRect` is the union of `rects`, so storing both is two sources of one truth that
+will eventually disagree after a hand-edit or a partial write. Computed on read instead,
+which costs nothing and cannot drift.
+
+`documentId` is removed because nothing else in the format holds a document id, so there
+was nothing to compare it against — and a value that cannot be checked is one that will
+be wrong without anyone noticing. The need behind it is real and worth naming, though:
+annotations are positioned against a *particular rendering*, so if the PDF is reconverted
+and the layout shifts, every rectangle silently points somewhere slightly wrong. Catching
+that needs a hash, not a random id. That is the deferred `source` hash, and pairing the
+two is Milestone 2's job. Inventing an unverifiable id now would have made it look solved.
+
+`inkStrokes` is removed because the spec declares it as `[]` and then never mentions ink
+again — no feature, no shortcut, no test. An always-empty array reads as working while
+nothing fills it, which `CLAUDE.md` §4 bans outright. Deferred until Apple Pencil is an
+actual requirement, which is a Phase 2 question.
+
+**2026-10-27 · Pages are numbered from 1, and the type says so**
+The spec never states it, but its citation format writes `[Slide/Page 4]` beside
+`"pageNumber": 4` and its test journeys talk about "Page 2", so the stored number is the
+one a person reads off the screen. Worth pinning in a `NonZeroU32` newtype because an
+off-by-one here is invisible: every highlight simply renders on the wrong page, and a
+test that only round-trips data would never notice. `zero_based_index()` exists so the
+conversion lives in exactly one place rather than being rewritten wherever it is needed.
+
+**2026-10-27 · Exact float equality is wrong for a *computed* coordinate**
+A test asserted the derived bounding box's bottom edge equalled `0.31`. It is
+`0.31000000000000005`, because `0.28 + 0.03` is not exact in binary floating point. The
+implementation was right and the assertion was wrong. Comparing stored-and-read-back
+coordinates exactly is still correct and still done; only arithmetic results get a
+tolerance, set at `1e-9` — far tighter than a pixel on any display, so it cannot hide a
+real positioning error.
 
 **2026-10-27 · Corrupt and from-the-future are opposite cases, not one case**
 Two load failures look alike and must be handled in opposite ways, and getting this
