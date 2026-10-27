@@ -73,6 +73,15 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
 - [x] The corrupt-versus-newer asymmetry extracted into `lecture-fs::versioned`, so it
       exists once for both `manifest.json` and `annotations.json` rather than once per
       file type.
+- [x] TypeScript toolchain: `tsconfig.json` with all five flags from §4, flat ESLint
+      config enforcing the four bans mechanically (each one verified to fire), and the
+      Zod schemas for `manifest.json` and `annotations.json`. 21 tests.
+- [x] **Wire-format fixtures** — `fixtures/*.json` pin the on-disk shape, and both
+      languages are held to them, so the Rust types and the Zod schemas cannot drift
+      apart silently. 3 Rust tests + the TypeScript suite.
+- [x] §5's full gate runs green in both languages for the first time: `cargo fmt
+      --check`, `cargo test`, `cargo clippy --all-targets -- -D warnings`, `npm run
+      typecheck`, `npm run lint`, `npm run test`.
 - [x] `Slug` — one safe path segment. Rejects separators, control and invisible
       characters, Windows device names, leading dots/hyphens, trailing dots and spaces;
       normalises to NFC (never NFKC — see decision log); 200-byte cap so atomic staging
@@ -196,6 +205,67 @@ The tree was not rustfmt-clean, and the first run of the check turned up a misin
 doc comment in `order_key/mod.rs` that four green test runs had not. Formatting is the
 cheapest class of thing to enforce mechanically, so it is now in `CLAUDE.md` §5 rather
 than left to whoever is reading the diff.
+
+**2026-10-27 · One shape, two languages, and a fixture to stop them drifting**
+`manifest.json` and `annotations.json` are now described twice: by the Rust types that
+write them, and by the Zod schemas the UI validates IPC and disk payloads with (§4).
+Two descriptions of one shape are free to drift, and the drift would surface as a
+corrupted-looking file in front of someone trying to study.
+
+The options were a code generator (`ts-rs` or `schemars`), which means a dependency in
+the crate that must stay iOS-clean and dependency-light, or hand-written schemas with
+nothing holding them together. Took a third: the shape is written down once as committed
+fixtures under `fixtures/`, and both sides are held to those bytes.
+
+- `crates/lecture-core/tests/wire_format.rs` asserts the Rust types still serialise to
+  exactly those bytes, serialising the same way `versioned::save` does so a fixture is
+  byte-identical to a file the app would really write.
+- `src/schemas/schemas.test.ts` asserts the Zod schemas still accept them.
+
+Change either side and one of the two tests fails. No codegen, no new dependency, and
+the contract is a file a person can read. Regeneration is
+`UPDATE_FIXTURES=1 cargo test -p lecture-core --test wire_format`, the pattern `insta`
+and `trybuild` use, named in the module docs so the next reader does not mistake the test
+for self-certifying.
+
+**2026-10-27 · The Zod schemas are deliberately weaker than the Rust types**
+They check what would **misrender or mislink**: coordinate ranges, enum membership,
+identifier syntax, page numbering, timestamp form, id uniqueness, unknown fields. They do
+**not** re-check cosmetic normalisation. Rust collapses whitespace and normalises a label
+to NFC; a hand-edit leaving two spaces in a course name produces a file Rust would tidy
+but that renders perfectly, and refusing to open someone's lecture over it is the wrong
+trade.
+
+The asymmetry is sound in one direction only, which is the direction that matters:
+anything Rust accepts, Zod accepts. The reverse does not hold, and need not — Rust stays
+the authority on writes, so a value this layer tolerated on read is still refused if the
+UI tries to save it.
+
+Byte lengths are checked with `TextEncoder`, not `String.length`. Rust caps lengths in
+bytes while `.length` counts UTF-16 units, so a 500-character CJK label is 1500 bytes and
+would pass a naive check that Rust would reject. That is exactly the kind of quiet
+divergence the fixtures exist to catch.
+
+**2026-10-27 · Making the type carry the guarantee instead of asserting it**
+A text highlight's `rects` is never empty, and `boundingRect` folds over it without a
+seed value. In Zod, `z.array(x).min(1)` and `.nonempty()` both check at runtime but still
+infer `Rect[]`, so the fold needed a non-null assertion — which §4 bans. A variadic tuple,
+`z.tuple([rect], rect)`, infers `[Rect, ...Rect[]]`, so the compiler knows the first
+element exists and the assertion is not merely forbidden but unnecessary. Verified both
+the inferred types and the runtime behaviour before committing to it.
+
+The same principle appears in the test helper that reads the fixture's first annotation:
+`noUncheckedIndexedAccess` makes it `| undefined`, and it throws with a message rather
+than being silenced — a fixture that lost its annotations should fail loudly.
+
+**2026-10-27 · The lint bans were verified to fire, not just to pass**
+A lint config that passes while catching nothing is worthless, so each ban was checked
+against a file that violates it, and the file deleted afterwards. All four fire: `any`
+(`no-explicit-any`), `!` (`no-non-null-assertion`), `@ts-ignore` (`ban-ts-comment`), and
+`as unknown as` — which has no dedicated rule and is matched structurally via
+`no-restricted-syntax` on `TSAsExpression > TSUnknownKeyword`. Banning `as unknown` on
+its own is the right granularity: alone it is almost always the first half of a double
+cast, and a genuinely unknown value needs no assertion to become `unknown`.
 
 **2026-10-27 · A missing `annotations.json` is empty; an unreadable one is not**
 `manifest.json` is required, so its absence means something is wrong. `annotations.json`
@@ -692,6 +762,16 @@ the user's instruction, 2026-10-27), local only, never pushed without being aske
   CodeMirror, KaTeX, Mermaid and Chart.js in the milestones that use them, rather than
   installing the whole stack up front.
 
+- **`@eslint/js` is not installed**, so ESLint's own `recommended` set is not applied;
+  only `typescript-eslint`'s `strictTypeChecked`. Most of what it adds (undefined names,
+  duplicate keys, unreachable code) the compiler already rejects under the strict flags,
+  so the gap is small — but it is a gap, and closing it is a one-package question for
+  the user rather than something to install unasked.
+- **`npm run build` does not work yet**, and `vite.config.ts` does not exist. There is no
+  `index.html` and no application entry point, because the UI is Milestone 3 and a
+  placeholder `App.tsx` would be exactly the stub-that-reads-as-complete §4 forbids. The
+  `build` script is therefore a name without an implementation behind it until then.
+  `typecheck`, `lint` and `test` all work.
 - **Third-party notices file.** Two crates in the tree carry the `Unicode-3.0` term,
   which is attribution-only but does require a notice to ship with the binary. Nothing
   generates one yet. Belongs with the `cargo deny` work so it is produced from the real

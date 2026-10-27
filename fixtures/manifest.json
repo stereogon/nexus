@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "title": "Raft Consensus",
+  "sequence": "a0",
+  "facets": {
+    "course": "CS454 Distributed Systems",
+    "module": "Consensus",
+    "week": "Week 3",
+    "tags": [
+      "consensus",
+      "exam"
+    ],
+    "custom": {
+      "lecturer": "Dr Ada Lovelace"
+    }
+  },
+  "source": {
+    "document": "source/document.pdf",
+    "original": "source/original.pptx",
+    "conversion": {
+      "state": "ready",
+      "converter": "libreoffice",
+      "convertedAt": "2026-10-27T16:00:00Z"
+    }
+  },
+  "createdAt": "2026-10-27T16:00:00Z",
+  "updatedAt": "2026-10-28T09:30:00Z"
+}
