@@ -25,6 +25,8 @@ mod text;
 mod timestamp;
 mod vault_index;
 mod vault_scan;
+mod view_state;
+mod zoom;
 
 pub use annotation::Annotation;
 pub use annotation_id::AnnotationId;
@@ -48,3 +50,7 @@ pub use vault_index::{
     CACHE_DIR_NAME, INDEX_FILE_NAME, INDEX_SCHEMA_VERSION, VaultIndex, cache_dir_segment,
 };
 pub use vault_scan::{SkipReason, SkippedDirectory, VaultScan, scan_vault};
+pub use view_state::{
+    LectureView, PageOffset, VIEW_STATE_FILE_NAME, VIEW_STATE_SCHEMA_VERSION, ViewState,
+};
+pub use zoom::{MAX_ZOOM, MIN_ZOOM, Zoom};

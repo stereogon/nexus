@@ -87,8 +87,10 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
 - [x] `.nexus/index.json` — the rebuildable cache, never trusted: it exists for a fast
       first paint and the scan always overrides it. `CLAUDE.md` §3's "deleting `.nexus/`
       must fully reconstruct" is now an executable test, and a byte-identical one.
-- [ ] Per-device view state (last page, scroll) — **next substep**, and see the open
-      question below about where it belongs
+- [x] `ViewState` domain types — `Zoom`, `PageOffset`, `LectureView`, and pruning against
+      a scan so the file cannot grow forever. 15 tests.
+- [ ] `DeviceStateStore` in `lecture-fs`, writing to `~/Library/Application Support/Nexus/`
+      — **next substep**
 - [ ] `.nexus/` rebuildable cache, including per-device view state
 - [x] `AnnotationStore` — the atomic load/save path for `annotations.json`. A missing
       file loads as an empty set (the normal state of a freshly imported lecture) while
@@ -267,6 +269,69 @@ There was `child(Slug)` for one segment and no way to append a path to a path �
 "bundle directory plus `source/document.pdf`" had no expression. Its absence is probably
 why the depth caps were conflated: nothing ever composed two paths, so the sum never
 came up.
+
+**2026-10-28 · Per-device state lives outside the vault (decided with the user)**
+Asked, because two readings produced materially different work and the consequence is
+user-visible. Both questions answered: state goes outside the vault, and resume does not
+follow you between devices.
+
+What settled the location was noticing that **both** candidate designs need something
+outside the vault — but they differ in what they put *inside* it. State-outside-the-vault
+puts at most a vault identity in the vault, which is correct to sync because it identifies
+the vault rather than the device. State-in-`.nexus/` needs a device id, and a device id in
+a synced tree makes two devices believe they are the same device. One design syncs
+something it should; the other syncs something it must not. That is not a tie.
+
+Two supporting arguments. Obsidian keeps per-device workspace state in its in-vault
+`.obsidian/` folder, and the sync conflicts that produces are a well-known complaint — the
+closest comparable product gets this wrong in exactly the way being avoided. And the
+derived caches still to come, thumbnails and a search index, are potentially hundreds of
+megabytes of regenerable data, which has no business crossing a network and no reliable
+cross-client way to be excluded from one.
+
+Not having resume across devices removes real machinery: one file, no second synced
+"last-read page", no reconciliation rule. Recorded as a deliberate choice rather than an
+omission, so it is revisited on purpose if it ever itches.
+
+**2026-10-28 · Correcting the spec amendment I wrote yesterday**
+The 2026-10-27 amendment moved view state out of `manifest.json` — right — and sent it to
+"the rebuildable `.nexus/` cache ... which is never synced". Both halves of that were
+wrong.
+
+`.nexus/` sits *inside* the vault, so it syncs exactly when the vault syncs. Calling it
+never-synced was a plain mistake, and it was load-bearing: it was the whole reason view
+state looked safe there. And view state cannot be derived from a scan, so putting it in
+`.nexus/` would have silently converted §3's "deleting `.nexus/` fully reconstructs" into
+"deleting it costs you your place in every lecture" — a guarantee with a caveat, which is
+not a guarantee.
+
+Corrected in `claude-spec.md` beside the original, and `CLAUDE.md` §3 now states the rule
+as a test rather than a description: **if a thing cannot be rebuilt from the vault, it does
+not go in `.nexus/`.** That phrasing is what makes the next case decidable without
+relitigating this one, and it keeps "clear the cache" an operation that needs no warning.
+
+**2026-10-28 · Zoom is a multiplier, so it is not normalised like the geometry**
+`PageOffset` is a fraction of a page's height, normalised for exactly the reason
+annotation geometry is: a pixel offset is meaningless at a different window size, and
+restoring one would put someone in the wrong place on a different screen.
+
+`Zoom` is not, because a scale factor has no natural maximum. It still gets bounds —
+`0.1` to `16.0` — and those are a guard rather than a feature. The failure they prevent is
+specific: a corrupt or hand-edited file restoring a zoom of zero, which renders a page as
+nothing and looks exactly like a lost document. Both types validate on deserialize, so a
+damaged file cannot restore a nonsense view; there is a test feeding in zero, `1e9`, a
+negative offset and a traversal key as a map key, and asserting each is refused.
+
+**2026-10-28 · Pruning is against the vault, and stops short of reading documents**
+Without pruning the state file grows forever: every lecture ever deleted or renamed keeps
+its entry, and a renamed one leaves a ghost that never loads. `prune_to` takes what a scan
+found, because the vault is the only authority on what exists. It also clears
+`last_opened` when that lecture is gone, or launch would try to reopen something deleted.
+
+It deliberately does **not** prune a remembered page that is beyond the end of a shortened
+document. This type cannot know how many pages a PDF has, and reading documents to tidy a
+cache is the wrong trade; the viewer clamps on restore instead. Recorded because the
+missing check looks like an oversight, and there is a test naming it as a choice.
 
 **2026-10-28 · The cache is never trusted, which deletes the hard problem**
 `.nexus/index.json` is not consulted to decide what is in the vault. It exists so the

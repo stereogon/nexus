@@ -101,11 +101,29 @@ StudyVault/
 > file on every scroll, pushing churn to every device and manufacturing exactly the
 > conflicts the "no central index" decision exists to avoid.
 >
-> Per-device view state — last page, scroll offset, zoom, last-opened lecture — lives in
-> the rebuildable `.nexus/` cache instead, which is never synced and whose loss costs
-> nothing but a scroll position. This also makes it *correct* for two devices to sit at
+> Per-device view state — last page, scroll offset, zoom, last-opened lecture — does not
+> live in `manifest.json`. This also makes it *correct* for two devices to sit at
 > different pages of the same lecture, which is what someone reading on an iPad and a
 > laptop actually wants.
+>
+> **Corrected 2026-10-28 (agreed with the user).** The sentence above originally sent
+> view state to "the rebuildable `.nexus/` cache ... which is never synced". Both halves
+> were wrong.
+>
+> `.nexus/` sits *inside* the vault, so it syncs exactly when the vault syncs — calling it
+> "never synced" was simply a mistake. And view state cannot be derived from a vault scan,
+> so putting it in `.nexus/` would have quietly broken §3's rule that deleting `.nexus/`
+> fully reconstructs: deleting it would have cost someone their place in every lecture.
+>
+> Per-device view state therefore lives **outside the vault**, in
+> `~/Library/Application Support/Nexus/`, keyed to the vault it belongs to. It never
+> syncs, under any sync client, because it is not in the synced tree at all. `.nexus/`
+> keeps exactly one job: derived data that a scan can rebuild.
+>
+> Each device keeps its own place; "resume where you left off" does not follow you between
+> Mac and iPad. Decided deliberately rather than by omission — the alternative needs a
+> second, synced file and a reconciliation rule, and it buys a convenience neither device
+> is worse off without.
 >
 > Rationale recorded in `PROGRESS.md`; the containing bundle format is otherwise
 > unchanged.

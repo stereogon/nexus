@@ -186,6 +186,20 @@ pub enum CoreError {
         number: u32,
     },
 
+    /// A zoom factor that is not finite or is outside the supported range.
+    #[error("a zoom of {value} is not usable")]
+    InvalidZoom {
+        /// The rejected factor, rendered for the log.
+        value: String,
+    },
+
+    /// A scroll offset that is not a fraction of a page.
+    #[error("a page offset of {value} is not a fraction between 0 and 1")]
+    InvalidPageOffset {
+        /// The rejected offset, rendered for the log.
+        value: String,
+    },
+
     /// An annotation described something that cannot be drawn or linked to.
     #[error("an annotation is not usable: {reason}")]
     InvalidAnnotation {

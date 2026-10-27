@@ -29,6 +29,8 @@ impl CoreError {
             Self::DuplicateAnnotationId { .. } => "ERR_DUPLICATE_ANNOTATION_ID",
             Self::InvalidName { .. } => "ERR_INVALID_NAME",
             Self::InvalidPageNumber { .. } => "ERR_INVALID_PAGE_NUMBER",
+            Self::InvalidZoom { .. } => "ERR_INVALID_ZOOM",
+            Self::InvalidPageOffset { .. } => "ERR_INVALID_PAGE_OFFSET",
             Self::InvalidTimestamp { .. } => "ERR_INVALID_TIMESTAMP",
             Self::VaultRootUnusable { .. } => "ERR_VAULT_ROOT_UNUSABLE",
             Self::SymlinkRefused { .. } => "ERR_SYMLINK_REFUSED",
@@ -118,6 +120,10 @@ impl CoreError {
                 "A highlight recorded a page that cannot exist, so it was left out \
                  rather than drawn on the wrong page. Nothing was deleted, and a backup \
                  is beside the file."
+            }
+            Self::InvalidZoom { .. } | Self::InvalidPageOffset { .. } => {
+                "The app could not restore where you were last reading, so this lecture \
+                 opened at the first page. Your notes and highlights are untouched."
             }
             Self::InvalidTimestamp { .. } => {
                 "A date recorded in this lecture could not be read, so it has been left \

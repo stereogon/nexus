@@ -189,8 +189,16 @@ and explain why. Rationale is recorded in `PROGRESS.md`.
   Files-app legibility. **If a prefix disagrees with `sequence`, `sequence` wins**, and the
   app offers a renumber. Renumbering renames tail-first so no rename collides.
 - **No central index is a source of truth.** A top-level file listing every lecture is a
-  sync-conflict magnet; per-bundle manifests confine each edit to one file. `.nexus/` is a
-  rebuildable cache and deleting it must fully reconstruct from a vault scan.
+  sync-conflict magnet; per-bundle manifests confine each edit to one file.
+- **`.nexus/` holds derived data and nothing else.** Deleting it must fully reconstruct
+  from a vault scan, and that is an absolute test rather than a guideline: if a thing
+  cannot be rebuilt from the vault, it does not go in `.nexus/`. This keeps "clear the
+  cache" an operation that needs no warning and no caveat.
+- **Per-device state lives outside the vault**, in `~/Library/Application Support/Nexus/`,
+  keyed to the vault. Last page, scroll offset, zoom and last-opened lecture are not
+  derivable from a scan, so by the rule above they cannot live in `.nexus/` — and because
+  they are not in the vault at all, no sync client can conflict over them. Each device
+  keeps its own place; resume does not follow you between devices.
 
 **Coordinates and data**
 - All annotation geometry is normalised to `[0.0, 1.0]` against the **unscaled**
