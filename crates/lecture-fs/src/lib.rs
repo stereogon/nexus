@@ -22,10 +22,12 @@ mod manifest_store;
 mod versioned;
 
 pub mod storage;
+pub mod vault;
 pub mod vault_root;
 
 pub use annotation_store::AnnotationStore;
 pub use clock::SystemClock;
 pub use manifest_store::ManifestStore;
 pub use storage::AtomicFsStorage;
+pub use vault::{FsVaultDirectory, LoadedVault, UnloadableLecture, VaultLoader};
 pub use vault_root::{ResolvedPath, VaultRoot};

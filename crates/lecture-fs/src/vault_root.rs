@@ -121,6 +121,15 @@ impl VaultRoot {
         &self.canonical
     }
 
+    /// The canonical location of the vault root.
+    ///
+    /// The one path in the system that is absolute by design: everything else is
+    /// relative to it, which is what lets a vault move between devices.
+    #[must_use]
+    pub fn as_path(&self) -> &Path {
+        &self.canonical
+    }
+
     /// Resolves `relative` against this root, proving it stays inside.
     ///
     /// Components that do not exist yet are fine and are *expected*: this is also how a

@@ -80,8 +80,11 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
       enforces `MAX_BUNDLE_DEPTH`, and **reports** rather than omits: an unusable folder
       name, a folder nested past the cap, an unreadable directory, and a lecture buried
       inside another lecture. 16 tests against an in-memory tree.
-- [ ] `lecture-fs` adapter implementing `VaultDirectory`, and loading a scan into
-      `BundleRef`s — **next substep**
+- [x] `FsVaultDirectory` + `VaultLoader` in `lecture-fs` — the walk against a real
+      filesystem, composed with `ManifestStore` so a scan becomes loaded bundles. One
+      corrupt manifest costs that lecture and nothing else. 10 tests on real
+      directories, including real symlinks.
+- [ ] `.nexus/` rebuildable cache, including per-device view state — **next substep**
 - [ ] `.nexus/` rebuildable cache, including per-device view state
 - [x] `AnnotationStore` — the atomic load/save path for `annotations.json`. A missing
       file loads as an empty set (the normal state of a freshly imported lecture) while
@@ -260,6 +263,52 @@ There was `child(Slug)` for one segment and no way to append a path to a path �
 "bundle directory plus `source/document.pdf`" had no expression. Its absence is probably
 why the depth caps were conflated: nothing ever composed two paths, so the sum never
 came up.
+
+**2026-10-28 · A refused link and an unreadable folder need opposite advice**
+The walk mapped every listing failure to `Unreadable`, whose remediation says the folder
+may be mid-sync and to try again later. For a symlink that advice is simply wrong — the
+folder will never become readable, because Nexus does not follow links inside a vault.
+
+`SkipReason::SymlinkRefused` now carries the accurate sentence: the place it points at
+will not exist on your other devices, so move the real folder in. The walk tells the two
+apart by inspecting the error rather than by guessing, which works because
+`VaultRoot::resolve` already distinguishes them.
+
+**2026-10-28 · How a symlink is presented to the walk, and why it is not just skipped**
+A link pointing at a *directory* is reported as a directory, so the walk tries to descend,
+is refused, and reports it. Skipping it instead would make a symlinked lecture folder
+disappear with no explanation — and someone who linked a folder into their vault has made
+a mistake worth hearing about, since it will not survive a sync.
+
+A link pointing at a file, or a broken one, is reported as a file and therefore ignored.
+There is no lecture hidden behind it, so reporting it would be the kind of noise that
+makes real warnings get skipped.
+
+Asking what a link points at is not the same as reading through it: the answer only
+decides what to *say*, and the refusal still happens either way.
+
+Non-UTF-8 names are passed through lossily rather than dropped, for the same reason the
+port hands back `String`: a name the domain will refuse still has to be *visible* to be
+reported.
+
+**2026-10-28 · Three lists, because one corrupt file must not cost a vault**
+`LoadedVault` separates what loaded, what the walk could not use, and what was found but
+would not load. Collapsing the failures into the successes would hide them; collapsing
+them into an overall `Err` would lose the other two hundred and ninety-nine lectures. A
+test writes a truncated manifest beside a good one and asserts the good one still loads,
+the failure is reported with its own code, and the damaged bytes were copied aside on the
+way past.
+
+**2026-10-28 · A claim I had to walk back in the same session**
+The new test file's documentation said its symlink case "closes a gap recorded earlier"
+about symlink refusal being reasoned rather than demonstrated. That was wrong:
+`vault_root.rs` and `storage.rs` already test refusal, and the recorded gap is
+specifically about `O_NOFOLLOW`, which nothing here exercises — the flag only fires inside
+the time-of-check/time-of-use window. Corrected before committing. What is actually new is
+the *reporting* behaviour, which is worth a test on its own but is not the gap.
+
+Recording it because the failure mode is the one §1.1 warns about most directly: writing
+down what I meant to achieve rather than what I checked. The gap list above is unchanged.
 
 **2026-10-28 · The vault walk is domain logic, so only directory *reading* is a port**
 Which directories are lectures, how deep nesting may go, and what to do about a folder

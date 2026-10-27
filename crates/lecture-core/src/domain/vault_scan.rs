@@ -36,11 +36,25 @@ pub enum SkipReason {
     TooDeeplyNested,
     /// It could not be read — permissions, or a sync client holding it.
     Unreadable,
+    /// It is a symbolic link, which is not followed inside a vault.
+    SymlinkRefused,
     /// It is a lecture inside another lecture, so it cannot be addressed as its own.
     LectureInsideLecture,
 }
 
 impl SkipReason {
+    /// Why a directory listing failed.
+    ///
+    /// A refused link and an unreadable folder both stop the walk, but the advice is
+    /// opposite — one needs the folder moved, the other needs trying again later — so
+    /// they are told apart rather than both reported as "could not be read".
+    fn from_listing_failure(error: &CoreError) -> Self {
+        match error {
+            CoreError::SymlinkRefused { .. } => Self::SymlinkRefused,
+            _ => Self::Unreadable,
+        }
+    }
+
     /// A sentence to show a person, saying what to do about it.
     #[must_use]
     pub const fn remediation(self) -> &'static str {
@@ -59,6 +73,12 @@ impl SkipReason {
                 "This folder could not be read, so anything inside it was left out. It \
                  may be mid-sync, or its permissions may have changed. Nothing was \
                  changed, and trying again later usually works."
+            }
+            Self::SymlinkRefused => {
+                "This folder is a link to somewhere else, and Nexus does not follow \
+                 links inside a vault — the place it points at will not exist on your \
+                 other devices. Moving the real folder into the vault will make the \
+                 lecture appear. Nothing was changed."
             }
             Self::LectureInsideLecture => {
                 "There is a lecture inside another lecture. Only the outer one is shown, \
@@ -154,12 +174,15 @@ pub fn scan_vault(directory: &impl VaultDirectory) -> Result<VaultScan, CoreErro
                 None => RelativePath::root_level(name),
             };
 
-            let Ok(children) = directory.list(Some(&path)) else {
-                scan.skipped.push(SkippedDirectory {
-                    shown_path: path.to_string(),
-                    reason: SkipReason::Unreadable,
-                });
-                continue;
+            let children = match directory.list(Some(&path)) {
+                Ok(children) => children,
+                Err(error) => {
+                    scan.skipped.push(SkippedDirectory {
+                        shown_path: path.to_string(),
+                        reason: SkipReason::from_listing_failure(&error),
+                    });
+                    continue;
+                }
             };
 
             if holds_manifest(&children) {
