@@ -35,6 +35,34 @@ pub enum CoreError {
         /// How far the edge actually reached.
         reach: f64,
     },
+
+    /// A string was not a well-formed order key.
+    #[error("`{key}` is not a valid order key: {reason}")]
+    InvalidOrderKey {
+        /// The rejected text, reproduced so a corrupt manifest is diagnosable.
+        key: String,
+        /// Which rule it broke.
+        reason: &'static str,
+    },
+
+    /// Two order keys were given in the wrong order, so nothing can sit between them.
+    #[error("order keys are not ascending: `{lower}` is not before `{upper}`")]
+    OrderKeysNotAscending {
+        /// The key offered as the lower bound.
+        lower: String,
+        /// The key offered as the upper bound.
+        upper: String,
+    },
+
+    /// The orderable range ran out at one end.
+    ///
+    /// Reaching this requires on the order of 10^46 insertions at the same extreme, so
+    /// in practice it means a key was fabricated rather than generated.
+    #[error("no order key can be placed beyond `{bound}`")]
+    OrderSpaceExhausted {
+        /// The boundary key that could not be stepped past.
+        bound: String,
+    },
 }
 
 impl CoreError {
@@ -48,6 +76,9 @@ impl CoreError {
             Self::InvalidCoordinate { .. } | Self::RectOutOfBounds { .. } => {
                 "ERR_INVALID_COORDINATE"
             }
+            Self::InvalidOrderKey { .. } => "ERR_INVALID_ORDER_KEY",
+            Self::OrderKeysNotAscending { .. } => "ERR_ORDER_KEYS_NOT_ASCENDING",
+            Self::OrderSpaceExhausted { .. } => "ERR_ORDER_SPACE_EXHAUSTED",
         }
     }
 
@@ -63,6 +94,16 @@ impl CoreError {
                  than drawn in the wrong place. Your notes and the rest of your \
                  highlights are untouched. If you edited annotations.json by hand, a \
                  backup is beside it."
+            }
+            Self::InvalidOrderKey { .. } => {
+                "One lecture's saved position could not be read, so it has been sorted \
+                 to the end rather than hidden. Nothing was deleted. Use Renumber \
+                 Folders to give it a fresh position."
+            }
+            Self::OrderKeysNotAscending { .. } | Self::OrderSpaceExhausted { .. } => {
+                "This lecture could not be slotted into that position. Nothing was \
+                 moved or lost. Use Renumber Folders to space the list out evenly, then \
+                 try again."
             }
         }
     }

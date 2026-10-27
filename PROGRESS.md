@@ -30,7 +30,9 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
 - [x] `lecture-core` verified compiling for `aarch64-apple-ios` locally
 - [~] `CoreError` (`thiserror`) — `code()` + `remediation()` established; variants are
       added as the code that raises them lands, so the enum never over-promises
-- [ ] `OrderKey` (fractional index) — next up
+- [x] `OrderKey` (fractional index) — integer part keeps appends compact, fraction
+      handles inserts between neighbours; validated on construction and on deserialize
+      (16 tests, including 1000 appends, 1000 prepends and 300 inserts into one gap)
 - [ ] Domain: `LectureBundle`, `Annotation`, `Citation`, `Taxonomy`, `Facets`, `BundleRef`
 - [ ] `AtomicFsStorage` — temp → `sync_all` → `rename`; `.bak` on parse failure
 - [ ] Path sanitisation for nested vault paths (depth cap 5, `..`, symlinks, null bytes,
@@ -128,6 +130,22 @@ Yellow, green, red and blue are claimed internally by highlight semantics. Viole
 Obsidian's (and OneNote's), and Obsidian is the closest adjacent tool. Magenta is the one
 hue both unclaimed in this product space and outside the semantic set. The light value is
 deep because magenta is intrinsically high-luminance; brighter variants failed 4.5:1.
+
+**2026-10-27 · Order keys carry an integer part, not a bare fraction**
+A purely fractional key is far simpler, but every append halves the remaining gap, so
+keys grow about one character per six appends — hundreds of characters over a long
+course, written into every manifest. Appending is the commonest operation by a wide
+margin (import lecture 1, then 2, then 3), so the simple version degrades precisely
+where it is used most. The integer part makes an append an integer increment: a test
+asserts 1000 sequential appends keep every key to 4 characters or fewer. Ported from
+Greenspan's "Implementing Fractional Indexing" and kept structurally close to that
+reference so the two can be diffed by eye.
+
+**2026-10-27 · Generated order keys are re-validated before being returned**
+`OrderKey::between` parses its own output. It costs one cheap pass and converts any
+future defect in that module into a refused insert rather than a malformed key written
+into a vault — and then synced to the user's other devices, where it would be much
+harder to undo.
 
 **2026-10-27 · TypeScript 6.0.3, not 7.0.2**
 `typescript-eslint@8.72.1` declares `typescript: ">=4.8.4 <6.1.0"`, so it cannot read TS 7

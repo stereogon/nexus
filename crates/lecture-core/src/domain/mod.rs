@@ -5,5 +5,7 @@
 //! through the same validation rather than deriving past it.
 
 mod normalized_rect;
+mod order_key;
 
 pub use normalized_rect::NormalizedRect;
+pub use order_key::OrderKey;
