@@ -135,7 +135,7 @@ fn a_manifest_from_a_newer_build_is_left_completely_alone() {
 
     let err = store.load(&bundle()).unwrap_err();
 
-    assert_eq!(err.code(), "ERR_MANIFEST_VERSION_UNSUPPORTED");
+    assert_eq!(err.code(), "ERR_SCHEMA_VERSION_UNSUPPORTED");
     assert!(err.remediation().contains("untouched"));
 
     // Untouched means untouched: same bytes, and no backup written either, because
@@ -160,7 +160,7 @@ fn a_corrupt_manifest_is_copied_aside_before_anything_else() {
 
     let err = store.load(&bundle()).unwrap_err();
 
-    assert_eq!(err.code(), "ERR_MANIFEST_UNREADABLE");
+    assert_eq!(err.code(), "ERR_STORED_FILE_UNREADABLE");
 
     let backup = dir.path().join("cs454/raft-consensus/manifest.json.bak");
     assert!(backup.exists(), "the damaged bytes must be preserved");
@@ -203,7 +203,7 @@ fn an_inconsistent_manifest_is_also_preserved() {
 
     let err = store.load(&bundle()).unwrap_err();
 
-    assert_eq!(err.code(), "ERR_MANIFEST_UNREADABLE");
+    assert_eq!(err.code(), "ERR_STORED_FILE_UNREADABLE");
     assert!(
         dir.path()
             .join("cs454/raft-consensus/manifest.json.bak")

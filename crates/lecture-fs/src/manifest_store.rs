@@ -4,23 +4,15 @@
 //! an adapter concern: the domain owns the *shape* and its invariants, this owns the
 //! bytes. That also keeps `serde_json` out of the crate that has to compile for iOS.
 //!
-//! # The distinction this module exists to get right
-//!
-//! Two failures look similar and must be handled in opposite ways:
-//!
-//! - A manifest that is **corrupt** — truncated, hand-edited into nonsense, inconsistent
-//!   — is copied to `.bak` before anything else happens, so the bytes someone had are
-//!   preserved even if a later repair overwrites the original.
-//! - A manifest **from a newer build** is left strictly alone. No backup, no rewrite,
-//!   nothing. It is not damaged; it is simply newer than this reader. Treating it as
-//!   corrupt would destroy data that an updated Nexus could read perfectly, and on a
-//!   synced vault that damage would propagate to the device that wrote it.
+//! The corrupt-versus-newer asymmetry that governs loading is in [`crate::versioned`],
+//! shared with `annotations.json`.
 
 use lecture_core::{
-    BackupOutcome, Clock, CoreError, MANIFEST_FILE_NAME, Manifest, RelativePath, SchemaProbe, Slug,
+    CURRENT_SCHEMA_VERSION, Clock, CoreError, MANIFEST_FILE_NAME, Manifest, RelativePath, Slug,
 };
 
 use crate::storage::AtomicFsStorage;
+use crate::versioned;
 
 /// Reads and writes bundle manifests.
 pub struct ManifestStore<C> {
@@ -46,32 +38,16 @@ impl<C: Clock> ManifestStore<C> {
     ///
     /// # Errors
     ///
-    /// Returns [`CoreError::ManifestVersionUnsupported`] for a manifest from another
-    /// schema version, having touched nothing at all. For a corrupt or inconsistent one,
-    /// copies it aside and returns [`CoreError::ManifestUnreadable`] carrying the
-    /// parser's message and where the copy went. Also returns [`CoreError::Io`] if the
-    /// file cannot be read, and a containment error if `bundle` does not resolve safely
-    /// inside the vault.
+    /// See [`versioned::load`]. A manifest is *required*, so a missing file is an error
+    /// here — unlike `annotations.json`, whose absence is normal.
     pub fn load(&self, bundle: &RelativePath) -> Result<Manifest, CoreError> {
         let path = manifest_path(bundle)?;
-        let bytes = self.storage.read(&path)?;
-
-        // The version is read on its own first. A manifest from a newer build need not
-        // deserialise as the current shape at all, so asking the full parser would
-        // report it as corrupt -- and corrupt is the one verdict that must not be
-        // reached here.
-        let probe: SchemaProbe =
-            serde_json::from_slice(&bytes).map_err(|error| self.preserve(&path, &error))?;
-
-        if probe.schema_version != lecture_core::CURRENT_SCHEMA_VERSION {
-            // Deliberately before any backup and without writing anything.
-            return Err(CoreError::ManifestVersionUnsupported {
-                found: probe.schema_version,
-                supported: lecture_core::CURRENT_SCHEMA_VERSION,
-            });
-        }
-
-        serde_json::from_slice::<Manifest>(&bytes).map_err(|error| self.preserve(&path, &error))
+        versioned::load(
+            &self.storage,
+            &path,
+            MANIFEST_FILE_NAME,
+            CURRENT_SCHEMA_VERSION,
+        )
     }
 
     /// Saves `manifest` into the bundle at `bundle`, stamping it as changed now.
@@ -89,38 +65,8 @@ impl<C: Clock> ManifestStore<C> {
         let stamped = manifest.touched(self.clock.now()?)?;
         let path = manifest_path(bundle)?;
 
-        // Pretty-printed because people do open these files, and a diff of one changed
-        // field should be one changed line rather than an unreadable wall.
-        let mut json = serde_json::to_vec_pretty(&stamped).map_err(|error| CoreError::Io {
-            operation: "prepare the manifest for",
-            path: path.to_string(),
-            source: std::io::Error::other(error),
-        })?;
-        json.push(b'\n');
-
-        self.storage.write(&path, &json)?;
+        versioned::save(&self.storage, &path, &stamped)?;
         Ok(stamped)
-    }
-
-    /// Copies a damaged manifest aside and describes what went wrong.
-    ///
-    /// The parser's own message is carried through, line and column included: "could not
-    /// be read" on its own is not something anyone can act on, whereas a position turns
-    /// a broken hand-edit into a ten-second fix.
-    ///
-    /// A failure to make the copy does not replace the real error, because the caller
-    /// still needs to hear why the file could not be read. It is reported alongside it
-    /// instead, so the message never claims a `.bak` that is not there.
-    fn preserve(&self, path: &RelativePath, error: &serde_json::Error) -> CoreError {
-        let backup = match self.storage.back_up(path) {
-            Ok(at) => BackupOutcome::Saved(at.display().to_string()),
-            Err(_) => BackupOutcome::Failed,
-        };
-
-        CoreError::ManifestUnreadable {
-            detail: error.to_string(),
-            backup,
-        }
     }
 }
 

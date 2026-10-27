@@ -150,9 +150,12 @@ pub enum CoreError {
         reason: &'static str,
     },
 
-    /// A manifest's bytes could not be parsed.
-    #[error("this lecture's manifest could not be read: {detail}; {backup}")]
-    ManifestUnreadable {
+    /// A stored file's bytes could not be parsed.
+    #[error("`{file}` could not be read: {detail} ({backup})")]
+    StoredFileUnreadable {
+        /// Which file, so the message can name it. One of the schema file-name
+        /// constants, never a full path -- the path is in `backup`.
+        file: &'static str,
         /// What the parser objected to, including where. Kept because "could not be
         /// read" alone is not something anyone can act on, and a line and column turns
         /// a broken hand-edit into a ten-second fix.
@@ -161,9 +164,15 @@ pub enum CoreError {
         backup: BackupOutcome,
     },
 
-    /// A manifest was written by a build that uses a different schema version.
-    #[error("this lecture was saved by Nexus schema v{found}; this build reads v{supported}")]
-    ManifestVersionUnsupported {
+    /// A stored file was written by a build with a different schema version.
+    ///
+    /// Reported *without* touching the file, which is the whole point of the variant:
+    /// a newer file is not damaged, and rewriting or backing it up would destroy data
+    /// an updated Nexus could read.
+    #[error("`{file}` is schema version {found}; this build reads version {supported}")]
+    SchemaVersionUnsupported {
+        /// Which file, so the message can name it.
+        file: &'static str,
         /// The version the file claims.
         found: u32,
         /// The version this build understands.
@@ -232,8 +241,8 @@ impl CoreError {
                 "ERR_INVALID_COORDINATE"
             }
             Self::InvalidManifest { .. } => "ERR_INVALID_MANIFEST",
-            Self::ManifestUnreadable { .. } => "ERR_MANIFEST_UNREADABLE",
-            Self::ManifestVersionUnsupported { .. } => "ERR_MANIFEST_VERSION_UNSUPPORTED",
+            Self::StoredFileUnreadable { .. } => "ERR_STORED_FILE_UNREADABLE",
+            Self::SchemaVersionUnsupported { .. } => "ERR_SCHEMA_VERSION_UNSUPPORTED",
             Self::InvalidAnnotation { .. } => "ERR_INVALID_ANNOTATION",
             Self::DuplicateAnnotationId { .. } => "ERR_DUPLICATE_ANNOTATION_ID",
             Self::InvalidName { .. } => "ERR_INVALID_NAME",
@@ -269,12 +278,12 @@ impl CoreError {
                  rather than loaded wrongly. Nothing was deleted. The message above \
                  says which detail does not add up."
             }
-            Self::ManifestUnreadable { .. } => {
-                "This lecture could not be loaded, and nothing on disk has been \
-                 changed. The message above says what went wrong and where a copy of \
-                 the file was kept, which you can open in any text editor."
+            Self::StoredFileUnreadable { .. } => {
+                "That file could not be loaded, and nothing on disk has been changed. \
+                 The message above says what went wrong and where a copy of the file \
+                 was kept, which you can open in any text editor."
             }
-            Self::ManifestVersionUnsupported { .. } => {
+            Self::SchemaVersionUnsupported { .. } => {
                 "This lecture was saved by a newer version of Nexus. It has been left \
                  completely untouched rather than rewritten, so updating Nexus will \
                  open it normally."

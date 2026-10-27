@@ -60,7 +60,8 @@ impl TryFrom<RawAnnotationSet> for AnnotationSet {
 
     fn try_from(raw: RawAnnotationSet) -> Result<Self, Self::Error> {
         if raw.schema_version != ANNOTATIONS_SCHEMA_VERSION {
-            return Err(CoreError::ManifestVersionUnsupported {
+            return Err(CoreError::SchemaVersionUnsupported {
+                file: ANNOTATIONS_FILE_NAME,
                 found: raw.schema_version,
                 supported: ANNOTATIONS_SCHEMA_VERSION,
             });

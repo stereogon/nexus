@@ -17,6 +17,9 @@ workspace = true
 [dependencies]
 lecture-core.workspace = true
 libc.workspace = true
+# The traits the generic JSON load/save path is bounded by. Already in the build graph
+# via `lecture-core`, so this adds a name to this crate's scope, not a package.
+serde.workspace = true
 serde_json.workspace = true
 
 [dev-dependencies]

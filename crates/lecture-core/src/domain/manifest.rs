@@ -29,18 +29,6 @@ pub const CURRENT_SCHEMA_VERSION: u32 = 1;
 /// lecture bundle. The vault walk prunes at the first one it finds.
 pub const MANIFEST_FILE_NAME: &str = "manifest.json";
 
-/// Just enough of a manifest to read its version before trusting the rest of it.
-///
-/// A file from a newer build may not deserialise as the current shape at all, so the
-/// version has to be readable on its own. Unknown fields are allowed *here* precisely
-/// because this probe's whole job is to inspect a file it does not understand.
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SchemaProbe {
-    /// The version the file claims to be.
-    pub schema_version: u32,
-}
-
 /// A lecture bundle's metadata.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "RawManifest", into = "RawManifest")]
@@ -72,7 +60,8 @@ impl TryFrom<RawManifest> for Manifest {
 
     fn try_from(raw: RawManifest) -> Result<Self, Self::Error> {
         if raw.schema_version != CURRENT_SCHEMA_VERSION {
-            return Err(CoreError::ManifestVersionUnsupported {
+            return Err(CoreError::SchemaVersionUnsupported {
+                file: MANIFEST_FILE_NAME,
                 found: raw.schema_version,
                 supported: CURRENT_SCHEMA_VERSION,
             });

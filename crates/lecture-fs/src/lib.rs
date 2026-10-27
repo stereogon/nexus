@@ -16,12 +16,15 @@
 mod error;
 mod staging;
 
+pub mod annotation_store;
 pub mod clock;
-pub mod manifest_store;
+mod manifest_store;
+mod versioned;
 
 pub mod storage;
 pub mod vault_root;
 
+pub use annotation_store::AnnotationStore;
 pub use clock::SystemClock;
 pub use manifest_store::ManifestStore;
 pub use storage::AtomicFsStorage;

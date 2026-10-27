@@ -66,8 +66,13 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
       with `AnnotationId`, `PageNumber`, `Excerpt` and `HighlightSemantic`. Five
       departures from the spec's example, all amended there. 21 tests.
 - [ ] `Citation`, `LectureBundle`, `BundleRef`
-- [ ] `AnnotationStore` — the atomic load/save path for `annotations.json`
-      — **next substep**
+- [x] `AnnotationStore` — the atomic load/save path for `annotations.json`. A missing
+      file loads as an empty set (the normal state of a freshly imported lecture) while
+      an unreadable one is an error, so a corrupt file can never read back as "no
+      highlights" and then be overwritten. 11 tests.
+- [x] The corrupt-versus-newer asymmetry extracted into `lecture-fs::versioned`, so it
+      exists once for both `manifest.json` and `annotations.json` rather than once per
+      file type.
 - [x] `Slug` — one safe path segment. Rejects separators, control and invisible
       characters, Windows device names, leading dots/hyphens, trailing dots and spaces;
       normalises to NFC (never NFKC — see decision log); 200-byte cap so atomic staging
@@ -191,6 +196,57 @@ The tree was not rustfmt-clean, and the first run of the check turned up a misin
 doc comment in `order_key/mod.rs` that four green test runs had not. Formatting is the
 cheapest class of thing to enforce mechanically, so it is now in `CLAUDE.md` §5 rather
 than left to whoever is reading the diff.
+
+**2026-10-27 · A missing `annotations.json` is empty; an unreadable one is not**
+`manifest.json` is required, so its absence means something is wrong. `annotations.json`
+is absent in every freshly imported bundle, so its absence is normal and must load as an
+empty set.
+
+The dangerous way to implement that is to treat *any* load failure as empty. Then a
+permissions problem, a half-synced file or a corrupt one reads back as "this lecture has
+no highlights" — and the next save writes that emptiness straight over the person's work.
+So only genuine absence counts: the decision is made by inspecting the error for
+`NotFound` rather than by checking existence first, which would leave a window in which
+the answer changed between the check and the read. There is a test asserting that an
+unparseable file is an error while a missing one is empty.
+
+`AnnotationStore` also deliberately holds **no clock**, unlike `ManifestStore`. A manifest
+has one modification time that a save must not forget to stamp; an annotation set has
+none, because each annotation carries its own times. A set-level timestamp would be a
+second thing to disagree after a sync, so the type does not have one and the store does
+not need the port.
+
+**2026-10-27 · The load asymmetry now exists once, not once per file**
+Writing `AnnotationStore` meant writing the corrupt-versus-newer logic a second time,
+which is the wrong shape for the most destructive code in the storage layer: two copies
+means two places to get it right and two places to test. Extracted into
+`lecture-fs::versioned` as a generic read-probe-parse path that both stores call.
+
+The extraction forced a naming correction. The previous commit reused
+`ManifestVersionUnsupported` and `ManifestUnreadable` for `annotations.json`, so a
+corrupt annotations file reported an error that said "manifest" — wrong, and exactly the
+kind of thing a tired reader at 2am does not need. They are now
+`SchemaVersionUnsupported` and `StoredFileUnreadable`, each carrying which file it is
+about. `SchemaProbe` moved out of `manifest.rs` into `domain/schema.rs` for the same
+reason: it serves both files, and the two keep independent version numbers because they
+change for different reasons.
+
+**2026-10-27 · Frontend toolchain installed; two versions I had guessed were wrong**
+The user approved the package list and the install ran. Two corrections came out of it,
+both found by the registry rather than by me:
+
+- `@vitejs/plugin-react@5.1.1` does not support Vite 8 — its peer range stops at 7.
+  `6.1.2` is the first that declares `vite@^8.0.0`. npm's own suggestion was `--force` or
+  `--legacy-peer-deps`, which is precisely the patchwork `CLAUDE.md` §4 bans; the right
+  fix was the version that actually resolves.
+- `@types/react@19.3.1` and `@types/react-dom@19.3.1` do not exist. The `@types`
+  packages version independently of the library they describe, and the current release is
+  `19.3.0`.
+
+Recorded because the general lesson is the one already learned about crate licences: a
+version number recalled from memory is a guess. Every version in `package.json` was
+checked against the registry before the install, and the licence table below comes from
+reading the installed manifests, not from recollection.
 
 **2026-10-27 · The spec is a draft — standing permission to argue with it**
 The user's instruction, verbatim: *"you don't need to always follow what the claude md
@@ -738,3 +794,37 @@ linked into a shipped artefact in any case.
 
 To be re-checked with `cargo deny` once the dependency set settles — the point of that
 tool being that this table should never again be written by hand.
+
+### npm packages (Milestone 1, frontend toolchain)
+
+Read from the installed `node_modules` manifests on 2026-10-27, not from memory. 134
+packages resolved, every one with a stated licence.
+
+| Direct dependency | Version | Licence |
+|---|---|---|
+| `react` | 19.3.1 | MIT |
+| `react-dom` | 19.3.1 | MIT |
+| `zod` | 4.6.7 | MIT |
+| `@tauri-apps/api` | 2.12.4 | Apache-2.0 OR MIT |
+| `@tauri-apps/cli` | 2.12.4 | Apache-2.0 OR MIT |
+| `@types/react` | 19.3.0 | MIT |
+| `@types/react-dom` | 19.3.0 | MIT |
+| `@vitejs/plugin-react` | 6.1.2 | MIT |
+| `eslint` | 10.13.0 | MIT |
+| `typescript` | 6.0.3 | Apache-2.0 |
+| `typescript-eslint` | 8.72.1 | MIT |
+| `vite` | 8.3.5 | MIT |
+| `vitest` | 5.0.5 | MIT |
+
+Whole tree, by licence: MIT 100, Apache-2.0 14, ISC 6, BSD-2-Clause 6,
+`Apache-2.0 OR MIT` 3, MPL-2.0 2, BSD-3-Clause 2, BlueOak-1.0.0 1.
+
+Everything is permissive except the two MPL-2.0 packages, `lightningcss@1.33.0` and its
+`lightningcss-darwin-arm64@1.33.0` binary — a transitive Vite dependency. MPL-2.0 is
+file-level copyleft and distribution-compatible: the obligation attaches only to
+modifications of the MPL-licensed files themselves, and we neither modify nor vendor
+them. `BlueOak-1.0.0` (`minimatch@10.2.6`) is a permissive, OSI-approved licence.
+
+Build-time-only packages still get recorded, because `vite build` output is what would
+ship and the distinction between a bundled and a build-only dependency is easy to get
+wrong once there is something to ship.
