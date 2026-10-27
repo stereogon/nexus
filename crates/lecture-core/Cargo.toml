@@ -1,0 +1,19 @@
+[package]
+name = "lecture-core"
+description = "Pure domain logic for Nexus: entities, invariants and ports. No Tauri, no UI, no platform dependencies, so it can be compiled for iPadOS unchanged."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+# Dependencies are added to this crate only when code that uses them lands, so an
+# audit of this list is always an accurate statement of what the domain depends on.
+[dependencies]
+thiserror.workspace = true
+serde.workspace = true
+
+[dev-dependencies]
+serde_json = "1.0.154"

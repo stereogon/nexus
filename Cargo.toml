@@ -1,0 +1,41 @@
+[workspace]
+resolver = "3"
+members = ["crates/lecture-core"]
+
+# `crates/src-tauri` joins this list in Milestone 2, when there is an IPC surface
+# worth adapting. Declaring it now would pull the whole Tauri dependency tree and an
+# icon-asset requirement into a milestone whose deliverable is pure domain logic.
+# Recorded in PROGRESS.md so it is a sequencing decision, not an omission.
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.90"
+license = "MIT"
+
+# Dependency versions are declared here once and inherited by every member, so two
+# crates can never disagree about a version. Exact resolution is pinned by the
+# committed Cargo.lock; caret ranges here are deliberate, because `=`-pinning in a
+# manifest breaks transitive version unification without adding reproducibility that
+# the lockfile does not already guarantee.
+[workspace.dependencies]
+thiserror = "2.0.21"
+serde = { version = "1.0.229", features = ["derive"] }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+unreachable_pub = "warn"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+# Every one of these is a way to panic at runtime, which §4 of CLAUDE.md bans in
+# production code. Raising them to `deny` makes the ban mechanical rather than a
+# matter of review discipline. Test code overrides them locally.
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+unimplemented = "deny"
+indexing_slicing = "deny"

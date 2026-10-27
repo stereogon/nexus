@@ -1,0 +1,32 @@
+# Rust
+**/target/
+
+# Node
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# macOS
+.DS_Store
+
+# Nexus derived cache — never a source of truth, always rebuildable
+.nexus/
+
+# Logs
+*.log
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Editors
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Test artifacts
+/test-results/
+/playwright-report/
+/coverage/
