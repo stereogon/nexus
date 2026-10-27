@@ -18,9 +18,10 @@ pub mod error;
 pub mod ports;
 
 pub use domain::{
-    CURRENT_SCHEMA_VERSION, Conversion, ConversionState, Facets, Label, MANIFEST_FILE_NAME,
-    MAX_DEPTH, Manifest, NormalizedRect, OrderKey, RelativePath, SchemaProbe, Slug, Source,
-    Timestamp,
+    ANNOTATIONS_FILE_NAME, ANNOTATIONS_SCHEMA_VERSION, Annotation, AnnotationId, AnnotationSet,
+    CURRENT_SCHEMA_VERSION, Conversion, ConversionState, Excerpt, Facets, HighlightSemantic, Label,
+    MANIFEST_FILE_NAME, MAX_DEPTH, Manifest, NormalizedRect, OrderKey, PageNumber, RelativePath,
+    SchemaProbe, Slug, Source, Timestamp,
 };
 pub use error::{BackupOutcome, CoreError};
 pub use ports::{Clock, FixedClock};

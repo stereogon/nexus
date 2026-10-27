@@ -7,6 +7,8 @@
 //! [`has_non_whitespace_control`]. Sharing the vocabulary is the point; sharing the
 //! verdict is not.
 
+use unicode_normalization::UnicodeNormalization;
+
 /// Invisible characters that are legal in text but let one string impersonate another.
 ///
 /// Right-to-left and bidirectional overrides, zero-width joiners and spaces, a soft
@@ -45,4 +47,37 @@ pub(crate) fn has_non_whitespace_control(text: &str) -> bool {
 /// Whether `text` contains any of the invisible characters in [`INVISIBLE`].
 pub(crate) fn has_invisible(text: &str) -> bool {
     text.chars().any(is_invisible)
+}
+
+/// Normalises human-supplied text for storage and display.
+///
+/// NFC, then outer whitespace trimmed, then inner whitespace runs collapsed to a single
+/// space. Shared by [`Label`](crate::domain::Label) and
+/// [`Excerpt`](crate::domain::Excerpt) because both need the same thing for the same
+/// reason: text that looks identical to a person must compare equal, and text pulled out
+/// of a PDF arrives with ragged line breaks that mean nothing.
+///
+/// NFC and never NFKC. NFKC folds compatibility characters in ways that change what the
+/// text says, and in `Slug` it would go further and manufacture a path separator.
+pub(crate) fn normalise(raw: &str) -> String {
+    let normalised: String = raw.nfc().collect();
+
+    let mut out = String::with_capacity(normalised.len());
+    let mut pending_space = false;
+
+    for ch in normalised.chars() {
+        if ch.is_whitespace() {
+            // Only becomes a space if real text follows, which trims both ends without
+            // needing a second pass.
+            pending_space = !out.is_empty();
+            continue;
+        }
+        if pending_space {
+            out.push(' ');
+            pending_space = false;
+        }
+        out.push(ch);
+    }
+
+    out
 }

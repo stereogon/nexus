@@ -122,26 +122,83 @@ This guarantees that highlights, area boxes, and on-slide text annotations rende
 ```json
 {
   "schemaVersion": 1,
-  "documentId": "doc-uuid-1234",
   "annotations": [
     {
+      "kind": "textHighlight",
       "id": "hl-9f8a7b6c",
-      "kind": "text_highlight",
-      "pageNumber": 4,
-      "color": "#FACC15",
-      "quotedText": "Raft achieves consensus via an elected leader.",
-      "boundingRect": { "x": 0.142, "y": 0.285, "width": 0.612, "height": 0.032 },
+      "page": 4,
+      "semantic": "key",
+      "quote": "Raft achieves consensus via an elected leader.",
       "rects": [
         { "x": 0.142, "y": 0.285, "width": 0.612, "height": 0.032 }
       ],
-      "freeText": null,
       "createdAt": "2026-10-27T16:00:00Z",
       "updatedAt": "2026-10-27T16:00:00Z"
     }
-  ],
-  "inkStrokes": []
+  ]
 }
 ```
+
+> **Amended 2026-10-27 (five changes, each raised with the user).** The original example
+> is kept below for comparison. The reasoning is in `PROGRESS.md`.
+>
+> 1. **`semantic` replaces `color`.** The original stored `"color": "#FACC15"`, which
+>    contradicts §2.2 of this spec — where the four highlights are defined *semantically*
+>    as "Yellow = Key Concept, Green = Definition, Red = Exam/Important, Blue = Question"
+>    — and contradicts the locked palette in `CLAUDE.md` §3, which `#FACC15` is not part
+>    of. Storing the hex loses the meaning (so "show me everything exam-relevant" becomes
+>    a reverse colour lookup), freezes the palette into every file already saved, and
+>    makes the required K/D/E/Q glyph underivable. One of `key` | `definition` | `exam` |
+>    `question` is stored; colour is a UI token, which also lets the iPad app use its own.
+> 2. **`kind` is a tag over per-kind fields, not a label on one wide record.** The
+>    original gives every annotation every field, with `"freeText": null` on a highlight.
+>    Nothing in that shape stops a file claiming `textHighlight` while carrying
+>    `freeText` and no `rects`. Each kind now carries exactly its own fields, so the
+>    contradictory record cannot be written down. `kind` values are camelCase, matching
+>    every other key in the file.
+> 3. **`boundingRect` is derived, not stored.** It is the union of `rects`, so keeping
+>    both is two sources of one truth that will eventually disagree. Computed on read.
+> 4. **`documentId` removed.** Nothing else in the format holds a document id, so there
+>    was nothing to check it against. The real need behind it — noticing that a document
+>    was reconverted and every rectangle now points somewhere slightly wrong — needs a
+>    *hash*, not a random id, and that is the deferred `source` hash in `manifest.json`.
+>    Pairing them is Milestone 2's job.
+> 5. **`inkStrokes` removed.** Declared as `[]` and then never mentioned again in this
+>    spec — no feature, no shortcut, no test. An always-empty array reads as working
+>    while nothing fills it. Deferred until Apple Pencil is an actual requirement, which
+>    is a Phase 2 iPad question.
+>
+> Also pinned, because the spec never said it outright: **pages are numbered from 1**,
+> matching `[Slide/Page 4]` beside `"pageNumber": 4` and the "Page 2" of §7. The key is
+> now `page`, and 0 is refused rather than guessed at.
+>
+> <details><summary>Original wording</summary>
+>
+> ```json
+> {
+>   "schemaVersion": 1,
+>   "documentId": "doc-uuid-1234",
+>   "annotations": [
+>     {
+>       "id": "hl-9f8a7b6c",
+>       "kind": "text_highlight",
+>       "pageNumber": 4,
+>       "color": "#FACC15",
+>       "quotedText": "Raft achieves consensus via an elected leader.",
+>       "boundingRect": { "x": 0.142, "y": 0.285, "width": 0.612, "height": 0.032 },
+>       "rects": [
+>         { "x": 0.142, "y": 0.285, "width": 0.612, "height": 0.032 }
+>       ],
+>       "freeText": null,
+>       "createdAt": "2026-10-27T16:00:00Z",
+>       "updatedAt": "2026-10-27T16:00:00Z"
+>     }
+>   ],
+>   "inkStrokes": []
+> }
+> ```
+>
+> </details>
 
 ---
 

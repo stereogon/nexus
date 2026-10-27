@@ -9,7 +9,6 @@
 use std::fmt;
 
 use serde::{Deserialize, Serialize};
-use unicode_normalization::UnicodeNormalization;
 
 use crate::domain::text;
 use crate::error::CoreError;
@@ -68,8 +67,6 @@ impl Label {
     /// Returns [`CoreError::InvalidName`] if nothing survives normalisation, if the text
     /// is longer than 500 bytes, or if it contains a control or invisible character.
     pub fn parse(raw: &str) -> Result<Self, CoreError> {
-        let normalised: String = raw.nfc().collect();
-
         let reject = |reason: &'static str| {
             Err(CoreError::InvalidName {
                 name: raw.to_owned(),
@@ -79,24 +76,25 @@ impl Label {
 
         // Only non-whitespace control characters are refused. A tab or newline is both
         // a control character and whitespace, and almost always arrives from text
-        // pasted out of a PDF, so it is collapsed below rather than rejected.
-        if text::has_non_whitespace_control(&normalised) {
+        // pasted out of a PDF, so it is collapsed rather than rejected. Checked before
+        // normalising, so nothing is folded away before it can be objected to.
+        if text::has_non_whitespace_control(raw) {
             return reject("contains a control character");
         }
-        if text::has_invisible(&normalised) {
+        if text::has_invisible(raw) {
             return reject("contains an invisible character that could disguise the text");
         }
 
-        let collapsed = collapse_whitespace(&normalised);
+        let normalised = text::normalise(raw);
 
-        if collapsed.is_empty() {
+        if normalised.is_empty() {
             return reject("contains no visible text");
         }
-        if collapsed.len() > MAX_BYTES {
+        if normalised.len() > MAX_BYTES {
             return reject("is longer than 500 characters, which is longer than a title");
         }
 
-        Ok(Self(collapsed))
+        Ok(Self(normalised))
     }
 
     /// The normalised text.
@@ -104,26 +102,4 @@ impl Label {
     pub fn as_str(&self) -> &str {
         &self.0
     }
-}
-
-/// Trims the ends and reduces every inner whitespace run to one space.
-fn collapse_whitespace(text: &str) -> String {
-    let mut out = String::with_capacity(text.len());
-    let mut pending_space = false;
-
-    for ch in text.chars() {
-        if ch.is_whitespace() {
-            // Only becomes a space if real text follows, which trims both ends without
-            // a second pass.
-            pending_space = !out.is_empty();
-            continue;
-        }
-        if pending_space {
-            out.push(' ');
-            pending_space = false;
-        }
-        out.push(ch);
-    }
-
-    out
 }

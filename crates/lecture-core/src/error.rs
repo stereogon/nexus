@@ -170,6 +170,27 @@ pub enum CoreError {
         supported: u32,
     },
 
+    /// A page number was zero, so it cannot be a one-based page.
+    #[error("page {number} is not a page; documents are numbered from 1")]
+    InvalidPageNumber {
+        /// The rejected number.
+        number: u32,
+    },
+
+    /// An annotation described something that cannot be drawn or linked to.
+    #[error("an annotation is not usable: {reason}")]
+    InvalidAnnotation {
+        /// Which invariant it broke.
+        reason: &'static str,
+    },
+
+    /// Two annotations claimed the same identifier.
+    #[error("two annotations share the identifier `{id}`")]
+    DuplicateAnnotationId {
+        /// The repeated identifier.
+        id: String,
+    },
+
     /// A string was not a well-formed order key.
     #[error("`{key}` is not a valid order key: {reason}")]
     InvalidOrderKey {
@@ -213,7 +234,10 @@ impl CoreError {
             Self::InvalidManifest { .. } => "ERR_INVALID_MANIFEST",
             Self::ManifestUnreadable { .. } => "ERR_MANIFEST_UNREADABLE",
             Self::ManifestVersionUnsupported { .. } => "ERR_MANIFEST_VERSION_UNSUPPORTED",
+            Self::InvalidAnnotation { .. } => "ERR_INVALID_ANNOTATION",
+            Self::DuplicateAnnotationId { .. } => "ERR_DUPLICATE_ANNOTATION_ID",
             Self::InvalidName { .. } => "ERR_INVALID_NAME",
+            Self::InvalidPageNumber { .. } => "ERR_INVALID_PAGE_NUMBER",
             Self::InvalidTimestamp { .. } => "ERR_INVALID_TIMESTAMP",
             Self::VaultRootUnusable { .. } => "ERR_VAULT_ROOT_UNUSABLE",
             Self::SymlinkRefused { .. } => "ERR_SYMLINK_REFUSED",
@@ -288,6 +312,21 @@ impl CoreError {
                 "That folder sits more than five levels deep inside your vault, which is \
                  further than Nexus will follow. Nothing was moved. Drag it nearer the \
                  top of the vault, then try again."
+            }
+            Self::InvalidAnnotation { .. } => {
+                "One highlight could not be read, so it was left out rather than drawn \
+                 in the wrong place. Your notes and your other highlights are \
+                 untouched, and a backup of the file is beside it."
+            }
+            Self::DuplicateAnnotationId { .. } => {
+                "Two highlights in this lecture share an identifier, so a link in your \
+                 notes could point at either. Nothing was deleted, and a backup is \
+                 beside the file."
+            }
+            Self::InvalidPageNumber { .. } => {
+                "A highlight recorded a page that cannot exist, so it was left out \
+                 rather than drawn on the wrong page. Nothing was deleted, and a backup \
+                 is beside the file."
             }
             Self::InvalidTimestamp { .. } => {
                 "A date recorded in this lecture could not be read, so it has been left \

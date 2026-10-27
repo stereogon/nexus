@@ -16,7 +16,7 @@ real decisions today. See **Locked decisions**.
 as a shipped product. That narrows what is *required* — there is no telemetry, no
 accounts, no multi-user concurrency, no App Store compliance work, and no obligation to
 support data written by a stranger's older copy. It does not narrow the quality bar by
-one inch; see **1.10 Responsible**.
+one inch; see **1.11 Responsible**.
 
 ---
 
@@ -71,7 +71,21 @@ what to follow when the word alone is ambiguous.
 - For anything non-trivial, state the plan and its risks before executing.
 - When two readings of a request would produce materially different work, ask.
 
-### 1.7 Consider the repercussions
+### 1.7 Treat the spec as a draft, not as scripture
+- `claude-spec.md` was written before the code existed and **may be wrong**. Standing
+  instruction from the user (2026-10-27): where a requirement looks mistaken,
+  self-contradictory, or harmful, *raise it* rather than implement it faithfully or
+  deviate silently.
+- A requirement that contradicts a locked decision in §3, or contradicts itself
+  elsewhere in the spec, is a drafting error. Say so, say what you are doing instead,
+  and why.
+- Amendments go into `claude-spec.md` as a dated note next to the original wording, so
+  the history of the decision survives and nobody has to guess whether a difference was
+  intentional. The reasoning goes in `PROGRESS.md`.
+- This is permission to question requirements, not licence to redesign the product. The
+  *goal* is the user's; the means are open to argument.
+
+### 1.8 Consider the repercussions
 - Ask: what does this break, who else touches this file, is it reversible, and what
   happens if it runs twice?
 - Anything touching the on-disk schema is a migration. Treat `schemaVersion` as a
@@ -80,7 +94,7 @@ what to follow when the word alone is ambiguous.
 - Changes that affect sync behaviour must be considered against two devices editing
   concurrently, not just one.
 
-### 1.8 Care for the environment we work in
+### 1.9 Care for the environment we work in
 - This is the user's personal machine, not a disposable container.
 - Stay inside `/Users/chandangupta/Developer/projects/nexus`. Temporary files go to the
   session scratchpad, never `/tmp` or the home directory.
@@ -88,13 +102,13 @@ what to follow when the word alone is ambiguous.
   `rustup` defaults, or anything in `/usr` or `/etc`.
 - Leave no stray processes, servers or watchers running. Clean up what you start.
 
-### 1.9 Never do anything that can destroy it
+### 1.10 Never do anything that can destroy it
 - **No `sudo`. Ever.** If something appears to need it, stop and ask.
 - No recursive deletes outside the scratchpad. No `rm -rf` with a variable in the path.
 - No command whose failure mode is unbounded. If the blast radius is unclear, it is too
   large.
 
-### 1.10 Responsible
+### 1.11 Responsible
 - Write code at professional standard, judged at both levels. **Low level:** names that
   say what the thing is, errors handled where they occur, no function doing three jobs,
   no cleverness a reader has to decode. **High level:** module boundaries that match the

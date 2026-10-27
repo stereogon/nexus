@@ -136,6 +136,40 @@ impl NormalizedRect {
         self.height
     }
 
+    /// The smallest rectangle covering all of `rects`.
+    ///
+    /// Used for the box a deep link centres on. It is **derived rather than stored**:
+    /// the spec's example keeps both `rects` and a `boundingRect` in the file, which is
+    /// two sources of one truth and invites them to disagree after a hand-edit or a
+    /// partial write. Computing it costs nothing and cannot drift.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CoreError::InvalidCoordinate`] if `rects` is empty, since there is no
+    /// such thing as the bounding box of nothing.
+    pub fn bounding(rects: &[Self]) -> Result<Self, CoreError> {
+        let Some(first) = rects.first() else {
+            return Err(CoreError::InvalidCoordinate {
+                field: "rects",
+                value: 0.0,
+            });
+        };
+
+        let mut left = first.x;
+        let mut top = first.y;
+        let mut right = first.right();
+        let mut bottom = first.bottom();
+
+        for rect in rects.iter().skip(1) {
+            left = left.min(rect.x);
+            top = top.min(rect.y);
+            right = right.max(rect.right());
+            bottom = bottom.max(rect.bottom());
+        }
+
+        Self::new(left, top, right - left, bottom - top)
+    }
+
     /// Position of the right edge, as a fraction of page width.
     #[must_use]
     pub fn right(&self) -> f64 {
