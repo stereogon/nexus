@@ -16,6 +16,7 @@ workspace = true
 # instead of inside the domain crate.
 [dependencies]
 lecture-core.workspace = true
+libc.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true

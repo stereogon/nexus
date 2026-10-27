@@ -53,8 +53,12 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
       constructor, so writes can demand proof rather than trust a caller. 13 tests
       against real temp directories, including escape-outward, alias-inward, mid-path
       and dangling links.
-- [ ] `AtomicFsStorage` — temp → `sync_all` → `rename`, opened with `O_NOFOLLOW`;
-      `.bak` on parse failure — **next substep**
+- [x] `AtomicFsStorage` — staging file → `write_all` → `sync_all` → `rename` → parent
+      directory flush. Takes `VaultRelativePath`, so containment is re-checked inside
+      every call and cannot be skipped. `read` uses `O_NOFOLLOW`. `back_up` preserves an
+      unreadable file as `.bak`, itself written atomically. RAII guard removes the
+      staging file on any failure. 18 tests, including a write that fails against a
+      read-only directory while the previous contents stay byte-identical.
 - [ ] Vault walk — prunes at first `manifest.json`; rejects nested lectures
 - [ ] `schemaVersion` 1 → 2 migration
 - [ ] `tracing` + `tracing-appender` to `~/Library/Logs/LectureVault/app.log`
@@ -153,6 +157,50 @@ The tree was not rustfmt-clean, and the first run of the check turned up a misin
 doc comment in `order_key/mod.rs` that four green test runs had not. Formatting is the
 cheapest class of thing to enforce mechanically, so it is now in `CLAUDE.md` §5 rather
 than left to whoever is reading the diff.
+
+**2026-10-27 · The parent directory is flushed after the rename, not just the file**
+`sync_all` on the staging file makes its *contents* durable; it says nothing about the
+directory entry the rename created. Without the second flush, a power loss can leave the
+rename unrecorded and the file back at its previous content — or, worse, the file's data
+flushed while the entry points nowhere. This is the step most atomic-write
+implementations omit, and it is cheap, so it is done.
+
+**2026-10-27 · Staging names use a composed token, not a `uuid` crate**
+`CLAUDE.md` §4 wrote the staging name as `<file>.tmp.<uuid>`. Implemented as
+`.tmp.<16 hex of nanos><8 hex of pid><4 hex of sequence>` — a fixed 33 bytes — rather
+than adding `uuid` and `getrandom` for a filename suffix. Uniqueness does not actually
+rest on the token: the file is created with `create_new`, so the *kernel* enforces it and
+a collision is an error rather than an overwrite. The token only spreads names out. The
+wording in `CLAUDE.md` was left as written and this entry records the deviation; it is a
+naming difference, not a weaker guarantee.
+
+The suffix width is asserted at *compile time* against the 200-byte cap `Slug` enforces
+(`const _: () = assert!(SUFFIX_BYTES <= 41)`), so the two numbers cannot drift apart
+without the build failing. That replaced a runtime test, which clippy rightly flagged as
+an assertion on constants.
+
+**2026-10-27 · `libc` added to `lecture-fs` only, for `O_NOFOLLOW`**
+Needed to name the constant. Hardcoding `0x0100` would be a magic number where the real
+lookup exists, which the anti-patchwork clause bans. `libc` is rust-lang-maintained,
+`MIT OR Apache-2.0`, already present transitively, and has no dependencies of its own.
+`lecture-core` does not gain it: `cargo tree -p lecture-core` shows only `serde`,
+`thiserror` and `unicode-normalization`, which is the check that keeps the boundary real
+rather than aspirational.
+
+**2026-10-27 · Third recorded gap: `O_NOFOLLOW` is not exercised by any test**
+Every symlink reachable through the storage API is refused by `VaultRoot::resolve` one
+step earlier, so the flag only fires inside the time-of-check/time-of-use window, which
+a single-threaded test cannot open. The symlink tests in `tests/storage.rs` prove
+`resolve`, not the flag. Noted in the code as well, so nobody reads those green tests as
+coverage of it. This joins the two gaps recorded above; all three are defence-in-depth
+whose failure paths are reasoned rather than demonstrated.
+
+**2026-10-27 · `fsync` on macOS is not `F_FULLFSYNC`**
+Flushing reaches the OS, not necessarily the drive's own write cache. Forcing the latter
+needs `F_FULLFSYNC` through `fcntl`, which `std` does not expose and which would require
+`unsafe`. So "durable" in this codebase means the operating system has it, not that it
+has survived a power cut mid-write. Stated in `StagingFile::commit`'s doc comment too.
+Revisit if the app ever grows a reason to claim crash-consistency it does not have.
 
 **2026-10-27 · `lecture-fs` added as a separate crate rather than I/O in the core**
 Filesystem code could technically have gone in `lecture-core`, since `std::fs` compiles
@@ -348,6 +396,29 @@ the user's instruction, 2026-10-27), local only, never pushed without being aske
   which is attribution-only but does require a notice to ship with the binary. Nothing
   generates one yet. Belongs with the `cargo deny` work so it is produced from the real
   dependency tree rather than maintained by hand.
+
+### Deferred to a 2.0, with reasoning (decided 2026-10-27)
+- **Cloud-drive vaults (Google Drive, Dropbox, OneDrive).** Deferred until the product
+  exists, then added incrementally. The user asked whether allowing a symlinked vault
+  root means Drive is supported; it does not, and the distinction matters.
+
+  Containment was never the blocker — nothing currently *prevents* someone pointing
+  `VaultRoot::open` at a Drive folder, which is the actual hazard. The blocker is that
+  the atomic-write guarantee does not hold on a file-provider volume. Drive for desktop
+  presents online-only placeholders that materialise on access, and `rename` and
+  `sync_all` do not carry their POSIX meanings there — so the single mechanism protecting
+  someone's notes degrades silently while everything appears to work. It also cuts
+  against the offline-first premise, since opening a lecture could require the network,
+  and Drive resolves conflicts by duplicating files rather than merging.
+
+  Syncthing is different, and is why it is the Phase 1 assumption: it syncs real local
+  files, so atomic writes behave normally. iCloud Drive has the same file-provider
+  problem, but Apple at least exposes `NSFileCoordinator` for it; Google offers third
+  parties no equivalent.
+
+  When this is picked up, the work is: detect that the vault sits on a file-provider
+  volume, and either refuse with a plain explanation or switch to a write strategy that
+  does not assume `rename` atomicity. Guessing which, now, would be speculative.
 
 ### Design questions still open
 - **Page thumbnails.** §2.3 asks for them in the sidebar, but the sidebar already carries

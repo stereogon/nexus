@@ -62,6 +62,7 @@ name = "lecture-fs"
 version = "0.1.0"
 dependencies = [
  "lecture-core",
+ "libc",
  "tempfile",
 ]
 

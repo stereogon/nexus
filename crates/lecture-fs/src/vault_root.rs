@@ -16,6 +16,8 @@ use std::path::{Path, PathBuf};
 
 use lecture_core::{CoreError, VaultRelativePath};
 
+use crate::error::{io_error, render};
+
 /// An opened vault root, stored canonicalised.
 ///
 /// Canonicalising the root means a **symlinked root is allowed**: someone who keeps
@@ -43,6 +45,49 @@ impl ResolvedPath {
     #[must_use]
     pub fn as_path(&self) -> &Path {
         &self.absolute
+    }
+
+    /// A sibling of this path, named this one's name plus `suffix`.
+    ///
+    /// Containment carries over without re-checking the filesystem, and that is sound
+    /// rather than convenient: the result keeps the same parent directory, and a suffix
+    /// containing no separator cannot move the name out of it. Used for `.bak`, and for
+    /// anything else that must land strictly beside an already-proven path.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CoreError::InvalidVaultPath`] if `suffix` contains a separator, or if
+    /// this path somehow names no file.
+    pub(crate) fn with_name_suffix(&self, suffix: &str) -> Result<Self, CoreError> {
+        if suffix.contains('/') || suffix.contains('\\') {
+            return Err(CoreError::InvalidVaultPath {
+                path: render(&self.absolute),
+                reason: "a sibling suffix cannot contain a path separator",
+            });
+        }
+
+        let parent = self
+            .absolute
+            .parent()
+            .ok_or_else(|| CoreError::InvalidVaultPath {
+                path: render(&self.absolute),
+                reason: "has no containing folder for a sibling",
+            })?;
+
+        let file_name = self
+            .absolute
+            .file_name()
+            .ok_or_else(|| CoreError::InvalidVaultPath {
+                path: render(&self.absolute),
+                reason: "does not name a file",
+            })?;
+
+        let mut derived = file_name.to_os_string();
+        derived.push(suffix);
+
+        Ok(Self {
+            absolute: parent.join(derived),
+        })
     }
 }
 
@@ -175,16 +220,4 @@ fn deepest_existing(path: &Path) -> PathBuf {
     }
 
     candidate
-}
-
-fn io_error(operation: &'static str, path: &Path, source: io::Error) -> CoreError {
-    CoreError::Io {
-        operation,
-        path: render(path),
-        source,
-    }
-}
-
-fn render(path: &Path) -> String {
-    path.display().to_string()
 }

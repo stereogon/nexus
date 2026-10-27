@@ -27,6 +27,11 @@ serde = { version = "1.0.229", features = ["derive"] }
 unicode-normalization = "0.1.26"
 serde_json = "1.0.154"
 
+# Only for POSIX constants, `O_NOFOLLOW` above all. Hardcoding the numeric value would
+# be a magic number where the real lookup exists, and `libc` is the canonical source.
+# Used by `lecture-fs` alone; `lecture-core` stays free of it.
+libc = "0.2.191"
+
 # Dev-only. Storage tests need a real directory to create, rename and symlink inside;
 # an in-memory fake cannot exercise the behaviour that matters there.
 tempfile = "3.27.0"
