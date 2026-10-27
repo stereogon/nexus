@@ -65,6 +65,48 @@ pub enum CoreError {
         max: usize,
     },
 
+    /// A folder could not be opened as a vault root.
+    #[error("`{path}` cannot be used as a vault: {reason}")]
+    VaultRootUnusable {
+        /// The folder that was offered.
+        path: String,
+        /// Why it is unusable.
+        reason: &'static str,
+    },
+
+    /// A component of a path inside the vault was a symbolic link.
+    ///
+    /// Refused whatever the link points at, including another location inside the same
+    /// vault: an alias creates two routes to one bundle, which double-counts lectures
+    /// on a vault walk and can make a sync client chase its own tail.
+    #[error("`{path}` is an alias, and Nexus does not follow aliases inside a vault")]
+    SymlinkRefused {
+        /// The offending component.
+        path: String,
+    },
+
+    /// A path resolved to a location outside the vault root.
+    #[error("`{path}` resolves to a location outside the vault")]
+    PathEscapesVault {
+        /// The path as it was requested.
+        path: String,
+    },
+
+    /// A filesystem operation failed.
+    ///
+    /// Carries what was being attempted and on what, because "permission denied" with
+    /// no subject is not something anyone can act on.
+    #[error("could not {operation} `{path}`")]
+    Io {
+        /// The attempted operation, phrased to complete the sentence above.
+        operation: &'static str,
+        /// What it was attempted on.
+        path: String,
+        /// The underlying failure.
+        #[source]
+        source: std::io::Error,
+    },
+
     /// A string was not a well-formed order key.
     #[error("`{key}` is not a valid order key: {reason}")]
     InvalidOrderKey {
@@ -106,6 +148,10 @@ impl CoreError {
                 "ERR_INVALID_COORDINATE"
             }
             Self::InvalidName { .. } => "ERR_INVALID_NAME",
+            Self::VaultRootUnusable { .. } => "ERR_VAULT_ROOT_UNUSABLE",
+            Self::SymlinkRefused { .. } => "ERR_SYMLINK_REFUSED",
+            Self::PathEscapesVault { .. } => "ERR_PATH_ESCAPES_VAULT",
+            Self::Io { .. } => "ERR_IO",
             Self::InvalidVaultPath { .. } => "ERR_INVALID_VAULT_PATH",
             Self::VaultPathTooDeep { .. } => "ERR_VAULT_PATH_TOO_DEEP",
             Self::InvalidOrderKey { .. } => "ERR_INVALID_ORDER_KEY",
@@ -131,6 +177,26 @@ impl CoreError {
                 "That name cannot be used for a folder on disk. Nothing was created or \
                  renamed. Try a shorter name, or one without punctuation such as \
                  slashes or colons."
+            }
+            Self::VaultRootUnusable { .. } => {
+                "Nexus could not open that folder as a vault. Nothing was changed. Check \
+                 the folder still exists and that you have permission to open it."
+            }
+            Self::SymlinkRefused { .. } => {
+                "That item is an alias pointing somewhere else, and Nexus does not \
+                 follow aliases inside a vault — following one could put your notes \
+                 outside the vault without you realising. Nothing was changed. Move the \
+                 real folder into your vault instead."
+            }
+            Self::PathEscapesVault { .. } => {
+                "That location turned out to sit outside your vault, so Nexus stopped \
+                 before reading or writing anything. Nothing was changed."
+            }
+            Self::Io { .. } => {
+                "A file operation did not finish, so it was abandoned rather than left \
+                 half-done. Your existing notes and highlights are untouched. Check \
+                 there is free disk space and that the vault folder is reachable, then \
+                 try again."
             }
             Self::InvalidVaultPath { .. } => {
                 "That location cannot be used inside your vault. Nothing was created or \

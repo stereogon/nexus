@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/lecture-core"]
+members = ["crates/lecture-core", "crates/lecture-fs"]
 
 # `crates/src-tauri` joins this list in Milestone 2, when there is an IPC surface
 # worth adapting. Declaring it now would pull the whole Tauri dependency tree and an
@@ -25,6 +25,14 @@ serde = { version = "1.0.229", features = ["derive"] }
 # preserves what it is given, so without this a folder named "Café" created on one
 # device can appear as a second, distinct folder on another once the vault syncs.
 unicode-normalization = "0.1.26"
+serde_json = "1.0.154"
+
+# Dev-only. Storage tests need a real directory to create, rename and symlink inside;
+# an in-memory fake cannot exercise the behaviour that matters there.
+tempfile = "3.27.0"
+
+# Internal crates, so a member can depend on another without repeating the path.
+lecture-core = { path = "crates/lecture-core" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

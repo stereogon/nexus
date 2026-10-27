@@ -34,7 +34,6 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
       handles inserts between neighbours; validated on construction and on deserialize
       (16 tests, including 1000 appends, 1000 prepends and 300 inserts into one gap)
 - [ ] Domain: `LectureBundle`, `Annotation`, `Citation`, `Taxonomy`, `Facets`, `BundleRef`
-- [ ] `AtomicFsStorage` — temp → `sync_all` → `rename`; `.bak` on parse failure
 - [x] `Slug` — one safe path segment. Rejects separators, control and invisible
       characters, Windows device names, leading dots/hyphens, trailing dots and spaces;
       normalises to NFC (never NFKC — see decision log); 200-byte cap so atomic staging
@@ -44,10 +43,18 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
       non-emptiness structural. `join_onto` is pure, so a not-yet-created bundle can be
       located before it exists. 17 tests, including a containment property over hostile
       inputs with a guard against passing vacuously.
-- [ ] **Filesystem** containment: canonicalise the deepest existing ancestor, assert it
-      stays under the canonical root, refuse symlinked components. Belongs with
-      `AtomicFsStorage`, since it needs I/O and `lecture-core` stays pure — **next
-      substep**
+- [x] New crate `crates/lecture-fs` — the desktop filesystem adapter. Deliberately not
+      required to compile for iOS; the iPadOS companion gets its own adapter because
+      iCloud needs `NSFileCoordinator` rather than `rename`.
+- [x] **Filesystem** containment: `VaultRoot::open` canonicalises the root (so a
+      symlinked *root* is allowed — the user's own choice), `VaultRoot::resolve` walks
+      the existing prefix refusing any symlinked component, then re-checks containment
+      against the canonical filesystem. Hands back a `ResolvedPath` with no public
+      constructor, so writes can demand proof rather than trust a caller. 13 tests
+      against real temp directories, including escape-outward, alias-inward, mid-path
+      and dangling links.
+- [ ] `AtomicFsStorage` — temp → `sync_all` → `rename`, opened with `O_NOFOLLOW`;
+      `.bak` on parse failure — **next substep**
 - [ ] Vault walk — prunes at first `manifest.json`; rejects nested lectures
 - [ ] `schemaVersion` 1 → 2 migration
 - [ ] `tracing` + `tracing-appender` to `~/Library/Logs/LectureVault/app.log`
@@ -146,6 +153,45 @@ The tree was not rustfmt-clean, and the first run of the check turned up a misin
 doc comment in `order_key/mod.rs` that four green test runs had not. Formatting is the
 cheapest class of thing to enforce mechanically, so it is now in `CLAUDE.md` §5 rather
 than left to whoever is reading the diff.
+
+**2026-10-27 · `lecture-fs` added as a separate crate rather than I/O in the core**
+Filesystem code could technically have gone in `lecture-core`, since `std::fs` compiles
+for iOS. It did not, for two reasons. The locked architecture says the domain crate holds
+no platform concerns, and more concretely the atomic-write *strategy* genuinely differs
+by platform: on iOS with iCloud involved, writes go through `NSFileCoordinator` and a
+bare `rename` is not the correct primitive. So the Phase 2 companion will want its own
+adapter, and the split that makes that possible had to exist before the first write
+landed rather than being retrofitted around it. The iOS CI check targets `lecture-core`
+alone, which is what keeps the boundary honest.
+
+**2026-10-27 · A symlinked vault root is allowed; symlinks inside it are not**
+Someone keeping their vault on an external drive and linking to it from their home folder
+is making a deliberate decision about their own files, so `VaultRoot::open` canonicalises
+the root once and resolves everything against the real location. A symlink *inside* the
+vault is refused instead — and refused even when it points back into the same vault,
+because an alias creates two routes to one bundle, which double-counts it on a vault walk
+and gives a sync client a loop to chase.
+
+**2026-10-27 · `ResolvedPath` exists so the containment check cannot be skipped**
+`resolve` returns a `ResolvedPath` with no public constructor. Write functions will take
+that type rather than a `Path`, so an unchecked location cannot reach them — the type
+system refuses to assemble the call. Same reasoning as `Slug` and `VaultRelativePath`:
+the check is a property of the value, not a step someone has to remember.
+
+**2026-10-27 · Two known, recorded gaps in filesystem containment**
+Neither is papered over, so both are written down here.
+
+1. *TOCTOU.* The containment check and the later open are separate steps, so a component
+   swapped for a symlink in between is not caught. Closing it properly needs
+   `openat`-style calls `std` does not expose, and `unsafe` is forbidden here. Writes will
+   mitigate it independently by opening with `O_NOFOLLOW` via `OpenOptionsExt`, which is
+   safe and does not need `libc`. The residual risk is a single user racing their own
+   filesystem.
+2. *The second containment check is reasoned, not demonstrated.* `confirm_containment`
+   runs on every resolve as defence in depth against redirections that are not symlinks —
+   macOS firmlinks, for instance. No test drives it to failure, because a test cannot
+   create a firmlink. It is therefore unexercised code on its failure path, and is noted
+   as such in its own doc comment too.
 
 **2026-10-27 · Path safety is split across two layers, on purpose**
 "Sanitise paths" is really two problems with different natures. *Lexical* containment —
@@ -351,6 +397,29 @@ All permissive and compatible with distributing a binary. `unicode-ident` and
 `unicode-normalization` carry an additional term (Unicode-3.0, attribution-only), so the
 shipped app must include a notices file; that is an open task, listed in §4.
 `lecture-core` itself is MIT.
+
+Dev-only dependencies, which do not ship in the binary. Pulled in by `tempfile`, needed
+because storage containment cannot be tested against an in-memory fake — the behaviour
+under test *is* the filesystem's. Read from `cargo metadata` on 2026-10-27:
+
+| Crate | Version | Licence |
+|---|---|---|
+| `bitflags` | 2.13.2 | MIT OR Apache-2.0 |
+| `cfg-if` | 1.0.5 | MIT OR Apache-2.0 |
+| `errno` | 0.3.14 | MIT OR Apache-2.0 |
+| `fastrand` | 2.5.0 | Apache-2.0 OR MIT |
+| `getrandom` | 0.4.3 | MIT OR Apache-2.0 |
+| `libc` | 0.2.191 | MIT OR Apache-2.0 |
+| `linux-raw-sys` | 0.12.1 | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT |
+| `once_cell` | 1.21.4 | MIT OR Apache-2.0 |
+| `r-efi` | 6.0.0 | MIT OR Apache-2.0 OR LGPL-2.1-or-later |
+| `rustix` | 1.1.6 | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT |
+| `tempfile` | 3.27.0 | MIT OR Apache-2.0 |
+| `windows-link` | 0.2.1 | MIT OR Apache-2.0 |
+| `windows-sys` | 0.61.2 | MIT OR Apache-2.0 |
+
+Every one offers MIT, so `r-efi`'s LGPL option is never the operative term. None is
+linked into a shipped artefact in any case.
 
 To be re-checked with `cargo deny` once the dependency set settles — the point of that
 tool being that this table should never again be written by hand.

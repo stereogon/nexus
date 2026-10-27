@@ -1,0 +1,21 @@
+[package]
+name = "lecture-fs"
+description = "Filesystem storage adapter for Nexus: containment, atomic writes, recovery."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+# This crate is the desktop filesystem adapter. Unlike `lecture-core` it is **not**
+# required to compile for `aarch64-apple-ios`: iOS reaches the filesystem through
+# NSFileCoordinator when iCloud is involved, so the iPadOS companion gets its own
+# adapter rather than sharing this one. That is precisely why the I/O lives out here
+# instead of inside the domain crate.
+[dependencies]
+lecture-core.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
