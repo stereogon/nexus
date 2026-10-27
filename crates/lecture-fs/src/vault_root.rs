@@ -1,6 +1,6 @@
 //! Proving, against the real filesystem, that a path stays inside the vault.
 //!
-//! [`VaultRelativePath`] already guarantees *lexical* containment: it cannot contain
+//! [`RelativePath`] already guarantees *lexical* containment: it cannot contain
 //! `..`, so joining it onto a root produces a path that textually sits underneath. That
 //! is not enough on a real disk. If `lectures` is a symbolic link to `/etc`, then
 //! `lectures/passwd` is lexically inside the vault and physically is not.
@@ -14,7 +14,7 @@ use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 
-use lecture_core::{CoreError, VaultRelativePath};
+use lecture_core::{CoreError, RelativePath};
 
 use crate::error::{io_error, render};
 
@@ -56,11 +56,11 @@ impl ResolvedPath {
     ///
     /// # Errors
     ///
-    /// Returns [`CoreError::InvalidVaultPath`] if `suffix` contains a separator, or if
+    /// Returns [`CoreError::InvalidRelativePath`] if `suffix` contains a separator, or if
     /// this path somehow names no file.
     pub(crate) fn with_name_suffix(&self, suffix: &str) -> Result<Self, CoreError> {
         if suffix.contains('/') || suffix.contains('\\') {
-            return Err(CoreError::InvalidVaultPath {
+            return Err(CoreError::InvalidRelativePath {
                 path: render(&self.absolute),
                 reason: "a sibling suffix cannot contain a path separator",
             });
@@ -69,18 +69,18 @@ impl ResolvedPath {
         let parent = self
             .absolute
             .parent()
-            .ok_or_else(|| CoreError::InvalidVaultPath {
+            .ok_or_else(|| CoreError::InvalidRelativePath {
                 path: render(&self.absolute),
                 reason: "has no containing folder for a sibling",
             })?;
 
-        let file_name = self
-            .absolute
-            .file_name()
-            .ok_or_else(|| CoreError::InvalidVaultPath {
-                path: render(&self.absolute),
-                reason: "does not name a file",
-            })?;
+        let file_name =
+            self.absolute
+                .file_name()
+                .ok_or_else(|| CoreError::InvalidRelativePath {
+                    path: render(&self.absolute),
+                    reason: "does not name a file",
+                })?;
 
         let mut derived = file_name.to_os_string();
         derived.push(suffix);
@@ -143,7 +143,7 @@ impl VaultRoot {
     /// Returns [`CoreError::SymlinkRefused`] if any existing component is a symbolic
     /// link, [`CoreError::PathEscapesVault`] if the resolved location is not under the
     /// root, and [`CoreError::Io`] if a component cannot be inspected.
-    pub fn resolve(&self, relative: &VaultRelativePath) -> Result<ResolvedPath, CoreError> {
+    pub fn resolve(&self, relative: &RelativePath) -> Result<ResolvedPath, CoreError> {
         let mut candidate = self.canonical.clone();
         let mut exists_so_far = true;
 

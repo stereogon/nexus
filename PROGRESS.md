@@ -41,8 +41,18 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
 - [x] First port: `Clock` in `lecture-core::ports`, with `FixedClock` for deterministic
       tests and `SystemClock` in `lecture-fs`. Establishes the shape
       `DocumentConverterPort` follows in Milestone 2.
-- [ ] Domain: `Manifest` (facets, sequence, source/conversion provenance,
-      `schemaVersion`) — **next substep**
+- [x] `Label` — validated, normalised display text (NFC, trimmed, inner whitespace
+      collapsed) so two values that look identical group as one facet rather than two.
+      18 tests shared with `Facets`.
+- [x] `Facets` — `course`/`module`/`week`/`tags` plus an open `custom` map. Tags are a
+      sorted set; `custom` is a `BTreeMap` so bytes are deterministic. Unknown fields
+      denied.
+- [x] `VaultRelativePath` renamed `RelativePath`, since the manifest holds
+      *bundle*-relative paths (`source/document.pdf`) and the type never assumed the
+      vault — `join_onto` always took the base. Error variants and codes renamed to
+      match before anything ships.
+- [ ] Domain: `Manifest` (sequence, source/conversion provenance, `schemaVersion`) and
+      its load/save path with `.bak` — **next substep**
 - [ ] Domain: `Annotation`, `Citation`, `LectureBundle`, `BundleRef`
 - [x] `Slug` — one safe path segment. Rejects separators, control and invisible
       characters, Windows device names, leading dots/hyphens, trailing dots and spaces;
@@ -167,6 +177,61 @@ The tree was not rustfmt-clean, and the first run of the check turned up a misin
 doc comment in `order_key/mod.rs` that four green test runs had not. Formatting is the
 cheapest class of thing to enforce mechanically, so it is now in `CLAUDE.md` §5 rather
 than left to whoever is reading the diff.
+
+**2026-10-27 · `manifest.json` does not hold view state — spec amended**
+The spec described `manifest.json` as holding "last opened page/scroll state". Raised
+with the user and agreed: it does not. Scroll position changes constantly and the
+manifest is a *synced* file, so storing it there rewrites a synced file on every scroll,
+pushing churn to every device and manufacturing exactly the conflicts the "no central
+index" decision exists to avoid. Per-device view state lives in the rebuildable
+`.nexus/` cache, which is never synced and whose loss costs a scroll position.
+
+A side benefit settles a question that would otherwise have come up later: it becomes
+*correct* for two devices to sit at different pages of the same lecture, which is what
+someone reading on an iPad and a laptop actually wants. `claude-spec.md` carries a dated
+amendment note; the bundle format is otherwise untouched.
+
+**2026-10-27 · `Label` normalises rather than merely validating**
+Facet values are *grouped on* at runtime, so validation alone is not enough: `"CS 454"`
+and `"CS  454"` would pass any check and still appear as two separate courses in the
+sidebar. `Label` therefore applies NFC, trims, and collapses inner whitespace runs, so
+values that look identical to a person are identical to the code. Case is left alone,
+because it is meaningful on screen.
+
+**2026-10-27 · `Slug` and `Label` treat control characters differently, on purpose**
+`Slug` refuses every control character: a tab inside a *filename* is pathological however
+it got there. `Label` refuses only control characters that are not whitespace, because a
+tab or newline in a *title* almost always arrives from text pasted out of a PDF or a
+spreadsheet, and refusing that would be hostile — they are collapsed as whitespace
+instead. `NUL` and `ESC` have no such excuse and are still refused.
+
+This surfaced as a test failure while writing `Label`, and the test was right to fail:
+the first implementation reused `Slug`'s rule and would have rejected a pasted title. The
+shared module `domain/text.rs` now holds the character *definitions* so a set like the
+invisible-character list cannot fork, while each type keeps its own policy on top.
+
+**2026-10-27 · Tags are a set; `custom` is a `BTreeMap`**
+Both choices are about sync, not tidiness. Tags sorted and de-duplicated means two
+devices that add the same tag converge on identical bytes instead of conflicting over
+order. A `BTreeMap` rather than a `HashMap` means identical data serialises to identical
+bytes every run; with a `HashMap`, key order varies and every save would look like a
+change to a sync client and produce an unreadable diff.
+
+A hand-edited file with out-of-order tags is *corrected* rather than refused — losing
+access to a lecture because its tags were listed alphabetically wrong would be a bad
+trade.
+
+**2026-10-27 · Unknown fields are denied, so an additive change must bump `schemaVersion`**
+The alternative is silent loss: if a newer minor version adds a field, an older reader
+that ignores unknown fields would drop it on the next save, and the newer device's data
+would vanish. Denying unknown fields makes that impossible by construction — any field
+addition has to bump `schemaVersion`, which the load path handles explicitly. It also
+means a hand-edit typo like `"corse"` is reported instead of discarded. `custom` is the
+sanctioned extension point for anything that does not warrant a version bump.
+
+Note that the dangerous case — a *newer* file reaching an older app — is handled by the
+version check and must never trigger the `.bak`-and-rewrite path, which is for corrupt
+files only. That distinction lands with the manifest load path in the next substep.
 
 **2026-10-27 · Timestamps are stored in exactly one form, and nothing else is accepted**
 `2026-10-27T16:00:00+01:00` and `2026-10-27T16:00:00.5Z` are both valid RFC 3339 and both

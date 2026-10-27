@@ -11,7 +11,7 @@ use std::os::unix::fs as unix_fs;
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 
-use lecture_core::{Slug, VaultRelativePath};
+use lecture_core::{RelativePath, Slug};
 use lecture_fs::{AtomicFsStorage, VaultRoot};
 use tempfile::TempDir;
 
@@ -22,8 +22,8 @@ fn storage() -> (TempDir, AtomicFsStorage) {
     (dir, AtomicFsStorage::new(root))
 }
 
-fn at(raw: &str) -> VaultRelativePath {
-    VaultRelativePath::parse(raw).expect("test path should be valid")
+fn at(raw: &str) -> RelativePath {
+    RelativePath::parse(raw).expect("test path should be valid")
 }
 
 /// Temp files this crate leaves behind are identifiable by name.
@@ -243,10 +243,7 @@ fn handles_a_name_at_the_length_limit() {
     // arithmetic against a real filesystem rather than only in a comment.
     let (_dir, storage) = storage();
     let long = Slug::parse(&"a".repeat(200)).unwrap();
-    let path = VaultRelativePath::parse("course")
-        .unwrap()
-        .child(long)
-        .unwrap();
+    let path = RelativePath::parse("course").unwrap().child(long).unwrap();
 
     storage
         .write(&path, b"stored under a maximal name")
@@ -260,10 +257,7 @@ fn a_backup_of_a_maximal_name_also_fits() {
     // `.bak` plus the staging suffix on top of a 200-byte name: 237 bytes, still legal.
     let (_dir, storage) = storage();
     let long = Slug::parse(&"a".repeat(200)).unwrap();
-    let path = VaultRelativePath::parse("course")
-        .unwrap()
-        .child(long)
-        .unwrap();
+    let path = RelativePath::parse("course").unwrap().child(long).unwrap();
 
     storage.write(&path, b"content").unwrap();
 

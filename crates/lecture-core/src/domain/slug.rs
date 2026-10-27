@@ -14,6 +14,7 @@
 use serde::{Deserialize, Serialize};
 use unicode_normalization::UnicodeNormalization;
 
+use crate::domain::text;
 use crate::error::CoreError;
 
 /// Maximum length in bytes.
@@ -30,13 +31,6 @@ const MAX_BYTES: usize = 200;
 /// `/` is the POSIX separator; `:` was the classic Mac separator and Finder still
 /// displays it as `/`; the rest are forbidden by Windows and exFAT.
 const FORBIDDEN: &[char] = &['/', '\\', ':', '*', '?', '"', '<', '>', '|'];
-
-/// Invisible characters that are legal in a filename but let one name impersonate
-/// another in the sidebar — right-to-left overrides, zero-width joiners, a BOM.
-const INVISIBLE: &[char] = &[
-    '\u{00AD}', '\u{200B}', '\u{200C}', '\u{200D}', '\u{200E}', '\u{200F}', '\u{202A}', '\u{202B}',
-    '\u{202C}', '\u{202D}', '\u{202E}', '\u{2066}', '\u{2067}', '\u{2068}', '\u{2069}', '\u{FEFF}',
-];
 
 /// Characters that [`Slug::from_title`] treats as word separators rather than content.
 ///
@@ -107,7 +101,7 @@ impl Slug {
         let mut separator_pending = false;
 
         for ch in title.nfc() {
-            if ch.is_control() || INVISIBLE.contains(&ch) {
+            if ch.is_control() || text::is_invisible(ch) {
                 continue;
             }
             if ch.is_whitespace() || FORBIDDEN.contains(&ch) || SEPARATORS.contains(&ch) {
@@ -169,10 +163,10 @@ impl Slug {
         if candidate.starts_with(char::is_whitespace) || candidate.ends_with(char::is_whitespace) {
             return reject("leading or trailing spaces are invisible and easily lost");
         }
-        if candidate.chars().any(char::is_control) {
+        if text::has_control(candidate) {
             return reject("contains a control character");
         }
-        if candidate.chars().any(|c| INVISIBLE.contains(&c)) {
+        if text::has_invisible(candidate) {
             return reject("contains an invisible character that could disguise the name");
         }
         if candidate.chars().any(|c| FORBIDDEN.contains(&c)) {

@@ -1,6 +1,6 @@
 //! The storage surface the rest of the app uses.
 //!
-//! [`AtomicFsStorage`] owns a [`VaultRoot`] and takes [`VaultRelativePath`]s rather than
+//! [`AtomicFsStorage`] owns a [`VaultRoot`] and takes [`RelativePath`]s rather than
 //! filesystem paths. Containment is therefore re-checked inside every call, and a caller
 //! holding only a vault path has no way to reach the disk without it. That is the point:
 //! the guarantee is in the signature, not in a convention someone has to follow.
@@ -13,7 +13,7 @@ use std::io::Read;
 use std::os::unix::fs::OpenOptionsExt;
 use std::path::PathBuf;
 
-use lecture_core::{CoreError, VaultRelativePath};
+use lecture_core::{CoreError, RelativePath};
 
 use crate::error::io_error;
 use crate::staging::StagingFile;
@@ -51,7 +51,7 @@ impl AtomicFsStorage {
     /// Returns [`CoreError::SymlinkRefused`] or [`CoreError::PathEscapesVault`] if `at`
     /// does not resolve safely inside the vault, and [`CoreError::Io`] if any step of
     /// the write fails.
-    pub fn write(&self, at: &VaultRelativePath, bytes: &[u8]) -> Result<(), CoreError> {
+    pub fn write(&self, at: &RelativePath, bytes: &[u8]) -> Result<(), CoreError> {
         let resolved = self.root.resolve(at)?;
         write_bytes(&resolved, bytes)
     }
@@ -73,7 +73,7 @@ impl AtomicFsStorage {
     /// Returns [`CoreError::Io`] if the file cannot be opened or read, including when it
     /// has been replaced by a link, and a containment error if `at` does not resolve
     /// safely.
-    pub fn read(&self, at: &VaultRelativePath) -> Result<Vec<u8>, CoreError> {
+    pub fn read(&self, at: &RelativePath) -> Result<Vec<u8>, CoreError> {
         let resolved = self.root.resolve(at)?;
         let path = resolved.as_path();
 
@@ -97,7 +97,7 @@ impl AtomicFsStorage {
     ///
     /// Returns a containment error if `at` does not resolve safely inside the vault. A
     /// path that resolves but is absent is `Ok(false)`, not an error.
-    pub fn exists(&self, at: &VaultRelativePath) -> Result<bool, CoreError> {
+    pub fn exists(&self, at: &RelativePath) -> Result<bool, CoreError> {
         let resolved = self.root.resolve(at)?;
         Ok(resolved.as_path().exists())
     }
@@ -110,7 +110,7 @@ impl AtomicFsStorage {
     ///
     /// Returns a containment error if `at` does not resolve safely, or
     /// [`CoreError::Io`] if creation fails.
-    pub fn create_dir(&self, at: &VaultRelativePath) -> Result<(), CoreError> {
+    pub fn create_dir(&self, at: &RelativePath) -> Result<(), CoreError> {
         let resolved = self.root.resolve(at)?;
         let path = resolved.as_path();
 
@@ -133,7 +133,7 @@ impl AtomicFsStorage {
     ///
     /// Returns a containment error if `at` does not resolve safely, or
     /// [`CoreError::Io`] if the original cannot be read or the backup cannot be written.
-    pub fn back_up(&self, at: &VaultRelativePath) -> Result<PathBuf, CoreError> {
+    pub fn back_up(&self, at: &RelativePath) -> Result<PathBuf, CoreError> {
         let bytes = self.read(at)?;
 
         let resolved = self.root.resolve(at)?;

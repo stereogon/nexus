@@ -1,23 +1,29 @@
-//! A location inside the vault, proven to stay inside it.
+//! A relative location, proven to stay underneath whatever it is joined to.
+//!
+//! Used for two kinds of path, because the guarantee is the same for both: a lecture's
+//! location relative to the vault root, and a file's location relative to its bundle
+//! (`source/document.pdf`, `assets/figure.png`). Nothing here knows which, since
+//! [`RelativePath::join_onto`] takes the base at the point of use — which is why this is
+//! one type and not two near-identical ones.
 //!
 //! # What this type guarantees
 //!
-//! A [`VaultRelativePath`] is a sequence of at most [`MAX_DEPTH`] validated [`Slug`]s.
+//! A [`RelativePath`] is a sequence of at most [`MAX_DEPTH`] validated [`Slug`]s.
 //! Because a `Slug` can be neither empty, nor `.`, nor `..`, nor contain a separator,
-//! there is no sequence of them that walks upward. So [`VaultRelativePath::join_onto`]
+//! there is no sequence of them that walks upward. So [`RelativePath::join_onto`]
 //! is **lexically** always inside the root it is given, and that is a property of the
 //! type rather than of each caller remembering to check.
 //!
 //! This is the "parse, don't validate" shape used by the rest of this module: holding
 //! the value *is* the proof, so no downstream caller has to re-check and none can
 //! forget to. The final segment is stored apart from the rest for the same reason — a
-//! path that names nothing cannot be built, so [`VaultRelativePath::name`] needs no
+//! path that names nothing cannot be built, so [`RelativePath::name`] needs no
 //! fallback and no panic.
 //!
 //! # What this type does not guarantee
 //!
 //! It knows nothing about the disk. If `lectures` on disk is a symbolic link pointing at
-//! `/etc`, then `lectures/passwd` is a perfectly valid `VaultRelativePath` whose
+//! `/etc`, then `lectures/passwd` is a perfectly valid `RelativePath` whose
 //! resolved location is outside the vault. Closing that requires canonicalising real
 //! directory entries and refusing links, which is filesystem work and so belongs to the
 //! storage adapter, not to pure domain logic. Until that lands, this type is the barrier
@@ -32,34 +38,36 @@ use serde::{Deserialize, Serialize};
 use crate::domain::Slug;
 use crate::error::CoreError;
 
-/// The deepest a lecture may sit below the vault root, in segments.
+/// The deepest a path may go, in segments.
 ///
-/// Five is the cap the spec sets. It is enforced here rather than at the UI, because a
-/// path can also arrive from a hand-edited manifest, and an unbounded depth turns a
-/// vault walk into an unbounded recursion.
+/// Five is the cap the spec sets for vault nesting, and it is enforced here rather than
+/// at the UI because a path can also arrive from a hand-edited manifest, where an
+/// unbounded depth turns a vault walk into an unbounded recursion. It doubles as a sane
+/// bound inside a bundle, where real paths are two segments deep.
 pub const MAX_DEPTH: usize = 5;
 
-/// The separator used in stored vault paths, on every platform.
+/// The separator used in stored paths, on every platform.
 ///
 /// Manifests record `assets/figure.png`, never a backslash, so a bundle stays readable
 /// by the iPadOS companion and by whatever opens it in five years. `Slug` rejects both
 /// separators, so neither can appear inside a segment.
 const SEPARATOR: char = '/';
 
-/// A validated, relative, depth-capped path inside the vault.
+/// A validated, relative, depth-capped path.
 ///
 /// Always names something: the trailing segment is part of the structure, so there is no
-/// such thing as an empty `VaultRelativePath`.
+/// such thing as an empty `RelativePath`.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
-pub struct VaultRelativePath {
-    /// Containing folders, outermost first. Empty when this sits at the vault root.
+pub struct RelativePath {
+    /// Containing folders, outermost first. Empty when this names something
+    /// directly at the base.
     parents: Vec<Slug>,
     /// The thing this path points at.
     name: Slug,
 }
 
-impl TryFrom<String> for VaultRelativePath {
+impl TryFrom<String> for RelativePath {
     type Error = CoreError;
 
     fn try_from(raw: String) -> Result<Self, Self::Error> {
@@ -67,13 +75,13 @@ impl TryFrom<String> for VaultRelativePath {
     }
 }
 
-impl From<VaultRelativePath> for String {
-    fn from(path: VaultRelativePath) -> Self {
+impl From<RelativePath> for String {
+    fn from(path: RelativePath) -> Self {
         path.to_string()
     }
 }
 
-impl fmt::Display for VaultRelativePath {
+impl fmt::Display for RelativePath {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (index, segment) in self.segments().enumerate() {
             if index > 0 {
@@ -85,7 +93,7 @@ impl fmt::Display for VaultRelativePath {
     }
 }
 
-impl VaultRelativePath {
+impl RelativePath {
     /// Parses a stored or user-supplied vault path.
     ///
     /// Each segment is validated as a [`Slug`], and that error is propagated unchanged
@@ -94,8 +102,8 @@ impl VaultRelativePath {
     ///
     /// # Errors
     ///
-    /// Returns [`CoreError::VaultPathTooDeep`] beyond [`MAX_DEPTH`] segments,
-    /// [`CoreError::InvalidVaultPath`] if the path is empty, absolute, or has an empty
+    /// Returns [`CoreError::RelativePathTooDeep`] beyond [`MAX_DEPTH`] segments,
+    /// [`CoreError::InvalidRelativePath`] if the path is empty, absolute, or has an empty
     /// segment, and [`CoreError::InvalidName`] if a segment is not a usable name.
     pub fn parse(raw: &str) -> Result<Self, CoreError> {
         if raw.is_empty() {
@@ -130,8 +138,8 @@ impl VaultRelativePath {
     ///
     /// # Errors
     ///
-    /// Returns [`CoreError::InvalidVaultPath`] if `segments` is empty, or
-    /// [`CoreError::VaultPathTooDeep`] beyond [`MAX_DEPTH`].
+    /// Returns [`CoreError::InvalidRelativePath`] if `segments` is empty, or
+    /// [`CoreError::RelativePathTooDeep`] beyond [`MAX_DEPTH`].
     pub fn from_segments(mut segments: Vec<Slug>) -> Result<Self, CoreError> {
         let depth = segments.len();
         if depth > MAX_DEPTH {
@@ -153,7 +161,7 @@ impl VaultRelativePath {
         })
     }
 
-    /// A path naming `name` directly at the vault root.
+    /// A path naming `name` directly at the base.
     #[must_use]
     pub fn root_level(name: Slug) -> Self {
         Self {
@@ -183,7 +191,7 @@ impl VaultRelativePath {
         self.parents.iter().chain(iter::once(&self.name))
     }
 
-    /// How many levels below the vault root this sits. Never zero.
+    /// How many levels below the base this sits. Never zero.
     #[must_use]
     pub fn depth(&self) -> usize {
         self.parents.len() + 1
@@ -195,7 +203,7 @@ impl VaultRelativePath {
         &self.name
     }
 
-    /// The containing path, or `None` if this already sits at the vault root.
+    /// The containing path, or `None` if this already sits at the base.
     #[must_use]
     pub fn parent(&self) -> Option<Self> {
         let mut parents = self.parents.clone();
@@ -207,7 +215,7 @@ impl VaultRelativePath {
     ///
     /// # Errors
     ///
-    /// Returns [`CoreError::VaultPathTooDeep`] if appending would pass [`MAX_DEPTH`].
+    /// Returns [`CoreError::RelativePathTooDeep`] if appending would pass [`MAX_DEPTH`].
     pub fn child(&self, name: Slug) -> Result<Self, CoreError> {
         let mut segments: Vec<Slug> = self.segments().cloned().collect();
         segments.push(name);
@@ -215,14 +223,14 @@ impl VaultRelativePath {
     }
 
     fn invalid(path: &str, reason: &'static str) -> CoreError {
-        CoreError::InvalidVaultPath {
+        CoreError::InvalidRelativePath {
             path: path.to_owned(),
             reason,
         }
     }
 
     fn too_deep(path: &str, depth: usize) -> CoreError {
-        CoreError::VaultPathTooDeep {
+        CoreError::RelativePathTooDeep {
             path: path.to_owned(),
             depth,
             max: MAX_DEPTH,

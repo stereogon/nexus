@@ -17,6 +17,8 @@ pub mod domain;
 pub mod error;
 pub mod ports;
 
-pub use domain::{MAX_DEPTH, NormalizedRect, OrderKey, Slug, Timestamp, VaultRelativePath};
+pub use domain::{
+    Facets, Label, MAX_DEPTH, NormalizedRect, OrderKey, RelativePath, Slug, Timestamp,
+};
 pub use error::CoreError;
 pub use ports::{Clock, FixedClock};

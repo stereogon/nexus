@@ -86,7 +86,7 @@ Every lecture is stored as a self-contained directory bundle so it can be synced
 ```text
 StudyVault/
 └── 2026-10-distributed-consensus/
-    ├── manifest.json                  # Bundle metadata, hashes, last opened page/scroll state
+    ├── manifest.json                  # Bundle metadata, taxonomy facets, sequence, source hashes
     ├── source/
     │   ├── original.pptx              # Original imported file (if converted)
     │   └── document.pdf               # Canonical PDF rendered by the viewer
@@ -94,6 +94,21 @@ StudyVault/
     ├── annotations.json               # Viewport-independent normalized coordinates
     └── assets/                        # Local images and pasted figures
 ```
+
+> **Amended 2026-10-27 (agreed with the user).** `manifest.json` originally also held
+> "last opened page/scroll state". It does not, because scroll position changes
+> constantly and the manifest is a *synced* file: storing it there would rewrite a synced
+> file on every scroll, pushing churn to every device and manufacturing exactly the
+> conflicts the "no central index" decision exists to avoid.
+>
+> Per-device view state — last page, scroll offset, zoom, last-opened lecture — lives in
+> the rebuildable `.nexus/` cache instead, which is never synced and whose loss costs
+> nothing but a scroll position. This also makes it *correct* for two devices to sit at
+> different pages of the same lecture, which is what someone reading on an iPad and a
+> laptop actually wants.
+>
+> Rationale recorded in `PROGRESS.md`; the containing bundle format is otherwise
+> unchanged.
 
 ### Viewport-Independent Coordinate Rule (CRITICAL)
 Never store raw screen pixel coordinates (`px`). All coordinates in `annotations.json` MUST be normalized to `[0.0, 1.0]` relative to the unscaled PDF page width and height:

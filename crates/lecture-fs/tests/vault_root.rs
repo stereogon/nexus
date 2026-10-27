@@ -11,7 +11,7 @@ use std::fs;
 use std::os::unix::fs as unix_fs;
 use std::path::Path;
 
-use lecture_core::VaultRelativePath;
+use lecture_core::RelativePath;
 use lecture_fs::VaultRoot;
 use tempfile::TempDir;
 
@@ -23,8 +23,8 @@ fn vault() -> (TempDir, VaultRoot) {
     (dir, root)
 }
 
-fn path(raw: &str) -> VaultRelativePath {
-    VaultRelativePath::parse(raw).expect("test path should be valid")
+fn path(raw: &str) -> RelativePath {
+    RelativePath::parse(raw).expect("test path should be valid")
 }
 
 #[test]

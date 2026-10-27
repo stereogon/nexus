@@ -1,4 +1,4 @@
-//! Contract tests for [`VaultRelativePath`].
+//! Contract tests for [`RelativePath`].
 //!
 //! The headline property is the containment one: for *any* input this type accepts,
 //! joining it onto a root cannot produce a location outside that root.
@@ -7,10 +7,10 @@
 
 use std::path::{Component, Path};
 
-use lecture_core::{CoreError, MAX_DEPTH, Slug, VaultRelativePath};
+use lecture_core::{CoreError, MAX_DEPTH, RelativePath, Slug};
 
-fn parse(raw: &str) -> VaultRelativePath {
-    VaultRelativePath::parse(raw).unwrap_or_else(|e| panic!("`{raw}` should parse: {e}"))
+fn parse(raw: &str) -> RelativePath {
+    RelativePath::parse(raw).unwrap_or_else(|e| panic!("`{raw}` should parse: {e}"))
 }
 
 #[test]
@@ -23,7 +23,7 @@ fn accepts_paths_a_real_vault_would_hold() {
         "assets/figure.png",
     ] {
         assert!(
-            VaultRelativePath::parse(raw).is_ok(),
+            RelativePath::parse(raw).is_ok(),
             "`{raw}` should be a usable vault path"
         );
     }
@@ -57,7 +57,7 @@ fn no_accepted_path_can_escape_the_root() {
 
     let mut accepted = 0;
     for raw in candidates {
-        let Ok(path) = VaultRelativePath::parse(raw) else {
+        let Ok(path) = RelativePath::parse(raw) else {
             continue;
         };
         accepted += 1;
@@ -98,26 +98,23 @@ fn rejects_traversal_in_every_spelling() {
         "./a",
         "a/./b",
     ] {
-        assert!(
-            VaultRelativePath::parse(raw).is_err(),
-            "`{raw}` must be refused"
-        );
+        assert!(RelativePath::parse(raw).is_err(), "`{raw}` must be refused");
     }
 }
 
 #[test]
 fn rejects_absolute_paths() {
     for raw in ["/etc/passwd", "/", "/Users/someone/StudyVault"] {
-        let err = VaultRelativePath::parse(raw).unwrap_err();
-        assert_eq!(err.code(), "ERR_INVALID_VAULT_PATH", "for `{raw}`");
+        let err = RelativePath::parse(raw).unwrap_err();
+        assert_eq!(err.code(), "ERR_INVALID_RELATIVE_PATH", "for `{raw}`");
     }
 }
 
 #[test]
 fn rejects_empty_and_malformed_paths() {
     for raw in ["", "a//b", "a/", "a/b//"] {
-        let err = VaultRelativePath::parse(raw).unwrap_err();
-        assert_eq!(err.code(), "ERR_INVALID_VAULT_PATH", "for `{raw}`");
+        let err = RelativePath::parse(raw).unwrap_err();
+        assert_eq!(err.code(), "ERR_INVALID_RELATIVE_PATH", "for `{raw}`");
     }
 }
 
@@ -125,7 +122,7 @@ fn rejects_empty_and_malformed_paths() {
 fn reports_the_offending_segment_rather_than_a_generic_failure() {
     // A person who typed a colon should be told about the colon, not handed
     // "invalid path".
-    let err = VaultRelativePath::parse("week-03/notes:draft").unwrap_err();
+    let err = RelativePath::parse("week-03/notes:draft").unwrap_err();
 
     assert_eq!(err.code(), "ERR_INVALID_NAME");
     assert!(
@@ -141,11 +138,11 @@ fn enforces_the_depth_cap() {
 
     assert_eq!(parse(at_cap).depth(), MAX_DEPTH);
 
-    let err = VaultRelativePath::parse(past_cap).unwrap_err();
-    assert_eq!(err.code(), "ERR_VAULT_PATH_TOO_DEEP");
+    let err = RelativePath::parse(past_cap).unwrap_err();
+    assert_eq!(err.code(), "ERR_RELATIVE_PATH_TOO_DEEP");
     assert!(matches!(
         err,
-        CoreError::VaultPathTooDeep {
+        CoreError::RelativePathTooDeep {
             depth: 6,
             max: 5,
             ..
@@ -157,9 +154,9 @@ fn enforces_the_depth_cap() {
 fn a_hostile_depth_is_refused_without_validating_every_segment() {
     // Guards the early-exit: 10,000 segments must be one rejection, not 10,000 parses.
     let deep = vec!["a"; 10_000].join("/");
-    let err = VaultRelativePath::parse(&deep).unwrap_err();
+    let err = RelativePath::parse(&deep).unwrap_err();
 
-    assert_eq!(err.code(), "ERR_VAULT_PATH_TOO_DEEP");
+    assert_eq!(err.code(), "ERR_RELATIVE_PATH_TOO_DEEP");
 }
 
 #[test]
@@ -224,7 +221,7 @@ fn appends_a_child_and_respects_the_cap() {
     assert_eq!(child.depth(), MAX_DEPTH);
 
     let err = child.child(name).unwrap_err();
-    assert_eq!(err.code(), "ERR_VAULT_PATH_TOO_DEEP");
+    assert_eq!(err.code(), "ERR_RELATIVE_PATH_TOO_DEEP");
 }
 
 #[test]
@@ -232,11 +229,11 @@ fn a_path_always_names_something() {
     // Non-emptiness is structural, so there is no constructor that produces a path
     // naming nothing.
     assert!(
-        VaultRelativePath::from_segments(Vec::new()).is_err(),
+        RelativePath::from_segments(Vec::new()).is_err(),
         "an empty segment list must be refused"
     );
 
-    let root_level = VaultRelativePath::root_level(Slug::parse("cs454").unwrap());
+    let root_level = RelativePath::root_level(Slug::parse("cs454").unwrap());
     assert_eq!(root_level.depth(), 1);
     assert_eq!(root_level.name().as_str(), "cs454");
     assert!(root_level.parent().is_none());
@@ -244,10 +241,10 @@ fn a_path_always_names_something() {
 
 #[test]
 fn errors_carry_a_code_and_plain_language_remediation() {
-    let too_deep = VaultRelativePath::parse("a/b/c/d/e/f").unwrap_err();
+    let too_deep = RelativePath::parse("a/b/c/d/e/f").unwrap_err();
     assert!(too_deep.remediation().contains("Nothing was moved"));
 
-    let invalid = VaultRelativePath::parse("/etc").unwrap_err();
+    let invalid = RelativePath::parse("/etc").unwrap_err();
     assert!(invalid.remediation().contains("Nothing was created"));
 }
 
@@ -259,7 +256,7 @@ fn survives_a_json_round_trip_as_a_plain_string() {
     let json = serde_json::to_string(&path).unwrap();
     assert_eq!(json, r#""cs454/week-03""#);
 
-    let parsed: VaultRelativePath = serde_json::from_str(&json).unwrap();
+    let parsed: RelativePath = serde_json::from_str(&json).unwrap();
     assert_eq!(path, parsed);
 }
 
@@ -275,7 +272,7 @@ fn deserialization_cannot_bypass_validation() {
         r#""a//b""#,
         r#""week/notes:draft""#,
     ] {
-        let parsed = serde_json::from_str::<VaultRelativePath>(raw);
+        let parsed = serde_json::from_str::<RelativePath>(raw);
         assert!(
             parsed.is_err(),
             "stored path {raw} must be rejected on read, got {parsed:?}"

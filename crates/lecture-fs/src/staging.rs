@@ -121,10 +121,12 @@ impl StagingFile {
         // old name, so there is nothing for the drop guard to remove either way.
         self.committed = true;
 
-        let parent = target.parent().ok_or_else(|| CoreError::InvalidVaultPath {
-            path: render(target),
-            reason: "has no containing folder to flush",
-        })?;
+        let parent = target
+            .parent()
+            .ok_or_else(|| CoreError::InvalidRelativePath {
+                path: render(target),
+                reason: "has no containing folder to flush",
+            })?;
 
         let directory =
             File::open(parent).map_err(|e| io_error("open the folder containing", target, e))?;
@@ -141,7 +143,7 @@ impl StagingFile {
 /// is a typed error rather than a panic so a future caller cannot turn a sequencing
 /// mistake into a crash while someone is saving.
 fn already_closed(path: &Path) -> CoreError {
-    CoreError::InvalidVaultPath {
+    CoreError::InvalidRelativePath {
         path: render(path),
         reason: "the temporary file was already closed",
     }
@@ -164,14 +166,16 @@ impl Drop for StagingFile {
 
 /// Builds the staging path beside `target`.
 fn staging_path(target: &Path) -> Result<PathBuf, CoreError> {
-    let parent = target.parent().ok_or_else(|| CoreError::InvalidVaultPath {
-        path: render(target),
-        reason: "has no containing folder to write into",
-    })?;
+    let parent = target
+        .parent()
+        .ok_or_else(|| CoreError::InvalidRelativePath {
+            path: render(target),
+            reason: "has no containing folder to write into",
+        })?;
 
     let file_name = target
         .file_name()
-        .ok_or_else(|| CoreError::InvalidVaultPath {
+        .ok_or_else(|| CoreError::InvalidRelativePath {
             path: render(target),
             reason: "does not name a file",
         })?;

@@ -45,18 +45,18 @@ pub enum CoreError {
         reason: &'static str,
     },
 
-    /// A path could not be used as a location inside the vault.
-    #[error("`{path}` is not a usable location inside the vault: {reason}")]
-    InvalidVaultPath {
+    /// A path could not be used as a relative location.
+    #[error("`{path}` is not a usable relative location: {reason}")]
+    InvalidRelativePath {
         /// The rejected path.
         path: String,
         /// Which rule it broke.
         reason: &'static str,
     },
 
-    /// A path sat deeper below the vault root than the depth cap allows.
+    /// A path sat deeper than the depth cap allows.
     #[error("`{path}` is {depth} levels deep, past the limit of {max}")]
-    VaultPathTooDeep {
+    RelativePathTooDeep {
         /// The rejected path.
         path: String,
         /// How deep it actually was.
@@ -162,8 +162,8 @@ impl CoreError {
             Self::SymlinkRefused { .. } => "ERR_SYMLINK_REFUSED",
             Self::PathEscapesVault { .. } => "ERR_PATH_ESCAPES_VAULT",
             Self::Io { .. } => "ERR_IO",
-            Self::InvalidVaultPath { .. } => "ERR_INVALID_VAULT_PATH",
-            Self::VaultPathTooDeep { .. } => "ERR_VAULT_PATH_TOO_DEEP",
+            Self::InvalidRelativePath { .. } => "ERR_INVALID_RELATIVE_PATH",
+            Self::RelativePathTooDeep { .. } => "ERR_RELATIVE_PATH_TOO_DEEP",
             Self::InvalidOrderKey { .. } => "ERR_INVALID_ORDER_KEY",
             Self::OrderKeysNotAscending { .. } => "ERR_ORDER_KEYS_NOT_ASCENDING",
             Self::OrderSpaceExhausted { .. } => "ERR_ORDER_SPACE_EXHAUSTED",
@@ -208,11 +208,11 @@ impl CoreError {
                  there is free disk space and that the vault folder is reachable, then \
                  try again."
             }
-            Self::InvalidVaultPath { .. } => {
+            Self::InvalidRelativePath { .. } => {
                 "That location cannot be used inside your vault. Nothing was created or \
                  moved. Choose a folder inside the vault and try again."
             }
-            Self::VaultPathTooDeep { .. } => {
+            Self::RelativePathTooDeep { .. } => {
                 "That folder sits more than five levels deep inside your vault, which is \
                  further than Nexus will follow. Nothing was moved. Drag it nearer the \
                  top of the vault, then try again."
