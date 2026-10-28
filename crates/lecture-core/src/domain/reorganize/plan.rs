@@ -86,8 +86,9 @@ impl ReorganizeBlock {
 pub struct BlockedLecture {
     /// Where it still is.
     pub at: RelativePath,
-    /// Where it should have gone, rendered for the message.
-    pub wanted: String,
+    /// Where it should have gone, rendered for the message, or `None` when the template
+    /// produced no usable name at all — there is nowhere it wanted to be.
+    pub wanted: Option<String>,
     /// What stopped it.
     pub reason: ReorganizeBlock,
 }

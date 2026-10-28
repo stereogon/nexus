@@ -24,6 +24,7 @@ mod index_store;
 pub mod logging;
 mod manifest_store;
 mod renumber_store;
+mod reorganize_store;
 mod versioned;
 
 pub mod storage;
@@ -37,6 +38,7 @@ pub use import::{ImportOutcome, ImportRequest, Importer};
 pub use index_store::VaultIndexStore;
 pub use manifest_store::ManifestStore;
 pub use renumber_store::{RenumberOutcome, VaultRenumber};
+pub use reorganize_store::{ReorganizeOutcome, VaultReorganize};
 pub use storage::AtomicFsStorage;
 pub use vault::{FsVaultDirectory, LoadedVault, UnloadableLecture, VaultLoader};
 pub use vault_root::{ResolvedPath, VaultRoot};

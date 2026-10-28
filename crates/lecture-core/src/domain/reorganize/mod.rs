@@ -52,8 +52,19 @@ pub use plan::{BlockedLecture, Move, PlacedLecture, ReorganizeBlock, ReorganizeP
 /// `existing` is every path in the vault that is **not** one of these lectures — other
 /// folders, stray files, anything that could occupy a name a lecture needs and must not be
 /// written over.
+///
+/// `unnameable` is the lectures whose target could not be rendered at all: a template of
+/// `{course}/{week}-{title}` has nowhere to put a lecture with no week, because the level
+/// holding the title names the week too. They are reported as
+/// [`ReorganizeBlock::NameUnusable`] and stay where they are. Passing them in rather than
+/// leaving them out is what makes the difference between telling someone "give this a week
+/// and I can file it" and silently counting it as needing no change.
 #[must_use]
-pub fn plan_reorganize(lectures: &[PlacedLecture], existing: &[RelativePath]) -> ReorganizePlan {
+pub fn plan_reorganize(
+    lectures: &[PlacedLecture],
+    unnameable: &[RelativePath],
+    existing: &[RelativePath],
+) -> ReorganizePlan {
     let mut plan = ReorganizePlan::default();
 
     // Two lectures wanting one folder is settled first and separately. It is not a
@@ -67,7 +78,7 @@ pub fn plan_reorganize(lectures: &[PlacedLecture], existing: &[RelativePath]) ->
         if shared.contains(lecture.target()) {
             plan.record_blocked(BlockedLecture {
                 at: lecture.at().clone(),
-                wanted: lecture.target().to_string(),
+                wanted: Some(lecture.target().to_string()),
                 reason: ReorganizeBlock::SharedTarget,
             });
             continue;
@@ -84,9 +95,19 @@ pub fn plan_reorganize(lectures: &[PlacedLecture], existing: &[RelativePath]) ->
         });
     }
 
+    for at in unnameable {
+        plan.record_blocked(BlockedLecture {
+            at: at.clone(),
+            wanted: None,
+            reason: ReorganizeBlock::NameUnusable,
+        });
+    }
+
     // Everything a move must not land on. A mover's own path leaves this set the moment it
     // moves; an unchanged lecture's path never does, because it is staying.
     let mut occupied: HashSet<String> = existing.iter().map(ToString::to_string).collect();
+    // An unnameable lecture is staying, so its folder is an obstacle like any other.
+    occupied.extend(unnameable.iter().map(ToString::to_string));
     for lecture in lectures {
         if !pending.iter().any(|step| &step.from == lecture.at()) {
             occupied.insert(lecture.at().to_string());
@@ -152,7 +173,7 @@ fn break_deadlock(
         for step in blocked {
             plan.record_blocked(BlockedLecture {
                 at: step.from,
-                wanted: step.to.to_string(),
+                wanted: Some(step.to.to_string()),
                 reason: ReorganizeBlock::TargetOccupied,
             });
         }
@@ -190,7 +211,7 @@ fn break_deadlock(
         // would be a startling thing for a tidying operation to do.
         plan.record_blocked(BlockedLecture {
             at: first.from.clone(),
-            wanted: first.to.to_string(),
+            wanted: Some(first.to.to_string()),
             reason: ReorganizeBlock::CycleUnbreakable,
         });
         remaining.retain(|step| step.from != first.from);

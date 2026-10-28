@@ -120,6 +120,14 @@ pub fn derived_file_discarded(file: &'static str) {
     tracing::info!(file, "derived file discarded, rebuilding");
 }
 
+/// Records how many folders a reorganize moved, and whether it finished.
+///
+/// Counts only. Which lectures moved, and to where, is exactly what §4 keeps out of the
+/// log: a target path is rendered from a course, a week and a title.
+pub fn reorganized(moves: usize, complete: bool) {
+    tracing::info!(moves, complete, "reorganize applied");
+}
+
 /// Records how many folders a renumber renamed, and whether it finished.
 pub fn renumbered(renames: usize, complete: bool) {
     tracing::info!(renames, complete, "renumber applied");

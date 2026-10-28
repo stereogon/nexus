@@ -404,6 +404,66 @@ step under test. `check-line-limits.sh` exited 1 naming the file; the full gate 
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
 
+**2026-10-28 · The reorganize apply loop, and a dead enum variant it brought to life**
+`plan_reorganize` has existed since this morning with no code that walks it. Now
+`lecture_fs::VaultReorganize` plans from a loaded vault and a `PathTemplate`, and applies
+the moves. It is the sibling of `VaultRenumber` and deliberately shaped like it.
+
+**Why a half-finished reorganize is safe, which is not the same argument as a renumber's.**
+A renumber touches only the derived projection, so `sequence` is untouched and the app still
+shows the right order. This moves lectures for real. It is still safe, but for the other two
+reasons in §3: *"No central index is a source of truth"* and *"everything inside a bundle is
+referenced relatively"*. A lecture that moved and one that did not are both still lectures —
+each found by the next walk, neither recording where it used to be. Re-running recomputes
+from where things actually are. There is a test that stops half-way, re-opens the vault, and
+finishes the job.
+
+**One thing does not follow by itself: the reading position.** `ViewState` is keyed by
+lecture path, so a move orphans a remembered page and scroll offset. `RenumberOutcome.moved`
+was built for this and **nothing in production ever consumed it** — only a test. So
+`ReorganizeOutcome.moved` reports the net effect (never the temporary name a cycle needs),
+and the caller owning device state is the one that will apply it. §1.4: losing someone's
+place is not acceptable just because it is only a scroll position. **Not yet wired** — the
+command that will do it is the next substep, and this is named so it is a gap rather than an
+assumption.
+
+**`ReorganizeBlock::NameUnusable` had no producer.** It was declared with a remediation
+sentence and constructed nowhere: a variant that read as handled but could not occur. Its
+producer is whatever renders the template — the code written today. I found it by getting a
+test wrong: I assumed a lecture with no facets would land at `raft` under
+`{course}/{week}-{title}`, since a level with no value is dropped. But the level holding
+`{title}` names `{week}` too, so **both** levels drop and there is no target at all.
+
+That made the design question concrete: report it, or quietly count it as unchanged? Report.
+"Give this a week and I can file it" is actionable; "no change needed" is a mystery. So
+`plan_reorganize` took a third argument, `unnameable`, and `BlockedLecture.wanted` became
+`Option<String>` — an empty string would have been a worse answer than none. The field was
+write-only (nothing read it), so the change cost almost nothing, which is luck rather than
+design. An unnameable lecture is also added to the occupied set: it is staying, so its
+folder is an obstacle like any other.
+
+**Occupancy is tested precisely rather than approximated.** `existing` is "every path that
+is not one of these lectures", and enumerating that would mean walking the whole tree. Only
+*targets* can collide, so each rendered target is tested with `storage().exists`. The
+preview is therefore complete for the thing it is for, at one stat per lecture.
+
+**Two gate failures worth recording rather than just fixing.**
+`tests/support/mod.rs` is compiled into each test binary, so helpers only the reorganize
+tests need read as dead code while compiling the renumber ones. Resolved with the same
+`#![allow(dead_code)]` and the same reasoning `lecture-core/tests/support/mod.rs` already
+carries — with the cost stated in the comment: a helper unused by *all* binaries would not
+be caught, which is why that module holds only primitives.
+
+Both new test files passed 300 lines, and were split along the seam the repo already uses:
+`reorganize_store.rs` / `reorganize_store_safety.rs` mirrors `renumber_store.rs` /
+`renumber_store_safety.rs`, and `reorganize.rs` / `reorganize_blocked.rs` separates the moves
+from what is refused. Test counts before and after the split are identical (15 core, 12 fs),
+which is how the split was checked rather than by reading it.
+
+**27 new tests.** The load-bearing one replays a cycle against a real filesystem: POSIX
+`rename` replaces silently and a permutation with a cycle has no collision-free ordering, so
+this proves the planner's sequence works against a disk and not only against a model of one.
+
 **2026-10-28 · Facets are editable and the list groups on them**
 The answer to "what happened to organising by weeks and modules", built rather than
 explained. Both halves of §3's sentence — *"Taxonomy lives in each bundle's `manifest.json`

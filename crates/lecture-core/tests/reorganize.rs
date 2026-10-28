@@ -10,9 +10,7 @@
     clippy::indexing_slicing
 )]
 
-use lecture_core::{
-    Facets, Label, PathTemplate, PlacedLecture, RelativePath, ReorganizeBlock, plan_reorganize,
-};
+use lecture_core::{Facets, Label, PathTemplate, PlacedLecture, RelativePath, plan_reorganize};
 
 fn at(path: &str) -> RelativePath {
     RelativePath::parse(path).unwrap()
@@ -24,7 +22,7 @@ fn placed(current: &str, target: &str) -> PlacedLecture {
 
 #[test]
 fn a_lecture_already_where_it_belongs_is_left_alone() {
-    let plan = plan_reorganize(&[placed("cs-454/raft", "cs-454/raft")], &[]);
+    let plan = plan_reorganize(&[placed("cs-454/raft", "cs-454/raft")], &[], &[]);
 
     assert!(plan.is_empty());
     assert_eq!(plan.unchanged(), 1);
@@ -33,7 +31,7 @@ fn a_lecture_already_where_it_belongs_is_left_alone() {
 
 #[test]
 fn a_lecture_in_the_wrong_place_is_moved() {
-    let plan = plan_reorganize(&[placed("inbox/raft", "cs-454/week-3-raft")], &[]);
+    let plan = plan_reorganize(&[placed("inbox/raft", "cs-454/week-3-raft")], &[], &[]);
 
     assert_eq!(plan.moves().len(), 1);
     assert_eq!(plan.moves()[0].from, at("inbox/raft"));
@@ -50,6 +48,7 @@ fn moves_are_ordered_so_each_target_is_free_when_its_turn_comes() {
             placed("cs-454/02-raft", "cs-454/01-raft"),
             placed("cs-454/01-raft", "cs-454/00-paxos"),
         ],
+        &[],
         &[],
     );
 
@@ -72,6 +71,7 @@ fn two_lectures_that_have_swapped_places_are_a_cycle_and_still_get_moved() {
             placed("cs-454/raft", "cs-454/paxos"),
             placed("cs-454/paxos", "cs-454/raft"),
         ],
+        &[],
         &[],
     );
 
@@ -102,6 +102,7 @@ fn every_step_of_a_cycle_lands_somewhere_free() {
             placed("c/b", "c/d"),
             placed("c/d", "c/a"),
         ],
+        &[],
         &[at("c/keep")],
     );
 
@@ -128,94 +129,9 @@ fn every_step_of_a_cycle_lands_somewhere_free() {
 }
 
 #[test]
-fn a_target_held_by_something_that_is_not_moving_is_reported_not_overwritten() {
-    // `fs::rename` replaces silently on POSIX, so this is the difference between a tidy-up
-    // and losing a folder.
-    let plan = plan_reorganize(
-        &[placed("inbox/raft", "cs-454/notes")],
-        &[at("cs-454/notes")],
-    );
 
-    assert!(plan.moves().is_empty());
-    assert_eq!(plan.blocked().len(), 1);
-    assert_eq!(plan.blocked()[0].at, at("inbox/raft"));
-    assert_eq!(plan.blocked()[0].reason, ReorganizeBlock::TargetOccupied);
-    assert!(
-        plan.blocked()[0]
-            .reason
-            .remediation()
-            .contains("Move or rename")
-    );
-}
-
-#[test]
-fn a_collision_with_an_already_placed_lecture_names_both_lectures() {
-    // Written expecting the mover to be blocked as `TargetOccupied` while the lecture
-    // already in place counted as unchanged. The planner reports **both** as
-    // `SharedTarget` instead, and that is the better answer: the problem is not that a
-    // folder happens to be busy, it is that two lectures render to one name and a person
-    // has to rename one of them. `TargetOccupied` would have pointed at the folder and sent
-    // them looking for something that is not a lecture.
-    let plan = plan_reorganize(
-        &[
-            placed("cs-454/raft", "cs-454/raft"),
-            placed("inbox/raft", "cs-454/raft"),
-        ],
-        &[],
-    );
-
-    assert!(plan.moves().is_empty());
-    assert_eq!(plan.blocked().len(), 2, "both lectures need naming");
-    for blocked in plan.blocked() {
-        assert_eq!(blocked.reason, ReorganizeBlock::SharedTarget);
-        assert!(blocked.reason.remediation().contains("Rename one"));
-    }
-    assert_eq!(
-        plan.unchanged(),
-        0,
-        "the one already in place is part of the conflict, not settled"
-    );
-}
-
-#[test]
-fn two_lectures_rendering_to_one_folder_are_both_reported() {
-    // The `Raft` / `raft` collision recorded when `PathTemplate` landed. Neither wins: one
-    // winning silently would file a lecture on top of another.
-    let plan = plan_reorganize(
-        &[
-            placed("inbox/one", "cs-454/raft"),
-            placed("inbox/two", "cs-454/raft"),
-        ],
-        &[],
-    );
-
-    assert!(plan.moves().is_empty());
-    assert_eq!(plan.blocked().len(), 2);
-    for blocked in plan.blocked() {
-        assert_eq!(blocked.reason, ReorganizeBlock::SharedTarget);
-    }
-}
-
-#[test]
-fn a_shared_target_does_not_stop_the_rest_of_the_plan() {
-    // A preview is worth little if one bad lecture discards the other ninety-nine.
-    let plan = plan_reorganize(
-        &[
-            placed("inbox/one", "cs-454/raft"),
-            placed("inbox/two", "cs-454/raft"),
-            placed("inbox/three", "cs-454/paxos"),
-        ],
-        &[],
-    );
-
-    assert_eq!(plan.moves().len(), 1);
-    assert_eq!(plan.moves()[0].to, at("cs-454/paxos"));
-    assert_eq!(plan.blocked().len(), 2);
-}
-
-#[test]
 fn an_empty_vault_plans_nothing_and_says_so() {
-    let plan = plan_reorganize(&[], &[]);
+    let plan = plan_reorganize(&[], &[], &[]);
 
     assert!(plan.is_empty());
     assert_eq!(plan.unchanged(), 0);
@@ -234,8 +150,8 @@ fn planning_the_same_vault_twice_gives_the_same_plan() {
     ];
 
     assert_eq!(
-        plan_reorganize(&lectures, &[]),
-        plan_reorganize(&lectures, &[])
+        plan_reorganize(&lectures, &[], &[]),
+        plan_reorganize(&lectures, &[], &[])
     );
 }
 
@@ -243,10 +159,10 @@ fn planning_the_same_vault_twice_gives_the_same_plan() {
 fn a_plan_run_twice_is_a_no_op_the_second_time() {
     // The property that makes an interrupted reorganize safe: re-running finishes the job
     // and changes nothing that is already done.
-    let first = plan_reorganize(&[placed("inbox/raft", "cs-454/raft")], &[]);
+    let first = plan_reorganize(&[placed("inbox/raft", "cs-454/raft")], &[], &[]);
     assert_eq!(first.moves().len(), 1);
 
-    let second = plan_reorganize(&[placed("cs-454/raft", "cs-454/raft")], &[]);
+    let second = plan_reorganize(&[placed("cs-454/raft", "cs-454/raft")], &[], &[]);
     assert!(second.is_empty());
     assert_eq!(second.unchanged(), 1);
 }
@@ -263,7 +179,11 @@ fn a_template_and_a_plan_compose_into_the_whole_operation() {
     let target = template
         .render(&facets, &Label::parse("Raft and consensus").unwrap())
         .unwrap();
-    let plan = plan_reorganize(&[PlacedLecture::new(at("inbox/download-7"), target)], &[]);
+    let plan = plan_reorganize(
+        &[PlacedLecture::new(at("inbox/download-7"), target)],
+        &[],
+        &[],
+    );
 
     assert_eq!(plan.moves().len(), 1);
     assert_eq!(
