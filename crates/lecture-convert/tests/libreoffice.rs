@@ -12,22 +12,22 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-#[path = "support/stub.rs"]
-mod stub;
+#[path = "support/soffice_stub.rs"]
+mod soffice_stub;
 #[path = "support/vault.rs"]
 mod vault;
 
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use lecture_convert::{
+use lecture_convert::libreoffice::{
     CONVERTER_LABEL, LibreOfficeConverter, SOFFICE_BUNDLE_PATH, command_arguments,
 };
 use lecture_core::{
     ConversionRequest, CoreError, DocumentConverterPort, DocumentFormat, RelativePath,
 };
 
-use stub::{StubBehaviour, stub_soffice};
+use soffice_stub::{SofficeBehaviour, stub_soffice};
 use vault::Fixture;
 
 fn request() -> ConversionRequest {
@@ -40,7 +40,7 @@ fn request() -> ConversionRequest {
 }
 
 /// Runs a conversion against a stub behaving the given way.
-fn convert_with(behaviour: &StubBehaviour) -> (Fixture, Result<(), CoreError>) {
+fn convert_with(behaviour: &SofficeBehaviour) -> (Fixture, Result<(), CoreError>) {
     let fixture = Fixture::new();
     let binary = stub_soffice(fixture.profiles.path(), behaviour);
     let converter =
@@ -53,7 +53,7 @@ fn convert_with(behaviour: &StubBehaviour) -> (Fixture, Result<(), CoreError>) {
 
 #[test]
 fn a_successful_conversion_puts_the_pdf_where_the_manifest_says() {
-    let (fixture, outcome) = convert_with(&StubBehaviour::WritesAPdf);
+    let (fixture, outcome) = convert_with(&SofficeBehaviour::WritesAPdf);
 
     outcome.expect("the conversion should succeed");
 
@@ -69,7 +69,7 @@ fn a_successful_conversion_puts_the_pdf_where_the_manifest_says() {
 fn the_intermediate_file_libreoffice_names_does_not_stay_behind() {
     // `soffice` writes `original.pdf`, after the input's stem. Leaving that beside the
     // real document would put a second, stale PDF in a folder someone studies in.
-    let (fixture, outcome) = convert_with(&StubBehaviour::WritesAPdf);
+    let (fixture, outcome) = convert_with(&SofficeBehaviour::WritesAPdf);
 
     outcome.unwrap();
 
@@ -82,7 +82,7 @@ fn the_intermediate_file_libreoffice_names_does_not_stay_behind() {
 #[test]
 fn the_original_is_still_there_afterwards() {
     // The locked decision: the original is always kept so reconversion stays possible.
-    let (fixture, outcome) = convert_with(&StubBehaviour::WritesAPdf);
+    let (fixture, outcome) = convert_with(&SofficeBehaviour::WritesAPdf);
 
     outcome.unwrap();
 
@@ -91,7 +91,7 @@ fn the_original_is_still_there_afterwards() {
 
 #[test]
 fn a_converter_that_exits_with_an_error_produces_no_document() {
-    let (fixture, outcome) = convert_with(&StubBehaviour::Fails);
+    let (fixture, outcome) = convert_with(&SofficeBehaviour::Fails);
 
     let err = outcome.expect_err("a non-zero exit should be a failure");
     assert!(matches!(err, CoreError::ConversionFailed { .. }));
@@ -107,7 +107,7 @@ fn a_converter_that_exits_with_an_error_produces_no_document() {
 /// `LibreOffice` genuinely does this.
 #[test]
 fn success_with_no_output_is_a_failure_not_a_ready_conversion() {
-    let (fixture, outcome) = convert_with(&StubBehaviour::SucceedsSilently);
+    let (fixture, outcome) = convert_with(&SofficeBehaviour::SucceedsSilently);
 
     let err = outcome.expect_err("exit 0 is not evidence of a PDF");
     match err {
@@ -123,7 +123,7 @@ fn success_with_no_output_is_a_failure_not_a_ready_conversion() {
 
 #[test]
 fn an_empty_output_is_a_failure_and_is_cleaned_up() {
-    let (fixture, outcome) = convert_with(&StubBehaviour::WritesNothing);
+    let (fixture, outcome) = convert_with(&SofficeBehaviour::WritesNothing);
 
     let err = outcome.expect_err("a zero-length file is not a PDF");
     assert!(
@@ -142,7 +142,7 @@ fn an_empty_output_is_a_failure_and_is_cleaned_up() {
 fn an_output_that_is_not_a_pdf_is_refused_before_it_is_moved_into_place() {
     // Otherwise the lecture imports cleanly and breaks later in the viewer, where the
     // cause is no longer visible.
-    let (fixture, outcome) = convert_with(&StubBehaviour::WritesRubbish);
+    let (fixture, outcome) = convert_with(&SofficeBehaviour::WritesRubbish);
 
     let err = outcome.expect_err("a file that is not a PDF should be refused");
     assert!(err.to_string().contains("not a PDF"), "got: {err}");
@@ -153,7 +153,7 @@ fn an_output_that_is_not_a_pdf_is_refused_before_it_is_moved_into_place() {
 
 #[test]
 fn a_failure_promises_the_original_survived_and_offers_a_retry() {
-    let (_fixture, outcome) = convert_with(&StubBehaviour::Fails);
+    let (_fixture, outcome) = convert_with(&SofficeBehaviour::Fails);
 
     let remediation = outcome.unwrap_err().remediation();
     assert!(remediation.contains("original file"));
@@ -172,7 +172,7 @@ fn reconverting_replaces_the_pdf_that_was_there() {
     )
     .unwrap();
 
-    let binary = stub_soffice(fixture.profiles.path(), &StubBehaviour::WritesAPdf);
+    let binary = stub_soffice(fixture.profiles.path(), &SofficeBehaviour::WritesAPdf);
     let converter =
         LibreOfficeConverter::at(binary, fixture.profiles.path(), fixture.storage()).unwrap();
 
@@ -191,7 +191,7 @@ fn reconverting_replaces_the_pdf_that_was_there() {
 fn no_profile_directory_is_left_behind() {
     // Each conversion gets a fresh profile because `LibreOffice` locks one, and a profile
     // per import would otherwise accumulate in this app's own state directory forever.
-    let (fixture, outcome) = convert_with(&StubBehaviour::WritesAPdf);
+    let (fixture, outcome) = convert_with(&SofficeBehaviour::WritesAPdf);
     outcome.unwrap();
 
     let profiles = fixture.profiles.path().join("converters");
@@ -208,7 +208,7 @@ fn no_profile_directory_is_left_behind() {
 #[test]
 fn offers_itself_for_every_format_that_is_not_already_a_pdf() {
     let fixture = Fixture::new();
-    let binary = stub_soffice(fixture.profiles.path(), &StubBehaviour::WritesAPdf);
+    let binary = stub_soffice(fixture.profiles.path(), &SofficeBehaviour::WritesAPdf);
     let converter =
         LibreOfficeConverter::at(binary, fixture.profiles.path(), fixture.storage()).unwrap();
 

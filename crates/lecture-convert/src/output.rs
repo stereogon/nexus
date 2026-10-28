@@ -16,7 +16,7 @@ use std::fs::{self, File};
 use std::io::Read;
 use std::path::Path;
 
-use lecture_core::{CoreError, RelativePath};
+use lecture_core::{ConversionRequest, CoreError, RelativePath, Slug};
 use lecture_fs::AtomicFsStorage;
 
 /// How every PDF begins.
@@ -84,4 +84,30 @@ pub(crate) fn commit(
     }
 
     storage.replace(produced, destination)
+}
+
+/// Where a converter writes its PDF before it is moved into place.
+///
+/// Derived from the *original's* stem and placed in the destination's directory, because
+/// that is what `soffice` does with `--outdir` and there is no choice about it. The iWork
+/// adapter, which could write anywhere, follows the same convention deliberately: one
+/// intermediate name means one cleanup rule, and two conventions would eventually leave
+/// one adapter's leavings behind.
+///
+/// Never the destination itself. A converter that dies partway would otherwise leave a
+/// fragment at the path the manifest calls the document, and a fragment that opens is a
+/// fragment that gets annotated.
+///
+/// # Errors
+///
+/// Returns [`CoreError::InvalidName`] if the derived name is not a usable one.
+pub(crate) fn intermediate_path(request: &ConversionRequest) -> Result<RelativePath, CoreError> {
+    let stem = request.original().name().as_str();
+    let stem = stem.rsplit_once('.').map_or(stem, |(before, _)| before);
+    let produced = Slug::parse(&format!("{stem}.pdf"))?;
+
+    match request.document().parent() {
+        Some(parent) => parent.child(produced),
+        None => Ok(RelativePath::root_level(produced)),
+    }
 }

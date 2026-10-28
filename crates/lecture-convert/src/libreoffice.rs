@@ -25,9 +25,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use lecture_core::{
-    ConversionRequest, CoreError, DocumentConverterPort, DocumentFormat, Label, RelativePath, Slug,
-};
+use lecture_core::{ConversionRequest, CoreError, DocumentConverterPort, DocumentFormat, Label};
 use lecture_fs::{AtomicFsStorage, state_base};
 
 use crate::output;
@@ -128,7 +126,7 @@ impl DocumentConverterPort for LibreOfficeConverter {
 
     fn convert(&self, request: &ConversionRequest) -> Result<(), CoreError> {
         let original = self.storage.root().resolve(request.original())?;
-        let produced = produced_path(request)?;
+        let produced = output::intermediate_path(request)?;
         let outdir = self.storage.root().resolve(&produced)?;
         let outdir = outdir
             .as_path()
@@ -196,22 +194,6 @@ pub fn command_arguments(profile: &Path, outdir: &Path, original: &Path) -> Vec<
         outdir.as_os_str().to_owned(),
         original.as_os_str().to_owned(),
     ]
-}
-
-/// Where `LibreOffice` will write its output, given what it was asked to convert.
-///
-/// Derived from the *original's* stem, because that is what `soffice` names its output
-/// after, and placed in the destination's directory, because that is the `--outdir` it is
-/// given.
-fn produced_path(request: &ConversionRequest) -> Result<RelativePath, CoreError> {
-    let stem = request.original().name().as_str();
-    let stem = stem.rsplit_once('.').map_or(stem, |(before, _)| before);
-    let produced = Slug::parse(&format!("{stem}.pdf"))?;
-
-    match request.document().parent() {
-        Some(parent) => parent.child(produced),
-        None => Ok(RelativePath::root_level(produced)),
-    }
 }
 
 /// A profile directory name no concurrent conversion will also choose.

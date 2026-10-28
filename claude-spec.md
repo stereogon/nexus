@@ -59,6 +59,32 @@ To achieve native speed, instant startup, low RAM usage, and effortless cross-de
        > calls it `DocumentConverterPort`. The latter is what exists, because it is a
        > port rather than a service and `CLAUDE.md` §3 names it that way.
      - **Secondary Fallback (macOS Native AppleScript/JXA):** If LibreOffice is not installed, invoke `/usr/bin/osascript` to silently convert `.ppt`/`.pptx` via Apple Keynote or `.doc`/`.docx` via Apple Pages in the background.
+
+      > *Amended 2026-10-28: "silently … in the background" is not achievable, and the
+      > paths are passed as arguments rather than written into the script.*
+      >
+      > **It is not silent.** Driving Keynote or Pages through `osascript` **launches the
+      > application**. It appears in the Dock and may take focus, and AppleScript offers no
+      > flag that prevents it. The script opens one document and closes it with
+      > `saving no`, so nothing else the person has open is touched and nothing is
+      > modified — but the app does appear, and promising otherwise in a spec would become
+      > a bug report.
+      >
+      > **It also needs a permission.** The first run triggers macOS's automation consent
+      > dialog, which the person must answer, and a refusal comes back as `AppleEvent`
+      > error `-1743`. That is reported as `CoreError::ConverterNotPermitted`, whose
+      > remediation names System Settings → Privacy & Security → Automation rather than
+      > suggesting a pointless retry.
+      >
+      > Together these are the user-visible reason `LibreOffice` is preferred when present,
+      > and they make the setup modal in the next bullet the better path rather than a
+      > consolation.
+      >
+      > **The paths are arguments, not script text.** The script is a constant containing
+      > `on run argv`; the file paths reach it as `argv`. Interpolating them would be script
+      > injection: a `Slug` forbids quotes inside a vault, but the vault's *own root* is an
+      > arbitrary path the person chose, and a quote there would end the string literal and
+      > execute what followed. Reasoning in `PROGRESS.md`.
      - **Actionable Diagnostic:** If neither converter is available on the system, display a clean in-app setup modal with a one-click copy/run command: `brew install --cask libreoffice`.
 
 ### 2.3 Side-by-Side Comprehension Workspace & On-Document Annotations

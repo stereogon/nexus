@@ -174,7 +174,9 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
       `cargo tree -i`. 13 tests against a stub `soffice`, **plus 4 against a real
       `LibreOffice` 26.8.1.1**, installed at the user's instruction and run by
       `scripts/gate.sh` whenever it is present.
-- [ ] Keynote/Pages via `osascript` — the secondary fallback, not started
+- [x] Keynote/Pages via `osascript` — done 2026-10-28. 12 tests against a stub
+      `osascript`; **neither app has been launched, so the AppleScript itself is
+      unverified.**
 - [ ] `source.conversion` provenance written to `manifest.json`
 - [ ] Setup diagnostic UI (no hard dependency on any converter)
 - [ ] Vault sidebar, drag-and-drop import, facet grouping
@@ -373,6 +375,91 @@ probe file was placed where the line counter sees it but `cargo` does not — a 
 step under test. `check-line-limits.sh` exited 1 naming the file; the full gate reported
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
+
+**2026-10-28 · The iWork adapter passes paths as arguments, never as script text**
+The obvious way to write this is to interpolate the file path into the AppleScript source.
+That is **script injection**. `Slug` forbids a quote inside a vault, but the vault's *own
+root* is an arbitrary path the person chose — `~/Documents/my "study" vault` is a perfectly
+ordinary thing to have — and a quote there would end the string literal and hand whatever
+followed to `osascript` as code.
+
+So the script is a **constant** containing `on run argv`, and the paths are passed to
+`osascript` as arguments. Nothing a person can name ever becomes code. There is no
+escaping function to get right, because there is no escaping: the unsafe version is
+unspellable rather than merely discouraged, which is the same instinct as `ResolvedPath`
+and the typed logging events.
+
+Tested two ways, deliberately. A direct assertion that `export_script` contains no `/` at
+all — it is a function of the app name and nothing else — and a conversion inside a vault
+rooted at `my "study" vault; say hello`, which succeeds. The stub `osascript` is a third
+check: it exits 65 if the input path appears anywhere in the script text, so a regression
+fails every test in the file rather than quietly passing.
+
+**2026-10-28 · The spec's "silently … in the background" is not achievable**
+Driving Keynote through `osascript` **launches Keynote**. It appears in the Dock and may
+take focus, and AppleScript has no flag that prevents it. The first run also triggers
+macOS's automation consent dialog, which the person has to answer.
+
+Both are now in the spec as a dated amendment, because a spec that promises silence
+produces a bug report the first time someone's deck opens Keynote in front of them. They
+are also the *user-visible* reason `LibreOffice` is preferred when present — not merely a
+technical one — which makes `select_converter`'s preference ordering a product decision
+rather than an arbitrary one, and makes the `brew install --cask libreoffice` setup modal
+the better path rather than a consolation prize.
+
+`close theDocument saving no` is what keeps this tolerable: one document is opened and
+closed again unmodified, and nothing else the person has open is touched.
+
+**2026-10-28 · A refused permission gets its own error, because "try again" is useless**
+A denied automation consent comes back as `AppleEvent` error `-1743`, not as a conversion
+failure in any ordinary sense: nothing is wrong with the document, and retrying will fail
+identically until the person changes a system setting. So it is
+`CoreError::ConverterNotPermitted`, whose remediation names System Settings → Privacy &
+Security → Automation and mentions that installing `LibreOffice` avoids the permission
+altogether.
+
+Telling them apart needs `osascript`'s stderr, which is the one place in this codebase
+that reads a subprocess's output. It is **scanned** for the error code and never stored:
+§4 forbids a person's file names reaching the log, and a converter's stderr is full of
+them. The reason that survives into the error is from the same closed set of
+`&'static str` as everywhere else.
+
+**2026-10-28 · One stub per converter, because the shared one carried a lie**
+`StubBehaviour` was shared, and `RefusesPermission` is meaningless for `soffice` — so its
+arm got `exit 1`, identical to `Fails`. Clippy's `match_same_arms` caught it, and the
+finding was right about more than the arms: a behaviour list shared between two converters
+will accumulate variants that are nonsense for one of them.
+
+Now `SofficeBehaviour` and `OsascriptBehaviour`, in `support/soffice_stub.rs` and
+`support/osascript_stub.rs`, each describing what that converter can actually do. This also
+removes the `dead_code` the shared module caused, which an `#[allow]` would have hidden.
+
+**2026-10-28 · The gate's ignored-test step is scoped to one target on purpose**
+It runs `cargo test -p lecture-convert --test end_to_end -- --ignored`, not
+`-p lecture-convert -- --ignored`. The broad form would also run any future ignored test
+for Keynote or Pages — and those **launch an application in front of whoever is sitting
+there**. A gate that opens Keynote every time someone checks their work is a gate people
+stop running. Narrowed before such a test exists, rather than after someone is surprised
+by it.
+
+**2026-10-28 · Honest gap: the AppleScript itself is unverified**
+Neither Keynote nor Pages has been launched. Everything around the script is exercised —
+the argument list, the spawning, the exit status, the stderr scan, the output checks, the
+move into place, and a vault path containing a quote — but whether
+`export theDocument to exportFile as PDF` is the correct syntax for both apps has **not
+been observed**. Both are installed on this machine, so it is testable; it is not done
+because it launches applications and triggers a consent dialog, which `CLAUDE.md` §2
+requires asking about first.
+
+No `#[ignore]`d test was written for it either. An ignored test built on unvalidated
+syntax would read as coverage while asserting nothing, which is the mistake already made
+and corrected once this session with `LibreOffice`.
+
+**2026-10-28 · `BackupOutcome` moved out of `error/mod.rs`**
+Adding `ConverterNotPermitted` pushed the file to 305 lines. The split is along a real
+seam rather than at the line count: `BackupOutcome` is not a failure, it is a fact *about*
+one, carried so a message can state where a damaged file's copy actually went instead of
+promising a `.bak` that may not exist. Its own `Display` impl went with it.
 
 **2026-10-28 · `LibreOffice` installed, and the gap closed — it corrected me**
 `LibreOffice` 26.8.1.1 was installed at the user's instruction, which made the end-to-end

@@ -13,8 +13,8 @@ use super::CoreError;
 use crate::domain::fingerprint_hex;
 
 use wording::{
-    ALIAS_REFUSED, CONVERSION_DID_NOT_PRODUCE_A_PDF, CONVERSION_STUCK, DATE_UNREADABLE,
-    FILE_OPERATION_ABANDONED, FINGERPRINT_UNREADABLE, FORMAT_NOT_IMPORTABLE,
+    ALIAS_REFUSED, CONVERSION_DID_NOT_PRODUCE_A_PDF, CONVERSION_STUCK, CONVERTER_NOT_PERMITTED,
+    DATE_UNREADABLE, FILE_OPERATION_ABANDONED, FINGERPRINT_UNREADABLE, FORMAT_NOT_IMPORTABLE,
     HIGHLIGHT_DUPLICATE_ID, HIGHLIGHT_IMPOSSIBLE_PAGE, HIGHLIGHT_POSITION, HIGHLIGHT_UNREADABLE,
     HOME_UNAVAILABLE, LOCATION_OUTSIDE_VAULT, LOCATION_TOO_DEEP, LOCATION_UNUSABLE,
     LOG_UNAVAILABLE, MANIFEST_INCONSISTENT, NAME_TAKEN, NAME_UNUSABLE, POSITION_UNAVAILABLE,
@@ -45,6 +45,7 @@ impl CoreError {
             Self::HomeDirectoryUnavailable => "ERR_HOME_DIRECTORY_UNAVAILABLE",
             Self::UnsupportedDocumentFormat { .. } => "ERR_UNSUPPORTED_DOCUMENT_FORMAT",
             Self::ConversionFailed { .. } => "ERR_CONVERSION_FAILED",
+            Self::ConverterNotPermitted { .. } => "ERR_CONVERTER_NOT_PERMITTED",
             Self::ConversionNotPossible { .. } => "ERR_CONVERSION_NOT_POSSIBLE",
             Self::InvalidFingerprint { .. } => "ERR_INVALID_FINGERPRINT",
             Self::InvalidZoom { .. } => "ERR_INVALID_ZOOM",
@@ -110,6 +111,7 @@ impl CoreError {
             Self::HomeDirectoryUnavailable => HOME_UNAVAILABLE,
             Self::UnsupportedDocumentFormat { .. } => FORMAT_NOT_IMPORTABLE,
             Self::ConversionFailed { .. } => CONVERSION_DID_NOT_PRODUCE_A_PDF,
+            Self::ConverterNotPermitted { .. } => CONVERTER_NOT_PERMITTED,
             Self::ConversionNotPossible { .. } => CONVERSION_STUCK,
             Self::InvalidFingerprint { .. } => FINGERPRINT_UNREADABLE,
             Self::InvalidZoom { .. } | Self::InvalidPageOffset { .. } => READING_PLACE_LOST,
@@ -202,6 +204,11 @@ mod wording {
     pub(super) const CONVERSION_DID_NOT_PRODUCE_A_PDF: &str = "The converter could not turn this document into a PDF, so the lecture is there \
          with its original file and nothing to show yet. Nothing was lost. You can try \
          the conversion again, and the diagnostic log records what the converter said.";
+
+    pub(super) const CONVERTER_NOT_PERMITTED: &str = "macOS will not let Nexus control the app needed to convert this document, so \
+         nothing was converted and nothing was changed. Allow it in System Settings → \
+         Privacy & Security → Automation, then try the import again. Installing \
+         LibreOffice avoids needing the permission at all.";
 
     pub(super) const CONVERSION_STUCK: &str = "This lecture's conversion could not continue from where it had got to, so it \
          was left exactly as it was. Your original file is still in the lecture folder. \

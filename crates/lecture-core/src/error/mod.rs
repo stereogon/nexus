@@ -12,34 +12,10 @@
 //! The enum is `#[non_exhaustive]`: variants are added as the code that raises them
 //! lands, so this list always describes failures that can genuinely occur.
 
-use std::fmt;
-
 use thiserror::Error;
 
-/// What happened to the copy of a damaged file.
-///
-/// Carried in the error so the message can state the truth. Static remediation text that
-/// promised a `.bak` would be a lie whenever the copy itself failed, and being told
-/// accurately where their work is, is the one thing a person needs to trust at that
-/// moment.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum BackupOutcome {
-    /// A copy was saved at this path.
-    Saved(String),
-    /// A copy could not be saved, so the original is all there is -- and it is intact.
-    Failed,
-}
-
-impl fmt::Display for BackupOutcome {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Saved(path) => write!(f, "a copy of it has been saved as `{path}`"),
-            Self::Failed => f.write_str(
-                "a copy of it could not be saved, so the original has been left exactly as it is",
-            ),
-        }
-    }
-}
+mod backup_outcome;
+pub use backup_outcome::BackupOutcome;
 
 /// Every way a domain operation can fail.
 #[derive(Debug, Error)]
@@ -220,6 +196,13 @@ pub enum CoreError {
         converter: String,
         /// What went wrong, from a closed set so no process output is carried here.
         reason: &'static str,
+    },
+
+    /// macOS refused to let Nexus control the app a converter needs.
+    #[error("Nexus is not permitted to control {converter}")]
+    ConverterNotPermitted {
+        /// The application macOS would not allow, so the message can name it.
+        converter: String,
     },
 
     /// A conversion was asked to move from a state that does not allow it.

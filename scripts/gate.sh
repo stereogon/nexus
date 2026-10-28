@@ -97,8 +97,11 @@ fi
 # because the dependency is genuinely environmental; running them here when it is present
 # is what stops the ignore becoming a place work goes to be forgotten.
 if [ -x "$SOFFICE" ]; then
+    # Scoped to this one target rather than `-p lecture-convert -- --ignored`, which
+    # would also run any future ignored test for Keynote or Pages -- and those launch an
+    # application in front of whoever is sitting there. A gate must not do that.
     run_step "converter end-to-end (LibreOffice)" \
-        cargo test -p lecture-convert -- --ignored
+        cargo test -p lecture-convert --test end_to_end -- --ignored
 else
     skip_step "converter end-to-end (LibreOffice)" \
         "LibreOffice is not installed; brew install --cask libreoffice"
