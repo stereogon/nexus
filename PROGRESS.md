@@ -92,7 +92,10 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
 - [x] `DeviceStateStore` in `lecture-fs` — `~/Library/Application Support/Nexus/vaults/
       <key>/view-state.json`, with the base directory injectable so no test touches the
       real `~/Library`. 10 tests, one asserting the vault is left completely untouched.
-- [ ] `sequence` vs `01-` folder-prefix renumbering (tail-first so no rename collides)
+- [x] Renumber **planning** — `plan_renumber` projects `sequence` onto `NN-` prefixes,
+      ordering renames so each target is free and breaking a cycle with one temporary
+      name. 14 tests, including a simulator that proves no rename ever collides.
+- [ ] Renumber **application** in `lecture-fs` (rename directories, remap view state)
       — **next substep**
 - [ ] `.nexus/` rebuildable cache, including per-device view state
 - [x] `AnnotationStore` — the atomic load/save path for `annotations.json`. A missing
@@ -312,6 +315,67 @@ which exists to share the backup behaviour.
 
 Stating it as one rule matters more than the individual cases, because the next stored
 file will be decided by it rather than by copying whichever neighbour was read first.
+
+**2026-10-28 · "Tail-first so no rename collides" is not sufficient — but my first
+counterexample for it was wrong**
+The §3 rule said renumbering renames tail-first so no rename collides. That is true for a
+pure shift and not in general, so the rule needed amending. I amended it with the wrong
+reason, and a test caught me.
+
+My claimed counterexample was dragging the third of `01-intro`, `02-raft`, `03-paxos` to
+the front: `01→02`, `02→03`, `03→01`, which I called a 3-cycle. It is not. **The stem is
+part of the folder name.** Renaming `01-intro` to `02-intro` does not touch `02-raft` at
+all, so differing stems mostly cannot collide whatever order they are done in. The test
+asserting "exactly one temporary name" failed with zero, because the planner correctly
+found there was no cycle to break.
+
+The real hard case is siblings that **share** a stem — `01-lecture`, `02-lecture`,
+`03-lecture`, which is exactly what generic folder names produce. Those reorder as a pure
+permutation of their prefixes, and a permutation containing a cycle cannot be made
+collision-free by any ordering, because every target is held by another member. So the
+conclusion stood and the reasoning did not. `CLAUDE.md`, the module documentation and the
+test were all corrected; the wrong example is not left anywhere.
+
+Worth recording for two reasons. The amendment I wrote under §1.7 was itself a drafting
+error of the kind §1.7 exists to catch, which is a good argument for amendments carrying
+their reasoning where a test can contradict it. And it is the clearest case so far of a
+test earning its keep by disagreeing with the thing it was written to confirm.
+
+**2026-10-28 · The plan is proved by simulation, not by asserting a sequence**
+`no_plan_ever_renames_onto_an_occupied_name` applies each plan to an in-memory directory
+and fails if any rename lands on a taken name. Asserting a specific list of renames would
+have pinned one implementation while saying nothing about the property, and — as above —
+it is the property I was wrong about, not the code.
+
+It runs over twelve shapes: shifts, reversals, rotations, shared-stem cycles of length two
+to four, a cycle beside an independent mover, and a vault with no prefixes at all. It also
+asserts no folder is lost and no temporary name survives.
+
+**2026-10-28 · A renumber is safe to interrupt, so it is not transactional**
+It touches only the derived projection. `sequence` is never written, so a half-finished
+renumber still shows the right order in the app — only the Finder-facing picture is
+briefly wrong — and re-running completes it.
+
+That is why the temporary name is `<current-name>~renumbering` rather than something
+opaque: stripping the suffix recovers a name whose prefix parses normally, so an
+interrupted renumber is resumable with no journal and no recovery mode. There is a test
+that starts from a leftover temporary name and asserts re-running finishes the job rather
+than baking the temporary name in permanently.
+
+**2026-10-28 · The prefix width comes from the count, not a constant**
+Prefixes are read by sorting them as text, so a fixed two digits breaks at a hundred:
+`100-` sorts before `99-`, destroying the one thing prefixes exist for. The width is the
+digit count of the largest position, minimum two.
+
+The cost is that adding a hundredth lecture renumbers the other ninety-nine. Rare, and
+the alternative is a vault that sorts wrongly for good.
+
+**2026-10-28 · Never rename onto an occupied name, because POSIX `rename` is silent**
+`fs::rename` replaces an existing *file* without complaint. So a target held by anything
+that is not part of this renumber — a stray folder, a file someone left there — is
+reported and skipped, never written over. This is a data-loss path, not a tidiness one,
+and it is the reason `plan_renumber` takes the whole directory listing rather than just
+the lectures.
 
 **2026-10-28 · Per-device state lives outside the vault (decided with the user)**
 Asked, because two readings produced materially different work and the consequence is

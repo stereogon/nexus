@@ -187,7 +187,20 @@ and explain why. Rationale is recorded in `PROGRESS.md`.
 - **`sequence` (a fractional/LexoRank-style string key) is the authoritative order.**
   `01-` folder-name prefixes are a *derived projection* of it, maintained for Finder and
   Files-app legibility. **If a prefix disagrees with `sequence`, `sequence` wins**, and the
-  app offers a renumber. Renumbering renames tail-first so no rename collides.
+  app offers a renumber.
+- **Renumbering orders its renames so each target is free when it happens, and breaks a
+  cycle with one temporary name.** *(Amended 2026-10-28; this rule previously read
+  "renames tail-first so no rename collides". Tail-first is sufficient for a pure shift
+  but not in general. The stem is part of the folder name, so folders with differing
+  stems usually do not collide at all — `01-intro`→`02-intro` does not touch `02-raft`.
+  But siblings that **share** a stem, like `01-lecture`, `02-lecture`, `03-lecture`,
+  reorder as a pure permutation of their prefixes, and a permutation containing a cycle
+  cannot be made collision-free by any ordering, because every target is held by another
+  member of the cycle. Reasoning in `PROGRESS.md`.)*
+- **A renumber is safe to interrupt, and is never transactional.** It touches only the
+  derived projection, so a half-finished renumber still shows the right order — `sequence`
+  is unaffected — and re-running it completes the job. A rename never writes into a name
+  something else already holds.
 - **No central index is a source of truth.** A top-level file listing every lecture is a
   sync-conflict magnet; per-bundle manifests confine each edit to one file.
 - **`.nexus/` holds derived data and nothing else.** Deleting it must fully reconstruct

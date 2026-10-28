@@ -19,14 +19,16 @@ pub mod ports;
 
 pub use domain::{
     ANNOTATIONS_FILE_NAME, ANNOTATIONS_SCHEMA_VERSION, ASSETS_DIR_NAME, Annotation, AnnotationId,
-    AnnotationSet, BundleRef, CACHE_DIR_NAME, CITATION_SCHEME, CURRENT_SCHEMA_VERSION, Citation,
-    CitationIndex, Conversion, ConversionState, Excerpt, Facets, HighlightSemantic,
-    INDEX_FILE_NAME, INDEX_SCHEMA_VERSION, Label, LectureBundle, LectureView, MANIFEST_FILE_NAME,
-    MAX_BUNDLE_DEPTH, MAX_DEPTH, MAX_WITHIN_BUNDLE_DEPTH, MAX_ZOOM, MIN_ZOOM, Manifest,
-    NOTES_FILE_NAME, NormalizedRect, OrderKey, PageNumber, PageOffset, RelativePath,
-    SOURCE_DIR_NAME, SchemaProbe, SkipReason, SkippedDirectory, Slug, Source, Timestamp,
-    VIEW_STATE_FILE_NAME, VIEW_STATE_SCHEMA_VERSION, VaultIndex, VaultScan, ViewState, Zoom,
-    cache_dir_segment, citation_link, scan_vault,
+    AnnotationSet, BlockedFolder, BundleRef, CACHE_DIR_NAME, CITATION_SCHEME,
+    CURRENT_SCHEMA_VERSION, Citation, CitationIndex, Conversion, ConversionState, Excerpt, Facets,
+    HighlightSemantic, INDEX_FILE_NAME, INDEX_SCHEMA_VERSION, Label, LectureBundle, LectureView,
+    MANIFEST_FILE_NAME, MAX_BUNDLE_DEPTH, MAX_DEPTH, MAX_WITHIN_BUNDLE_DEPTH, MAX_ZOOM, MIN_ZOOM,
+    Manifest, NOTES_FILE_NAME, NormalizedRect, OrderKey, OrderedFolder, PageNumber, PageOffset,
+    RENUMBERING_SUFFIX, RelativePath, Rename, RenumberBlock, RenumberPlan, SOURCE_DIR_NAME,
+    SchemaProbe, SkipReason, SkippedDirectory, Slug, Source, Timestamp, VIEW_STATE_FILE_NAME,
+    VIEW_STATE_SCHEMA_VERSION, VaultIndex, VaultScan, ViewState, Zoom, cache_dir_segment,
+    citation_link, plan_renumber, position_width, positioned_name, scan_vault, stem_of,
+    temporary_name,
 };
 pub use error::{BackupOutcome, CoreError};
 pub use ports::{Clock, DirectoryEntry, EntryKind, FixedClock, VaultDirectory};

@@ -18,6 +18,7 @@ mod normalized_rect;
 mod order_key;
 mod page_number;
 mod relative_path;
+mod renumber;
 mod schema;
 mod slug;
 mod source;
@@ -42,6 +43,10 @@ pub use normalized_rect::NormalizedRect;
 pub use order_key::OrderKey;
 pub use page_number::PageNumber;
 pub use relative_path::{MAX_BUNDLE_DEPTH, MAX_DEPTH, MAX_WITHIN_BUNDLE_DEPTH, RelativePath};
+pub use renumber::{
+    BlockedFolder, OrderedFolder, RENUMBERING_SUFFIX, Rename, RenumberBlock, RenumberPlan,
+    plan_renumber, position_width, positioned_name, stem_of, temporary_name,
+};
 pub use schema::SchemaProbe;
 pub use slug::Slug;
 pub use source::{Conversion, ConversionState, Source};
