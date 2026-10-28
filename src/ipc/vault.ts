@@ -1,0 +1,109 @@
+/**
+ * The vault commands, and the schemas that validate what they return.
+ *
+ * # Why this layer exists at all
+ *
+ * `invoke` returns `unknown`, which is the honest type: the value crossed a process
+ * boundary and TypeScript knows nothing about it. CLAUDE.md section 4 requires every IPC
+ * payload to be validated with Zod before use, so this module is the only place in the
+ * app that calls `invoke`, and every path out of it is already parsed.
+ *
+ * That makes the boundary testable without a running app: the schemas are values, and a
+ * fixture produced by Rust can be parsed against them in a unit test.
+ *
+ * # Errors
+ *
+ * A Rust command that fails rejects with `CommandError` — a stable code and one plain
+ * sentence saying what to do next (CLAUDE.md section 1.4). Deliberately *not* the error's
+ * `Display` text, which interpolates paths. So a rejection is itself a payload needing
+ * validation, and `asCommandError` does that rather than trusting its shape.
+ */
+import { invoke } from "@tauri-apps/api/core";
+import * as z from "zod";
+
+/** The conversion states the UI can be told about, matching `name_of` in `vault.rs`. */
+export const ConversionStateSchema = z.enum([
+  "notRequired",
+  "queued",
+  "converting",
+  "ready",
+  "failed",
+]);
+
+/** One lecture, as a sidebar row. */
+export const LectureRowSchema = z.object({
+  directory: z.string(),
+  title: z.string(),
+  sequence: z.string(),
+  course: z.string().nullable(),
+  module: z.string().nullable(),
+  week: z.string().nullable(),
+  tags: z.array(z.string()),
+  conversion: ConversionStateSchema,
+  documentReady: z.boolean(),
+});
+
+/** Something the vault walk could not use, with a reason to show. */
+export const ProblemRowSchema = z.object({
+  directory: z.string(),
+  remediation: z.string(),
+});
+
+/**
+ * Everything one vault holds, including what could not be read.
+ *
+ * Three lists, mirroring `LoadedVault` in Rust for the reason recorded there: a vault of
+ * three hundred lectures with one corrupt manifest must still open.
+ */
+export const VaultSummarySchema = z.object({
+  root: z.string(),
+  lectures: z.array(LectureRowSchema),
+  skipped: z.array(ProblemRowSchema),
+  unloadable: z.array(ProblemRowSchema),
+});
+
+/** A failure, in the only two terms the UI needs. */
+export const CommandErrorSchema = z.object({
+  code: z.string(),
+  remediation: z.string(),
+});
+
+export type ConversionState = z.infer<typeof ConversionStateSchema>;
+export type LectureRow = z.infer<typeof LectureRowSchema>;
+export type ProblemRow = z.infer<typeof ProblemRowSchema>;
+export type VaultSummary = z.infer<typeof VaultSummarySchema>;
+export type CommandError = z.infer<typeof CommandErrorSchema>;
+
+/**
+ * Narrows an unknown rejection to the error contract, or describes why it could not be.
+ *
+ * A rejection that does not match is a bug in the adapter rather than something the
+ * person did, so it says so instead of showing them a Zod report they cannot act on.
+ */
+export function asCommandError(thrown: unknown): CommandError {
+  const parsed = CommandErrorSchema.safeParse(thrown);
+
+  if (parsed.success) {
+    return parsed.data;
+  }
+
+  return {
+    code: "ERR_UNEXPECTED_IPC_FAILURE",
+    remediation:
+      "Nexus hit a failure it does not have a message for. This is a bug in Nexus " +
+      "rather than something you did; the log at ~/Library/Logs/Nexus/app.log has the " +
+      "detail.",
+  };
+}
+
+/**
+ * Opens a vault and lists what is in it.
+ *
+ * @throws {CommandError} if the path cannot be used as a vault. One unreadable folder or
+ * one corrupt manifest arrives inside the summary instead, not as a rejection.
+ */
+export async function openVault(path: string): Promise<VaultSummary> {
+  const payload: unknown = await invoke("open_vault", { path });
+
+  return VaultSummarySchema.parse(payload);
+}

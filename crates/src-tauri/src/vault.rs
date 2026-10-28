@@ -1,0 +1,177 @@
+//! The IPC shapes the UI receives, and the one command that produces them.
+//!
+//! # Why there are separate DTOs at all
+//!
+//! `LectureBundle` already serializes — as a *manifest*, which is the on-disk schema and a
+//! contract with files that exist. The UI wants something else: one flat row per lecture,
+//! with the four things a sidebar shows. Sending the manifest would tie the shape of the
+//! interface to the shape of the storage format, so that a change to either would be a
+//! change to both.
+//!
+//! Translating between the two is this crate's whole job. It is not business logic — no
+//! decision is made here that `lecture-core` has not already made.
+//!
+//! # Errors cross as a code and a remediation, never as `Display`
+//!
+//! `CLAUDE.md` §1.4 says every `CoreError` carries a machine code *and* a plain sentence
+//! saying what to do next. That pair is exactly what a UI needs, so it is exactly what
+//! crosses. `Display` is deliberately left behind: it interpolates paths, and a path a
+//! webview holds can end up in a console log or a crash report, which §4 rules out.
+//!
+//! The cost is honest — a developer debugging from the UI sees `ERR_IO` rather than which
+//! file — and the log is where that detail belongs, keyed by the same code.
+
+use lecture_core::{ConversionState, CoreError, Label};
+use lecture_fs::{
+    AtomicFsStorage, LoadedVault, ManifestStore, SystemClock, VaultLoader, VaultRoot,
+};
+use serde::Serialize;
+
+/// A failure, in the only two terms the UI needs.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CommandError {
+    /// The stable identifier, safe to branch on in the UI.
+    pub code: &'static str,
+    /// One plain sentence saying what to do next.
+    pub remediation: &'static str,
+}
+
+impl From<CoreError> for CommandError {
+    fn from(error: CoreError) -> Self {
+        Self {
+            code: error.code(),
+            remediation: error.remediation(),
+        }
+    }
+}
+
+/// One lecture, as a sidebar row.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LectureRow {
+    /// The bundle directory, relative to the vault root.
+    pub directory: String,
+    /// What the person knows it by.
+    pub title: String,
+    /// The authoritative order key.
+    pub sequence: String,
+    /// The facets the sidebar groups on.
+    pub course: Option<String>,
+    /// The module facet, if it has one.
+    pub module: Option<String>,
+    /// The week facet, if it has one.
+    pub week: Option<String>,
+    /// Free-form tags.
+    pub tags: Vec<String>,
+    /// The conversion state, by name.
+    pub conversion: &'static str,
+    /// Whether the PDF can be opened yet.
+    ///
+    /// Sent rather than derived in the UI, so the rule for "openable" lives in one place —
+    /// the domain — instead of being reimplemented in TypeScript against a state name.
+    pub document_ready: bool,
+}
+
+/// Something the walk could not use, with a reason to show.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProblemRow {
+    /// Where it is.
+    pub directory: String,
+    /// What to do about it.
+    pub remediation: String,
+}
+
+/// Everything one vault contains, including what could not be read.
+///
+/// Three lists, mirroring `LoadedVault`, for the reason recorded there: a vault of three
+/// hundred lectures with one corrupt manifest must still open.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VaultSummary {
+    /// The absolute path that was opened, for the window's title.
+    pub root: String,
+    /// The lectures that loaded, in path order.
+    pub lectures: Vec<LectureRow>,
+    /// Directories the walk declined to enter.
+    pub skipped: Vec<ProblemRow>,
+    /// Lectures found but not loadable.
+    pub unloadable: Vec<ProblemRow>,
+}
+
+/// Opens a vault and lists what is in it.
+///
+/// # Errors
+///
+/// Returns [`CommandError`] if `path` cannot be used as a vault, or if the root itself
+/// cannot be read. One unreadable folder or one corrupt manifest is reported in the
+/// summary instead, not as a failure.
+#[tauri::command]
+pub fn open_vault(path: &str) -> Result<VaultSummary, CommandError> {
+    let root = VaultRoot::open(std::path::Path::new(path))?;
+    let opened = root.as_path().display().to_string();
+    let loader = VaultLoader::new(ManifestStore::new(AtomicFsStorage::new(root), SystemClock));
+
+    Ok(summarise(opened, &loader.load()?))
+}
+
+/// Flattens a loaded vault into the rows the UI draws.
+fn summarise(root: String, loaded: &LoadedVault) -> VaultSummary {
+    VaultSummary {
+        root,
+        lectures: loaded.bundles.iter().map(row).collect(),
+        skipped: loaded
+            .skipped
+            .iter()
+            .map(|skipped| ProblemRow {
+                directory: skipped.shown_path.clone(),
+                remediation: skipped.reason.remediation().to_owned(),
+            })
+            .collect(),
+        unloadable: loaded
+            .unloadable
+            .iter()
+            .map(|lecture| ProblemRow {
+                directory: lecture.directory.to_string(),
+                remediation: lecture.error.remediation().to_owned(),
+            })
+            .collect(),
+    }
+}
+
+fn row(bundle: &lecture_core::LectureBundle) -> LectureRow {
+    let manifest = bundle.manifest();
+    let facets = manifest.facets();
+    let source = manifest.source();
+
+    LectureRow {
+        directory: bundle.directory().to_string(),
+        title: manifest.title().as_str().to_owned(),
+        sequence: manifest.sequence().as_str().to_owned(),
+        course: facets.course().map(label),
+        module: facets.module().map(label),
+        week: facets.week().map(label),
+        tags: facets.tags().iter().map(label).collect(),
+        conversion: name_of(source.conversion().state()),
+        document_ready: source.document_is_ready(),
+    }
+}
+
+fn label(label: &Label) -> String {
+    label.as_str().to_owned()
+}
+
+/// The wire name of a conversion state.
+///
+/// Spelled out rather than taken from `ConversionState`'s `Debug`, so that renaming a
+/// variant cannot silently change a string the UI matches on.
+const fn name_of(state: ConversionState) -> &'static str {
+    match state {
+        ConversionState::NotRequired => "notRequired",
+        ConversionState::Queued => "queued",
+        ConversionState::Converting => "converting",
+        ConversionState::Ready => "ready",
+        ConversionState::Failed => "failed",
+    }
+}

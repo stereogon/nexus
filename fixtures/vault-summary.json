@@ -1,0 +1,37 @@
+{
+  "lectures": [
+    {
+      "conversion": "ready",
+      "course": "CS454 Distributed Systems",
+      "directory": "cs454/01-raft",
+      "documentReady": true,
+      "module": "Consensus",
+      "sequence": "a0",
+      "tags": [
+        "consensus",
+        "exam"
+      ],
+      "title": "Raft Consensus",
+      "week": "Week 3"
+    },
+    {
+      "conversion": "notRequired",
+      "course": null,
+      "directory": "cs454/02-paxos",
+      "documentReady": true,
+      "module": null,
+      "sequence": "a1",
+      "tags": [],
+      "title": "Paxos Made Simple",
+      "week": null
+    }
+  ],
+  "root": "<vault>",
+  "skipped": [],
+  "unloadable": [
+    {
+      "directory": "cs454/03-truncated",
+      "remediation": "That file could not be loaded, and nothing on disk has been changed. The message above says what went wrong and where a copy of the file was kept, which you can open in any text editor."
+    }
+  ]
+}

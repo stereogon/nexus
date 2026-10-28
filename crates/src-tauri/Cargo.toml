@@ -1,0 +1,32 @@
+[package]
+name = "nexus-app"
+description = "Desktop shell for Nexus: a thin IPC adapter over lecture-core and its adapters."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+# `CLAUDE.md` §3: this crate is a **thin IPC adapter only, no business logic**. Every
+# command here should read as "deserialize, call one thing, serialize" -- if a command
+# starts making decisions, those decisions belong in `lecture-core` and the command is
+# the bug.
+#
+# It is also the only crate in the workspace that is allowed to know Tauri exists, and the
+# only one not required to compile for `aarch64-apple-ios`.
+[dependencies]
+lecture-core.workspace = true
+lecture-fs.workspace = true
+lecture-convert.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tauri.workspace = true
+tauri-plugin-dialog.workspace = true
+
+[build-dependencies]
+tauri-build.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

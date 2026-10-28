@@ -1,11 +1,16 @@
 [workspace]
 resolver = "3"
-members = ["crates/lecture-core", "crates/lecture-fs", "crates/lecture-convert"]
+members = [
+    "crates/lecture-core",
+    "crates/lecture-fs",
+    "crates/lecture-convert",
+    "crates/src-tauri",
+]
 
-# `crates/src-tauri` joins this list in Milestone 2, when there is an IPC surface
-# worth adapting. Declaring it now would pull the whole Tauri dependency tree and an
-# icon-asset requirement into a milestone whose deliverable is pure domain logic.
-# Recorded in PROGRESS.md so it is a sequencing decision, not an omission.
+# `crates/src-tauri` joined on 2026-10-28, when there was an IPC surface worth adapting
+# and the user asked for the UI to be wired. It brings the Tauri dependency tree with it,
+# which is why it waited: declaring it earlier would have put several hundred crates into
+# a milestone whose deliverable was pure domain logic.
 
 [workspace.package]
 version = "0.1.0"
@@ -49,9 +54,17 @@ tracing-appender = "0.2"
 # an in-memory fake cannot exercise the behaviour that matters there.
 tempfile = "3.27.0"
 
+# The desktop shell. `tauri-build` runs in a build script and is a build-dependency of
+# the adapter crate alone, so nothing else in the workspace carries it.
+tauri = { version = "2", features = [] }
+tauri-build = { version = "2", features = [] }
+# The folder picker, which is a platform capability rather than something to reimplement.
+tauri-plugin-dialog = "2"
+
 # Internal crates, so a member can depend on another without repeating the path.
 lecture-core = { path = "crates/lecture-core" }
 lecture-fs = { path = "crates/lecture-fs" }
+lecture-convert = { path = "crates/lecture-convert" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

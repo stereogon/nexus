@@ -194,7 +194,11 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
       import adapter, which records `state`, `converter` and `convertedAt` at each step, so
       a bundle is self-describing. Round-tripped through `ManifestStore` in a test.
 - [ ] Setup diagnostic UI — folded into the item above; recorded, not built
-- [ ] Vault sidebar, drag-and-drop import, facet grouping
+- [~] Vault sidebar, drag-and-drop import, facet grouping — **partly done 2026-10-28.**
+      The shell, the IPC boundary and a list of lectures with their facets now exist and
+      run. Still missing: grouping *on* those facets (the rows are flat), drag-and-drop
+      import, and opening a lecture. `PathTemplate` and `plan_reorganize` are the domain
+      half of grouping and are already built and tested.
 - [x] Import path templates — done 2026-10-28. `PathTemplate`: `{course}/{week}-{title}`
       says where a lecture's folder goes, rendered from its facets. 14 tests, pure.
 - [x] "Reorganize Vault" with dry-run preview — done 2026-10-28. `plan_reorganize` touches
@@ -397,6 +401,124 @@ probe file was placed where the line counter sees it but `cargo` does not — a 
 step under test. `check-line-limits.sh` exited 1 naming the file; the full gate reported
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
+
+**2026-10-28 · The UI is wired to the backend, and the app runs**
+The user asked to start wiring the UI, and asked whether finishing Milestone 2 first would
+be better. It was not, and the reason was worth stating: **nothing in this project had ever
+run.** 453 tests and zero executions through the real boundary, with the Rust-to-Zod IPC
+shape described twice — once by `serde`, once by the Zod schemas — and validated only
+against fixtures each side wrote for itself. That is the project's largest untested
+assumption, and it gets more expensive to find the longer it waits.
+
+`crates/src-tauri` joined the workspace. It had been held out on purpose (recorded in
+`Cargo.toml`), because declaring it pulls several hundred crates into a milestone whose
+deliverable was pure domain logic. The user authorised the fetch.
+
+**What now exists:** `open_vault` and `pick_vault_directory` as the only two commands; DTOs
+that flatten `LoadedVault` into sidebar rows; a React entry point, the §3 design tokens, and
+a window that opens a vault and lists what is in it, including what it could not read.
+
+**The IPC contract is pinned on both sides, the same way the on-disk files are.**
+`crates/src-tauri/tests/ipc_contract.rs` runs the **real** `open_vault` against a real vault
+on disk — not a hand-built summary, which would pin the struct and prove nothing about the
+command — and pins the result as `fixtures/vault-summary.json`. `src/ipc/ipc.test.ts`
+asserts the Zod schemas accept exactly those bytes. Neither side can now move without the
+other failing, with no code generator and no new dependency. The fixture deliberately holds
+one fully-populated lecture and one with no taxonomy at all, because a fixture where every
+optional field is filled proves nothing about whether the other language copes when they
+are not.
+
+What it pins is field names, types and nullability — **not** byte-for-byte what crosses the
+wire, since `serde_json::to_value` sorts keys where serialising the struct keeps declaration
+order. Harmless, because JSON objects are unordered, but stated so "matches the fixture" is
+not read as a stronger claim than it is.
+
+**Errors cross as a code and a remediation, never as `Display`.** §1.4 says every
+`CoreError` carries a machine code and a plain sentence; that pair is exactly what a UI
+needs, so it is exactly what crosses. `Display` interpolates paths, and a path a webview
+holds can reach a console log or a crash report, which §4 rules out. There is a test
+asserting a failed `open_vault` does not leak the path it was given. The cost is honest: a
+developer debugging from the UI sees `ERR_IO` rather than which file, and the log is where
+that detail belongs, keyed by the same code.
+
+**The folder picker is an IPC command, not the `@tauri-apps/plugin-dialog` npm package.**
+Avoids a second frontend dependency for one call, and keeps the platform capability on the
+Rust side, which is where §3 puts desktop-only capabilities. `tauri info` now reports that
+JS plugin as "not installed", which is correct and deliberate rather than a gap.
+
+**The CSP enforces the offline promise structurally.** `default-src 'self'` in
+`tauri.conf.json` means a stray `fetch` or a CDN font cannot work even if someone adds one
+by accident. Cheaper and more reliable than remembering not to.
+
+**2026-10-28 · Removing an `.expect()` I had excused instead of fixing**
+`run()` ended with `.expect("Nexus could not create its window")` and a doc comment arguing
+it was "the one permitted use", because a failure before any UI exists has nowhere to go.
+Clippy's `expect_used = "deny"` caught it, and clippy was right: §4 bans `.expect()` in
+production code with **no carve-out**, and a comment calling an exception permitted does not
+create permission. Writing that justification was the actual mistake — the rule is not the
+obstacle, it is the standard.
+
+`run()` now returns `Result<(), tauri::Error>` and `main` returns an `ExitCode`, printing a
+fixed sentence and failing loudly.
+
+**The tradeoff, recorded because it is a real loss:** that sentence does not include the
+underlying `tauri::Error`, so a startup failure is not diagnosable beyond "the shell would
+not start". §4 forbids letting text that may interpolate a path reach a log or a console,
+and `tauri::Error`'s `Display` may well contain one. If this ever needs diagnosing, the
+answer is a redacting conversion in the shape of `CoreError::log_digest`, **not**
+interpolating `Display`.
+
+**2026-10-28 · `#[expect]` rather than `#[allow]` for a framework-dictated signature**
+Clippy's `needless_pass_by_value` fired on both commands. For `open_vault` it was right, and
+`path: &str` works — checked, not assumed. For `pick_vault_directory` it was wrong: Tauri
+implements `CommandArg` for `AppHandle` and not for `&AppHandle`, so a reference fails with
+`the trait bound &AppHandle: CommandArg is not satisfied`.
+
+That exception uses `#[expect(..., reason = "...")]`, not `#[allow]`. If Tauri ever
+implements `CommandArg` for a reference, the expectation stops being fulfilled and the build
+says the signature can be tightened — instead of the exception quietly outliving its reason.
+Worth naming as the general pattern: an `allow` is a silence, an `expect` is a silence with
+an expiry.
+
+**2026-10-28 · The gate now builds the frontend**
+`npm run build` joined `scripts/gate.sh`. Not in §5's literal list, which was written before
+there was anything to build; the gate is deliberately stricter rather than looser, and §5
+already anticipates growing. Without it a Vite break is invisible — `tsc --noEmit`
+type-checks but never bundles, so a bad import or missing asset passes every other step and
+fails only when someone tries to launch the app. **Raised rather than silently assumed:** if
+the user would rather §5 stay the literal list, say so and it comes back out.
+
+**2026-10-28 · What was verified by running, and what was not**
+Verified by observation, not inference:
+- `cargo run -p nexus-app` opens a real window. `lsappinfo` showed it registered and in
+  front, with WebKit's `Networking` and `Graphics and Media` helpers spawned, which means
+  the webview loaded rather than merely being constructed.
+- `npm run app` (`tauri dev`) works end to end despite the **non-standard crate location**:
+  the CLI finds `crates/src-tauri/tauri.conf.json` and reports our own CSP and
+  `frontendDist` back, vite comes up on 1420, `cargo run` follows, and all four crates are
+  watched. Worth recording because `crates/src-tauri` is a §3 locked decision and Tauri's
+  convention is a root-level `src-tauri/` — it was not obvious the CLI would cope.
+- Both were stopped afterwards; `pgrep` confirmed no stray processes (§1.9).
+
+**Not verified, and not claimable:** the React render and the `invoke` wiring. A native
+window cannot be driven from here — no button was clicked, and no vault was listed in the
+actual interface. The command is tested directly in Rust, the schemas against the bytes it
+produces, and the build and launch are observed; the link between them is argued, not
+observed. Closing it properly means a component test with `@testing-library/react`, which is
+an install and therefore the user's call. Said plainly rather than letting "the app runs"
+imply more than it does.
+
+**2026-10-28 · Two placeholders, both deliberate and both recorded**
+- **The app icon** is generated, not designed: a page on a brand-coloured bed, written as
+  raw RGBA PNG bytes by a script because no image library was available and fetching one
+  needs network. It is honest placeholder art, not a finished icon. Tauri rejected the
+  first attempt outright — `icon ... is not RGBA` — which is why the colour type matters.
+- **The fonts named in §3** (Bricolage Grotesque, IBM Plex Sans, Literata, IBM Plex Mono)
+  are **not bundled**, so the UI falls back to the system stack. All four are OFL and the
+  plan is unchanged; fetching them is network access and therefore the user's decision.
+  `theme.css` says so at the top, next to the rule that there is no `@import url(...)`
+  anywhere — a stylesheet being the easiest place for the offline promise to be broken by
+  accident.
 
 **2026-10-28 · The reorganize dry-run, and why its code is not shared with renumber**
 `plan_reorganize` takes lectures and where the template says each belongs, and returns what
@@ -2262,11 +2384,9 @@ the user's instruction, 2026-10-27), local only, never pushed without being aske
   duplicate keys, unreachable code) the compiler already rejects under the strict flags,
   so the gap is small — but it is a gap, and closing it is a one-package question for
   the user rather than something to install unasked.
-- **`npm run build` does not work yet**, and `vite.config.ts` does not exist. There is no
-  `index.html` and no application entry point, because the UI is Milestone 3 and a
-  placeholder `App.tsx` would be exactly the stub-that-reads-as-complete §4 forbids. The
-  `build` script is therefore a name without an implementation behind it until then.
-  `typecheck`, `lint` and `test` all work.
+- ~~**`npm run build` does not work yet.**~~ **Resolved 2026-10-28.** `vite.config.ts`,
+  `index.html` and a real entry point now exist, `npm run build` produces a bundle
+  (303 kB JS, 2.6 kB CSS), and the gate runs it — see the entry on wiring the UI.
 - **Third-party notices file.** Two crates in the tree carry the `Unicode-3.0` term,
   which is attribution-only but does require a notice to ship with the binary. Nothing
   generates one yet. Belongs with the `cargo deny` work so it is produced from the real

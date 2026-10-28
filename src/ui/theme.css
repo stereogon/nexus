@@ -1,0 +1,216 @@
+/*
+ * The design tokens from CLAUDE.md section 3, in one place.
+ *
+ * # No network, ever
+ *
+ * There is no `@import url(...)` and no `<link>` to a font service here or anywhere else.
+ * Nexus is offline by definition, the webview enforces it with a `default-src 'self'` CSP,
+ * and a stylesheet is the easiest place for that promise to be broken by accident.
+ *
+ * # Fonts are a known gap
+ *
+ * Section 3 names Bricolage Grotesque, IBM Plex Sans, Literata and IBM Plex Mono, all OFL
+ * and all to be bundled as local woff2. They are not bundled yet, because fetching them
+ * needs network access and that is the user's decision to make. Until then this falls back
+ * to the system stack, which is legible and ships with the machine. Recorded in
+ * PROGRESS.md rather than left to be noticed.
+ */
+
+:root {
+  --accent: #be1a72;
+  --accent-ink: #9e477b;
+
+  --bed: #f4f1f3;
+  --surface: #ffffff;
+  --surface-sunken: #ebe7ea;
+  --border: #d9d2d7;
+  --text: #1c1419;
+  --text-dim: #6c5f66;
+
+  /* The four highlight semantics. Each also carries a letter glyph, so the set never
+     relies on hue alone -- section 3. */
+  --semantic-key: #f2b63c;
+  --semantic-definition: #2ea37a;
+  --semantic-exam: #e0523c;
+  --semantic-question: #2e86de;
+
+  --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --radius: 10px;
+  --gap: 12px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --accent: #ff72c6;
+    --bed: #161215;
+    --surface: #211c20;
+    --surface-sunken: #191417;
+    --border: #352d32;
+    --text: #f2ecef;
+    --text-dim: #a2949c;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bed);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The window uses a transparent title bar, so the app owns the strip behind it. */
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.titlebar {
+  height: 38px;
+  flex: 0 0 auto;
+}
+
+.content {
+  flex: 1 1 auto;
+  padding: 0 24px 32px;
+}
+
+h1 {
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  margin: 0 0 4px;
+}
+
+.subtitle {
+  color: var(--text-dim);
+  margin: 0 0 20px;
+}
+
+.path {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  word-break: break-all;
+}
+
+button {
+  font: inherit;
+  font-weight: 550;
+  color: #fff;
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius);
+  padding: 9px 18px;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--accent-ink);
+  outline-offset: 2px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: var(--gap);
+}
+
+.lecture {
+  display: flex;
+  align-items: baseline;
+  gap: var(--gap);
+}
+
+.lecture-title {
+  font-weight: 550;
+}
+
+.facets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.facet {
+  font-size: 12px;
+  color: var(--text-dim);
+  background: var(--surface-sunken);
+  border-radius: 6px;
+  padding: 1px 7px;
+}
+
+.badge {
+  margin-left: auto;
+  font-size: 12px;
+  border-radius: 6px;
+  padding: 1px 8px;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.badge[data-state="ready"],
+.badge[data-state="notRequired"] {
+  color: var(--semantic-definition);
+  border-color: var(--semantic-definition);
+}
+
+.badge[data-state="failed"] {
+  color: var(--semantic-exam);
+  border-color: var(--semantic-exam);
+}
+
+.badge[data-state="queued"],
+.badge[data-state="converting"] {
+  color: var(--semantic-key);
+  border-color: var(--semantic-key);
+}
+
+.problem {
+  border-left: 3px solid var(--semantic-key);
+}
+
+.error {
+  border-left: 3px solid var(--semantic-exam);
+}
+
+.code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+h2 {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  margin: 24px 0 10px;
+}
+
+.empty {
+  color: var(--text-dim);
+}
+
+.reset {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}

@@ -1,0 +1,12 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "What the one window is allowed to do. Deliberately short: a folder picker and nothing else. Every addition here widens what a compromised webview could reach, and this app has no network and no reason to grow the list quickly.",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "core:default",
+    "dialog:allow-open"
+  ]
+}

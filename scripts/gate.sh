@@ -87,10 +87,19 @@ if [ -d node_modules ]; then
     run_step "npm run typecheck" npm run typecheck
     run_step "npm run lint" npm run lint
     run_step "npm run test" npm run test
+
+    # Added 2026-10-28, when a frontend first existed. Not in CLAUDE.md §5's literal list,
+    # which was written before there was anything to build; the gate is deliberately
+    # stricter rather than looser, and §5 already anticipates growing ("plus, from
+    # Milestone 5, the Playwright suite"). Without it, a Vite build break is invisible --
+    # `tsc --noEmit` type-checks but never bundles, so a bad import or a missing asset
+    # passes everything above and fails only when someone tries to launch the app.
+    run_step "npm run build" npm run build
 else
     require "npm run typecheck" "npm ci"
     require "npm run lint" "npm ci"
     require "npm run test" "npm ci"
+    require "npm run build" "npm ci"
 fi
 
 # The converter tests that need a real LibreOffice. CLAUDE.md §4 permits the #[ignore]
