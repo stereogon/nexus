@@ -161,6 +161,75 @@ button.secondary {
   border: 1px solid var(--border-strong);
 }
 
+/* A form field: a label above its control, or beside it when inline. */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-meta);
+}
+
+.field.inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.field input,
+.field select {
+  font: inherit;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 7px 10px;
+}
+
+.field input:focus-visible,
+.field select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.editor {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--gap);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin: 16px 0;
+}
+
+.editor-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--text-meta);
+}
+
+/* A button that reads as a link: used where the action sits inside a row of chips and a
+   filled button would outweigh the content it belongs to. */
+button.link {
+  color: var(--accent);
+  background: none;
+  border: none;
+  border-radius: 6px;
+  padding: 1px 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
 .note {
   color: var(--text-secondary);
   background: var(--surface);

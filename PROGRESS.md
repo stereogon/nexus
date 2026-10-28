@@ -404,6 +404,55 @@ step under test. `check-line-limits.sh` exited 1 naming the file; the full gate 
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
 
+**2026-10-28 · Facets are editable and the list groups on them**
+The answer to "what happened to organising by weeks and modules", built rather than
+explained. Both halves of §3's sentence — *"Taxonomy lives in each bundle's `manifest.json`
+as facets … The sidebar groups on facets at runtime"* — are now reachable from the window.
+
+The user confirmed the path fix against the real app first: a re-import of the same PDF
+wrote `"document": "source/document.pdf"`. That is the first confirmation of a fix from the
+real app rather than from a test, and it also showed `"facets": {}` again, which is what
+this entry is about.
+
+**`set_lecture_facets`, in `crates/src-tauri/src/facets.rs`.** Loads the manifest, replaces
+its facets, saves through the atomic path, returns the updated row. The lecture does not
+move, which is the whole argument for facets over folders: one lecture can be in a week
+*and* a topic *and* an exam list, and a folder tree can hold only one of those.
+
+Three decisions worth recording:
+
+- **A blank field clears a facet.** A taxonomy you can only add to is one you cannot
+  correct, so `Facets` is rebuilt from empty each time rather than mutated.
+- **`custom` keys are carried across.** Rebuilding from empty would otherwise drop them,
+  and `custom` is an open map precisely so a person can put something there by hand.
+  Dropping keys an edit never mentioned is the silent loss §1.4 rules out.
+- **It is `async`.** The same reason as the import, learnt from the picker deadlock: a sync
+  command runs on the main thread, and this one reads and rewrites a file.
+
+**Grouping is in TypeScript, not Rust.** §3 says the sidebar groups *at runtime*, and that
+is this layer: the rows already carry their facets, grouping them is presentation rather
+than domain, and doing it in Rust would put an IPC round trip behind changing a dropdown.
+`grouped` is exported and tested as a pure function — the part that can be wrong in a way no
+screenshot would show. `Unfiled` always sorts last, because it is the pile to work through
+and "Unfiled" falls between "CS454" and "Week 1" alphabetically, which would bury it.
+
+**Two §4 near-misses, both avoided rather than silenced.** `event.target.value as GroupBy`
+would have been an unchecked claim — the DOM only promises a string — so the value is matched
+against the list the options were drawn from. And `FormEvent` is deprecated in React's own
+types, so the submit handler is inline and the event type inferred from the JSX prop instead
+of imported.
+
+**Not verified: the interactive path.** The commands and the grouping are tested; clicking
+*Edit*, typing a week and seeing the list regroup is not, because there is still no
+component test harness (`@testing-library/react` is an install, so §2 makes it the user's
+call). This is exactly where the picker deadlock lived, and it is named rather than implied.
+The bundle was built and launched to confirm it starts without crashing, which is a weaker
+claim than "it works".
+
+**Still ahead:** capturing facets *during* import rather than only after, opening a lecture
+in the viewer, and the reorganize apply loop that would make the folder names follow the
+facets as §3's derived projection.
+
 **2026-10-28 · The importer wrote vault-relative paths into the manifest — a §3 violation**
 The user asked why each lecture got its own folder and what happened to organising by week
 and module, and offered the real vault to look at. The design answer is below; looking found

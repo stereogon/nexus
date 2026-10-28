@@ -7,10 +7,12 @@
 //! It is also the only crate in the workspace allowed to know Tauri exists, and the only
 //! one not required to compile for `aarch64-apple-ios`.
 
+pub mod facets;
 pub mod import;
 pub mod picker;
 pub mod vault;
 
+pub use facets::set_lecture_facets;
 pub use import::import_document;
 pub use picker::{pick_document, pick_vault_directory};
 pub use vault::{CommandError, LectureRow, ProblemRow, VaultSummary, open_vault};
@@ -30,7 +32,8 @@ pub fn run() -> Result<(), tauri::Error> {
             open_vault,
             pick_vault_directory,
             pick_document,
-            import_document
+            import_document,
+            set_lecture_facets
         ])
         .run(tauri::generate_context!())
 }

@@ -96,6 +96,37 @@ export function asCommandError(thrown: unknown): CommandError {
   };
 }
 
+/** The four named facets, as the editor sends them. An empty string clears one. */
+export interface FacetEdit {
+  readonly course: string;
+  readonly module: string;
+  readonly week: string;
+  readonly tags: readonly string[];
+}
+
+/**
+ * Files a lecture under a course, module, week and tags.
+ *
+ * This is how a lecture comes to be in a week: by saying so in its own manifest, not by
+ * moving it. The folder does not change, which is what lets one lecture be in a week *and*
+ * a topic *and* an exam list at once.
+ *
+ * @throws {CommandError} if the lecture cannot be read or a facet is not a usable label.
+ */
+export async function setLectureFacets(
+  vault: string,
+  directory: string,
+  facets: FacetEdit,
+): Promise<LectureRow> {
+  const payload: unknown = await invoke("set_lecture_facets", {
+    vault,
+    directory,
+    facets: { ...facets, tags: [...facets.tags] },
+  });
+
+  return LectureRowSchema.parse(payload);
+}
+
 /**
  * Imports a document into the vault, converting it if a converter is available.
  *

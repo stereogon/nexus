@@ -1,16 +1,16 @@
 /**
- * The application shell: choose a vault, add lectures to it, see what is in it.
+ * The application shell: choose a vault, add lectures, file them, see them grouped.
  *
  * # Why the state is one union and not four booleans
  *
- * `opening` and `failed` cannot both be true, and a union says so in the type rather than
- * in a comment. It also makes the render exhaustive — `noFallthroughCasesInSwitch` and
+ * `open` and `failed` cannot both be true, and a union says so in the type rather than in
+ * a comment. It also makes the render exhaustive — `noFallthroughCasesInSwitch` and
  * `noImplicitReturns` are both on, so a state added later without a branch is a compile
  * error rather than a blank window.
  *
- * `busy` sits outside that union on purpose: "an action is in flight" is orthogonal to
- * which vault is open, and folding it in would mean an importing-with-a-vault state and an
- * importing-without-one state that cannot actually both exist.
+ * `busy`, `groupBy` and `editing` sit outside that union on purpose. Each is orthogonal to
+ * which vault is open, and folding them in would mean enumerating combinations that cannot
+ * actually occur — an editing-with-no-vault state, a grouped-but-failed one.
  */
 import { useCallback, useState } from "react";
 
@@ -19,16 +19,30 @@ import {
   asCommandError,
   importDocument,
   openVault,
+  setLectureFacets,
   type CommandError,
+  type FacetEdit,
   type LectureRow,
   type VaultSummary,
 } from "./ipc/vault";
-import { LectureList } from "./ui/LectureList";
+import { FacetEditor } from "./ui/FacetEditor";
+import { LectureList, type GroupBy } from "./ui/LectureList";
 
 type VaultState =
   | { readonly kind: "idle" }
-  | { readonly kind: "open"; readonly summary: VaultSummary; readonly note: string | null }
+  | {
+      readonly kind: "open";
+      readonly summary: VaultSummary;
+      readonly note: string | null;
+    }
   | { readonly kind: "failed"; readonly error: CommandError };
+
+const GROUPINGS: readonly (readonly [GroupBy, string])[] = [
+  ["none", "Nothing"],
+  ["course", "Course"],
+  ["module", "Module"],
+  ["week", "Week"],
+];
 
 /**
  * What to say after an import.
@@ -51,6 +65,17 @@ function noteFor(lecture: LectureRow): string {
   }
 }
 
+/**
+ * The grouping a `<select>` value names.
+ *
+ * Matched against the list the options were drawn from rather than asserted with `as`:
+ * the value is a string as far as the DOM is concerned, and claiming otherwise would be
+ * exactly the unchecked cast §4 rules out.
+ */
+function groupingFrom(value: string): GroupBy {
+  return GROUPINGS.find(([name]) => name === value)?.[0] ?? "none";
+}
+
 function Failure({ error }: { readonly error: CommandError }) {
   return (
     <div className="card error">
@@ -63,6 +88,31 @@ function Failure({ error }: { readonly error: CommandError }) {
 export function App() {
   const [state, setState] = useState<VaultState>({ kind: "idle" });
   const [busy, setBusy] = useState(false);
+  const [groupBy, setGroupBy] = useState<GroupBy>("none");
+  const [editing, setEditing] = useState<LectureRow | null>(null);
+
+  /** Runs an action that changes the vault, then re-reads the vault from disk. */
+  const against = useCallback(
+    (vault: string, act: () => Promise<string | null>) => {
+      void (async () => {
+        setBusy(true);
+
+        try {
+          const note = await act();
+
+          // Re-scanned rather than having rows patched in place: the vault on disk is the
+          // truth, and a list maintained by editing drifts from it the first time anything
+          // changes a lecture without going through this window.
+          setState({ kind: "open", summary: await openVault(vault), note });
+        } catch (thrown: unknown) {
+          setState({ kind: "failed", error: asCommandError(thrown) });
+        } finally {
+          setBusy(false);
+        }
+      })();
+    },
+    [],
+  );
 
   const choose = useCallback(() => {
     void (async () => {
@@ -74,7 +124,12 @@ export function App() {
         // Cancelling is not a failure, and leaving the previous state alone is the whole
         // point: someone who opens the picker by accident keeps the vault they had.
         if (chosen !== null) {
-          setState({ kind: "open", summary: await openVault(chosen), note: null });
+          setEditing(null);
+          setState({
+            kind: "open",
+            summary: await openVault(chosen),
+            note: null,
+          });
         }
       } catch (thrown: unknown) {
         setState({ kind: "failed", error: asCommandError(thrown) });
@@ -91,43 +146,71 @@ export function App() {
 
     const vault = state.summary.root;
 
-    void (async () => {
-      setBusy(true);
+    against(vault, async () => {
+      const file = await pickDocument();
 
-      try {
-        const file = await pickDocument();
+      return file === null ? null : noteFor(await importDocument(vault, file));
+    });
+  }, [against, state]);
 
-        if (file !== null) {
-          const added = await importDocument(vault, file);
-
-          // Re-scanned rather than having the new row spliced in: the vault on disk is the
-          // truth, and a list maintained by appending drifts from it the first time
-          // anything changes a lecture without going through this button.
-          setState({ kind: "open", summary: await openVault(vault), note: noteFor(added) });
-        }
-      } catch (thrown: unknown) {
-        setState({ kind: "failed", error: asCommandError(thrown) });
-      } finally {
-        setBusy(false);
+  const file = useCallback(
+    (facets: FacetEdit) => {
+      if (state.kind !== "open" || editing === null) {
+        return;
       }
-    })();
-  }, [state]);
+
+      const vault = state.summary.root;
+      const lecture = editing;
+
+      setEditing(null);
+      against(vault, async () => {
+        const filed = await setLectureFacets(vault, lecture.directory, facets);
+
+        return `Filed "${filed.title}".`;
+      });
+    },
+    [against, editing, state],
+  );
 
   return (
     <div className="app">
       <div className="titlebar" />
       <main className="content">
         <h1>Nexus</h1>
-        <p className="subtitle">Study your lectures beside your notes, entirely offline.</p>
+        <p className="subtitle">
+          Study your lectures beside your notes, entirely offline.
+        </p>
 
         <div className="actions">
-          <button onClick={choose} disabled={busy} type="button">
+          <button disabled={busy} onClick={choose} type="button">
             {state.kind === "open" ? "Open another vault" : "Open a vault"}
           </button>
           {state.kind === "open" && (
-            <button className="secondary" onClick={add} disabled={busy} type="button">
-              Add a lecture
-            </button>
+            <>
+              <button
+                className="secondary"
+                disabled={busy}
+                onClick={add}
+                type="button"
+              >
+                Add a lecture
+              </button>
+              <label className="field inline">
+                <span>Group by</span>
+                <select
+                  onChange={(event) => {
+                    setGroupBy(groupingFrom(event.target.value));
+                  }}
+                  value={groupBy}
+                >
+                  {GROUPINGS.map(([value, name]) => (
+                    <option key={value} value={value}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </>
           )}
         </div>
 
@@ -135,7 +218,22 @@ export function App() {
         {state.kind === "open" && (
           <>
             {state.note !== null && <p className="note">{state.note}</p>}
-            <LectureList summary={state.summary} />
+            {editing !== null && (
+              <FacetEditor
+                busy={busy}
+                lecture={editing}
+                onCancel={() => {
+                  setEditing(null);
+                }}
+                onSave={file}
+              />
+            )}
+            <LectureList
+              busy={busy}
+              groupBy={groupBy}
+              onEdit={setEditing}
+              summary={state.summary}
+            />
           </>
         )}
       </main>
