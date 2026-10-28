@@ -25,6 +25,7 @@ mod page_number;
 mod path_template;
 mod relative_path;
 mod renumber;
+mod reorganize;
 mod schema;
 mod slug;
 mod source;
@@ -63,6 +64,9 @@ pub use relative_path::{MAX_BUNDLE_DEPTH, MAX_DEPTH, MAX_WITHIN_BUNDLE_DEPTH, Re
 pub use renumber::{
     BlockedFolder, OrderedFolder, RENUMBERING_SUFFIX, Rename, RenumberBlock, RenumberPlan,
     plan_renumber, position_width, positioned_name, stem_of, temporary_name,
+};
+pub use reorganize::{
+    BlockedLecture, Move, PlacedLecture, ReorganizeBlock, ReorganizePlan, plan_reorganize,
 };
 pub use schema::{SchemaProbe, SchemaRange};
 pub use slug::Slug;

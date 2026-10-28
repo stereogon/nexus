@@ -197,8 +197,10 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
 - [ ] Vault sidebar, drag-and-drop import, facet grouping
 - [x] Import path templates — done 2026-10-28. `PathTemplate`: `{course}/{week}-{title}`
       says where a lecture's folder goes, rendered from its facets. 14 tests, pure.
-- [ ] "Reorganize Vault" with dry-run preview — applying a template to lectures that already
-      exist. The dry-run **is** the feature; `PathTemplate` is what it will plan against.
+- [x] "Reorganize Vault" with dry-run preview — done 2026-10-28. `plan_reorganize` touches
+      nothing and returns the moves, in an order where each target is free when its turn
+      comes, plus every lecture it could not file and why. 13 tests. **The apply side is not
+      written** — the plan is the deliverable and the loop that walks it is the next step.
 - [x] Tests: mock converter transitions (12, in `lecture-fs`) and **real** `.pptx`/`.docx`
       fixtures (5 end-to-end against `LibreOffice` 26.8.1.1, `#[ignore]`-gated and run by
       `scripts/gate.sh` whenever `soffice` is present). The note that LibreOffice was absent
@@ -395,6 +397,59 @@ probe file was placed where the line counter sees it but `cargo` does not — a 
 step under test. `check-line-limits.sh` exited 1 naming the file; the full gate reported
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
+
+**2026-10-28 · The reorganize dry-run, and why its code is not shared with renumber**
+`plan_reorganize` takes lectures and where the template says each belongs, and returns what
+*would* happen. It touches nothing. That is not a convenience wrapped around the real
+operation — it is the operation someone wants, because moving a hundred lecture folders on
+a hunch is how a vault gets lost.
+
+The ordering problem is **identical** to the renumber's, and gets the same answer for the
+same reason: emit a move only when its target is actually free, and when nothing is free
+because every target is held by another mover, break the cycle with one temporary name. Two
+lectures that have been manually swapped are a cycle, and no ordering resolves a cycle.
+
+**The code is not shared, and that was a judgement call.** Generalising `plan_renumber`
+would mean parameterising it over the name type, the plan it writes into, the reason enum
+and the temporary-name function: four knobs for sixty lines, which §1.11 calls a pattern
+larger than the problem. The two also differ in ways that would leak through any shared
+abstraction — a renumber permutes siblings in one directory, while a reorganize moves whole
+bundles between directories, so a target's parents may not exist yet and occupancy is a
+question about the whole vault rather than one folder's listing.
+
+What *is* shared is the piece that genuinely is the same: `temporary_name`, which parks a
+folder under an unused name in its own parent. Breaking a cycle is therefore a cheap
+same-directory rename rather than a move across the vault. Recorded because "why is this
+algorithm written twice?" is a fair question to ask later, and the answer should not have to
+be reconstructed.
+
+**Two lectures wanting one folder is settled separately, before any scheduling.** It is not
+an ordering problem — no sequence helps — and letting whichever was planned first win would
+file one lecture on top of another. Both are reported.
+
+**2026-10-28 · The planner was right and my test was wrong**
+A test asserted that when one lecture is already at the target and another wants it, the
+mover is blocked as `TargetOccupied` while the one in place counts as unchanged. The planner
+reports **both** as `SharedTarget`, and that is the better answer: the problem is not that a
+folder happens to be busy, it is that two lectures render to one name and a person has to
+rename one of them. `TargetOccupied` would have pointed at the folder and sent them hunting
+for something that is not a lecture.
+
+Third time today a test of mine encoded an assumption instead of a behaviour — but the first
+time the *code* was right and the test wrong, which is the better version of that mistake.
+The test now asserts what happens and records what it expected, so the next reader does not
+read the difference as an oversight.
+
+**One test earns its place more than the others.** `every_step_of_a_cycle_lands_somewhere_free`
+replays the plan against a model of the vault and asserts no step ever lands on something
+still present. `fs::rename` replaces silently on POSIX, so that single property is the
+difference between a tidy-up and losing a folder — and it is the one thing a plan being
+"correct" has to mean.
+
+**Not written: the apply side.** `plan.moves()` is a sequence a loop can walk, and nothing
+walks it yet. Deliberate — the preview is what makes this safe to have at all, and the loop
+is small enough to add once the plan has been looked at in anger. Recorded in the checklist
+rather than left implied.
 
 **2026-10-28 · Why `LibreOffice` icons appeared in the Dock, and what fixed it**
 The user noticed several `LibreOffice` icons appearing in the Dock while the gate ran, and
