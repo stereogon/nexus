@@ -13,6 +13,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::domain::{Label, Timestamp};
+use crate::error::CoreError;
 
 /// How far a document has got through conversion.
 ///
@@ -31,6 +32,24 @@ pub enum ConversionState {
     Ready,
     /// Conversion failed. The original is still there.
     Failed,
+}
+
+impl ConversionState {
+    /// What to call this state in a message.
+    ///
+    /// A `&'static str` so [`CoreError`] can carry it without depending on this enum —
+    /// the error type stays free of domain types, which is what lets it be matched on
+    /// without pulling the domain in.
+    #[must_use]
+    pub const fn name(self) -> &'static str {
+        match self {
+            Self::NotRequired => "not required",
+            Self::Queued => "queued",
+            Self::Converting => "converting",
+            Self::Ready => "ready",
+            Self::Failed => "failed",
+        }
+    }
 }
 
 /// The provenance of a converted document.
@@ -110,5 +129,121 @@ impl Conversion {
     #[must_use]
     pub fn converted_at(&self) -> Option<&Timestamp> {
         self.converted_at.as_ref()
+    }
+
+    /// Whether this conversion was running when the app last stopped.
+    ///
+    /// Nothing resumes a half-finished conversion, so finding `Converting` recorded on
+    /// disk means the process died partway: the PDF beside it may be absent, truncated or
+    /// a plausible-looking fragment. It is requeued rather than trusted, because a
+    /// partial PDF that happens to open is the worst of the three outcomes — it would be
+    /// annotated.
+    #[must_use]
+    pub fn was_interrupted(&self) -> bool {
+        matches!(self.state, ConversionState::Converting)
+    }
+
+    /// Starts a conversion, recording which converter is attempting it.
+    ///
+    /// Allowed from `Queued` and from `Failed`, the second being a retry with whatever
+    /// converter is available now — often the point of retrying at all, since the usual
+    /// cause of failure is that no converter was installed.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CoreError::ConversionNotPossible`] from any other state.
+    pub fn started(self, converter: Label) -> Result<Self, CoreError> {
+        match self.state {
+            ConversionState::Queued | ConversionState::Failed => Ok(Self {
+                state: ConversionState::Converting,
+                converter: Some(converter),
+                converted_at: None,
+            }),
+            other => Err(refuse(other, "converting")),
+        }
+    }
+
+    /// Records that the conversion produced a PDF.
+    ///
+    /// Only from `Converting`, which is what makes a crash detectable: every success has
+    /// passed through a state written to disk first, so there is no path from "queued" to
+    /// "done" that leaves no trace of having been attempted.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CoreError::ConversionNotPossible`] from any other state, or if no
+    /// converter was recorded — a finished conversion that cannot say what produced it
+    /// would leave a bundle unable to describe itself.
+    pub fn succeeded(self, at: Timestamp) -> Result<Self, CoreError> {
+        if self.state != ConversionState::Converting {
+            return Err(refuse(self.state, "ready"));
+        }
+
+        let Some(converter) = self.converter else {
+            return Err(refuse(self.state, "ready without naming a converter"));
+        };
+
+        Ok(Self::ready(converter, at))
+    }
+
+    /// Records that the conversion did not produce a PDF.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CoreError::ConversionNotPossible`] from any state but `Converting`.
+    pub fn did_not_finish(self) -> Result<Self, CoreError> {
+        match (self.state, self.converter) {
+            (ConversionState::Converting, Some(converter)) => Ok(Self::failed(converter)),
+            (ConversionState::Converting, None) => {
+                Err(refuse(self.state, "failed without naming a converter"))
+            }
+            (other, _) => Err(refuse(other, "failed")),
+        }
+    }
+
+    /// Puts the conversion back in the queue, forgetting the attempt.
+    ///
+    /// Two callers, one rule. An interrupted conversion is requeued at startup so it is
+    /// retried rather than left looking as though it were still running on a process that
+    /// no longer exists. A `Failed` one is requeued when someone asks to try again.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CoreError::ConversionNotPossible`] from `NotRequired`, `Queued` or
+    /// `Ready`. A `Ready` conversion is not requeued by this — see
+    /// [`Conversion::reconversion_requested`], which is a different intent and deserves a
+    /// different name.
+    pub fn requeued(self) -> Result<Self, CoreError> {
+        match self.state {
+            ConversionState::Converting | ConversionState::Failed => Ok(Self::queued()),
+            other => Err(refuse(other, "queued")),
+        }
+    }
+
+    /// Asks for a finished conversion to be done again.
+    ///
+    /// Separate from [`Conversion::requeued`] because the consequence is different and a
+    /// caller should have to mean it: a reconversion replaces a PDF that highlights were
+    /// already placed on, and their geometry is normalised against *that* document's
+    /// pages. The recorded fingerprint is what lets the app notice afterwards and say so.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CoreError::ConversionNotPossible`] unless the conversion is `Ready`.
+    /// `NotRequired` is refused too: a document that arrived as a PDF has no original to
+    /// convert from, so there is nothing to redo.
+    pub fn reconversion_requested(self) -> Result<Self, CoreError> {
+        match self.state {
+            ConversionState::Ready => Ok(Self::queued()),
+            other => Err(refuse(other, "queued for reconversion")),
+        }
+    }
+}
+
+/// The one place a refused transition is described.
+fn refuse(from: ConversionState, attempted: &'static str) -> CoreError {
+    CoreError::ConversionNotPossible {
+        from: from.name(),
+        attempted,
     }
 }

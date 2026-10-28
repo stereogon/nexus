@@ -198,6 +198,21 @@ impl Source {
         self.original_fingerprint.as_ref()
     }
 
+    /// Whether [`Source::document`] is a file that exists rather than one a conversion
+    /// has still to produce.
+    ///
+    /// Worth a named method because the alternative is every caller matching on the
+    /// conversion state and one of them getting it wrong. While a conversion is queued,
+    /// running or failed, `document` names the PDF that *will* be written — the path is a
+    /// promise, not a fact — and opening it would show an error or, worse, a fragment.
+    #[must_use]
+    pub fn document_is_ready(&self) -> bool {
+        matches!(
+            self.conversion.state(),
+            ConversionState::NotRequired | ConversionState::Ready
+        )
+    }
+
     /// The conversion provenance.
     #[must_use]
     pub fn conversion(&self) -> &Conversion {

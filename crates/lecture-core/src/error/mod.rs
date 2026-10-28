@@ -206,6 +206,22 @@ pub enum CoreError {
     #[error("the home directory could not be determined")]
     HomeDirectoryUnavailable,
 
+    /// A file whose extension names no format Nexus can import.
+    #[error("`{extension}` is not a format Nexus can import")]
+    UnsupportedDocumentFormat {
+        /// The extension that was offered, lowercased and without its dot.
+        extension: String,
+    },
+
+    /// A conversion was asked to move from a state that does not allow it.
+    #[error("a conversion cannot go from {from} to {attempted}")]
+    ConversionNotPossible {
+        /// The state the conversion is actually in.
+        from: &'static str,
+        /// The move that was attempted.
+        attempted: &'static str,
+    },
+
     /// A stored content fingerprint that is not a fingerprint.
     #[error("a stored fingerprint is not usable")]
     InvalidFingerprint {

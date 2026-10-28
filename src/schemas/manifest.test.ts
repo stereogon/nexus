@@ -10,7 +10,7 @@ import { describe, expect, it } from "vitest";
 
 import manifestFixture from "../../fixtures/manifest.json";
 
-import { ManifestSchema } from "./manifest.js";
+import { documentIsReady, ManifestSchema } from "./manifest.js";
 
 /** Replaces one key of a parsed fixture, leaving the rest intact. */
 function withChange(
@@ -138,3 +138,53 @@ describe("the manifest schema", () => {
   });
 });
 
+
+describe("whether the document can be opened yet", () => {
+  /** The fixture's source, with its conversion state replaced. */
+  function inState(state: string): unknown {
+    return {
+      ...manifestFixture,
+      source: {
+        document: "source/document.pdf",
+        original: "source/original.pptx",
+        conversion:
+          state === "ready"
+            ? {
+                state,
+                converter: "libreoffice",
+                convertedAt: "2026-10-27T16:00:00Z",
+              }
+            : { state },
+      },
+    };
+  }
+
+  it("is true only once a PDF actually exists", () => {
+    // Mirrors the Rust-side grid. A queued, running or failed conversion names a PDF
+    // that has not been written, so opening it would show an error at best and an
+    // annotatable fragment at worst.
+    const ready: Record<string, boolean> = {
+      ready: true,
+      queued: false,
+      converting: false,
+      failed: false,
+    };
+
+    for (const [state, expected] of Object.entries(ready)) {
+      const parsed = ManifestSchema.parse(inState(state));
+
+      expect(documentIsReady(parsed.source)).toBe(expected);
+    }
+  });
+
+  it("is true for a document that arrived as a PDF", () => {
+    const native = withChange(manifestFixture, {
+      source: {
+        document: "source/document.pdf",
+        conversion: { state: "notRequired" },
+      },
+    });
+
+    expect(documentIsReady(ManifestSchema.parse(native).source)).toBe(true);
+  });
+});

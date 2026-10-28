@@ -10,6 +10,7 @@ mod annotation_set;
 mod bundle;
 mod citation;
 mod conversion;
+mod document_format;
 mod excerpt;
 mod facets;
 mod fingerprint;
@@ -39,6 +40,7 @@ pub use annotation_set::{
 pub use bundle::{ASSETS_DIR_NAME, BundleRef, LectureBundle, NOTES_FILE_NAME, SOURCE_DIR_NAME};
 pub use citation::{CITATION_SCHEME, Citation, CitationIndex, citation_link};
 pub use conversion::{Conversion, ConversionState};
+pub use document_format::DocumentFormat;
 pub use excerpt::Excerpt;
 pub use facets::Facets;
 pub use fingerprint::{Fingerprint, Fingerprinter, fingerprint, fingerprint_hex};

@@ -11,7 +11,9 @@
 //! being tested.
 
 mod clock;
+mod document_converter;
 mod vault_directory;
 
 pub use clock::{Clock, FixedClock};
+pub use document_converter::{ConversionRequest, DocumentConverterPort, select_converter};
 pub use vault_directory::{DirectoryEntry, EntryKind, VaultDirectory};

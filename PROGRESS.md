@@ -164,8 +164,11 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
       source hashes give it a real migration to perform rather than a speculative one
 
 ### [ ] Milestone 2 — Importer and PPTX/DOCX→PDF converter
-- [ ] `DocumentConverterPort` trait + state machine (`Queued → Converting → Ready |
-      Failed | Unavailable`)
+- [x] `DocumentConverterPort` trait + state machine (`Queued → Converting → Ready |
+      Failed`) — done 2026-10-28. **`Unavailable` was dropped**; it is a fact about a
+      machine, not about a lecture, and `manifest.json` syncs. See the decision log.
+      `DocumentFormat`, `ConversionRequest` and `select_converter` land with it. 29 new
+      Rust tests, 2 new TypeScript tests.
 - [ ] macOS adapter: Keynote/Pages via `osascript`, LibreOffice CLI preferred when present
 - [ ] `source.conversion` provenance written to `manifest.json`
 - [ ] Setup diagnostic UI (no hard dependency on any converter)
@@ -365,6 +368,82 @@ probe file was placed where the line counter sees it but `cargo` does not — a 
 step under test. `check-line-limits.sh` exited 1 naming the file; the full gate reported
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
+
+**2026-10-28 · `Unavailable` cannot be a conversion state — plan corrected**
+This file's Milestone 2 plan listed the state machine as
+`Queued → Converting → Ready | Failed | Unavailable`. `Unavailable` is **wrong**, and the
+reason is one already settled elsewhere in this project.
+
+"No converter is installed" is a fact about **this machine**. `manifest.json` is a
+**synced** file. A bundle marked `Unavailable` on an iPad — where `LibreOffice` can never
+run — would carry that state back to the Mac that converts it perfectly well. It is
+exactly the mistake the view-state amendment corrected, appearing in a new place, and it
+would have been much harder to spot once written: a state that is *sometimes* true is not
+obviously a bug.
+
+So absence is answered at runtime: `select_converter` returns `Option`, and the persisted
+state stays `Queued`. That is both true and useful — queued is precisely what should
+happen when a converter is installed later. The spec never asked for `Unavailable`; it
+came from this file's own plan, so the correction is here rather than in an amendment to
+`claude-spec.md`.
+
+**2026-10-28 · An interrupted conversion is detectable because the machine is strict**
+`succeeded` and `did_not_finish` are reachable **only** from `Converting`. That looks like
+pedantry and buys something concrete: there is no path from queued to done that leaves no
+trace of having been attempted, so `Converting` found on disk at startup can only mean the
+process died partway.
+
+`was_interrupted` names that reading, and the recovery is `requeued`, not "carry on". The
+PDF beside an interrupted conversion may be absent, truncated, or a plausible-looking
+fragment — and the third is the worst of the three, because a fragment that opens is a
+fragment that gets annotated. Same instinct as the renumber's resumability: make the
+half-finished state recognisable rather than trying to make it impossible.
+
+**2026-10-28 · The state machine is tested as a grid, not as a happy path**
+`every_state_and_transition_pair_is_decided` walks all five states against all five
+transitions and asserts every cell, including the twelve that must be refused. A machine
+tested only on the moves that work is a list of examples, not a machine — and the grid has
+a second effect: a new state cannot be added without this test forcing a decision about
+what it may do.
+
+The states are also built the way the app really reaches them, so `Converting` in the test
+comes from `queued().started(...)`. A test that constructed states directly would be
+testing a shape the app can never be in.
+
+**2026-10-28 · `reconversion_requested` exists so a caller has to mean it**
+`Ready → Queued` is spelled differently from `Failed → Queued` even though both land in
+the same state, because the consequences are not comparable. Retrying a failure costs
+nothing. Reconverting replaces a PDF that highlights were **already placed on**, and
+annotation geometry is normalised against *that* document's pages — so the highlights may
+all now point slightly wrong. Two names mean a caller cannot reach the destructive one by
+reaching for the harmless one.
+
+This is also what the document fingerprint is for, so the pair closes the loop the spec's
+amendment 4 opened when it removed `documentId`.
+
+**2026-10-28 · `source.document` is a promise, not a fact**
+While a conversion is queued, running or failed, `source.document` names a PDF that *will*
+be written. Nothing in the schema says so, and the rule would otherwise be re-derived by
+every caller matching on the conversion state — with one of them eventually getting it
+wrong and handing the viewer a file that is not there.
+
+`Source::document_is_ready` names it once, and `documentIsReady` mirrors it in
+`manifest.ts` because the UI is the caller most likely to get it wrong. Making
+`document` optional instead would have been the stricter fix and a second schema
+migration one commit after the first; this is the proportionate one, and it is recorded
+as a tradeoff rather than a conclusion.
+
+**2026-10-28 · A closed format list, refused at the door**
+`DocumentFormat` accepts PDF, PPT, PPTX, DOC, DOCX and nothing else. An open "any
+extension" import would take a `.zip` and only discover at conversion time that nothing
+can read it — after a bundle had been created and a person had been told their lecture
+imported. Refusing at the door costs one error message and keeps the vault free of
+bundles that can never render.
+
+Case is ignored, because a file from a lecturer's Windows machine is as likely to be
+`.PPTX`, and refusing it would be absurd. `.key` and `.pages` are deliberately **not**
+included: Keynote and Pages are *converters* here, not import formats, and adding them
+would widen the spec's stated scope rather than implement it.
 
 **2026-10-28 · FNV-1a for source fingerprints, not SHA-256 — and the trigger to change**
 The spec asked for "source hashes". They are implemented as **fingerprints**, FNV-1a

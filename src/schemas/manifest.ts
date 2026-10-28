@@ -125,3 +125,21 @@ export const ManifestSchema = z
   );
 
 export type Manifest = z.infer<typeof ManifestSchema>;
+
+export type Source = z.infer<typeof SourceSchema>;
+
+/**
+ * Whether `source.document` is a file that exists rather than one a conversion has still
+ * to produce.
+ *
+ * Mirrors `Source::document_is_ready` in `source.rs`, and exists for the same reason:
+ * otherwise every caller matches on the conversion state and one of them gets it wrong.
+ * While a conversion is queued, running or failed, `document` names the PDF that *will*
+ * be written — the path is a promise, not a fact — and handing it to the viewer would
+ * show an error or, worse, a fragment that can be annotated.
+ */
+export function documentIsReady(source: Source): boolean {
+  return (
+    source.conversion.state === "notRequired" || source.conversion.state === "ready"
+  );
+}
