@@ -117,6 +117,21 @@ pub struct PathTemplate {
     segments: Vec<Segment>,
 }
 
+/// Why a pattern cannot name a folder for a lecture.
+///
+/// Not a [`CoreError`], because nothing has failed: this is a finding about one lecture in
+/// a preview someone is reading, and the rest of the plan is still good. Two variants
+/// rather than one because they have different answers, and the answer is the whole point
+/// of telling someone.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Unnameable {
+    /// Every level dropped, because the facets this pattern names are missing. The common
+    /// case: a freshly imported lecture under `{course}/{week}-{title}`.
+    FacetsMissing,
+    /// A level rendered text that no folder name can hold — only punctuation or symbols.
+    TextUnusable,
+}
+
 impl PathTemplate {
     /// Reads a template such as `{course}/{week}-{title}`.
     ///
@@ -159,26 +174,32 @@ impl PathTemplate {
         }
     }
 
-    /// Where a lecture with these facets and this title belongs.
+    /// Where a lecture with these facets and this title belongs, or why this pattern
+    /// cannot say.
     ///
     /// Each level is slugified with [`Slug::from_title`], so a title may contain spaces and
     /// punctuation while the folder name stays safe and lowercase.
     ///
     /// # Errors
     ///
-    /// Returns [`CoreError::InvalidName`] if a rendered level contains nothing usable as a
-    /// folder name — a title of only punctuation, for instance.
-    pub fn render(&self, facets: &Facets, title: &Label) -> Result<RelativePath, CoreError> {
+    /// Returns [`Unnameable`], which keeps the two causes apart. This used to return a
+    /// `CoreError` for both, and a planner cannot tell them apart from that — they arrive
+    /// as the same invalid-path error — so a lecture missing a week was told its *title*
+    /// was unusable. See the decision log for 2026-10-28.
+    pub fn place(&self, facets: &Facets, title: &Label) -> Result<RelativePath, Unnameable> {
         let mut levels = Vec::new();
 
         for segment in &self.segments {
             // A level with a missing placeholder is left out, not guessed at.
             if let Some(rendered) = segment.render(facets, title) {
-                levels.push(Slug::from_title(&rendered)?);
+                levels.push(Slug::from_title(&rendered).map_err(|_| Unnameable::TextUnusable)?);
             }
         }
 
-        RelativePath::from_segments(levels)
+        // The only way `from_segments` fails here is by being handed nothing: `parse` caps
+        // a template at five levels, which is under `MAX_DEPTH`. Nothing means every level
+        // named a facet this lecture does not have.
+        RelativePath::from_segments(levels).map_err(|_| Unnameable::FacetsMissing)
     }
 
     /// How many folder levels this template describes at most.

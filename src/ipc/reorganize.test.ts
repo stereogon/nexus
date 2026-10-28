@@ -51,7 +51,10 @@ describe("the reorganize preview contract", () => {
     const unnameable = parsed.blocked.filter((row) => row.wanted === null);
 
     expect(unnameable).toHaveLength(1);
-    expect(unnameable[0]?.reason).toBe("nameUnusable");
+    // `patternNeedsFacets` since 2026-10-28. The fixture's lecture has a usable title and
+    // no facets, and this assertion said `nameUnusable` back when both arrived as one
+    // reason -- so it was pinning the bug rather than the behaviour.
+    expect(unnameable[0]?.reason).toBe("patternNeedsFacets");
   });
 
   it("gives every blocked lecture a sentence saying what to do next", () => {
@@ -63,6 +66,17 @@ describe("the reorganize preview contract", () => {
       expect(row.remediation.length).toBeGreaterThan(0);
       expect(row.directory.length).toBeGreaterThan(0);
     }
+  });
+
+  it("accepts the reason a lecture missing its facets is blocked with", () => {
+    // Separate from `nameUnusable` since 2026-10-28: the pattern names facets this lecture
+    // does not have, which is a different thing to do about it than renaming.
+    const parsed = BlockedRowSchema.parse({
+      ...preview.blocked[0],
+      reason: "patternNeedsFacets",
+    });
+
+    expect(parsed.reason).toBe("patternNeedsFacets");
   });
 
   it("refuses a block reason it does not know", () => {

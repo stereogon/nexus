@@ -96,12 +96,17 @@ impl<C: Clock> VaultReorganize<C> {
         for bundle in &vault.bundles {
             let manifest = bundle.manifest();
 
-            match template.render(manifest.facets(), manifest.title()) {
+            match template.place(manifest.facets(), manifest.title()) {
                 Ok(target) => placed.push(PlacedLecture::new(bundle.directory().clone(), target)),
-                // Reported as `NameUnusable` rather than quietly left alone: a lecture with
-                // no week, under a template that needs one, is something the person can fix
-                // -- and being told is the difference between a gap and a mystery.
-                Err(_) => unnameable.push(bundle.directory().clone()),
+                // Reported rather than quietly left alone: a lecture with no week, under a
+                // template that needs one, is something the person can fix -- and being
+                // told is the difference between a gap and a mystery.
+                //
+                // The reason travels with it. This line used to be `Err(_)`, throwing away
+                // the only thing that distinguishes "this title is all punctuation" from
+                // "this lecture has no week yet", which left the second one being told to
+                // fix its perfectly good title.
+                Err(reason) => unnameable.push((bundle.directory().clone(), reason)),
             }
         }
 

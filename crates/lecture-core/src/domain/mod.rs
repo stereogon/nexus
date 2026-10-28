@@ -59,7 +59,7 @@ pub use manifest::{
 pub use normalized_rect::NormalizedRect;
 pub use order_key::OrderKey;
 pub use page_number::PageNumber;
-pub use path_template::PathTemplate;
+pub use path_template::{PathTemplate, Unnameable};
 pub use relative_path::{MAX_BUNDLE_DEPTH, MAX_DEPTH, MAX_WITHIN_BUNDLE_DEPTH, RelativePath};
 pub use renumber::{
     BlockedFolder, OrderedFolder, RENUMBERING_SUFFIX, Rename, RenumberBlock, RenumberPlan,

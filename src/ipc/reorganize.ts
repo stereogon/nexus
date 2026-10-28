@@ -25,11 +25,19 @@ export const MoveRowSchema = z.object({
   to: z.string(),
 });
 
-/** Why a lecture cannot be filed, matching `name_of` in `reorganize.rs`. */
+/**
+ * Why a lecture cannot be filed, matching `name_of` in `reorganize.rs`.
+ *
+ * `nameUnusable` and `patternNeedsFacets` are deliberately separate: one means a name
+ * rendered to nothing a folder can hold, the other that the pattern files by facets this
+ * lecture has not been given. They want opposite things done about them, and they were one
+ * value until 2026-10-28, which meant a lecture with no week was told to fix its title.
+ */
 export const BlockReasonSchema = z.enum([
   "targetOccupied",
   "sharedTarget",
   "nameUnusable",
+  "patternNeedsFacets",
   "cycleUnbreakable",
 ]);
 

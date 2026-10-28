@@ -15,8 +15,8 @@
       },
       {
         "directory": "unfiled",
-        "reason": "nameUnusable",
-        "remediation": "This lecture's title contains nothing usable as a folder name. Give it a title with at least one letter or number, then reorganize again.",
+        "reason": "patternNeedsFacets",
+        "remediation": "This pattern files lectures by facets this one has not been given yet, so it names no folder for it at all. Add the course, module or week the pattern uses, then reorganize again.",
         "wanted": null
       }
     ],
@@ -44,8 +44,8 @@
       },
       {
         "directory": "unfiled",
-        "reason": "nameUnusable",
-        "remediation": "This lecture's title contains nothing usable as a folder name. Give it a title with at least one letter or number, then reorganize again.",
+        "reason": "patternNeedsFacets",
+        "remediation": "This pattern files lectures by facets this one has not been given yet, so it names no folder for it at all. Add the course, module or week the pattern uses, then reorganize again.",
         "wanted": null
       }
     ],

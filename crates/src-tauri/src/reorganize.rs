@@ -92,6 +92,7 @@ const fn name_of(reason: ReorganizeBlock) -> &'static str {
         ReorganizeBlock::TargetOccupied => "targetOccupied",
         ReorganizeBlock::SharedTarget => "sharedTarget",
         ReorganizeBlock::NameUnusable => "nameUnusable",
+        ReorganizeBlock::PatternNeedsFacets => "patternNeedsFacets",
         ReorganizeBlock::CycleUnbreakable => "cycleUnbreakable",
     }
 }

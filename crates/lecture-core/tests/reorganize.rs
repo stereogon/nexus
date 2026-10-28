@@ -177,7 +177,7 @@ fn a_template_and_a_plan_compose_into_the_whole_operation() {
         .with_week(Label::parse("Week 3").unwrap());
 
     let target = template
-        .render(&facets, &Label::parse("Raft and consensus").unwrap())
+        .place(&facets, &Label::parse("Raft and consensus").unwrap())
         .unwrap();
     let plan = plan_reorganize(
         &[PlacedLecture::new(at("inbox/download-7"), target)],

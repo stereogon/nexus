@@ -198,9 +198,9 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
       The shell, the IPC boundary, importing a document, a list of lectures grouped on their
       facets, editing those facets, and **drag-and-drop import** all exist. Dropping files on
       the window imports them one at a time, keeping the ones that worked when one is
-      refused, and ⌘O opens the browser the canvas's drop state promises. Still missing:
-      opening a lecture (that is the viewer, Milestone 3) and editing a lecture's *title*
-      after import — facets are editable, the title is not.
+      refused, and ⌘O opens the browser the canvas's drop state promises. A lecture's
+      **title** is editable too, in the same form and the same write as its facets. Still
+      missing: opening a lecture, which is the viewer and therefore Milestone 3.
 - [x] Import path templates — done 2026-10-28. `PathTemplate`: `{course}/{week}-{title}`
       says where a lecture's folder goes, rendered from its facets. 14 tests, pure.
 - [~] "Reorganize Vault" with dry-run preview — the planner, the apply loop and both IPC
@@ -409,6 +409,74 @@ probe file was placed where the line counter sees it but `cargo` does not — a 
 step under test. `check-line-limits.sh` exited 1 naming the file; the full gate reported
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
+
+**2026-10-28 · A lecture can be renamed, and the blocked reason finally tells the truth**
+Two fixes the real vault asked for, done together because they are both one-field edits to a
+manifest and neither is worth its own gate run.
+
+**Titles are editable.** A lecture is named after the file it was imported from, and the
+user's own vault had one called `TMSCOMSSAD18~TMSCOMSSSE01~2026~1` with no way to fix it.
+`Manifest::with_title` now exists beside `with_facets`, and the command that was
+`set_lecture_facets` is `edit_lecture`, taking a `LectureEdit` that carries the title
+alongside the four facets.
+
+**One command and one write, not two.** A rename and a filing are the same shape of
+operation — load the manifest, replace a field, write it back atomically — and splitting
+them would mean two IPC calls from one form, with a state where the title saved and the
+facets did not. `crates/src-tauri/src/facets.rs` became `edit.rs` and `FacetEditor` became
+`LectureEditor`, because a module called *facets* that also renames things is a module whose
+name has stopped being true.
+
+**The title is not optional the way a facet is, and the asymmetry is deliberate.** A blank
+facet clears it, because "no week" has to be expressible. A blank title is **refused**
+(`ERR_LECTURE_NEEDS_A_NAME`): a lecture with no facets is normal, a lecture with no name is
+not, and quietly keeping the old title would tell someone their rename had worked. §1.4.
+
+**Renaming moves nothing on disk**, which is §3 doing its job: the folder layout is a
+derived projection, so a title and a directory name are allowed to disagree until a
+reorganize re-derives one from the other. Renaming the folder as a side effect of fixing a
+typo would move someone's lecture while they thought they were editing text. There is a test
+asserting the directory is unchanged, and the form says so under the buttons.
+
+**A test I wrote for the rename found a bug that was already there.** `a_rename_leaves_the
+_facets_alone` failed on its first run: renaming a lecture cleared its course, module, week
+and tags. `applied` rebuilt the facets from empty and read each field with a helper that
+mapped **both** a missing field and a blank one to "no value" — so an edit carrying only a
+title looked exactly like an edit asking for every facet to be removed. The doc comment
+claimed "an empty string clears it", which was the intent; the code could not tell the two
+apart, and nothing had noticed because the form always sent all four fields.
+
+Fixed by making the distinction real: absent keeps what the lecture had, present-and-empty
+clears it. `tags` became `Option<Vec<String>>` for the same reason — `#[serde(default)]` on a
+`Vec` made "leave the tags" and "remove every tag" the same message. This is the latent kind
+of bug that only becomes reachable when a new caller appears, and the new caller was a
+rename, where the cost would have been someone's whole taxonomy disappearing because they
+fixed a typo.
+
+**And the blocked-reason bug from this morning's entry is fixed.** `ReorganizeBlock::
+NameUnusable` told a lecture with no course or week to fix its perfectly good title. The
+cause was `VaultReorganize::plan` matching `Err(_)` and discarding the only thing that
+distinguished the two failures.
+
+`PathTemplate::render` is now `place`, returning `Result<RelativePath, Unnameable>` instead
+of a `CoreError`. That is the real repair: the two causes were always distinguishable *at
+the point they occur* — `Slug::from_title` refusing a level, versus `from_segments` being
+handed nothing because every level named a missing facet — and only became
+indistinguishable by being flattened into an error type that could not carry the difference.
+Telling them apart by matching on an error variant downstream would have been guessing at
+something the template already knew.
+
+So `plan_reorganize` takes `&[(RelativePath, Unnameable)]`, `ReorganizeBlock` gained
+`PatternNeedsFacets` with its own sentence, and `NameUnusable` keeps a reworded one that is
+true of the case it now describes. The wire name, the Zod enum and
+`fixtures/reorganize.json` followed; the fixture is the proof, since it is generated by
+running the real command and it now reads `patternNeedsFacets` for the lecture with no
+facets. The canvas was corrected to match (Version 16) — it had been drawn with the old code
+on it.
+
+**`render` was replaced rather than kept beside `place`.** Its only production caller was
+the planner. Keeping both would have left two ways to ask the same question, one of which
+loses information, and the next caller would have had a 50% chance of picking the lossy one.
 
 **2026-10-28 · Reorganize: where it came from, and a sentence that points the wrong way**
 The user asked what the reorganize feature is for, saying they were not sure why it was
@@ -3029,12 +3097,9 @@ the user's instruction, 2026-10-27), local only, never pushed without being aske
   does not assume `rename` atomicity. Guessing which, now, would be speculative.
 
 ### Open task, raised 2026-10-28
-- **`ReorganizeBlock::NameUnusable` collapses two causes and its remediation fits only the
-  rarer one.** A lecture with no course or week is told to fix its title. Split the variant,
-  give each cause a sentence, and stop discarding the render error at
-  `VaultReorganize::plan` (`Err(_) =>`). Touches the domain enum, `name_of` in
-  `crates/src-tauri/src/reorganize.rs`, `BlockReasonSchema` in `src/ipc/reorganize.ts` and
-  `fixtures/reorganize.json`. The canvas (Version 15) already shows the corrected wording.
+- ~~`ReorganizeBlock::NameUnusable` collapses two causes~~ — **fixed the same day.** Split
+  into `NameUnusable` and `PatternNeedsFacets`, with `PathTemplate::place` carrying the
+  reason so nothing has to guess from an error variant.
 - **The canvas has two stale states**: *No converter found* offers Keynote, which was
   removed; the diagnostics drawer names `~/Library/Logs/LectureVault/`. Fix on the canvas
   before either is built.

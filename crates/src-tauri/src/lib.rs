@@ -7,13 +7,13 @@
 //! It is also the only crate in the workspace allowed to know Tauri exists, and the only
 //! one not required to compile for `aarch64-apple-ios`.
 
-pub mod facets;
+pub mod edit;
 pub mod import;
 pub mod picker;
 pub mod reorganize;
 pub mod vault;
 
-pub use facets::set_lecture_facets;
+pub use edit::edit_lecture;
 pub use import::{import_document, importable_formats};
 pub use picker::{pick_document, pick_vault_directory};
 pub use reorganize::{apply_reorganize, preview_reorganize};
@@ -36,7 +36,7 @@ pub fn run() -> Result<(), tauri::Error> {
             pick_document,
             import_document,
             importable_formats,
-            set_lecture_facets,
+            edit_lecture,
             preview_reorganize,
             apply_reorganize
         ])

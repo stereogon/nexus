@@ -45,8 +45,10 @@ pub enum ReorganizeBlock {
     TargetOccupied,
     /// Two or more lectures render to the same folder.
     SharedTarget,
-    /// The target could not be named at all.
+    /// A name the pattern would use holds nothing a folder name can keep.
     NameUnusable,
+    /// The pattern named nothing at all, because the facets it uses are missing.
+    PatternNeedsFacets,
     /// Part of a cycle that could not be broken.
     CycleUnbreakable,
 }
@@ -69,8 +71,13 @@ impl ReorganizeBlock {
                  again."
             }
             Self::NameUnusable => {
-                "This lecture's title contains nothing usable as a folder name. Give it a \
-                 title with at least one letter or number, then reorganize again."
+                "One of the names this pattern would use holds nothing that can be a folder \
+                 name -- only punctuation or symbols. Rename it, then reorganize again."
+            }
+            Self::PatternNeedsFacets => {
+                "This pattern files lectures by facets this one has not been given yet, so \
+                 it names no folder for it at all. Add the course, module or week the \
+                 pattern uses, then reorganize again."
             }
             Self::CycleUnbreakable => {
                 "This lecture needs to swap places with another and its name is already at \

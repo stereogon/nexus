@@ -15,7 +15,7 @@ use std::path::PathBuf;
 
 use lecture_core::{Facets, Label, RelativePath};
 use lecture_fs::{AtomicFsStorage, ManifestStore, SystemClock, VaultRoot};
-use nexus_app::facets::{FacetEdit, file_under};
+use nexus_app::edit::{LectureEdit, apply_edit};
 use nexus_app::import::bring_in;
 use nexus_app::vault::open_vault;
 use tempfile::TempDir;
@@ -52,12 +52,13 @@ impl Fixture {
     }
 }
 
-fn edit(course: &str, module: &str, week: &str, tags: &[&str]) -> FacetEdit {
-    FacetEdit {
+fn edit(course: &str, module: &str, week: &str, tags: &[&str]) -> LectureEdit {
+    LectureEdit {
+        title: None,
         course: Some(course.to_owned()),
         module: Some(module.to_owned()),
         week: Some(week.to_owned()),
-        tags: tags.iter().map(|tag| (*tag).to_owned()).collect(),
+        tags: Some(tags.iter().map(|tag| (*tag).to_owned()).collect()),
     }
 }
 
@@ -67,7 +68,7 @@ fn a_lecture_can_be_filed_without_moving_it() {
     // exactly where it is, so nothing inside it needs rewriting.
     let fixture = Fixture::new();
 
-    let filed = file_under(
+    let filed = apply_edit(
         &fixture.vault(),
         "raft-consensus",
         &edit(
@@ -93,7 +94,7 @@ fn a_lecture_can_be_filed_without_moving_it() {
 #[test]
 fn the_facets_are_there_the_next_time_the_vault_is_opened() {
     let fixture = Fixture::new();
-    file_under(
+    apply_edit(
         &fixture.vault(),
         "raft-consensus",
         &edit("CS454", "Consensus", "Week 3", &["exam", "theory"]),
@@ -112,14 +113,14 @@ fn a_blank_field_clears_a_facet_rather_than_being_ignored() {
     // A taxonomy you can only add to is one you cannot correct, so "no week" has to be
     // expressible.
     let fixture = Fixture::new();
-    file_under(
+    apply_edit(
         &fixture.vault(),
         "raft-consensus",
         &edit("CS454", "Consensus", "Week 3", &["exam"]),
     )
     .unwrap();
 
-    let cleared = file_under(
+    let cleared = apply_edit(
         &fixture.vault(),
         "raft-consensus",
         &edit("CS454", "", "   ", &[]),
@@ -152,7 +153,7 @@ fn custom_keys_someone_added_by_hand_survive_an_edit() {
     );
     manifests.save(&bundle, &with_custom).unwrap();
 
-    file_under(
+    apply_edit(
         &fixture.vault(),
         "raft-consensus",
         &edit("CS454", "Consensus", "Week 3", &[]),
@@ -173,7 +174,7 @@ fn custom_keys_someone_added_by_hand_survive_an_edit() {
 fn a_facet_that_cannot_be_a_label_is_refused_with_something_to_do_about_it() {
     let fixture = Fixture::new();
 
-    let error = file_under(
+    let error = apply_edit(
         &fixture.vault(),
         "raft-consensus",
         &edit("CS454", "Consensus", &"w".repeat(1000), &[]),
@@ -188,7 +189,7 @@ fn a_facet_that_cannot_be_a_label_is_refused_with_something_to_do_about_it() {
 fn a_lecture_that_is_not_there_is_refused_before_anything_is_written() {
     let fixture = Fixture::new();
 
-    let error = file_under(&fixture.vault(), "no-such-lecture", &FacetEdit::default())
+    let error = apply_edit(&fixture.vault(), "no-such-lecture", &LectureEdit::default())
         .expect_err("a missing lecture should be refused");
 
     assert!(error.code.starts_with("ERR_"));

@@ -1,18 +1,23 @@
 /**
- * The form for filing a lecture under a course, module, week and tags.
+ * The form for naming a lecture and filing it under a course, module, week and tags.
  *
- * Deliberately four plain fields and no autocomplete over existing values. The vault is
- * the only source of truth for what courses exist, and offering a list built from it would
- * quietly discourage creating the first lecture of a new course — which is exactly the
- * moment someone needs to.
+ * Deliberately plain fields and no autocomplete over existing values. The vault is the only
+ * source of truth for what courses exist, and offering a list built from it would quietly
+ * discourage creating the first lecture of a new course — which is exactly the moment
+ * someone needs to.
+ *
+ * The title sits first because it is the field most likely to need fixing: a lecture is
+ * named after the file it was imported from, and a university download is called something
+ * like `TMSCOMSSAD18~TMSCOMSSSE01~2026~1`.
  */
 import { useState } from "react";
 
-import type { FacetEdit, LectureRow } from "../ipc/vault";
+import type { LectureEdit, LectureRow } from "../ipc/vault";
 
 /** A blank field clears the facet, so these start as whatever the lecture already has. */
-function startingFrom(lecture: LectureRow): FacetEdit {
+function startingFrom(lecture: LectureRow): LectureEdit {
   return {
+    title: lecture.title,
     course: lecture.course ?? "",
     module: lecture.module ?? "",
     week: lecture.week ?? "",
@@ -46,7 +51,7 @@ function Field({
   );
 }
 
-export function FacetEditor({
+export function LectureEditor({
   lecture,
   busy,
   onSave,
@@ -54,10 +59,10 @@ export function FacetEditor({
 }: {
   readonly lecture: LectureRow;
   readonly busy: boolean;
-  readonly onSave: (facets: FacetEdit) => void;
+  readonly onSave: (edit: LectureEdit) => void;
   readonly onCancel: () => void;
 }) {
-  const [draft, setDraft] = useState<FacetEdit>(() => startingFrom(lecture));
+  const [draft, setDraft] = useState<LectureEdit>(() => startingFrom(lecture));
 
   return (
     <form
@@ -67,6 +72,14 @@ export function FacetEditor({
         onSave(draft);
       }}
     >
+      <Field
+        label="Title"
+        onChange={(title) => {
+          setDraft({ ...draft, title });
+        }}
+        placeholder="Raft Consensus"
+        value={draft.title}
+      />
       <Field
         label="Course"
         onChange={(course) => {
@@ -120,7 +133,9 @@ export function FacetEditor({
         >
           Cancel
         </button>
-        <span className="hint">Leave a field empty to clear it.</span>
+        <span className="hint">
+          Leave a facet empty to clear it. Renaming does not move the folder.
+        </span>
       </div>
     </form>
   );

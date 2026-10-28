@@ -29,7 +29,7 @@ pub use domain::{
     ORIGINAL_FILE_STEM, OrderKey, OrderedFolder, PageNumber, PageOffset, PathTemplate,
     PlacedLecture, RENUMBERING_SUFFIX, RelativePath, Rename, RenumberBlock, RenumberPlan,
     ReorganizeBlock, ReorganizePlan, SOURCE_DIR_NAME, SchemaProbe, SchemaRange, SkipReason,
-    SkippedDirectory, Slug, Source, Timestamp, VIEW_STATE_FILE_NAME, VIEW_STATE_SCHEMA,
+    SkippedDirectory, Slug, Source, Timestamp, Unnameable, VIEW_STATE_FILE_NAME, VIEW_STATE_SCHEMA,
     VIEW_STATE_SCHEMA_VERSION, VaultIndex, VaultScan, ViewState, Zoom, cache_dir_segment,
     citation_link, fingerprint, fingerprint_hex, plan_renumber, plan_reorganize, position_width,
     positioned_name, scan_vault, stem_of, temporary_name,

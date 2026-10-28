@@ -2,7 +2,7 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-use lecture_core::{CoreError, Facets, Label, PathTemplate};
+use lecture_core::{CoreError, Facets, Label, PathTemplate, Unnameable};
 
 fn label(text: &str) -> Label {
     Label::parse(text).unwrap()
@@ -18,7 +18,7 @@ fn facets() -> Facets {
 fn rendered(template: &str, facets: &Facets, title: &str) -> String {
     PathTemplate::parse(template)
         .unwrap()
-        .render(facets, &label(title))
+        .place(facets, &label(title))
         .unwrap()
         .to_string()
 }
@@ -164,13 +164,27 @@ fn a_template_deeper_than_the_nesting_cap_is_refused_at_parse_time() {
 }
 
 #[test]
-fn a_title_with_nothing_usable_in_it_fails_at_render_rather_than_silently() {
-    let error = PathTemplate::parse("{title}")
+fn a_title_with_nothing_usable_in_it_is_reported_as_the_text_being_unusable() {
+    let reason = PathTemplate::parse("{title}")
         .unwrap()
-        .render(&Facets::empty(), &label("///"))
+        .place(&Facets::empty(), &label("///"))
         .unwrap_err();
 
-    assert_eq!(error.code(), "ERR_INVALID_NAME");
+    assert_eq!(reason, Unnameable::TextUnusable);
+}
+
+#[test]
+fn a_lecture_missing_the_facets_the_pattern_needs_is_reported_as_that_and_not_as_a_bad_title() {
+    // The bug this distinction exists for. `{week}-{title}` is one level, so a lecture
+    // with no week loses the level holding its title and has nowhere to go -- but its
+    // title is perfectly good, and telling someone to rename it sends them to fix the
+    // wrong thing.
+    let reason = PathTemplate::parse("{course}/{week}-{title}")
+        .unwrap()
+        .place(&Facets::empty(), &label("Week 3 Make"))
+        .unwrap_err();
+
+    assert_eq!(reason, Unnameable::FacetsMissing);
 }
 
 #[test]
@@ -183,7 +197,7 @@ fn two_lectures_differing_only_in_case_land_on_one_folder() {
     let facets = facets();
 
     assert_eq!(
-        template.render(&facets, &label("Raft")).unwrap(),
-        template.render(&facets, &label("raft")).unwrap()
+        template.place(&facets, &label("Raft")).unwrap(),
+        template.place(&facets, &label("raft")).unwrap()
     );
 }

@@ -17,17 +17,17 @@ import { useCallback, useState } from "react";
 import { pickDocument, pickVaultDirectory } from "./ipc/picker";
 import {
   asCommandError,
+  editLecture,
   importDocument,
   openVault,
-  setLectureFacets,
   type CommandError,
-  type FacetEdit,
+  type LectureEdit,
   type LectureRow,
   type VaultSummary,
 } from "./ipc/vault";
 import { DropOverlay } from "./ui/DropOverlay";
 import { noteFor, noteForDrop, type DropOutcome } from "./ui/dropped";
-import { FacetEditor } from "./ui/FacetEditor";
+import { LectureEditor } from "./ui/LectureEditor";
 import { LectureList, type GroupBy } from "./ui/LectureList";
 import { useDropZone } from "./ui/useDropZone";
 import { useMetaShortcut } from "./ui/useMetaShortcut";
@@ -175,8 +175,8 @@ export function App() {
     [against, state],
   );
 
-  const file = useCallback(
-    (facets: FacetEdit) => {
+  const save = useCallback(
+    (edit: LectureEdit) => {
       if (state.kind !== "open" || editing === null) {
         return;
       }
@@ -186,9 +186,13 @@ export function App() {
 
       setEditing(null);
       against(vault, async () => {
-        const filed = await setLectureFacets(vault, lecture.directory, facets);
+        const saved = await editLecture(vault, lecture.directory, edit);
 
-        return `Filed "${filed.title}".`;
+        // Named after what changed, since one command does both. "Filed" in front of
+        // someone who only corrected a title would read as though it had moved.
+        return saved.title === lecture.title
+          ? `Filed "${saved.title}".`
+          : `Renamed to "${saved.title}".`;
       });
     },
     [against, editing, state],
@@ -247,13 +251,13 @@ export function App() {
           <>
             {state.note !== null && <p className="note">{state.note}</p>}
             {editing !== null && (
-              <FacetEditor
+              <LectureEditor
                 busy={busy}
                 lecture={editing}
                 onCancel={() => {
                   setEditing(null);
                 }}
-                onSave={file}
+                onSave={save}
               />
             )}
             <LectureList

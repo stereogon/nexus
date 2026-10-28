@@ -43,7 +43,7 @@ mod plan;
 
 use std::collections::{HashMap, HashSet};
 
-use crate::domain::{RelativePath, temporary_name};
+use crate::domain::{RelativePath, Unnameable, temporary_name};
 
 pub use plan::{BlockedLecture, Move, PlacedLecture, ReorganizeBlock, ReorganizePlan};
 
@@ -53,16 +53,17 @@ pub use plan::{BlockedLecture, Move, PlacedLecture, ReorganizeBlock, ReorganizeP
 /// folders, stray files, anything that could occupy a name a lecture needs and must not be
 /// written over.
 ///
-/// `unnameable` is the lectures whose target could not be rendered at all: a template of
-/// `{course}/{week}-{title}` has nowhere to put a lecture with no week, because the level
-/// holding the title names the week too. They are reported as
-/// [`ReorganizeBlock::NameUnusable`] and stay where they are. Passing them in rather than
-/// leaving them out is what makes the difference between telling someone "give this a week
-/// and I can file it" and silently counting it as needing no change.
+/// `unnameable` is the lectures whose target could not be rendered at all, each with the
+/// reason: a template of `{course}/{week}-{title}` has nowhere to put a lecture with no
+/// week, because the level holding the title names the week too. They stay where they are
+/// and are reported. Passing them in rather than leaving them out is the difference between
+/// telling someone "give this a week and I can file it" and silently counting it as needing
+/// no change — and passing the *reason* is the difference between that and telling them to
+/// fix a title that was never the problem.
 #[must_use]
 pub fn plan_reorganize(
     lectures: &[PlacedLecture],
-    unnameable: &[RelativePath],
+    unnameable: &[(RelativePath, Unnameable)],
     existing: &[RelativePath],
 ) -> ReorganizePlan {
     let mut plan = ReorganizePlan::default();
@@ -95,11 +96,14 @@ pub fn plan_reorganize(
         });
     }
 
-    for at in unnameable {
+    for (at, reason) in unnameable {
         plan.record_blocked(BlockedLecture {
             at: at.clone(),
             wanted: None,
-            reason: ReorganizeBlock::NameUnusable,
+            reason: match reason {
+                Unnameable::FacetsMissing => ReorganizeBlock::PatternNeedsFacets,
+                Unnameable::TextUnusable => ReorganizeBlock::NameUnusable,
+            },
         });
     }
 
@@ -107,7 +111,7 @@ pub fn plan_reorganize(
     // moves; an unchanged lecture's path never does, because it is staying.
     let mut occupied: HashSet<String> = existing.iter().map(ToString::to_string).collect();
     // An unnameable lecture is staying, so its folder is an obstacle like any other.
-    occupied.extend(unnameable.iter().map(ToString::to_string));
+    occupied.extend(unnameable.iter().map(|(at, _)| at.to_string()));
     for lecture in lectures {
         if !pending.iter().any(|step| &step.from == lecture.at()) {
             occupied.insert(lecture.at().to_string());

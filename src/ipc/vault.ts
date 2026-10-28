@@ -97,7 +97,9 @@ export function asCommandError(thrown: unknown): CommandError {
 }
 
 /** The four named facets, as the editor sends them. An empty string clears one. */
-export interface FacetEdit {
+export interface LectureEdit {
+  /** What to call it. Never blank — the Rust side refuses that rather than ignoring it. */
+  readonly title: string;
   readonly course: string;
   readonly module: string;
   readonly week: string;
@@ -105,23 +107,25 @@ export interface FacetEdit {
 }
 
 /**
- * Files a lecture under a course, module, week and tags.
+ * Renames a lecture and files it under a course, module, week and tags.
  *
  * This is how a lecture comes to be in a week: by saying so in its own manifest, not by
  * moving it. The folder does not change, which is what lets one lecture be in a week *and*
- * a topic *and* an exam list at once.
+ * a topic *and* an exam list at once — and it is also why a rename moves nothing: §3 makes
+ * the folder layout a derived projection, so the title and the directory name are allowed
+ * to disagree until a reorganize re-derives it.
  *
  * @throws {CommandError} if the lecture cannot be read or a facet is not a usable label.
  */
-export async function setLectureFacets(
+export async function editLecture(
   vault: string,
   directory: string,
-  facets: FacetEdit,
+  edit: LectureEdit,
 ): Promise<LectureRow> {
-  const payload: unknown = await invoke("set_lecture_facets", {
+  const payload: unknown = await invoke("edit_lecture", {
     vault,
     directory,
-    facets: { ...facets, tags: [...facets.tags] },
+    edit: { ...edit, tags: [...edit.tags] },
   });
 
   return LectureRowSchema.parse(payload);

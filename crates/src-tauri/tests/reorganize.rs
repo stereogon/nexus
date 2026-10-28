@@ -16,7 +16,7 @@ use std::path::{Path, PathBuf};
 
 use lecture_core::{LectureView, PageNumber, RelativePath, ViewState};
 use lecture_fs::{DeviceStateStore, VaultRoot};
-use nexus_app::facets::{FacetEdit, file_under};
+use nexus_app::edit::{LectureEdit, apply_edit};
 use nexus_app::import::bring_in;
 use nexus_app::reorganize::{apply_under, preview};
 use nexus_app::vault::open_vault;
@@ -63,14 +63,17 @@ impl Fixture {
 
     /// Files the lecture at `directory` under a course and week.
     fn file(&self, directory: &str, course: &str, week: &str) {
-        file_under(
+        apply_edit(
             &self.vault(),
             directory,
-            &FacetEdit {
+            &LectureEdit {
+                title: None,
                 course: Some(course.to_owned()),
                 module: None,
                 week: Some(week.to_owned()),
-                tags: Vec::new(),
+                // Absent, not empty: this helper files a lecture, it does not strip
+                // its tags.
+                tags: None,
             },
         )
         .unwrap();
@@ -210,7 +213,15 @@ fn a_lecture_that_cannot_be_filed_is_reported_with_something_to_do_about_it() {
     assert_eq!(preview.unchanged, 0, "it is blocked, not already in place");
     assert_eq!(preview.blocked.len(), 1);
     assert_eq!(preview.blocked[0].directory, "raft-consensus");
-    assert_eq!(preview.blocked[0].reason, "nameUnusable");
+    // `patternNeedsFacets`, not `nameUnusable`: the title is fine, the week is missing.
+    // Telling someone to rename a lecture called "Raft Consensus" would send them to fix
+    // the wrong thing.
+    assert_eq!(preview.blocked[0].reason, "patternNeedsFacets");
+    assert!(
+        preview.blocked[0].remediation.contains("facets"),
+        "the advice should name the facets, not the title: {}",
+        preview.blocked[0].remediation
+    );
     assert_eq!(
         preview.blocked[0].wanted, None,
         "there is nowhere it wanted to be"

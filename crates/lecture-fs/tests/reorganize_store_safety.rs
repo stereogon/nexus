@@ -94,8 +94,12 @@ fn a_lecture_with_no_facets_is_reported_rather_than_silently_left_alone() {
     //
     // Which makes the right answer to report it. Being unfiled is the normal state
     // immediately after import, and "give this a week and I can file it" is something a
-    // person can act on, where counting it as needing no change is a mystery. This is what
-    // `ReorganizeBlock::NameUnusable` was declared for -- it had no producer until now.
+    // person can act on, where counting it as needing no change is a mystery.
+    //
+    // `PatternNeedsFacets`, not `NameUnusable`: the title here is "Raft", which is a
+    // perfectly good folder name. What is missing is the course and the week. This
+    // assertion read `NameUnusable` until 2026-10-28 and was wrong in a way no test caught,
+    // because the reason was discarded before it reached here.
     let dir = TempDir::new().unwrap();
     write_lecture(dir.path(), "whatever-the-download-was-called", "Raft", "a0");
 
@@ -107,7 +111,14 @@ fn a_lecture_with_no_facets_is_reported_rather_than_silently_left_alone() {
     assert!(plan.moves().is_empty());
     assert_eq!(plan.unchanged(), 0, "it is blocked, not unchanged");
     assert_eq!(plan.blocked().len(), 1);
-    assert_eq!(plan.blocked()[0].reason, ReorganizeBlock::NameUnusable);
+    assert_eq!(
+        plan.blocked()[0].reason,
+        ReorganizeBlock::PatternNeedsFacets
+    );
+    assert!(
+        plan.blocked()[0].reason.remediation().contains("facets"),
+        "the advice must point at the missing facets, not at the title"
+    );
     assert_eq!(
         plan.blocked()[0].wanted,
         None,

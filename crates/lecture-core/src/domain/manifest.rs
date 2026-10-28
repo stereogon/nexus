@@ -128,6 +128,18 @@ impl Manifest {
         }
     }
 
+    /// Replaces the lecture's name.
+    ///
+    /// The folder is deliberately **not** renamed. §3 makes the folder layout a derived
+    /// projection of `sequence` and the facets, so a title and a directory name are allowed
+    /// to disagree until a reorganize re-derives the projection. Renaming the folder here
+    /// would move a lecture as a side effect of correcting a typo.
+    #[must_use]
+    pub fn with_title(mut self, title: Label) -> Self {
+        self.title = title;
+        self
+    }
+
     /// Replaces the taxonomy.
     #[must_use]
     pub fn with_facets(mut self, facets: Facets) -> Self {
