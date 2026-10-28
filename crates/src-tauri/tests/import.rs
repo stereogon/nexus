@@ -16,6 +16,8 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use lecture_core::{LectureBundle, RelativePath};
+use lecture_fs::{AtomicFsStorage, ManifestStore, SystemClock, VaultRoot};
 use nexus_app::import::bring_in;
 use nexus_app::vault::open_vault;
 use tempfile::TempDir;
@@ -184,4 +186,61 @@ fn a_vault_that_is_not_there_fails_before_anything_is_written() {
         !Path::new(&missing).exists(),
         "nothing should have been created"
     );
+}
+
+/// Loads a bundle back exactly as the app does: scan, then read its manifest.
+fn loaded(vault: &Path, directory: &str) -> LectureBundle {
+    let bundle = RelativePath::parse(directory).unwrap();
+    let manifests = ManifestStore::new(
+        AtomicFsStorage::new(VaultRoot::open(vault).unwrap()),
+        SystemClock,
+    );
+
+    LectureBundle::new(bundle.clone(), manifests.load(&bundle).unwrap())
+}
+
+#[test]
+fn the_document_the_manifest_points_at_is_really_there() {
+    // The test that would have caught the bug found on 2026-10-28, where the importer wrote
+    // a vault-relative path into the manifest. `LectureBundle::document_path` joins the
+    // bundle to what the manifest records, so that path resolved to
+    // `raft/raft/source/document.pdf` -- a file that does not exist, in a lecture that
+    // therefore could not be opened.
+    let fixture = Fixture::new();
+    bring_in(&fixture.vault(), &fixture.document("Raft.pdf")).unwrap();
+
+    let resolved = loaded(&fixture.vault, "raft").document_path().unwrap();
+
+    assert_eq!(resolved.to_string(), "raft/source/document.pdf");
+    assert!(
+        fixture.vault.join(resolved.to_string()).is_file(),
+        "the manifest points at {resolved}, which is not a file"
+    );
+}
+
+#[test]
+fn an_imported_bundle_can_be_moved_without_rewriting_anything_inside_it() {
+    // §3: "Everything inside a bundle is referenced relatively, so moving a bundle
+    // directory requires no link rewriting." Asserted here against a bundle the importer
+    // actually produced, and on disk, rather than against a hand-built manifest.
+    let fixture = Fixture::new();
+    bring_in(&fixture.vault(), &fixture.document("Raft.pdf")).unwrap();
+
+    let moved_to = fixture.vault.join("cs454").join("week-3");
+    fs::create_dir_all(moved_to.parent().unwrap()).unwrap();
+    fs::rename(fixture.vault.join("raft"), &moved_to).unwrap();
+
+    let bundle = loaded(&fixture.vault, "cs454/week-3");
+    let resolved = bundle.document_path().unwrap();
+
+    assert_eq!(resolved.to_string(), "cs454/week-3/source/document.pdf");
+    assert!(
+        fixture.vault.join(resolved.to_string()).is_file(),
+        "after moving, the manifest points at {resolved}, which is not a file"
+    );
+
+    // And the vault still sees exactly one lecture, now in its new place.
+    let summary = open_vault(&fixture.vault()).unwrap();
+    assert_eq!(summary.lectures.len(), 1);
+    assert_eq!(summary.lectures[0].directory, "cs454/week-3");
 }

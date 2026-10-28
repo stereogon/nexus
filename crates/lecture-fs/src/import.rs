@@ -119,7 +119,7 @@ impl<C: Clock + Clone> Importer<C> {
         self.storage().create_dir(&source_dir)?;
 
         // One pass over the bytes: copied in and fingerprinted together.
-        let imported = self.storage().copy_in(request.file, plan.destination())?;
+        let imported = self.storage().copy_in(request.file, &plan.destination()?)?;
 
         let manifest = Manifest::new(
             request.title.clone(),
@@ -173,7 +173,7 @@ impl<C: Clock + Clone> Importer<C> {
             Ok(()) => {
                 // The converter wrote this file directly, so it has never been streamed
                 // past a fingerprinter.
-                let document = self.storage().fingerprint_of(plan.document())?;
+                let document = self.storage().fingerprint_of(&plan.document_in_vault()?)?;
                 let finished = advance(manifest.source(), |conversion| {
                     conversion.succeeded(self.clock.now()?)
                 })?

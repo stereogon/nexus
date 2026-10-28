@@ -404,6 +404,85 @@ step under test. `check-line-limits.sh` exited 1 naming the file; the full gate 
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
 
+**2026-10-28 · The importer wrote vault-relative paths into the manifest — a §3 violation**
+The user asked why each lecture got its own folder and what happened to organising by week
+and module, and offered the real vault to look at. The design answer is below; looking found
+a bug that nothing else would have.
+
+The imported manifest said:
+
+```json
+"document": "progdiet-2026-27-msc-software-systems-engineering/source/document.pdf"
+```
+
+It must say `source/document.pdf`. §3: *"Everything inside a bundle is referenced relatively,
+so moving a bundle directory requires no link rewriting. This property has a test."*
+
+**It was not cosmetic.** `LectureBundle::document_path` is `directory.join(recorded)`, so
+that manifest resolved to `progdiet-…/progdiet-…/source/document.pdf` — a file that does not
+exist. The lecture could not have been opened, and moving the bundle could not have fixed
+it. Every lecture imported before this fix is affected.
+
+**Why the existing test did not catch it.**
+`relocating_a_bundle_rewrites_nothing_inside_it` asserts the property correctly — against a
+manifest built **by hand** in the test, with bundle-relative paths. Nothing checked that the
+*importer* produced a manifest obeying it. Worse, the `ImportPlan` tests asserted
+`plan.document() == "cs454/raft/source/document.pdf"`, so **the tests encoded the bug** and
+turned green over it.
+
+The general shape is worth naming, because it is not specific to paths: *a domain property
+with a test, and a producer that was never checked against that property*. The invariant was
+written down, tested, and then violated by the one piece of code that creates the data it
+governs.
+
+**The fix: two path frames, named so they cannot be confused.** `ImportPlan` now holds the
+bundle plus **bundle-relative** `document`/`original` — what the manifest records — and
+composes **vault-relative** paths where I/O needs them: `destination()` for the copy,
+`document_in_vault()` for the fingerprint, and the conversion request, since a converter
+opens real files rather than reading a manifest. The module header says which is which and
+what breaks if they are swapped.
+
+**Four new tests, chosen so the same mistake cannot pass again:**
+- `what_the_manifest_records_never_names_the_bundle` — the property, over all three formats.
+- `the_recorded_path_resolves_to_where_the_bytes_actually_went` — the two frames must meet;
+  stated as one equation rather than two string assertions that could drift apart.
+- `the_document_the_manifest_points_at_is_really_there` — resolves exactly as the viewer
+  will and asserts the file **exists on disk**. This is the one that would have caught it.
+- `an_imported_bundle_can_be_moved_without_rewriting_anything_inside_it` — §3's property,
+  end to end, against a bundle the importer actually produced and a real `fs::rename`.
+
+**The user's own vault still holds the bad manifest.** Not repaired here: it is their data,
+and §2 puts overwriting it behind asking. Re-importing after deleting that folder, or a
+one-line edit of the path, both fix it.
+
+**2026-10-28 · Why there is a folder per lecture, and where weeks and modules live**
+Asked directly, and worth recording because it is the least obvious part of the design from
+inside the app.
+
+**One folder per lecture is the bundle, and it is locked.** A lecture is a directory holding
+`manifest.json`, `document.pdf`, `notes.md`, `annotations.json` and `source/original.<ext>`.
+That is what makes it self-contained, movable without rewriting anything, and syncable as a
+unit — and §3 defines a lecture as exactly that: *"A lecture is any directory containing
+`manifest.json`"*.
+
+**Weeks and modules are facets, not folders.** §3: *"Taxonomy lives in each bundle's
+`manifest.json` as facets (`course`, `module`, `week`, `tags`, plus an open `custom` map).
+The sidebar groups on facets at runtime, so one physical layout serves many logical views."*
+Folders cannot express that a lecture belongs to a week *and* a topic *and* an exam list;
+facets can, and nothing has to move to regroup.
+
+**So why does the vault look flat?** Because two halves are built and not wired:
+- **Import captures no facets** — it writes `"facets": {}`. Nothing asks for course, module
+  or week, so there is nothing to group on.
+- **The sidebar does not group** — it renders a flat list and shows facets as chips.
+
+The folder layout can *also* reflect the taxonomy, as a derived projection for Finder
+legibility: `PathTemplate` renders `{course}/{week}-{title}` and `plan_reorganize` plans the
+moves, both built and tested this morning, neither reachable from the UI. §3 is explicit
+that this is a projection and `sequence`/facets remain authoritative.
+
+Recorded as the next work rather than a surprise.
+
 **2026-10-28 · Import is wired, which is what makes a `manifest.json` exist**
 The user opened `~/NexusVault`, got "No lectures here yet", and asked why no `manifest.json`
 had been created.

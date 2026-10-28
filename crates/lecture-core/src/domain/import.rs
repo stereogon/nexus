@@ -24,6 +24,22 @@
 //! anything else it is the original, because the document has not been made yet. That is
 //! why [`ImportPlan::source`] takes a single fingerprint and decides for itself, rather
 //! than asking a caller to know the rule.
+//!
+//! # Two kinds of path, and why both are needed
+//!
+//! `CLAUDE.md` §3: *"Everything inside a bundle is referenced relatively, so moving a
+//! bundle directory requires no link rewriting."* So what the **manifest records** is
+//! bundle-relative — `source/document.pdf` — and nothing inside a bundle may name the
+//! bundle. But the storage adapter writes against the **vault root**, so copying the file
+//! and running a converter need `cs454/raft/source/document.pdf`.
+//!
+//! Both live here, and the names say which is which: [`ImportPlan::document`] and
+//! [`ImportPlan::original`] are what goes in the manifest, while
+//! [`ImportPlan::destination`] and [`ImportPlan::document_in_vault`] are where the bytes
+//! are. Getting this wrong is not cosmetic — a manifest holding a vault-relative path
+//! resolves, via `LectureBundle::document_path`, to
+//! `cs454/raft/cs454/raft/source/document.pdf`, so the lecture cannot be opened and moving
+//! the bundle cannot fix it. It was wrong in exactly that way until 2026-10-28.
 
 use crate::domain::{
     Conversion, ConversionRequest, DocumentFormat, Fingerprint, RelativePath, SOURCE_DIR_NAME,
@@ -41,7 +57,12 @@ pub const ORIGINAL_FILE_STEM: &str = "original";
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ImportPlan {
     format: DocumentFormat,
+    /// Where the bundle is, relative to the vault root. Held so the plan can offer paths in
+    /// both frames; it is never written into the manifest.
+    bundle: RelativePath,
+    /// Bundle-relative, as the manifest records it.
     document: RelativePath,
+    /// Bundle-relative, as the manifest records it.
     original: Option<RelativePath>,
     conversion: Conversion,
 }
@@ -61,12 +82,19 @@ impl ImportPlan {
     /// would pass the depth cap, or [`CoreError::InvalidName`] if the derived names are not
     /// usable — neither of which can happen for a bundle the vault walk found.
     pub fn new(bundle: &RelativePath, format: DocumentFormat) -> Result<Self, CoreError> {
-        let source = bundle.child(Slug::internal(SOURCE_DIR_NAME)?)?;
+        // Built inside the bundle, not from it: these are what the manifest records, and a
+        // manifest that names its own bundle breaks relocation.
+        let source = RelativePath::root_level(Slug::internal(SOURCE_DIR_NAME)?);
         let document = source.child(Slug::internal(DOCUMENT_FILE_NAME)?)?;
+
+        // Checked here rather than only when a path is composed, so a bundle too deep to
+        // hold a `source/` is refused by the plan instead of part-way through the import.
+        bundle.join(&document)?;
 
         if !format.needs_conversion() {
             return Ok(Self {
                 format,
+                bundle: bundle.clone(),
                 document,
                 original: None,
                 conversion: Conversion::not_required(),
@@ -78,6 +106,7 @@ impl ImportPlan {
 
         Ok(Self {
             format,
+            bundle: bundle.clone(),
             document,
             original: Some(original),
             conversion: Conversion::queued(),
@@ -90,15 +119,29 @@ impl ImportPlan {
         self.format
     }
 
-    /// Where the imported bytes are written.
+    /// Where the imported bytes are written, **relative to the vault root**.
     ///
     /// The document itself for a PDF, and the original for anything that needs converting.
-    #[must_use]
-    pub fn destination(&self) -> &RelativePath {
-        self.original.as_ref().unwrap_or(&self.document)
+    ///
+    /// # Errors
+    ///
+    /// As [`Self::document_in_vault`].
+    pub fn destination(&self) -> Result<RelativePath, CoreError> {
+        self.bundle
+            .join(self.original.as_ref().unwrap_or(&self.document))
     }
 
-    /// The PDF the viewer will open.
+    /// The rendered PDF's place **relative to the vault root**, for the adapter to read.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CoreError::RelativePathTooDeep`] if the composed path passes the depth
+    /// cap, which [`ImportPlan::new`] has already rejected.
+    pub fn document_in_vault(&self) -> Result<RelativePath, CoreError> {
+        self.bundle.join(&self.document)
+    }
+
+    /// The PDF the viewer will open, **relative to the bundle**, as the manifest records it.
     ///
     /// A **promise** rather than a fact until the conversion finishes: for anything but a
     /// PDF import, no file exists here yet. [`Source::document_is_ready`] is the question
@@ -108,7 +151,8 @@ impl ImportPlan {
         &self.document
     }
 
-    /// The imported file kept for reconversion, or `None` for a PDF.
+    /// The imported file kept for reconversion, **relative to the bundle**, or `None` for a
+    /// PDF.
     #[must_use]
     pub const fn original(&self) -> Option<&RelativePath> {
         self.original.as_ref()
@@ -129,11 +173,18 @@ impl ImportPlan {
     /// [`ConversionRequest::new`] enforces that rule itself rather than trusting callers,
     /// and saying so costs a `?` while an `expect` would be banned by §4 and worse.
     pub fn conversion_request(&self) -> Result<Option<ConversionRequest>, CoreError> {
-        let Some(original) = self.original.clone() else {
+        let Some(original) = self.original.as_ref() else {
             return Ok(None);
         };
 
-        ConversionRequest::new(original, self.format, self.document.clone()).map(Some)
+        // Vault-relative: a converter runs against real files, not against what a manifest
+        // says about them.
+        ConversionRequest::new(
+            self.bundle.join(original)?,
+            self.format,
+            self.document_in_vault()?,
+        )
+        .map(Some)
     }
 
     /// The source record to write once the imported bytes are on disk.

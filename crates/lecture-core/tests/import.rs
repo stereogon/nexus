@@ -21,31 +21,34 @@ fn a_pdf_is_stored_once_and_has_no_separate_original() {
     // PDF lecture, and there is nothing to reconvert from.
     let plan = plan(DocumentFormat::Pdf);
 
-    assert_eq!(
-        plan.document().to_string(),
-        "cs454/raft/source/document.pdf"
-    );
+    // Bundle-relative, because this is what the manifest records and §3 forbids anything
+    // inside a bundle from naming the bundle.
+    assert_eq!(plan.document().to_string(), "source/document.pdf");
     assert_eq!(plan.original(), None);
     assert!(!plan.needs_conversion());
-    assert_eq!(plan.destination(), plan.document());
+    assert_eq!(
+        plan.destination().unwrap().to_string(),
+        "cs454/raft/source/document.pdf",
+        "where the bytes go is vault-relative"
+    );
 }
 
 #[test]
 fn anything_else_keeps_its_original_beside_the_pdf_it_will_become() {
     let plan = plan(DocumentFormat::Pptx);
 
-    assert_eq!(
-        plan.document().to_string(),
-        "cs454/raft/source/document.pdf"
-    );
+    assert_eq!(plan.document().to_string(), "source/document.pdf");
     assert_eq!(
         plan.original().map(ToString::to_string),
-        Some("cs454/raft/source/original.pptx".to_owned())
+        Some("source/original.pptx".to_owned())
     );
     assert!(plan.needs_conversion());
 
     // The bytes being imported are the original; the document does not exist yet.
-    assert_eq!(plan.destination(), plan.original().unwrap());
+    assert_eq!(
+        plan.destination().unwrap().to_string(),
+        "cs454/raft/source/original.pptx"
+    );
 }
 
 #[test]
@@ -77,9 +80,17 @@ fn a_conversion_request_names_the_two_paths_and_the_format() {
     let plan = plan(DocumentFormat::Docx);
     let request = plan.conversion_request().unwrap().unwrap();
 
-    assert_eq!(request.original(), plan.original().unwrap());
-    assert_eq!(request.document(), plan.document());
+    // Vault-relative, unlike what the manifest records: a converter opens real files, so
+    // it needs the path the storage adapter would use, not the one a bundle describes
+    // itself with.
+    assert_eq!(request.original(), &plan.destination().unwrap());
+    assert_eq!(request.document(), &plan.document_in_vault().unwrap());
     assert_eq!(request.format(), DocumentFormat::Docx);
+    assert!(
+        request.original().to_string().starts_with("cs454/raft/"),
+        "the converter was handed {}",
+        request.original()
+    );
 }
 
 #[test]
@@ -156,10 +167,67 @@ fn a_bundle_at_the_deepest_allowed_level_can_still_address_its_own_document() {
 
     let plan = ImportPlan::new(&deepest, DocumentFormat::Pptx).unwrap();
 
-    assert_eq!(plan.document().depth(), MAX_BUNDLE_DEPTH + 2);
-    assert!(plan.document().depth() <= MAX_DEPTH);
+    assert_eq!(
+        plan.document_in_vault().unwrap().depth(),
+        MAX_BUNDLE_DEPTH + 2
+    );
+    assert!(plan.document_in_vault().unwrap().depth() <= MAX_DEPTH);
     assert!(
         plan.original().is_some(),
         "and the original beside it must fit too"
+    );
+}
+
+#[test]
+fn what_the_manifest_records_never_names_the_bundle() {
+    // §3: "Everything inside a bundle is referenced relatively, so moving a bundle
+    // directory requires no link rewriting." `relocating_a_bundle_rewrites_nothing_inside_it`
+    // asserts that property of a hand-built manifest; this asserts the *importer* produces
+    // one that obeys it. Nothing did until 2026-10-28, and an imported lecture's document
+    // resolved to `cs454/raft/cs454/raft/source/document.pdf` -- unopenable, and not
+    // fixable by moving the bundle.
+    for format in [
+        DocumentFormat::Pdf,
+        DocumentFormat::Pptx,
+        DocumentFormat::Docx,
+    ] {
+        let plan = plan(format);
+
+        assert!(
+            !plan.document().to_string().contains("cs454"),
+            "{format:?}: the recorded document named its bundle: {}",
+            plan.document()
+        );
+
+        if let Some(original) = plan.original() {
+            assert!(
+                !original.to_string().contains("cs454"),
+                "{format:?}: the recorded original named its bundle: {original}"
+            );
+        }
+    }
+}
+
+#[test]
+fn the_recorded_path_resolves_to_where_the_bytes_actually_went() {
+    // The two frames have to meet: joining the bundle to what the manifest records must
+    // give exactly the path the importer wrote to. This is the invariant that was broken,
+    // stated directly rather than as two separate string assertions that could drift apart.
+    let stored = plan(DocumentFormat::Pdf);
+
+    assert_eq!(
+        bundle().join(stored.document()).unwrap(),
+        stored.destination().unwrap()
+    );
+
+    let converting = plan(DocumentFormat::Pptx);
+
+    assert_eq!(
+        bundle().join(converting.original().unwrap()).unwrap(),
+        converting.destination().unwrap()
+    );
+    assert_eq!(
+        bundle().join(converting.document()).unwrap(),
+        converting.document_in_vault().unwrap()
     );
 }
