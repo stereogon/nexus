@@ -17,6 +17,8 @@ use lecture_core::{CoreError, RelativePath};
 
 use crate::error::{io_error, render};
 use crate::staging::StagingFile;
+
+mod streaming;
 use crate::vault_root::{ResolvedPath, VaultRoot};
 
 /// The suffix given to a file that could not be understood.

@@ -166,6 +166,34 @@ impl Source {
         Ok(self)
     }
 
+    /// Advances the conversion, keeping everything else.
+    ///
+    /// Routed back through [`Source::new`], so a transition that would leave the record
+    /// inconsistent is refused by the same check that refuses a hand-edited file. Which
+    /// transitions are *allowed* is [`Conversion`]'s business; this only asks whether the
+    /// result describes something coherent.
+    ///
+    /// Fingerprints carry across untouched. A conversion finishing does mean the document
+    /// now exists and should be fingerprinted, but that needs a file read, so it is a
+    /// separate step through [`Source::with_fingerprints`] rather than something this could
+    /// silently get wrong.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CoreError::InvalidManifest`] if the new state contradicts the record.
+    pub fn with_conversion(self, conversion: Conversion) -> Result<Self, CoreError> {
+        let Self {
+            document,
+            document_fingerprint,
+            original,
+            original_fingerprint,
+            conversion: _,
+        } = self;
+
+        Self::new(document, original, conversion)?
+            .with_fingerprints(document_fingerprint, original_fingerprint)
+    }
+
     /// The PDF the viewer renders, relative to the bundle.
     #[must_use]
     pub fn document(&self) -> &RelativePath {

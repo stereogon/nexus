@@ -181,8 +181,9 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
       only thing that makes a machine without `LibreOffice` recoverable
 - [x] `ImportPlan` — done 2026-10-28. The pure half of import: what goes where, whether a
       conversion is owed, and what the manifest says. 10 tests, no filesystem.
-- [ ] The import adapter — copying the bytes, fingerprinting them while they stream past,
-      writing the manifest, running the converter. `ImportPlan` is what it executes.
+- [x] The import adapter — done 2026-10-28. `lecture_fs::Importer`: streams the bytes in
+      while fingerprinting them, writes the manifest three times around the conversion, and
+      carries a conversion failure back without failing the import. 12 tests.
 - [ ] `source.conversion` provenance written to `manifest.json`
 - [ ] Setup diagnostic UI (no hard dependency on any converter)
 - [ ] Vault sidebar, drag-and-drop import, facet grouping
@@ -381,6 +382,84 @@ probe file was placed where the line counter sees it but `cargo` does not — a 
 step under test. `check-line-limits.sh` exited 1 naming the file; the full gate reported
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
+
+**2026-10-28 · Three manifest saves per import, and why not one**
+The order of operations is the whole design of `Importer`:
+
+1. **`Queued`**, as soon as the file is in the vault.
+2. **`Converting`**, immediately before the process starts.
+3. **`Ready`** or **`Failed`**, once it has finished.
+
+Save 1 is not optional. A lecture *is* a directory holding `manifest.json`, so until it
+lands the vault walk cannot see the bundle at all — an import interrupted before it would
+leave an orphaned file in a folder nothing lists, which is worse than no import.
+
+Save 2 is what makes an interrupted conversion **detectable**. `Conversion` only allows
+`succeeded` and `did_not_finish` out of `Converting`, so `Converting` found on disk can mean
+exactly one thing: a process started and never came back. Collapsing the saves into one at
+the end would be two fewer writes and would make a killed import indistinguishable from one
+that never started. Each save is a few hundred bytes, written atomically. The tradeoff is
+recorded because it is a real one: three writes bought one diagnosis.
+
+That claim is now **tested from inside the conversion** — the converter double reads
+`manifest.json` while it is running and the test asserts it said `Converting`. Asserting it
+in a comment would have been cheaper and worth nothing.
+
+**2026-10-28 · A failed conversion is not a failed import**
+§1.4 says a conversion that fails keeps the original. So the file is in the vault, the
+manifest describes it truthfully, and `import` returns **`Ok`** — with the failure in
+`ImportOutcome::conversion_error` rather than discarded. Returning `Err` would have been
+the lazy reading of "something went wrong": it would make a caller think the import needed
+retrying when the file is already safely in place.
+
+Swallowing the error instead would be the other failure, so it is carried. The outcome's
+four states then answer "can this be opened?" completely: `NotRequired` (a PDF), `Ready`
+(converted), `Queued` (**no converter available** — show the setup diagnostic), `Failed`
+(one ran and could not, and here is why).
+
+**2026-10-28 · The copy is streamed, and the fingerprint rides along**
+`AtomicFsStorage::copy_in` moves an external file into the vault in 64 KiB chunks and
+returns its `Fingerprint`. `read`-then-`write` would have held an entire lecture in memory
+to copy it, and these run to hundreds of megabytes.
+
+This is `Fingerprinter`'s first **production** caller — until now it existed only for
+tests — and it vindicates the shape chosen earlier: being a chunk sink rather than a
+function over a slice is exactly what lets the fingerprint fall out of a copy that was
+happening anyway, at no extra read. The chunk-boundary property it was given a unit test for
+is now also tested through real file I/O, with a 400 KB file spanning several chunks.
+
+`copy_in` is also the one method on `AtomicFsStorage` that takes a real filesystem path,
+because the file being imported is by definition **outside** the vault — it is on someone's
+Desktop. It is only ever read.
+
+`fingerprint_of` is its counterpart, for a file the vault already holds: after a successful
+conversion the PDF exists but was written by the converter directly, so it never streamed
+past a fingerprinter. One extra read at import time buys the ability to notice later that
+`document.pdf` changed without its original changing.
+
+**2026-10-28 · `storage.rs` split, and the seam was not the line count**
+It reached 315 lines, and the split is `storage/mod.rs` plus `storage/streaming.rs`
+because the two do genuinely different things. Everything in the parent reads or writes a
+*small file whole* — a manifest, an annotation set — where holding the bytes costs nothing.
+The two streaming methods move a **document**, a chunk at a time, precisely because holding
+it would cost a great deal. Same struct, two impl blocks, one honest boundary.
+
+**2026-10-28 · Another test that could not fail, caught and replaced**
+`an_interrupted_conversion_is_recognisable_afterwards` imported successfully and then
+asserted the result was *not* interrupted — true of anything that finished, and testing
+nothing. It now writes the state a killed import would leave behind, which the domain's
+transitions make reachable no other way, and checks a later launch recognises it.
+
+Second time this has happened today, after the `ImportPlan` depth test that accepted either
+branch. The pattern is worth naming: both slipped in while writing *around* the interesting
+case rather than at it. A test asserting that nothing went wrong is the shape to distrust.
+
+**2026-10-28 · `plan_bundle` was ceremony with a bug in it**
+A helper derived the bundle path from the plan's document by taking `parent().parent()`, on
+the reasoning that the plan and the directory could then never disagree. It did not compile,
+and the fix was to delete it: the caller already holds `request.bundle`, which is the value
+the plan was built *from*. Guarding against a disagreement that cannot arise, by computing
+the same answer a second way, is not safety.
 
 **2026-10-28 · A PDF is stored once, not twice**
 `CLAUDE.md` §3 says the original is always kept so reconversion stays possible. Read

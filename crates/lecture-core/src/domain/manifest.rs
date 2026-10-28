@@ -161,6 +161,18 @@ impl Manifest {
         self
     }
 
+    /// Replaces the source record.
+    ///
+    /// Used as an import walks a conversion forward: the title, the facets and the order
+    /// key do not change, only what has happened to the document. The modification time is
+    /// deliberately **not** touched here — `ManifestStore::save` owns that, so saving
+    /// cannot forget to.
+    #[must_use]
+    pub fn with_source(mut self, source: Source) -> Self {
+        self.source = source;
+        self
+    }
+
     /// The lecture's display title.
     #[must_use]
     pub fn title(&self) -> &Label {
