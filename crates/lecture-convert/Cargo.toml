@@ -1,0 +1,17 @@
+[package]
+name = "lecture-convert"
+description = "Optional macOS converter adapters for Nexus: implementations of DocumentConverterPort that drive LibreOffice or Apple's iWork apps. Nothing else depends on this crate, so the app builds and runs without it."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+lecture-core.workspace = true
+lecture-fs.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

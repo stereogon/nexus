@@ -43,6 +43,21 @@ To achieve native speed, instant startup, low RAM usage, and effortless cross-de
      - **Primary Strategy (LibreOffice Headless CLI):** Check `/Applications/LibreOffice.app/Contents/MacOS/soffice` or `soffice` in `$PATH`. Execute:
        `soffice --headless --convert-to pdf --outdir <source_dir> <original_file>`
        using an isolated temporary user profile (`-env:UserInstallation=file:///tmp/...`) so multiple conversions never lock or conflict.
+
+       > *Amended 2026-10-28: the profile goes under `~/Library/Application
+       > Support/Nexus/converters/`, not `/tmp`.* The isolation requirement is right and
+       > is implemented — a fresh profile per conversion, since `LibreOffice` locks one —
+       > but `/tmp` is the wrong place for it. It is swept by the system on a schedule
+       > nothing here controls, so a long conversion can have its profile deleted
+       > underneath it; it is world-readable, and a profile carries recent-document
+       > history; and it scatters Nexus's state across two locations, which makes "what
+       > does this app leave on my disk?" unanswerable. Per-device state already lives in
+       > Application Support, and a converter profile is per-device state. Reasoning in
+       > `PROGRESS.md`.
+       >
+       > *Also:* this section calls the trait `ConverterService` while §9's crate tree
+       > calls it `DocumentConverterPort`. The latter is what exists, because it is a
+       > port rather than a service and `CLAUDE.md` §3 names it that way.
      - **Secondary Fallback (macOS Native AppleScript/JXA):** If LibreOffice is not installed, invoke `/usr/bin/osascript` to silently convert `.ppt`/`.pptx` via Apple Keynote or `.doc`/`.docx` via Apple Pages in the background.
      - **Actionable Diagnostic:** If neither converter is available on the system, display a clean in-app setup modal with a one-click copy/run command: `brew install --cask libreoffice`.
 

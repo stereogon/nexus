@@ -213,6 +213,15 @@ pub enum CoreError {
         extension: String,
     },
 
+    /// A converter ran but did not produce a usable PDF.
+    #[error("{converter} did not produce a usable PDF: {reason}")]
+    ConversionFailed {
+        /// Which converter was tried, so a retry can pick a different one.
+        converter: String,
+        /// What went wrong, from a closed set so no process output is carried here.
+        reason: &'static str,
+    },
+
     /// A conversion was asked to move from a state that does not allow it.
     #[error("a conversion cannot go from {from} to {attempted}")]
     ConversionNotPossible {

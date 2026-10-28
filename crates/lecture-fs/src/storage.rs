@@ -152,6 +152,30 @@ impl AtomicFsStorage {
             .map_err(|e| io_error("rename", source.as_path(), e))
     }
 
+    /// Moves `from` onto `to`, replacing whatever was there.
+    ///
+    /// Named apart from [`AtomicFsStorage::rename`], which refuses to overwrite, because
+    /// the two have opposite intents and only one of them can destroy something. A
+    /// renumber must never write over a folder it did not create; a finished conversion
+    /// must replace the PDF it just rebuilt. Two names mean the destructive one cannot be
+    /// reached by reaching for the safe one.
+    ///
+    /// Atomic, because both paths resolve inside one vault and so sit on one filesystem:
+    /// a reader arriving at any moment sees the whole old file or the whole new one.
+    ///
+    /// # Errors
+    ///
+    /// Returns a containment error if either path does not resolve safely inside the
+    /// vault, or [`CoreError::Io`] if the move fails — in which case `from` is still
+    /// there and `to` is untouched.
+    pub fn replace(&self, from: &RelativePath, to: &RelativePath) -> Result<(), CoreError> {
+        let source = self.root.resolve(from)?;
+        let destination = self.root.resolve(to)?;
+
+        fs::rename(source.as_path(), destination.as_path())
+            .map_err(|error| io_error("replace", source.as_path(), error))
+    }
+
     /// Copies `at` aside to `<name>.bak`, returning where it went.
     ///
     /// Called when a file parses but makes no sense, or does not parse at all. The

@@ -169,7 +169,11 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
       machine, not about a lecture, and `manifest.json` syncs. See the decision log.
       `DocumentFormat`, `ConversionRequest` and `select_converter` land with it. 29 new
       Rust tests, 2 new TypeScript tests.
-- [ ] macOS adapter: Keynote/Pages via `osascript`, LibreOffice CLI preferred when present
+- [x] `LibreOffice` CLI adapter — done 2026-10-28 in a new `crates/lecture-convert`, so
+      "no converter is required" is structural: nothing depends on the crate, verified with
+      `cargo tree -i`. 13 tests against a stub `soffice`. **`LibreOffice`'s own behaviour
+      is unverified — it is not installed on this machine.**
+- [ ] Keynote/Pages via `osascript` — the secondary fallback, not started
 - [ ] `source.conversion` provenance written to `manifest.json`
 - [ ] Setup diagnostic UI (no hard dependency on any converter)
 - [ ] Vault sidebar, drag-and-drop import, facet grouping
@@ -368,6 +372,83 @@ probe file was placed where the line counter sees it but `cargo` does not — a 
 step under test. `check-line-limits.sh` exited 1 naming the file; the full gate reported
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
+
+**2026-10-28 · A new crate, so "no converter is required" is structural**
+`CLAUDE.md` §3 says converters are optional and that neither is required for the app to
+function. `crates/lecture-convert` makes that true rather than aspirational: **nothing
+depends on it**, verified with `cargo tree -i -p lecture-convert`, which lists only
+itself. Remove it from the workspace and the app still builds, still opens a vault, still
+imports PDFs; only `.pptx` and `.docx` import stops.
+
+It is also the honest boundary. `lecture-fs` is the filesystem adapter, and spawning
+`LibreOffice` is a different capability that happens to need the filesystem — not a kind
+of file access. Putting it there would have been one fewer `Cargo.toml` and a module
+boundary that did not match the domain.
+
+**2026-10-28 · The adapter is tested against a stub binary, not a mock**
+`LibreOffice` is not installed here, and an adapter verified only by reading it is not
+verified. So the tests write an executable shell stub that mimics `soffice` — parsing
+`--outdir` and the input path out of its own arguments exactly as the real binary must —
+and drive the **production** `Command`-spawning, exit-status, output-checking and
+move-into-place code through it. The double is at the process boundary; nothing under test
+is mocked.
+
+The three cases worth the most are the ones where the converter **reports success without
+producing a usable PDF**: `LibreOffice` really does exit 0 having written nothing when it
+has no filter for a document. Trusting the exit status would record a `Ready` conversion
+pointing at a file that is not there — a lecture that imports cleanly and cannot be
+opened. So the output is checked for existence, for being a regular file, for being
+non-empty, and for beginning `%PDF-`.
+
+**2026-10-28 · Honest gap: `LibreOffice` itself is unverified**
+There is deliberately **no** end-to-end test with a real `LibreOffice`. One would need a
+machine that has it *and* a genuine `.pptx` fixture, and neither exists here. An
+`#[ignore]`d test asserting whatever placeholder bytes happen to produce was written and
+then deleted: it read as coverage of the one thing a stub cannot vouch for while proving
+nothing. The gap is recorded here instead.
+
+What stands in for it is `command_arguments` being asserted **exactly**, because the
+argument list is the part a real `soffice` would reject, and it is the part no stub can
+check. Installing `LibreOffice` (~700 MB) would close this; not done without asking.
+
+**2026-10-28 · The output name is `LibreOffice`'s to choose**
+`soffice --convert-to pdf --outdir X original.pptx` writes `X/original.pdf` — the *input's*
+stem, not what the manifest calls it. So the conversion produces `source/original.pdf` and
+that file is moved onto `source/document.pdf`. Both paths are inside one vault, so the move
+is a same-filesystem rename and therefore atomic: nothing ever sees a half-written
+`document.pdf`, and nothing can annotate a fragment.
+
+This is also what `AtomicFsStorage::replace` is for. `rename` refuses to overwrite because
+a renumber must never write over a folder it did not create; a finished conversion must
+replace the PDF it just rebuilt. Two names, so the destructive one cannot be reached by
+reaching for the safe one — the same lesson as `requeued` against
+`reconversion_requested`, applied one layer down.
+
+**2026-10-28 · The converter profile does not go in `/tmp` — spec amended**
+The spec said `-env:UserInstallation=file:///tmp/...`. The isolation requirement is right
+and is implemented — a fresh profile per conversion, since `LibreOffice` locks one — but
+`/tmp` is the wrong place. The system sweeps it on a schedule nothing here controls, so a
+long conversion can have its profile deleted underneath it; it is world-readable, and a
+profile carries recent-document history; and it scatters this app's state across two
+places, which makes "what does Nexus leave on my disk?" unanswerable.
+
+Per-device state already lives in `~/Library/Application Support/Nexus/`, and a converter
+profile is per-device state. A fresh directory per conversion costs `LibreOffice`'s
+first-run setup and removes the locking constraint entirely, which is the better trade
+while nothing here can measure that cost. Cleanup is best-effort: a left-behind profile
+costs disk in this app's own directory, whereas failing a conversion that *worked* because
+the cleanup did not would be absurd.
+
+**2026-10-28 · The converter's name lives in the adapter, not the domain**
+`CONVERTER_LABEL` is in `lecture-convert`. `select_converter` takes converters in
+preference order and the first match wins, so `CLAUDE.md` §3's "LibreOffice CLI preferred
+when present" is an ordering decision made where the converters are assembled. The domain
+knows no converter by name, which is what lets it compile for a device where none can run.
+
+A consequence worth noting: `LibreOfficeConverter::at` returns `Result`, because the label
+is validated by exactly the same rule as every other name written to a manifest. An
+`expect` would have been shorter and is banned by §4 — and the ban is right here, since the
+alternative is a panic in an optional adapter taking the whole app down.
 
 **2026-10-28 · `Unavailable` cannot be a conversion state — plan corrected**
 This file's Milestone 2 plan listed the state machine as

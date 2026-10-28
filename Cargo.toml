@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/lecture-core", "crates/lecture-fs"]
+members = ["crates/lecture-core", "crates/lecture-fs", "crates/lecture-convert"]
 
 # `crates/src-tauri` joins this list in Milestone 2, when there is an IPC surface
 # worth adapting. Declaring it now would pull the whole Tauri dependency tree and an
@@ -51,6 +51,7 @@ tempfile = "3.27.0"
 
 # Internal crates, so a member can depend on another without repeating the path.
 lecture-core = { path = "crates/lecture-core" }
+lecture-fs = { path = "crates/lecture-fs" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

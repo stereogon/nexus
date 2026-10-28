@@ -13,12 +13,13 @@ use super::CoreError;
 use crate::domain::fingerprint_hex;
 
 use wording::{
-    ALIAS_REFUSED, CONVERSION_STUCK, DATE_UNREADABLE, FILE_OPERATION_ABANDONED,
-    FINGERPRINT_UNREADABLE, FORMAT_NOT_IMPORTABLE, HIGHLIGHT_DUPLICATE_ID,
-    HIGHLIGHT_IMPOSSIBLE_PAGE, HIGHLIGHT_POSITION, HIGHLIGHT_UNREADABLE, HOME_UNAVAILABLE,
-    LOCATION_OUTSIDE_VAULT, LOCATION_TOO_DEEP, LOCATION_UNUSABLE, LOG_UNAVAILABLE,
-    MANIFEST_INCONSISTENT, NAME_TAKEN, NAME_UNUSABLE, POSITION_UNAVAILABLE, POSITION_UNREADABLE,
-    READING_PLACE_LOST, STORED_FILE_UNREADABLE, UNRECOGNISED_SCHEMA_VERSION, VAULT_UNOPENABLE,
+    ALIAS_REFUSED, CONVERSION_DID_NOT_PRODUCE_A_PDF, CONVERSION_STUCK, DATE_UNREADABLE,
+    FILE_OPERATION_ABANDONED, FINGERPRINT_UNREADABLE, FORMAT_NOT_IMPORTABLE,
+    HIGHLIGHT_DUPLICATE_ID, HIGHLIGHT_IMPOSSIBLE_PAGE, HIGHLIGHT_POSITION, HIGHLIGHT_UNREADABLE,
+    HOME_UNAVAILABLE, LOCATION_OUTSIDE_VAULT, LOCATION_TOO_DEEP, LOCATION_UNUSABLE,
+    LOG_UNAVAILABLE, MANIFEST_INCONSISTENT, NAME_TAKEN, NAME_UNUSABLE, POSITION_UNAVAILABLE,
+    POSITION_UNREADABLE, READING_PLACE_LOST, STORED_FILE_UNREADABLE, UNRECOGNISED_SCHEMA_VERSION,
+    VAULT_UNOPENABLE,
 };
 
 impl CoreError {
@@ -43,6 +44,7 @@ impl CoreError {
             Self::LoggingUnavailable { .. } => "ERR_LOGGING_UNAVAILABLE",
             Self::HomeDirectoryUnavailable => "ERR_HOME_DIRECTORY_UNAVAILABLE",
             Self::UnsupportedDocumentFormat { .. } => "ERR_UNSUPPORTED_DOCUMENT_FORMAT",
+            Self::ConversionFailed { .. } => "ERR_CONVERSION_FAILED",
             Self::ConversionNotPossible { .. } => "ERR_CONVERSION_NOT_POSSIBLE",
             Self::InvalidFingerprint { .. } => "ERR_INVALID_FINGERPRINT",
             Self::InvalidZoom { .. } => "ERR_INVALID_ZOOM",
@@ -107,6 +109,7 @@ impl CoreError {
             Self::LoggingUnavailable { .. } => LOG_UNAVAILABLE,
             Self::HomeDirectoryUnavailable => HOME_UNAVAILABLE,
             Self::UnsupportedDocumentFormat { .. } => FORMAT_NOT_IMPORTABLE,
+            Self::ConversionFailed { .. } => CONVERSION_DID_NOT_PRODUCE_A_PDF,
             Self::ConversionNotPossible { .. } => CONVERSION_STUCK,
             Self::InvalidFingerprint { .. } => FINGERPRINT_UNREADABLE,
             Self::InvalidZoom { .. } | Self::InvalidPageOffset { .. } => READING_PLACE_LOST,
@@ -195,6 +198,10 @@ mod wording {
     pub(super) const FORMAT_NOT_IMPORTABLE: &str = "Nexus imports PDF, PowerPoint and Word documents, and that file is none of \
          them. Nothing was imported or changed, and the file is where you left it. \
          Exporting it as a PDF first will import it fine.";
+
+    pub(super) const CONVERSION_DID_NOT_PRODUCE_A_PDF: &str = "The converter could not turn this document into a PDF, so the lecture is there \
+         with its original file and nothing to show yet. Nothing was lost. You can try \
+         the conversion again, and the diagnostic log records what the converter said.";
 
     pub(super) const CONVERSION_STUCK: &str = "This lecture's conversion could not continue from where it had got to, so it \
          was left exactly as it was. Your original file is still in the lecture folder. \
