@@ -1,0 +1,104 @@
+/**
+ * What to say after an import, for one file or for a handful dropped at once.
+ *
+ * Pure, and separate from the components, because this is the part worth testing: there is
+ * no component test harness yet (`@testing-library/react` is an install, and §2 makes that
+ * the user's call), so logic that lives inside a component is logic nothing checks.
+ */
+import type { CommandError, LectureRow } from "../ipc/vault";
+
+/** What became of one dropped file. */
+export type DropOutcome =
+  | { readonly kind: "added"; readonly lecture: LectureRow }
+  | { readonly kind: "refused"; readonly error: CommandError };
+
+type Added = Extract<DropOutcome, { kind: "added" }>;
+type Refused = Extract<DropOutcome, { kind: "refused" }>;
+
+const isAdded = (outcome: DropOutcome): outcome is Added =>
+  outcome.kind === "added";
+
+const isRefused = (outcome: DropOutcome): outcome is Refused =>
+  outcome.kind === "refused";
+
+/** Whether a lecture is still waiting for a PDF, whichever way it got there. */
+function lacksPdf(lecture: LectureRow): boolean {
+  return lecture.conversion === "failed" || lecture.conversion === "queued";
+}
+
+/**
+ * What to say after importing one document.
+ *
+ * An import that could not convert still succeeded, so this reports the state rather than
+ * treating it as a failure — and says what it means for the person, not what the enum is
+ * called.
+ */
+export function noteFor(lecture: LectureRow): string {
+  switch (lecture.conversion) {
+    case "failed":
+      return `Added "${lecture.title}", but it could not be converted to a PDF. The original is kept, so you can still take notes beside it.`;
+    case "queued":
+      return `Added "${lecture.title}". It needs LibreOffice to be converted before it can be opened, and none was found.`;
+    case "converting":
+      return `Added "${lecture.title}". It is still converting.`;
+    case "ready":
+    case "notRequired":
+      return `Added "${lecture.title}".`;
+  }
+}
+
+/**
+ * One note for a whole drop, however it went.
+ *
+ * Built from outcomes rather than thrown on the first failure, because §1.4 applies to a
+ * drop of four files where the third is a screenshot: the other three were imported, and an
+ * error that hid that would send someone looking for lectures that are already there.
+ *
+ * Identical remediation sentences are said once. Dropping six `.txt` files is one mistake,
+ * not six, and repeating the same advice six times reads like the app is shouting.
+ */
+export function noteForDrop(outcomes: readonly DropOutcome[]): string | null {
+  const added = outcomes.filter(isAdded);
+  const refused = outcomes.filter(isRefused);
+  const [only] = added;
+
+  if (added.length === 0 && refused.length === 0) {
+    return null;
+  }
+
+  // One file is the common case, and it already has a sentence naming it. A summary would
+  // be a worse answer to a smaller question.
+  if (added.length === 1 && refused.length === 0 && only !== undefined) {
+    return noteFor(only.lecture);
+  }
+
+  const parts: string[] = [];
+
+  if (added.length > 0) {
+    parts.push(
+      added.length === 1
+        ? "Added 1 lecture."
+        : `Added ${String(added.length)} lectures.`,
+    );
+  }
+
+  const waiting = added.filter((outcome) => lacksPdf(outcome.lecture)).length;
+
+  if (waiting > 0) {
+    parts.push(
+      `${String(waiting)} of them could not be converted to a PDF yet; the originals are kept, so you can still take notes beside them.`,
+    );
+  }
+
+  if (refused.length > 0) {
+    const reasons = [...new Set(refused.map((outcome) => outcome.error.remediation))];
+
+    parts.push(
+      refused.length === 1
+        ? `1 file could not be added. ${reasons.join(" ")}`
+        : `${String(refused.length)} files could not be added. ${reasons.join(" ")}`,
+    );
+  }
+
+  return parts.join(" ");
+}

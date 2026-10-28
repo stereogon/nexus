@@ -194,13 +194,13 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
       import adapter, which records `state`, `converter` and `convertedAt` at each step, so
       a bundle is self-describing. Round-tripped through `ManifestStore` in a test.
 - [ ] Setup diagnostic UI — folded into the item above; recorded, not built
-- [~] Vault sidebar, drag-and-drop import, facet grouping — **partly done 2026-10-28.**
-      The shell, the IPC boundary, importing a document and a list of lectures with their
-      facets now exist and run. Still missing: grouping *on* those facets (the rows are
-      flat), **drag-and-drop** import (the file picker works; dropping a file on the window
-      does not), opening a lecture, and editing a title or facets after import.
-      `PathTemplate` and `plan_reorganize` are the domain half of grouping and are already
-      built and tested.
+- [~] Vault sidebar, drag-and-drop import, facet grouping — **mostly done 2026-10-28.**
+      The shell, the IPC boundary, importing a document, a list of lectures grouped on their
+      facets, editing those facets, and **drag-and-drop import** all exist. Dropping files on
+      the window imports them one at a time, keeping the ones that worked when one is
+      refused, and ⌘O opens the browser the canvas's drop state promises. Still missing:
+      opening a lecture (that is the viewer, Milestone 3) and editing a lecture's *title*
+      after import — facets are editable, the title is not.
 - [x] Import path templates — done 2026-10-28. `PathTemplate`: `{course}/{week}-{title}`
       says where a lecture's folder goes, rendered from its facets. 14 tests, pure.
 - [~] "Reorganize Vault" with dry-run preview — the planner, the apply loop and both IPC
@@ -407,6 +407,72 @@ probe file was placed where the line counter sees it but `cargo` does not — a 
 step under test. `check-line-limits.sh` exited 1 naming the file; the full gate reported
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
+
+**2026-10-28 · Drag-and-drop import, and the two things the canvas settled for me**
+The last gap in §2.3's sidebar line that is not actually the viewer. Dropping files on the
+window imports them; the canvas's *Import · drag over window* state is now a real overlay
+rather than an artboard.
+
+**It has to be a Tauri event, not an HTML5 `drop`.** A browser `DataTransfer` hands over a
+sandboxed `File` and no filesystem path, which is useless to an importer whose job is to
+copy bytes out of a file the person already has. `onDragDropEvent` re-emits the OS drag
+with real paths, so it is the only version that can work at all. The payload is still put
+through Zod (§4): that `@tauri-apps/api` declares a type for it is a statement about the
+compiler, and the contents are whatever someone dragged onto a window.
+
+**A payload the schema cannot read counts as the drag having left.** The failure that
+mattered to get right. Any other answer leaves the overlay covering the vault with no drag
+in progress to end it and no gesture that dismisses it — the person would restart the app
+to get their lecture list back. There is a test over ten malformed payloads, and a separate
+one asserting an *empty* drop is a no-op rather than a malformed one, since dragging a
+folder can produce one.
+
+**Per-file failure isolation, because §1.4 is about exactly this.** Drop four slide decks
+and a screenshot: the screenshot is refused and the four decks are in. So the loop catches
+per file, collects outcomes, and `noteForDrop` reports them together — "Added 4 lectures. 1
+file could not be added. …". Throwing on the first refusal would have hidden four successful
+imports behind one error and sent someone looking for lectures that were already there.
+Identical remediation sentences are said once: six dropped screenshots are one mistake, not
+six.
+
+**Imports run one at a time on purpose.** An import allocates a folder name from the
+document's title, so two files landing together could race for the same slug. Sequential is
+slower by exactly the amount that makes it correct, and that is written at the call site so
+nobody "optimises" it into a `Promise.all`.
+
+**The canvas settled two things I would otherwise have decided badly.**
+First, the five format chips. Writing `pdf pptx ppt docx doc` into the component would have
+made the window a second opinion about what Nexus imports, free to drift from
+`DocumentFormat` — the same class of bug `fixtures/` exists to prevent. So there is a small
+`importable_formats` command, and a Rust test asserting it is exactly
+`DocumentFormat::ALL`'s extensions. The window now has no opinion of its own.
+
+Second, the drop state's small print says *"or press ⌘O to browse"*. Printing that without
+binding the key would have been the app saying something untrue, so ⌘O is bound
+(`useMetaShortcut`), gated on a vault being open so a disabled shortcut does not swallow the
+keystroke.
+
+**Two values are mine rather than the canvas's, and are marked as such.** The canvas draws
+this state on the light artboard only, as a card. A real window needs the page behind the
+overlay to recede, so there is a `--scrim`; and the dark theme's accent is light enough that
+a 6% wash vanishes on `#16161A`, so `--accent-wash` is 10% there. Both are commented in
+`theme.css` as derivations rather than extractions. The arrow is the canvas's own path data
+with `currentColor` swapped for its hardcoded `#BE1A72`, so the dark accent reaches it.
+
+**Two lint rules were right and my first draft was wrong.** `restrict-template-expressions`
+refused `${count}` in a sentence — numbers need `String(…)`, and the rule exists because
+`${someObject}` silently renders `[object Object]`. And `no-unnecessary-condition` called
+the unmounted-while-subscribing check "always falsy": the type checker cannot follow a
+cleanup closure assigning to a local `let`. Fixed with a small mutable object, which is
+honest about being written from elsewhere, rather than by disabling the rule.
+
+**What is not covered by a test, and why.** The overlay, the hook and the keybinding have no
+component tests: `@testing-library/react` is an install, and §2 makes that the user's call.
+That is the reason the logic worth testing was put *outside* the components —
+`dispatchDrag`, `noteFor` and `noteForDrop` are pure and have 21 tests between them. What
+remains unverified is specifically the wiring: that a real drag over a real window shows the
+overlay and lands the files. **That needs a person to drag a file**, and the user is being
+asked to do it.
 
 **2026-10-28 · The reorganize commands cross the IPC boundary, and a comment that was not true**
 `preview_reorganize` and `apply_reorganize` are Tauri commands now, so the apply loop added

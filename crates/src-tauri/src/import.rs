@@ -13,13 +13,32 @@ use std::path::Path;
 
 use lecture_convert::LibreOfficeConverter;
 use lecture_core::{
-    DocumentConverterPort, Facets, Label, LectureBundle, OrderKey, RelativePath, Slug,
+    DocumentConverterPort, DocumentFormat, Facets, Label, LectureBundle, OrderKey, RelativePath,
+    Slug,
 };
 use lecture_fs::{
     AtomicFsStorage, ImportRequest, Importer, ManifestStore, SystemClock, VaultLoader, VaultRoot,
 };
 
 use crate::vault::{CommandError, LectureRow, row};
+
+/// Every extension the importer accepts, lowercase and without a dot.
+///
+/// A command rather than a list written into the frontend, because the formats the window
+/// offers and the formats the importer enforces have to be one list. [`DocumentFormat`] is
+/// the one that decides, and a format added there reaches the window without anyone
+/// remembering to copy it across.
+///
+/// Pure, so unlike the rest of this module it does not need a worker thread: there is no
+/// file to read and nothing to wait on.
+#[tauri::command]
+#[must_use]
+pub fn importable_formats() -> Vec<&'static str> {
+    DocumentFormat::ALL
+        .iter()
+        .map(|format| format.extension())
+        .collect()
+}
 
 /// Imports `file` into the vault at `vault`, converting it if a converter can.
 ///

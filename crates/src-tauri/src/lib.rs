@@ -14,7 +14,7 @@ pub mod reorganize;
 pub mod vault;
 
 pub use facets::set_lecture_facets;
-pub use import::import_document;
+pub use import::{import_document, importable_formats};
 pub use picker::{pick_document, pick_vault_directory};
 pub use reorganize::{apply_reorganize, preview_reorganize};
 pub use vault::{CommandError, LectureRow, ProblemRow, VaultSummary, open_vault};
@@ -35,6 +35,7 @@ pub fn run() -> Result<(), tauri::Error> {
             pick_vault_directory,
             pick_document,
             import_document,
+            importable_formats,
             set_lecture_facets,
             preview_reorganize,
             apply_reorganize

@@ -244,3 +244,26 @@ fn an_imported_bundle_can_be_moved_without_rewriting_anything_inside_it() {
     assert_eq!(summary.lectures.len(), 1);
     assert_eq!(summary.lectures[0].directory, "cs454/week-3");
 }
+
+#[test]
+fn the_importable_formats_are_exactly_what_the_domain_accepts() {
+    // The window draws its format chips from this list, so the thing it offers and the
+    // thing the importer enforces are one list. A format added to `DocumentFormat` without
+    // reaching here would be accepted by the importer and never offered -- or, worse the
+    // other way round, offered and then refused on drop.
+    let offered = nexus_app::importable_formats();
+    let domain: Vec<&str> = lecture_core::DocumentFormat::ALL
+        .iter()
+        .map(|format| format.extension())
+        .collect();
+
+    assert_eq!(offered, domain);
+
+    // And it is non-empty, which the Zod schema on the other side insists on: an empty list
+    // would mean Nexus imports nothing, and a drop zone with no chips would be the symptom.
+    assert!(!offered.is_empty());
+
+    // Spelled out as well as compared, so a reordering or a rename is visible here rather
+    // than only in a diff of the domain.
+    assert_eq!(offered, ["pdf", "pptx", "ppt", "docx", "doc"]);
+}

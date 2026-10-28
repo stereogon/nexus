@@ -25,8 +25,12 @@ import {
   type LectureRow,
   type VaultSummary,
 } from "./ipc/vault";
+import { DropOverlay } from "./ui/DropOverlay";
+import { noteFor, noteForDrop, type DropOutcome } from "./ui/dropped";
 import { FacetEditor } from "./ui/FacetEditor";
 import { LectureList, type GroupBy } from "./ui/LectureList";
+import { useDropZone } from "./ui/useDropZone";
+import { useMetaShortcut } from "./ui/useMetaShortcut";
 
 type VaultState =
   | { readonly kind: "idle" }
@@ -43,27 +47,6 @@ const GROUPINGS: readonly (readonly [GroupBy, string])[] = [
   ["module", "Module"],
   ["week", "Week"],
 ];
-
-/**
- * What to say after an import.
- *
- * An import that could not convert still succeeded, so this reports the state rather than
- * treating it as a failure — and says what it means for the person, not what the enum is
- * called.
- */
-function noteFor(lecture: LectureRow): string {
-  switch (lecture.conversion) {
-    case "failed":
-      return `Added "${lecture.title}", but it could not be converted to a PDF. The original is kept, so you can still take notes beside it.`;
-    case "queued":
-      return `Added "${lecture.title}". It needs LibreOffice to be converted before it can be opened, and none was found.`;
-    case "converting":
-      return `Added "${lecture.title}". It is still converting.`;
-    case "ready":
-    case "notRequired":
-      return `Added "${lecture.title}".`;
-  }
-}
 
 /**
  * The grouping a `<select>` value names.
@@ -153,6 +136,45 @@ export function App() {
     });
   }, [against, state]);
 
+  /**
+   * Imports everything dropped on the window, one file at a time.
+   *
+   * Sequential rather than concurrent: an import allocates a folder name from the
+   * document's title, so two files landing together could race for the same one. Slower by
+   * exactly the amount that makes it correct.
+   *
+   * Each failure is caught per file. One screenshot among four slide decks must not discard
+   * the news that the decks are in — §1.4 — so the outcomes are collected and reported
+   * together rather than thrown on the first refusal.
+   */
+  const dropped = useCallback(
+    (paths: readonly string[]) => {
+      if (state.kind !== "open") {
+        return;
+      }
+
+      const vault = state.summary.root;
+
+      against(vault, async () => {
+        const outcomes: DropOutcome[] = [];
+
+        for (const path of paths) {
+          try {
+            outcomes.push({
+              kind: "added",
+              lecture: await importDocument(vault, path),
+            });
+          } catch (thrown: unknown) {
+            outcomes.push({ kind: "refused", error: asCommandError(thrown) });
+          }
+        }
+
+        return noteForDrop(outcomes);
+      });
+    },
+    [against, state],
+  );
+
   const file = useCallback(
     (facets: FacetEdit) => {
       if (state.kind !== "open" || editing === null) {
@@ -171,6 +193,11 @@ export function App() {
     },
     [against, editing, state],
   );
+
+  const zone = useDropZone(dropped);
+
+  // The canvas's drop state promises ⌘O opens the browser, so it has to.
+  useMetaShortcut("o", state.kind === "open" && !busy, add);
 
   return (
     <div className="app">
@@ -215,6 +242,7 @@ export function App() {
         </div>
 
         {state.kind === "failed" && <Failure error={state.error} />}
+        {zone.failure !== null && <Failure error={zone.failure} />}
         {state.kind === "open" && (
           <>
             {state.note !== null && <p className="note">{state.note}</p>}
@@ -237,6 +265,9 @@ export function App() {
           </>
         )}
       </main>
+      {zone.dragging && state.kind === "open" && (
+        <DropOverlay formats={zone.formats} />
+      )}
     </div>
   );
 }
