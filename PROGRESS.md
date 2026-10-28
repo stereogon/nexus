@@ -414,6 +414,46 @@ step under test. `check-line-limits.sh` exited 1 naming the file; the full gate 
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
 
+**2026-10-28 · `pdfjs-dist` is in, and what it drags behind it**
+Installed with permission (§2): `pdfjs-dist` **6.4.299**, Apache-2.0, pinned exactly, which
+is this repository's convention — `package.json` carries no version ranges, so a fresh
+`npm ci` six months from now resolves what was tested rather than what is newest.
+
+Latest at the time of install, chosen over staying on 5.x because nothing in the viewer
+exists yet to be held back by it: the cost of moving majors is lowest before the first line
+is written.
+
+**It is not one file, and this is the part that matters for an offline app.** `pdf.js` fetches
+four categories of asset lazily, at the moment a document needs them:
+
+| Directory | Size | Needed for |
+|---|---|---|
+| `cmaps/` | 1.6 MB | CJK character encodings |
+| `standard_fonts/` | 816 KB | the 14 standard PDF fonts, when a document does not embed them |
+| `iccs/` | 20 KB | ICC colour profiles |
+| `wasm/` | 1.5 MB | `jbig2` and `openjpeg` image codecs, `qcms` colour, `quickjs-eval` |
+
+Every one of those is a runtime fetch. Against our `default-src 'self'` CSP they would fail
+closed — which is the right failure, but it would land as a lecture that renders without its
+fonts, or a scanned page that renders blank. The spec says "Bundled Assets Only" (line 34)
+and §1.2 says the material never leaves the machine; both point the same way, so all four
+have to ship inside the bundle and be addressed by a same-origin path.
+
+`wasm/jbig2.wasm` is the one worth noticing: JBIG2 is the codec scanned documents use, which
+is exactly the lecture material this app is for.
+
+**Three decisions this forces, raised before building rather than after.** They are
+security-relevant and not reversible by accident, so they are going to the user:
+how the PDF bytes reach the webview (asset protocol with a scope limited to the opened
+vault, versus sending bytes over IPC); whether the CSP gains `'wasm-unsafe-eval'`, which
+compiling those codecs requires; and whether JavaScript embedded in a lecture PDF is ever
+executed — `quickjs-eval.wasm` is what would run it, and the recommendation is not to ship
+it at all, with `isEvalSupported: false`.
+
+Nothing imports the package yet, so this commit changes no behaviour. It is recorded
+separately because a dependency is a permanent cost (§1.5) and the licence register is
+part of the deliverable, not an afterthought.
+
 **2026-10-28 · The app reopens the vault you had open, and the spec was wrong about dark mode**
 Reported from use: every launch showed the picker, and the question that came with it was
 "what happened to the `.nexus` directory which was supposed to hold all this?" — worth
@@ -3314,6 +3354,7 @@ packages resolved, every one with a stated licence.
 | `react` | 19.3.1 | MIT |
 | `react-dom` | 19.3.1 | MIT |
 | `zod` | 4.6.7 | MIT |
+| `pdfjs-dist` | 6.4.299 | Apache-2.0 |
 | `@tauri-apps/api` | 2.12.4 | Apache-2.0 OR MIT |
 | `@tauri-apps/cli` | 2.12.4 | Apache-2.0 OR MIT |
 | `@types/react` | 19.3.0 | MIT |
