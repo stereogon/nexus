@@ -402,6 +402,48 @@ step under test. `check-line-limits.sh` exited 1 naming the file; the full gate 
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
 
+**2026-10-28 · The folder picker deadlocked the app, and the comment said it could not**
+The user: *"as soon as i click on choose vault folder, it opens a finder dialog, but then it
+stops responding and i see a rainbow circle loader, and i have to then force quit."*
+
+A real bug, and a bad one: the app had to be force quit.
+
+**The cause.** `pick_vault_directory` was a plain `fn` calling `blocking_pick_folder`. In
+Tauri a **sync** command runs on the **main** thread; `#[tauri::command(async)]` is what
+moves one to a worker. So it dispatched the native sheet to the main thread and then blocked
+that same thread waiting for it. The sheet appeared — the dispatch got through — and then
+the run loop stopped, which is exactly the beachball.
+
+**The embarrassing part is the comment.** It read: *"Safe because a non-async Tauri command
+already runs on a worker thread — called from the main thread it would deadlock, which is
+why this must stay a plain `fn`."* The failure mode was described correctly and the
+direction asserted backwards. A confident comment on an unverified claim is worse than no
+comment, because it stops the next reader looking. Recorded because the lesson is not "check
+the threading model" but **"do not write a justification for something that was never run"**.
+
+**The fix does not depend on being right about it.** `pick_folder` is the non-blocking form:
+it hands the request to the main thread and returns immediately, the callback fires later,
+and the command `await`s a one-message channel instead of occupying a thread. Nothing blocks
+on anything, so no arrangement of threads deadlocks. Choosing the version that cannot fail
+beats choosing the version that is fine if an assumption holds — particularly when being
+wrong about that assumption is what caused the bug.
+
+**`#[expect]` paid for itself within the hour.** The signature now moves the `AppHandle`
+into the request rather than only reading it, so `needless_pass_by_value` stopped firing —
+and because the exception was an `#[expect]` and not an `#[allow]`, the build immediately
+reported it as unfulfilled and made me delete it. An `allow` would have sat there silently
+for years. Noted as evidence for the general rule written down this morning.
+
+**This landed in exactly the gap that was flagged.** The earlier entry says plainly: *"NOT
+verified: the React render and the `invoke` wiring ... no button was clicked."* That is the
+one thing never exercised, and it is the one thing that was broken. The flag was honest and
+it was not sufficient — writing a known gap down does not stop it costing someone an hour.
+The real fix is a component test with `@testing-library/react` driving `invoke`, which is an
+install and so the user's call; it stays open.
+
+**Still not verified by me.** A native folder sheet cannot be clicked from here, so the fix
+is reasoned and compiled but not observed working. Said rather than implied.
+
 **2026-10-28 · The real typefaces, and the icon drawn in the real one**
 The user: *"i added bricolate grotesque in my system, you can check, or if you want you can
 install freshly and store whereever you want, and for the rest, check in machine, if not
