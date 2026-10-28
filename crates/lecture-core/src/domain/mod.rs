@@ -22,6 +22,7 @@ mod manifest;
 mod normalized_rect;
 mod order_key;
 mod page_number;
+mod path_template;
 mod relative_path;
 mod renumber;
 mod schema;
@@ -57,6 +58,7 @@ pub use manifest::{
 pub use normalized_rect::NormalizedRect;
 pub use order_key::OrderKey;
 pub use page_number::PageNumber;
+pub use path_template::PathTemplate;
 pub use relative_path::{MAX_BUNDLE_DEPTH, MAX_DEPTH, MAX_WITHIN_BUNDLE_DEPTH, RelativePath};
 pub use renumber::{
     BlockedFolder, OrderedFolder, RENUMBERING_SUFFIX, Rename, RenumberBlock, RenumberPlan,

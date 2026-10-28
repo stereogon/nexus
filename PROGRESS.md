@@ -177,19 +177,32 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
 - [~] Keynote/Pages via `osascript` — **removed 2026-10-28** by the user's decision,
       after being built and tried against the real applications. `LibreOffice` is the only
       converter. See the entry below; the spec is amended beside the requirement.
-- [ ] Setup diagnostic — now **load-bearing**, not a courtesy: with no fallback, it is the
-      only thing that makes a machine without `LibreOffice` recoverable
+- [ ] **If `LibreOffice` is absent, something has to happen.** Recorded, not built — the
+      user's instruction 2026-10-28: write it down, do not handle it yet. What the code does
+      today is already safe and is the reason this can wait: the file is kept, the manifest
+      says `Queued`, and installing `LibreOffice` later lets the import finish. What is
+      missing is only *telling* someone. When it is built it needs: a way to ask "can this
+      machine convert?", the `brew install --cask libreoffice` line, and a way to retry the
+      queued conversions afterwards. **No test covers the telling, because there is nothing
+      to tell yet.**
 - [x] `ImportPlan` — done 2026-10-28. The pure half of import: what goes where, whether a
       conversion is owed, and what the manifest says. 10 tests, no filesystem.
 - [x] The import adapter — done 2026-10-28. `lecture_fs::Importer`: streams the bytes in
       while fingerprinting them, writes the manifest three times around the conversion, and
       carries a conversion failure back without failing the import. 12 tests.
-- [ ] `source.conversion` provenance written to `manifest.json`
-- [ ] Setup diagnostic UI (no hard dependency on any converter)
+- [x] `source.conversion` provenance written to `manifest.json` — done 2026-10-28 by the
+      import adapter, which records `state`, `converter` and `convertedAt` at each step, so
+      a bundle is self-describing. Round-tripped through `ManifestStore` in a test.
+- [ ] Setup diagnostic UI — folded into the item above; recorded, not built
 - [ ] Vault sidebar, drag-and-drop import, facet grouping
-- [ ] Import path templates + "Reorganize Vault" with dry-run preview
-- [ ] Tests: mock converter transitions, real `.pptx`/`.docx` fixtures (`#[ignore]`-gated —
-      LibreOffice is absent on this machine; see §3)
+- [x] Import path templates — done 2026-10-28. `PathTemplate`: `{course}/{week}-{title}`
+      says where a lecture's folder goes, rendered from its facets. 14 tests, pure.
+- [ ] "Reorganize Vault" with dry-run preview — applying a template to lectures that already
+      exist. The dry-run **is** the feature; `PathTemplate` is what it will plan against.
+- [x] Tests: mock converter transitions (12, in `lecture-fs`) and **real** `.pptx`/`.docx`
+      fixtures (5 end-to-end against `LibreOffice` 26.8.1.1, `#[ignore]`-gated and run by
+      `scripts/gate.sh` whenever `soffice` is present). The note that LibreOffice was absent
+      is out of date — it was installed 2026-10-28.
 
 ### [ ] Milestone 3 — Virtualised PDF viewer and annotation overlay
 - [ ] Bundled offline `pdfjs-dist`, virtualised pages (visible + 2-page buffer)
@@ -382,6 +395,74 @@ probe file was placed where the line counter sees it but `cargo` does not — a 
 step under test. `check-line-limits.sh` exited 1 naming the file; the full gate reported
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
+
+**2026-10-28 · A path template, deliberately not a language**
+`{course}/{week}-{title}` says where a lecture's folder goes. Literals and placeholders,
+and that is all — no conditionals, no defaults, no formatting. §1.11 says not to reach for
+a pattern larger than the problem, and the problem is one person filing their own lectures.
+
+Two rules do the work a language would otherwise be wanted for:
+
+- **A level with any missing placeholder is left out entirely.** So
+  `{course}/{module}/{title}` files a lecture with no module at `{course}/{title}`. The
+  alternatives were inventing an `unfiled` folder or rendering `{week}-{title}` as `-raft`,
+  and both are worse than simply having one fewer folder.
+- **The last level must contain `{title}`**, checked when the template is parsed. A
+  `Manifest` always has a title, so the last level always renders — which is what stops a
+  lecture with no facets at all from *becoming its course directory* and having the next
+  one filed on top of it.
+
+`{tags}` is refused outright: tags are a list and a folder name is one name, so taking the
+first or joining them would both surprise someone. Refused at parse time, while they are
+still looking at the template.
+
+Everything is checked at parse time rather than at render: unbalanced braces, empty levels,
+`{}`, and nesting past the five-folder cap. A bad template should fail while someone is
+looking at it, not a hundred lectures later.
+
+**2026-10-28 · `Slug::from_title` keeps punctuation, and that is better than what I assumed**
+A test asserted `Raft & Paxos: a comparison (part 2)` would render as
+`raft-paxos-a-comparison-part-2`. It renders as `raft-&-paxos-a-comparison-(part-2)`:
+`from_title` lowercases, collapses whitespace and removes what is *forbidden in a path*,
+but keeps punctuation that is legal on disk.
+
+The assumption was mine, not the code's, and on reflection the existing behaviour is the
+better one — the folder stays recognisable as the lecture it came from, which is what §3
+wants from these names in Finder. The test now asserts what happens, and says in a comment
+that it surprised me, so the next reader does not take it for an oversight.
+
+**Recorded, not fixed:** two lectures in one course called `Raft` and `raft` render to the
+same folder, because lowercasing is what avoids an APFS collision nobody asked for. That is
+a genuine collision, and it belongs to the reorganize plan to *report* rather than to
+rendering to paper over with a suffix nobody could predict. There is a test pinning the
+behaviour so it is not mistaken for a bug later.
+
+**2026-10-28 · Scope narrowed by the user: one machine, one person, no iPad**
+Standing instruction, 2026-10-28: *"this is for my own use… if LibreOffice is not present
+then we have to do something, but you don't need to worry about its handling… don't even
+think about the ipad thing. i am going to use this on this machine for now."*
+
+What this changes:
+
+- The missing-converter path is **recorded and not built**. The checklist item above says
+  what it would need. This is cheap to defer precisely because the existing behaviour is
+  already safe rather than merely tolerable — nothing is lost, and all that remains is
+  telling someone.
+- **iPadOS stops being a reason for any new design decision.** Where an argument for a
+  shape was "the iPad needs this", that argument is withdrawn; a shape now has to earn its
+  place on this machine or not at all.
+
+What it does **not** change, per §1.11: the quality bar. The audience clause already says a
+single user removes *requirements*, not *standards*. Nothing here is licence for a weaker
+test or a swallowed error.
+
+**One thing deliberately left alone, and flagged rather than decided.** `CLAUDE.md` §3 locks
+"`lecture-core` must compile for `aarch64-apple-ios`", and `scripts/gate.sh` enforces it.
+That check is **kept** for now: it costs one `cargo check` of a few seconds, and it is what
+keeps `lecture-core` free of platform dependencies — worth having on one machine too, since
+it is the same property that makes the domain testable without a filesystem or a converter.
+Removing it is easy; re-establishing it after months of drift is not. §3 is the user's own
+document, so this is raised rather than amended.
 
 **2026-10-28 · Three manifest saves per import, and why not one**
 The order of operations is the whole design of `Importer`:

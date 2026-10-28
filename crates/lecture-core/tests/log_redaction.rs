@@ -78,6 +78,10 @@ fn variants_carrying_free_text() -> Vec<CoreError> {
             backup: BackupOutcome::Saved(format!("{path}.bak")),
         },
         CoreError::NameAlreadyTaken { path },
+        CoreError::InvalidPathTemplate {
+            template: format!("{{course}}/{SENTINEL}/{{title}}"),
+            reason: "it is a test",
+        },
         CoreError::InvalidZoom {
             value: SENTINEL.to_owned(),
         },

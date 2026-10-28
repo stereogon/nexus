@@ -182,6 +182,15 @@ pub enum CoreError {
     #[error("the home directory could not be determined")]
     HomeDirectoryUnavailable,
 
+    /// A folder-naming pattern that cannot be used.
+    #[error("`{template}` cannot be used as a folder pattern: {reason}")]
+    InvalidPathTemplate {
+        /// The rejected pattern, reproduced so the message can show it back.
+        template: String,
+        /// Which rule it broke.
+        reason: &'static str,
+    },
+
     /// A file whose extension names no format Nexus can import.
     #[error("`{extension}` is not a format Nexus can import")]
     UnsupportedDocumentFormat {

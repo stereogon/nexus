@@ -17,9 +17,9 @@ use wording::{
     FILE_OPERATION_ABANDONED, FINGERPRINT_UNREADABLE, FORMAT_NOT_IMPORTABLE,
     HIGHLIGHT_DUPLICATE_ID, HIGHLIGHT_IMPOSSIBLE_PAGE, HIGHLIGHT_POSITION, HIGHLIGHT_UNREADABLE,
     HOME_UNAVAILABLE, LOCATION_OUTSIDE_VAULT, LOCATION_TOO_DEEP, LOCATION_UNUSABLE,
-    LOG_UNAVAILABLE, MANIFEST_INCONSISTENT, NAME_TAKEN, NAME_UNUSABLE, POSITION_UNAVAILABLE,
-    POSITION_UNREADABLE, READING_PLACE_LOST, STORED_FILE_UNREADABLE, UNRECOGNISED_SCHEMA_VERSION,
-    VAULT_UNOPENABLE,
+    LOG_UNAVAILABLE, MANIFEST_INCONSISTENT, NAME_TAKEN, NAME_UNUSABLE, PATH_TEMPLATE_UNUSABLE,
+    POSITION_UNAVAILABLE, POSITION_UNREADABLE, READING_PLACE_LOST, STORED_FILE_UNREADABLE,
+    UNRECOGNISED_SCHEMA_VERSION, VAULT_UNOPENABLE,
 };
 
 impl CoreError {
@@ -43,6 +43,7 @@ impl CoreError {
             Self::NameAlreadyTaken { .. } => "ERR_NAME_ALREADY_TAKEN",
             Self::LoggingUnavailable { .. } => "ERR_LOGGING_UNAVAILABLE",
             Self::HomeDirectoryUnavailable => "ERR_HOME_DIRECTORY_UNAVAILABLE",
+            Self::InvalidPathTemplate { .. } => "ERR_INVALID_PATH_TEMPLATE",
             Self::UnsupportedDocumentFormat { .. } => "ERR_UNSUPPORTED_DOCUMENT_FORMAT",
             Self::ConversionFailed { .. } => "ERR_CONVERSION_FAILED",
             Self::ConversionNotPossible { .. } => "ERR_CONVERSION_NOT_POSSIBLE",
@@ -108,6 +109,7 @@ impl CoreError {
             Self::Io { .. } => FILE_OPERATION_ABANDONED,
             Self::LoggingUnavailable { .. } => LOG_UNAVAILABLE,
             Self::HomeDirectoryUnavailable => HOME_UNAVAILABLE,
+            Self::InvalidPathTemplate { .. } => PATH_TEMPLATE_UNUSABLE,
             Self::UnsupportedDocumentFormat { .. } => FORMAT_NOT_IMPORTABLE,
             Self::ConversionFailed { .. } => CONVERSION_DID_NOT_PRODUCE_A_PDF,
             Self::ConversionNotPossible { .. } => CONVERSION_STUCK,
@@ -194,6 +196,12 @@ mod wording {
 
     pub(super) const HOME_UNAVAILABLE: &str = "Nexus could not find your home folder, so it cannot remember where you were \
          reading. Your vault, notes and highlights are unaffected.";
+
+    pub(super) const PATH_TEMPLATE_UNUSABLE: &str = "That folder pattern cannot be used, and nothing has been moved or renamed. A \
+         pattern is folder names separated by `/`, with `{course}`, `{module}`, `{week}`, \
+         `{title}` or any of your own facet names in braces — for example \
+         `{course}/{week}-{title}`. It has to end with a folder containing `{title}` so \
+         that every lecture gets one of its own.";
 
     pub(super) const FORMAT_NOT_IMPORTABLE: &str = "Nexus imports PDF, PowerPoint and Word documents, and that file is none of \
          them. Nothing was imported or changed, and the file is where you left it. \
