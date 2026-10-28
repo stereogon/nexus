@@ -20,8 +20,7 @@
 //! and for being non-empty before anything is moved into place.
 
 use std::ffi::OsString;
-use std::fs::{self, File};
-use std::io::Read;
+use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -30,6 +29,8 @@ use lecture_core::{
     ConversionRequest, CoreError, DocumentConverterPort, DocumentFormat, Label, RelativePath, Slug,
 };
 use lecture_fs::{AtomicFsStorage, state_base};
+
+use crate::output;
 
 /// Where a `.dmg` install of `LibreOffice` puts its binary.
 ///
@@ -40,9 +41,6 @@ pub const SOFFICE_BUNDLE_PATH: &str = "/Applications/LibreOffice.app/Contents/Ma
 
 /// The directory, under this device's own state, that isolated profiles are made in.
 const PROFILES_DIR: &str = "converters";
-
-/// How every PDF begins.
-const PDF_SIGNATURE: &[u8; 5] = b"%PDF-";
 
 /// What this converter is recorded as in `manifest.json`.
 ///
@@ -159,66 +157,21 @@ impl DocumentConverterPort for LibreOfficeConverter {
             source: error,
         })?;
 
-        let failed = |reason: &'static str| CoreError::ConversionFailed {
-            converter: self.label.as_str().to_owned(),
-            reason,
-        };
-
         if !status.success() {
-            return Err(failed("it exited with an error"));
+            return Err(CoreError::ConversionFailed {
+                converter: CONVERTER_LABEL.to_owned(),
+                reason: "it exited with an error",
+            });
         }
 
-        // Exit 0 is not evidence of a PDF. Checked before anything is moved into place,
-        // so a conversion that produced nothing cannot be recorded as Ready.
-        let written = self.storage.root().resolve(&produced)?;
-        let reason = inspect_output(written.as_path());
-
-        if let Some(reason) = reason {
-            // The intermediate file is this converter's own leavings, so it goes rather
-            // than sitting in a lecture folder looking like something.
-            drop(fs::remove_file(written.as_path()));
-
-            return Err(failed(reason));
-        }
-
-        self.storage.replace(&produced, request.document())
-    }
-}
-
-/// What is wrong with the file `LibreOffice` left behind, if anything.
-///
-/// Three failures that all look like success from the exit status alone. `LibreOffice`
-/// genuinely exits 0 having written nothing when it has no filter for a document, and a
-/// truncated or non-PDF output would otherwise be recorded as a `Ready` conversion and
-/// only break later, in the viewer, where the cause is no longer visible.
-///
-/// The magic bytes are read rather than trusted because the alternative is a lecture that
-/// imports cleanly and cannot be opened.
-fn inspect_output(path: &Path) -> Option<&'static str> {
-    // `symlink_metadata`, so a symlink is not accepted as the output: it would not be a
-    // file `LibreOffice` wrote, and the rest of this codebase refuses to follow one
-    // inside a vault.
-    let Ok(metadata) = fs::symlink_metadata(path) else {
-        return Some("it reported success but wrote no PDF");
-    };
-
-    if !metadata.is_file() {
-        return Some("it left something other than a file where the PDF should be");
-    }
-
-    if metadata.len() == 0 {
-        return Some("it wrote an empty file instead of a PDF");
-    }
-
-    // Five bytes, not the file. A converted deck can run to hundreds of megabytes and
-    // reading it to look at its first five would be absurd.
-    let mut signature = [0_u8; PDF_SIGNATURE.len()];
-    let read = File::open(path).and_then(|mut file| file.read_exact(&mut signature));
-
-    match read {
-        Err(_) => Some("it wrote a PDF that cannot be read back"),
-        Ok(()) if signature == *PDF_SIGNATURE => None,
-        Ok(()) => Some("it wrote a file that is not a PDF"),
+        // Exit 0 is not evidence of a PDF, so the output is checked before anything is
+        // moved into place.
+        output::commit(
+            &self.storage,
+            &produced,
+            request.document(),
+            CONVERTER_LABEL,
+        )
     }
 }
 

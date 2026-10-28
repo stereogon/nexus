@@ -12,7 +12,10 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-mod support;
+#[path = "support/stub.rs"]
+mod stub;
+#[path = "support/vault.rs"]
+mod vault;
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -24,7 +27,8 @@ use lecture_core::{
     ConversionRequest, CoreError, DocumentConverterPort, DocumentFormat, RelativePath,
 };
 
-use support::{Fixture, StubBehaviour, stub_soffice};
+use stub::{StubBehaviour, stub_soffice};
+use vault::Fixture;
 
 fn request() -> ConversionRequest {
     ConversionRequest::new(

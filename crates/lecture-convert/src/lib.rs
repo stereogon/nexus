@@ -20,6 +20,7 @@
 //! gets the same state machine without a single `#[cfg]`.
 
 mod libreoffice;
+mod output;
 
 pub use libreoffice::{
     CONVERTER_LABEL, LibreOfficeConverter, SOFFICE_BUNDLE_PATH, command_arguments,

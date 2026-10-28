@@ -1,19 +1,16 @@
-//! A vault and a stand-in `soffice`, so the adapter's real behaviour can be observed.
+//! A stand-in `soffice`, so the adapter's real behaviour can be observed without one.
 //!
-//! `LibreOffice` is not installed on the machine this was written on, and an adapter
-//! verified only by reading it is not verified. So the tests drive the **real**
-//! `Command`-spawning, exit-status and output-checking code against a stub binary that
-//! behaves the way `soffice` does, including the ways it misbehaves.
+//! `LibreOffice` may not be installed, and an adapter verified only by reading it is not
+//! verified. The stub lets the **production** `Command`-spawning, exit-status,
+//! output-checking and move-into-place code run start to finish. It is a test double at
+//! the process boundary, not a mock of the thing under test.
 //!
-//! This is a test double at the process boundary, not a mock of the thing under test: the
-//! code being exercised is the production path, start to finish.
+//! Included per test binary with `#[path]` rather than through a shared `mod.rs`, so a
+//! binary that needs only the vault fixture does not compile this and trip `dead_code`.
 
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
-
-use lecture_fs::{AtomicFsStorage, VaultRoot};
-use tempfile::TempDir;
 
 /// How the stub should behave when it is run.
 pub(crate) enum StubBehaviour {
@@ -69,39 +66,4 @@ stem="${{stem%.*}}"
         .expect("the stub should be executable");
 
     path
-}
-
-/// A vault holding one lecture whose original is waiting to be converted.
-pub(crate) struct Fixture {
-    pub(crate) vault: TempDir,
-    pub(crate) profiles: TempDir,
-}
-
-impl Fixture {
-    /// Creates `cs454/raft/source/original.pptx` inside a fresh vault.
-    pub(crate) fn new() -> Self {
-        let vault = TempDir::new().expect("a temporary vault");
-        let source = vault.path().join("cs454").join("raft").join("source");
-        fs::create_dir_all(&source).expect("the bundle layout");
-        fs::write(source.join("original.pptx"), b"a slide deck").expect("the original");
-
-        Self {
-            vault,
-            profiles: TempDir::new().expect("a temporary profiles directory"),
-        }
-    }
-
-    pub(crate) fn storage(&self) -> AtomicFsStorage {
-        AtomicFsStorage::new(VaultRoot::open(self.vault.path()).expect("the vault should open"))
-    }
-
-    /// The absolute path of something inside the lecture's `source/` directory.
-    pub(crate) fn in_source(&self, name: &str) -> PathBuf {
-        self.vault
-            .path()
-            .join("cs454")
-            .join("raft")
-            .join("source")
-            .join(name)
-    }
 }

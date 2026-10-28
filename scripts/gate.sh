@@ -17,10 +17,12 @@ set -uo pipefail
 
 readonly ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly IOS_TARGET="aarch64-apple-ios"
+readonly SOFFICE="/Applications/LibreOffice.app/Contents/MacOS/soffice"
 
 cd "$ROOT"
 
 failures=0
+skips=0
 summary=""
 
 # Runs a step, records the outcome, and keeps going.
@@ -37,6 +39,24 @@ run_step() {
         summary+="  FAIL  ${label}"$'\n'
         failures=$((failures + 1))
     fi
+}
+
+# Records a step that genuinely cannot run here, loudly rather than silently.
+#
+# Distinct from `require`, which is a failure. A test needing LibreOffice on a machine
+# without it is the one case CLAUDE.md §4 allows to be skipped -- genuinely
+# environment-dependent -- and the summary names it so the gap is visible rather than
+# looking like coverage. A step is only ever skipped for a reason stated here in the
+# script, never because it failed.
+skip_step() {
+    local label="$1"
+    local reason="$2"
+
+    echo ""
+    echo "=== $label ==="
+    echo "SKIPPED: $reason"
+    summary+="  skip  ${label} -- ${reason}"$'\n'
+    skips=$((skips + 1))
 }
 
 # Reports a prerequisite as a failure rather than skipping the step that needs it.
@@ -73,6 +93,17 @@ else
     require "npm run test" "npm ci"
 fi
 
+# The converter tests that need a real LibreOffice. CLAUDE.md §4 permits the #[ignore]
+# because the dependency is genuinely environmental; running them here when it is present
+# is what stops the ignore becoming a place work goes to be forgotten.
+if [ -x "$SOFFICE" ]; then
+    run_step "converter end-to-end (LibreOffice)" \
+        cargo test -p lecture-convert -- --ignored
+else
+    skip_step "converter end-to-end (LibreOffice)" \
+        "LibreOffice is not installed; brew install --cask libreoffice"
+fi
+
 run_step "line limits (§4)" ./scripts/check-line-limits.sh
 
 echo ""
@@ -83,6 +114,11 @@ echo "================================"
 if [ "$failures" -ne 0 ]; then
     echo "$failures step(s) failed. CLAUDE.md §5: the milestone is not done."
     exit 1
+fi
+
+if [ "$skips" -ne 0 ]; then
+    echo "All steps passed, with $skips skipped -- see above for what was not checked."
+    exit 0
 fi
 
 echo "All steps passed."
