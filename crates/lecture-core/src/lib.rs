@@ -27,8 +27,8 @@ pub use domain::{
     RENUMBERING_SUFFIX, RelativePath, Rename, RenumberBlock, RenumberPlan, SOURCE_DIR_NAME,
     SchemaProbe, SkipReason, SkippedDirectory, Slug, Source, Timestamp, VIEW_STATE_FILE_NAME,
     VIEW_STATE_SCHEMA_VERSION, VaultIndex, VaultScan, ViewState, Zoom, cache_dir_segment,
-    citation_link, plan_renumber, position_width, positioned_name, scan_vault, stem_of,
-    temporary_name,
+    citation_link, fingerprint, fingerprint_hex, plan_renumber, position_width, positioned_name,
+    scan_vault, stem_of, temporary_name,
 };
 pub use error::{BackupOutcome, CoreError};
 pub use ports::{Clock, DirectoryEntry, EntryKind, FixedClock, VaultDirectory};

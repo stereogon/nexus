@@ -20,7 +20,9 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use lecture_core::{CoreError, RelativePath, Slug, VIEW_STATE_FILE_NAME, ViewState};
+use lecture_core::{
+    CoreError, RelativePath, Slug, VIEW_STATE_FILE_NAME, ViewState, fingerprint_hex,
+};
 
 use crate::error::io_error;
 use crate::storage::AtomicFsStorage;
@@ -136,26 +138,15 @@ pub fn state_base(home: &Path) -> PathBuf {
 
 /// A stable, filesystem-safe folder name for a vault.
 ///
-/// FNV-1a (64-bit), rendered as hex. Chosen because the obvious alternative — encoding
-/// the vault's path into the folder name — hits the 255-byte filename limit for a deep
-/// vault and cannot represent every legal directory name as a path segment.
+/// A [`fingerprint_hex`] of the canonical path. The obvious alternative — encoding the
+/// path into the folder name — hits the 255-byte filename limit for a deep vault and
+/// cannot represent every legal directory name as a path segment.
 ///
-/// It needs to be **stable across runs and builds**, which rules out `DefaultHasher`:
-/// `std` explicitly does not guarantee its output between versions, so a Rust upgrade
-/// would silently orphan everyone's state. It does not need to be cryptographic — a
-/// collision would mean two vaults sharing a reading position, which is an annoyance and
-/// not a loss, and [`VAULT_PATH_FILE_NAME`] records which vault a folder was written for.
+/// A collision would mean two vaults sharing a reading position, which is an annoyance
+/// rather than a loss, and [`VAULT_PATH_FILE_NAME`] records which vault a folder was
+/// written for. See [`fingerprint_hex`] for why the hash is not `DefaultHasher`.
 fn vault_key(canonical: &Path) -> String {
-    const OFFSET_BASIS: u64 = 0xcbf2_9ce4_8422_2325;
-    const PRIME: u64 = 0x0000_0100_0000_01b3;
-
-    let mut hash = OFFSET_BASIS;
-    for byte in canonical.as_os_str().as_encoded_bytes() {
-        hash ^= u64::from(*byte);
-        hash = hash.wrapping_mul(PRIME);
-    }
-
-    format!("{hash:016x}")
+    fingerprint_hex(canonical.as_os_str().as_encoded_bytes())
 }
 
 /// `view-state.json`, inside this vault's state folder.

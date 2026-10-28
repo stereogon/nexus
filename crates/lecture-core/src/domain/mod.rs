@@ -11,6 +11,7 @@ mod bundle;
 mod citation;
 mod excerpt;
 mod facets;
+mod fingerprint;
 mod highlight_semantic;
 mod label;
 mod manifest;
@@ -36,6 +37,7 @@ pub use bundle::{ASSETS_DIR_NAME, BundleRef, LectureBundle, NOTES_FILE_NAME, SOU
 pub use citation::{CITATION_SCHEME, Citation, CitationIndex, citation_link};
 pub use excerpt::Excerpt;
 pub use facets::Facets;
+pub use fingerprint::{fingerprint, fingerprint_hex};
 pub use highlight_semantic::HighlightSemantic;
 pub use label::Label;
 pub use manifest::{CURRENT_SCHEMA_VERSION, MANIFEST_FILE_NAME, Manifest};

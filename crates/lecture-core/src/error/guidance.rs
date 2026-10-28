@@ -10,6 +10,7 @@
 //! backup outcome is carried in the variant rather than asserted here.
 
 use super::CoreError;
+use crate::domain::fingerprint_hex;
 
 impl CoreError {
     /// A stable identifier for this failure.
@@ -44,6 +45,27 @@ impl CoreError {
             Self::OrderKeysNotAscending { .. } => "ERR_ORDER_KEYS_NOT_ASCENDING",
             Self::OrderSpaceExhausted { .. } => "ERR_ORDER_SPACE_EXHAUSTED",
         }
+    }
+
+    /// A stable, non-reversible reference to this exact failure, for the log.
+    ///
+    /// `CLAUDE.md` §4 allows codes and timings into the log and nothing a person typed or
+    /// named. That rules out the `Display` text, which is the useful part for a developer
+    /// and is exactly the problem: it interpolates paths, and a path contains folder
+    /// names, which contain course and lecture titles.
+    ///
+    /// Dropping the detail entirely would leave a log that cannot tell "the same file
+    /// failed twice" from "two different files failed once", which is most of what a log
+    /// is read for. So the detail is replaced by a fingerprint of it: enough to
+    /// correlate, nothing to read, and not reversible.
+    ///
+    /// Changing an error's wording changes its digest, so digests correlate within a
+    /// build rather than across versions. That is the right trade against the
+    /// alternative, which is a redaction rule per variant that someone eventually forgets
+    /// to add for a new one.
+    #[must_use]
+    pub fn log_digest(&self) -> String {
+        fingerprint_hex(self.to_string().as_bytes())
     }
 
     /// One plain sentence telling the person what to do about it.

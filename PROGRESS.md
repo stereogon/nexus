@@ -98,8 +98,11 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
 - [x] Renumber **application** — `VaultRenumber` plans from real manifests and applies
       the renames through a non-clobbering `AtomicFsStorage::rename`, reporting where each
       lecture went so a reading position can follow it. 12 tests on real directories.
+- [x] The log's privacy contract — `CoreError::log_digest`, one shared `fingerprint`,
+      and a test asserting no error variant can put what someone named into a log line.
+- [ ] `tracing` to `~/Library/Logs/LectureVault/app.log` — **blocked on three
+      dependencies, asked**
 - [ ] `schemaVersion` migration machinery (lands with the first real migration in M2)
-      — **next substep**: `tracing` to `~/Library/Logs/LectureVault/app.log`
 - [ ] `.nexus/` rebuildable cache, including per-device view state
 - [x] `AnnotationStore` — the atomic load/save path for `annotations.json`. A missing
       file loads as an empty set (the normal state of a freshly imported lecture) while
@@ -318,6 +321,65 @@ which exists to share the backup behaviour.
 
 Stating it as one rule matters more than the individual cases, because the next stored
 file will be decided by it rather than by copying whichever neighbour was read first.
+
+**2026-10-28 · The log cannot carry an error's `Display` text, so it carries a digest**
+§4 allows codes and timings into the log and nothing a person typed or named. The obvious
+risk is not the one that bites: nobody is about to log `notes.md`. It is that an error's
+`Display` interpolates a **path**, and a path contains folder names, which contain course
+and lecture titles. `StoredFileUnreadable` is subtler still — its detail is a serde
+message, and those quote the offending JSON back.
+
+Dropping the detail entirely would leave a log that cannot tell "the same file failed
+twice" from "two different files failed once", which is most of what a log is read for. So
+`log_digest` replaces the detail with a fingerprint of it: enough to correlate, nothing to
+read, not reversible. Two different failures about the same path still digest differently,
+which a test pins, because "this folder is an alias" and "this folder escapes the vault"
+need different answers.
+
+The cost is that changing an error's wording changes its digest, so digests correlate
+within a build rather than across versions. Accepted, because the alternative is a
+redaction rule per variant that someone eventually forgets to add for a new one.
+
+**2026-10-28 · The type system was already doing most of this work**
+Writing the test surfaced something better than the test: `remediation` returns
+`&'static str`, so it **cannot** interpolate a path however carelessly a variant is added,
+and `code`'s match is exhaustive, so a new variant will not compile without both. The
+promise is enforced by the compiler, not by vigilance.
+
+Several variants also carry only numbers and `&'static str` — `InvalidCoordinate`,
+`RectOutOfBounds`, `InvalidManifest`, `InvalidAnnotation`, `SchemaVersionUnsupported`,
+`InvalidPageNumber` — and so cannot hold private text at all. The risk is concentrated in
+the `String` fields, which are mostly paths. The test is split along that line and says so.
+
+What the test honestly does **not** do is enumerate the variants: `CoreError` is
+`#[non_exhaustive]`, so an integration test cannot match on it exhaustively. It checks the
+two groups are sorted correctly and fails loudly if `remediation`'s signature is ever
+widened to `String`. Recorded rather than implied, so nobody reads it as a completeness
+guarantee.
+
+**2026-10-28 · A second test caught a second wrong assumption of mine**
+I asserted every variant has a distinct code. It failed: `InvalidCoordinate` and
+`RectOutOfBounds` deliberately share `ERR_INVALID_COORDINATE`, because a person does not
+care whether a rectangle's origin or its far edge was out of range — same meaning, same
+action. The implementation was right and my test was wrong, for the second time in two
+substeps.
+
+Replaced with what is actually wanted: codes are `ERR_`-prefixed and greppable, the
+geometry grouping is asserted explicitly so it cannot be undone by accident, and the two
+still digest differently so a log can separate them when it needs to.
+
+**2026-10-28 · One FNV, two callers**
+The vault key in `device_state` and the log digest need the same thing — a stable, short,
+non-reversible reference — so the algorithm moved to `domain/fingerprint.rs` and the
+duplicate went away before it existed. The `device_state` tests passing unchanged is what
+confirms the extracted version is byte-identical; a different hash there would silently
+orphan stored reading positions.
+
+**2026-10-28 · Blocked: `tracing` needs three dependencies, so it is asked for not added**
+§4 names `tracing` for structured logging, and none of `tracing`, `tracing-subscriber` or
+`tracing-appender` is in `Cargo.lock`. §2 makes fetching them a question, so the question
+is asked rather than answered. Everything that does not need them — the redaction rule,
+the digest, the fingerprint — is done and verified.
 
 **2026-10-28 · `AtomicFsStorage::rename` refuses rather than replaces**
 POSIX `rename` replaces an existing **file** silently, and an existing empty **directory**
