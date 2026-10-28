@@ -20,11 +20,12 @@ pub mod ports;
 pub use domain::{
     ANNOTATIONS_FILE_NAME, ANNOTATIONS_SCHEMA, ANNOTATIONS_SCHEMA_VERSION, ASSETS_DIR_NAME,
     Annotation, AnnotationId, AnnotationSet, BlockedFolder, BundleRef, CACHE_DIR_NAME,
-    CITATION_SCHEME, CURRENT_SCHEMA_VERSION, Citation, CitationIndex, Conversion, ConversionState,
-    DocumentFormat, Excerpt, Facets, Fingerprint, Fingerprinter, HighlightSemantic,
-    INDEX_FILE_NAME, INDEX_SCHEMA, INDEX_SCHEMA_VERSION, Label, LectureBundle, LectureView,
-    MANIFEST_FILE_NAME, MANIFEST_SCHEMA, MAX_BUNDLE_DEPTH, MAX_DEPTH, MAX_WITHIN_BUNDLE_DEPTH,
-    MAX_ZOOM, MIN_ZOOM, Manifest, NOTES_FILE_NAME, NormalizedRect, OLDEST_READABLE_SCHEMA_VERSION,
+    CITATION_SCHEME, CURRENT_SCHEMA_VERSION, Citation, CitationIndex, Conversion,
+    ConversionRequest, ConversionState, DOCUMENT_FILE_NAME, DocumentFormat, Excerpt, Facets,
+    Fingerprint, Fingerprinter, HighlightSemantic, INDEX_FILE_NAME, INDEX_SCHEMA,
+    INDEX_SCHEMA_VERSION, ImportPlan, Label, LectureBundle, LectureView, MANIFEST_FILE_NAME,
+    MANIFEST_SCHEMA, MAX_BUNDLE_DEPTH, MAX_DEPTH, MAX_WITHIN_BUNDLE_DEPTH, MAX_ZOOM, MIN_ZOOM,
+    Manifest, NOTES_FILE_NAME, NormalizedRect, OLDEST_READABLE_SCHEMA_VERSION, ORIGINAL_FILE_STEM,
     OrderKey, OrderedFolder, PageNumber, PageOffset, RENUMBERING_SUFFIX, RelativePath, Rename,
     RenumberBlock, RenumberPlan, SOURCE_DIR_NAME, SchemaProbe, SchemaRange, SkipReason,
     SkippedDirectory, Slug, Source, Timestamp, VIEW_STATE_FILE_NAME, VIEW_STATE_SCHEMA,
@@ -34,6 +35,6 @@ pub use domain::{
 };
 pub use error::{BackupOutcome, CoreError};
 pub use ports::{
-    Clock, ConversionRequest, DirectoryEntry, DocumentConverterPort, EntryKind, FixedClock,
-    VaultDirectory, select_converter,
+    Clock, DirectoryEntry, DocumentConverterPort, EntryKind, FixedClock, VaultDirectory,
+    select_converter,
 };

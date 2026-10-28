@@ -179,6 +179,10 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
       converter. See the entry below; the spec is amended beside the requirement.
 - [ ] Setup diagnostic — now **load-bearing**, not a courtesy: with no fallback, it is the
       only thing that makes a machine without `LibreOffice` recoverable
+- [x] `ImportPlan` — done 2026-10-28. The pure half of import: what goes where, whether a
+      conversion is owed, and what the manifest says. 10 tests, no filesystem.
+- [ ] The import adapter — copying the bytes, fingerprinting them while they stream past,
+      writing the manifest, running the converter. `ImportPlan` is what it executes.
 - [ ] `source.conversion` provenance written to `manifest.json`
 - [ ] Setup diagnostic UI (no hard dependency on any converter)
 - [ ] Vault sidebar, drag-and-drop import, facet grouping
@@ -377,6 +381,78 @@ probe file was placed where the line counter sees it but `cargo` does not — a 
 step under test. `check-line-limits.sh` exited 1 naming the file; the full gate reported
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
+
+**2026-10-28 · A PDF is stored once, not twice**
+`CLAUDE.md` §3 says the original is always kept so reconversion stays possible. Read
+literally that would mean a PDF import writes `source/original.pdf` *and* a byte-for-byte
+`source/document.pdf` — doubling the disk cost of every PDF lecture, and lecture PDFs run
+to hundreds of megabytes.
+
+For a PDF there is nothing to reconvert: it already *is* the render format. So the imported
+file becomes `source/document.pdf` and there is no separate original. The rule's purpose is
+served exactly, and its literal reading is not.
+
+Pleasingly, the domain already required this rather than merely allowing it: `Source::new`
+refuses a `NotRequired` conversion that has an original beside it, as an inconsistent
+manifest. `ImportPlan` does not enforce the rule, it satisfies one that was already there —
+which is the shape to want, because it means there is one place to change if the rule ever
+does.
+
+**2026-10-28 · One fingerprint at import, and the plan decides where it goes**
+Exactly one file exists when an import finishes copying, and which manifest field its
+fingerprint belongs in depends on the format. For a PDF it is the document. For anything
+else it is the **original**, because the document has not been made yet — and
+`with_fingerprints` refuses a fingerprint for a file that is not there, which is the one
+shape that could silently mislead a later "has this changed?" check.
+
+So `ImportPlan::source` takes a single fingerprint and decides for itself. A caller that
+had to know the rule would eventually get it wrong in one of the two branches, and the
+wrong branch is the quiet one.
+
+**2026-10-28 · The stored name is canonical, not the name the file arrived with**
+`original.pptx`, never `Lecture 7 - Raft (final) v2.pptx`. A bundle is then
+self-describing whatever a person called the download, and the name is one fewer thing
+that has to survive being a `Slug`. The name someone actually knows the lecture by belongs
+in the manifest's title, where it can hold spaces and punctuation and be renamed without
+touching a file.
+
+**2026-10-28 · `ConversionRequest` moved from `ports` to `domain`**
+It names two paths and a format and performs no I/O, so it was never a port's thing —
+and `ImportPlan` builds one, which would have made `domain` depend on `ports`.
+Dependencies point one way (§1.11), so the value moved to `domain` and the trait stayed
+in `ports`. The crate-root re-export is unchanged, so nothing outside `lecture-core`
+could tell.
+
+The rule this suggests, now written in `ports/mod.rs`: only *traits* live in `ports`; a
+value a port takes or returns lives in `domain`.
+
+**2026-10-28 · `DocumentConverterPort` stays a port with one implementation**
+With the fallback gone there is exactly one converter, which invites folding the trait
+away. It stays, because the number of implementations was never the reason for it:
+`lecture-core` must compile for `aarch64-apple-ios`, where **no** converter can run. A
+port whose implementation count is one on this platform and zero on the other is doing its
+job.
+
+**2026-10-28 · A real `.pptx` fixture, and what it does not prove**
+`tests/fixtures/minimal.pptx` is a genuine 14-part OOXML package, built by `LibreOffice`
+from `minimal.fodp` — flat ODF, a presentation as a single reviewable XML file. That route
+exists because a minimal *valid* `.pptx` needs a slide master, a layout and their
+relationships, while flat ODF needs one `<draw:page>`.
+
+It exercises the Impress import filter and the `pptx` → `pdf` path, which the `.docx`
+fixture does not, and `.pptx` is the format this app is most likely to be handed. But it
+was **written by `LibreOffice`**, so converting it shows `LibreOffice` reads its own output
+— not that it reads what `PowerPoint` writes. A deck saved by `PowerPoint` or Keynote would
+be strictly better evidence and needs either that software or a download. Said plainly in
+`tests/fixtures/README.md` rather than left for someone to assume.
+
+**2026-10-28 · A test that could not fail, replaced**
+The first depth test for `ImportPlan` accepted *either* an `Ok` or an `Err`, which made it
+pass whatever happened — and since `MAX_DEPTH` is 8 while a bundle at the cap needs 7, the
+`Err` arm was unreachable. It now asserts the property that actually matters, derived from
+the constants: a bundle at the deepest allowed level **can** still address its own
+`source/document.pdf`. That is the exact bug `limits.rs` records having had once, so it is
+worth a test that would catch it coming back.
 
 **2026-10-28 · The `osascript` fallback is removed — `LibreOffice` is the only converter**
 Built, tested against a stub, then tried against the real Keynote and Pages. **The user's

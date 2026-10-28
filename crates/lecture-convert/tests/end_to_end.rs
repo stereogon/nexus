@@ -48,24 +48,31 @@ fn soffice() -> PathBuf {
     path
 }
 
-/// A vault whose lecture holds the real `.docx` fixture as its original.
-fn fixture_with_a_real_document() -> Fixture {
+/// A vault whose lecture holds one of the real fixtures as its original.
+fn fixture_holding(name: &str, extension: &str) -> Fixture {
     let fixture = Fixture::new();
-    let docx = Path::new(env!("CARGO_MANIFEST_DIR"))
+    let document = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("tests")
         .join("fixtures")
-        .join("minimal.docx");
+        .join(name);
 
-    fs::copy(&docx, fixture.in_source("original.docx")).expect("the fixture should copy in");
-    fs::remove_file(fixture.in_source("original.pptx")).expect("the placeholder should go");
+    fs::copy(
+        &document,
+        fixture.in_source(&format!("original.{extension}")),
+    )
+    .expect("the fixture should copy in");
+
+    if extension != "pptx" {
+        fs::remove_file(fixture.in_source("original.pptx")).expect("the placeholder should go");
+    }
 
     fixture
 }
 
-fn request() -> ConversionRequest {
+fn request_for(extension: &str, format: DocumentFormat) -> ConversionRequest {
     ConversionRequest::new(
-        RelativePath::parse("cs454/raft/source/original.docx").unwrap(),
-        DocumentFormat::Docx,
+        RelativePath::parse(&format!("cs454/raft/source/original.{extension}")).unwrap(),
+        format,
         RelativePath::parse("cs454/raft/source/document.pdf").unwrap(),
     )
     .unwrap()
@@ -74,7 +81,7 @@ fn request() -> ConversionRequest {
 #[test]
 #[ignore = "requires LibreOffice; run with --ignored, or let scripts/gate.sh run it"]
 fn a_real_libreoffice_converts_a_real_document() {
-    let fixture = fixture_with_a_real_document();
+    let fixture = fixture_holding("minimal.docx", "docx");
 
     // `at` rather than `discover`, so the profile is made under a temporary directory and
     // this test never touches the real LibreOffice profile on this machine.
@@ -82,7 +89,7 @@ fn a_real_libreoffice_converts_a_real_document() {
         LibreOfficeConverter::at(soffice(), fixture.profiles.path(), fixture.storage()).unwrap();
 
     converter
-        .convert(&request())
+        .convert(&request_for("docx", DocumentFormat::Docx))
         .expect("LibreOffice should convert a valid .docx");
 
     let document = fixture.in_source("document.pdf");
@@ -114,7 +121,7 @@ fn a_real_conversion_drives_the_state_machine_to_ready() {
     // The adapter and the domain, together, which is the pairing the spec asks for: a
     // conversion that really happened produces provenance a synced bundle can describe
     // itself with.
-    let fixture = fixture_with_a_real_document();
+    let fixture = fixture_holding("minimal.docx", "docx");
     let converter =
         LibreOfficeConverter::at(soffice(), fixture.profiles.path(), fixture.storage()).unwrap();
 
@@ -122,7 +129,9 @@ fn a_real_conversion_drives_the_state_machine_to_ready() {
         .started(converter.label().clone())
         .unwrap();
 
-    converter.convert(&request()).expect("the conversion works");
+    converter
+        .convert(&request_for("docx", DocumentFormat::Docx))
+        .expect("the conversion works");
 
     let ready = conversion
         .succeeded(Timestamp::parse("2026-10-28T10:30:00Z").unwrap())
@@ -157,7 +166,7 @@ fn a_real_libreoffice_is_lenient_about_what_it_will_convert() {
         LibreOfficeConverter::at(soffice(), fixture.profiles.path(), fixture.storage()).unwrap();
 
     converter
-        .convert(&request())
+        .convert(&request_for("docx", DocumentFormat::Docx))
         .expect("LibreOffice falls back to a text filter rather than failing");
 
     // What must hold either way: a real PDF where the manifest says, and the original
@@ -171,6 +180,36 @@ fn a_real_libreoffice_is_lenient_about_what_it_will_convert() {
     assert!(
         !fixture.in_source("original.pdf").exists(),
         "and the intermediate must not be left behind"
+    );
+}
+
+#[test]
+#[ignore = "requires LibreOffice; run with --ignored, or let scripts/gate.sh run it"]
+fn a_real_libreoffice_converts_a_real_powerpoint_package() {
+    // A different import filter from the `.docx` case -- Impress rather than Writer -- and
+    // the format the app is most likely to be handed. See `tests/fixtures/README.md` for
+    // what this fixture does and does not establish: it is a real 14-part OOXML package,
+    // but `LibreOffice` wrote it, so this shows it reads its own output rather than that it
+    // reads what `PowerPoint` writes.
+    let fixture = fixture_holding("minimal.pptx", "pptx");
+    let converter =
+        LibreOfficeConverter::at(soffice(), fixture.profiles.path(), fixture.storage()).unwrap();
+
+    converter
+        .convert(&request_for("pptx", DocumentFormat::Pptx))
+        .expect("LibreOffice should convert a valid .pptx");
+
+    let bytes = fs::read(fixture.in_source("document.pdf")).expect("the PDF should be readable");
+
+    assert!(bytes.starts_with(b"%PDF-"));
+    assert!(
+        bytes.len() > 1_000,
+        "a slide with a line of text should be more than a header: {} bytes",
+        bytes.len()
+    );
+    assert!(
+        fixture.in_source("original.pptx").is_file(),
+        "the deck must survive so reconversion stays possible"
     );
 }
 

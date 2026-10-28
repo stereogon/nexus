@@ -26,66 +26,8 @@
 //! possible conversion failure, and a lecture that opened yesterday failing to open today
 //! because a tool was upgraded.
 
-use crate::domain::{DocumentFormat, Label, RelativePath};
+use crate::domain::{ConversionRequest, DocumentFormat, Label};
 use crate::error::CoreError;
-
-/// What a converter is being asked to do.
-///
-/// Both paths are relative to the vault, not absolute, because the domain does not know
-/// where the vault is — the adapter resolves them against the root it owns, which is also
-/// what keeps a request from naming somewhere outside the vault.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ConversionRequest {
-    original: RelativePath,
-    format: DocumentFormat,
-    document: RelativePath,
-}
-
-impl ConversionRequest {
-    /// Asks for `original` to be converted into a PDF at `document`.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`CoreError::UnsupportedDocumentFormat`] if `format` needs no conversion.
-    /// Asking to convert a PDF into a PDF is a caller's mistake, and the honest answer is
-    /// to refuse it rather than to copy the file and record a conversion that never
-    /// happened.
-    pub fn new(
-        original: RelativePath,
-        format: DocumentFormat,
-        document: RelativePath,
-    ) -> Result<Self, CoreError> {
-        if !format.needs_conversion() {
-            return Err(CoreError::UnsupportedDocumentFormat {
-                extension: format.extension().to_owned(),
-            });
-        }
-
-        Ok(Self {
-            original,
-            format,
-            document,
-        })
-    }
-
-    /// The file to read, relative to the vault.
-    #[must_use]
-    pub fn original(&self) -> &RelativePath {
-        &self.original
-    }
-
-    /// What that file is.
-    #[must_use]
-    pub fn format(&self) -> DocumentFormat {
-        self.format
-    }
-
-    /// Where the PDF must be written, relative to the vault.
-    #[must_use]
-    pub fn document(&self) -> &RelativePath {
-        &self.document
-    }
-}
 
 /// A capability that produces a PDF from some other document format.
 pub trait DocumentConverterPort {

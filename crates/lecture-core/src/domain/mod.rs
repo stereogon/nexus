@@ -10,11 +10,13 @@ mod annotation_set;
 mod bundle;
 mod citation;
 mod conversion;
+mod conversion_request;
 mod document_format;
 mod excerpt;
 mod facets;
 mod fingerprint;
 mod highlight_semantic;
+mod import;
 mod label;
 mod manifest;
 mod normalized_rect;
@@ -40,11 +42,13 @@ pub use annotation_set::{
 pub use bundle::{ASSETS_DIR_NAME, BundleRef, LectureBundle, NOTES_FILE_NAME, SOURCE_DIR_NAME};
 pub use citation::{CITATION_SCHEME, Citation, CitationIndex, citation_link};
 pub use conversion::{Conversion, ConversionState};
+pub use conversion_request::ConversionRequest;
 pub use document_format::DocumentFormat;
 pub use excerpt::Excerpt;
 pub use facets::Facets;
 pub use fingerprint::{Fingerprint, Fingerprinter, fingerprint, fingerprint_hex};
 pub use highlight_semantic::HighlightSemantic;
+pub use import::{DOCUMENT_FILE_NAME, ImportPlan, ORIGINAL_FILE_STEM};
 pub use label::Label;
 pub use manifest::{
     CURRENT_SCHEMA_VERSION, MANIFEST_FILE_NAME, MANIFEST_SCHEMA, Manifest,
