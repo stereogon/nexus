@@ -27,11 +27,17 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::domain::{BundleRef, PageNumber, RelativePath, Zoom};
+use crate::domain::{BundleRef, PageNumber, RelativePath, SchemaRange, Zoom};
 use crate::error::CoreError;
 
 /// The schema version of a stored view state.
 pub const VIEW_STATE_SCHEMA_VERSION: u32 = 1;
+
+/// The view-state versions this build reads, and the one it writes.
+///
+/// Exactly one. View state is per-device and costs a scroll position if lost, so an
+/// unrecognised version is discarded rather than migrated.
+pub const VIEW_STATE_SCHEMA: SchemaRange = SchemaRange::exact(VIEW_STATE_SCHEMA_VERSION);
 
 /// The file this device keeps its place in.
 pub const VIEW_STATE_FILE_NAME: &str = "view-state.json";
@@ -166,11 +172,7 @@ impl TryFrom<RawViewState> for ViewState {
 
     fn try_from(raw: RawViewState) -> Result<Self, Self::Error> {
         if raw.schema_version != VIEW_STATE_SCHEMA_VERSION {
-            return Err(CoreError::SchemaVersionUnsupported {
-                file: VIEW_STATE_FILE_NAME,
-                found: raw.schema_version,
-                supported: VIEW_STATE_SCHEMA_VERSION,
-            });
+            return Err(VIEW_STATE_SCHEMA.reject(VIEW_STATE_FILE_NAME, raw.schema_version));
         }
 
         Ok(Self {

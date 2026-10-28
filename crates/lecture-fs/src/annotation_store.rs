@@ -16,7 +16,7 @@
 //! one would be a second thing to disagree after a sync.
 
 use lecture_core::{
-    ANNOTATIONS_FILE_NAME, ANNOTATIONS_SCHEMA_VERSION, AnnotationSet, CoreError, RelativePath, Slug,
+    ANNOTATIONS_FILE_NAME, ANNOTATIONS_SCHEMA, AnnotationSet, CoreError, RelativePath, Slug,
 };
 
 use crate::storage::AtomicFsStorage;
@@ -58,7 +58,7 @@ impl AnnotationStore {
             &self.storage,
             &path,
             ANNOTATIONS_FILE_NAME,
-            ANNOTATIONS_SCHEMA_VERSION,
+            ANNOTATIONS_SCHEMA,
         ) {
             Ok(set) => Ok(set),
             Err(error) if versioned::is_missing(&error) => Ok(AnnotationSet::empty()),

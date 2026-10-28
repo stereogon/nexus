@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "title": "Raft Consensus",
   "sequence": "a0",
   "facets": {
@@ -16,7 +16,9 @@
   },
   "source": {
     "document": "source/document.pdf",
+    "documentFingerprint": "f3bd4bed30facb27",
     "original": "source/original.pptx",
+    "originalFingerprint": "d56fdfd66303cc7c",
     "conversion": {
       "state": "ready",
       "converter": "libreoffice",

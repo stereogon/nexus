@@ -1,124 +1,26 @@
-//! Where a bundle's document came from, and how it got to be a PDF.
+//! Where a bundle's document came from.
 //!
 //! PDF is the canonical render format, so every bundle has a `document` the viewer can
 //! open. Anything imported in another format is converted once, at import, and the
 //! original is kept beside it so reconversion stays possible — a conversion that turns
 //! out badly must never be the end of the road for the file someone imported.
 //!
-//! The provenance recorded here is what makes a synced bundle self-describing: an iPad
-//! that cannot run `LibreOffice` can still see that this PDF came from a `.pptx` by way
-//! of `LibreOffice` on 27 October, and can say so rather than guess.
+//! How that conversion went is [`Conversion`](crate::domain::Conversion), in its own
+//! module.
 
 use serde::{Deserialize, Serialize};
 
-use crate::domain::{Label, RelativePath, Timestamp};
+use crate::domain::{Conversion, ConversionState, Fingerprint, RelativePath};
 use crate::error::CoreError;
-
-/// How far a document has got through conversion.
-///
-/// `Queued → Converting → Ready | Failed` is the progression; `NotRequired` is the
-/// starting and final state of a document that arrived as a PDF already.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum ConversionState {
-    /// Imported as a PDF, so nothing was converted.
-    NotRequired,
-    /// Accepted, not yet started.
-    Queued,
-    /// Conversion is running.
-    Converting,
-    /// Converted successfully.
-    Ready,
-    /// Conversion failed. The original is still there.
-    Failed,
-}
-
-/// The provenance of a converted document.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields, rename_all = "camelCase")]
-pub struct Conversion {
-    /// How far conversion has got.
-    state: ConversionState,
-
-    /// Which converter produced the PDF, such as `libreoffice` or `keynote`.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    converter: Option<Label>,
-
-    /// When conversion finished.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    converted_at: Option<Timestamp>,
-}
-
-impl Conversion {
-    /// A document that arrived as a PDF and needs no conversion.
-    #[must_use]
-    pub fn not_required() -> Self {
-        Self {
-            state: ConversionState::NotRequired,
-            converter: None,
-            converted_at: None,
-        }
-    }
-
-    /// A conversion that has been accepted but not started.
-    #[must_use]
-    pub fn queued() -> Self {
-        Self {
-            state: ConversionState::Queued,
-            converter: None,
-            converted_at: None,
-        }
-    }
-
-    /// A conversion that finished successfully.
-    #[must_use]
-    pub fn ready(converter: Label, at: Timestamp) -> Self {
-        Self {
-            state: ConversionState::Ready,
-            converter: Some(converter),
-            converted_at: Some(at),
-        }
-    }
-
-    /// A conversion that failed.
-    ///
-    /// The failure reason is deliberately not stored here. It is machine-specific — a
-    /// missing `LibreOffice`, a permissions problem — so it belongs in the diagnostics log
-    /// rather than in a file that syncs to a device where it would be meaningless.
-    #[must_use]
-    pub fn failed(converter: Label) -> Self {
-        Self {
-            state: ConversionState::Failed,
-            converter: Some(converter),
-            converted_at: None,
-        }
-    }
-
-    /// How far conversion has got.
-    #[must_use]
-    pub fn state(&self) -> ConversionState {
-        self.state
-    }
-
-    /// Which converter was used, if any.
-    #[must_use]
-    pub fn converter(&self) -> Option<&Label> {
-        self.converter.as_ref()
-    }
-
-    /// When conversion finished, if it has.
-    #[must_use]
-    pub fn converted_at(&self) -> Option<&Timestamp> {
-        self.converted_at.as_ref()
-    }
-}
 
 /// The document a bundle renders, and what it was made from.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "RawSource", into = "RawSource")]
 pub struct Source {
     document: RelativePath,
+    document_fingerprint: Option<Fingerprint>,
     original: Option<RelativePath>,
+    original_fingerprint: Option<Fingerprint>,
     conversion: Conversion,
 }
 
@@ -132,7 +34,11 @@ pub struct Source {
 struct RawSource {
     document: RelativePath,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    document_fingerprint: Option<Fingerprint>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     original: Option<RelativePath>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    original_fingerprint: Option<Fingerprint>,
     conversion: Conversion,
 }
 
@@ -140,7 +46,8 @@ impl TryFrom<RawSource> for Source {
     type Error = CoreError;
 
     fn try_from(raw: RawSource) -> Result<Self, Self::Error> {
-        Self::new(raw.document, raw.original, raw.conversion)
+        Self::new(raw.document, raw.original, raw.conversion)?
+            .with_fingerprints(raw.document_fingerprint, raw.original_fingerprint)
     }
 }
 
@@ -148,7 +55,9 @@ impl From<Source> for RawSource {
     fn from(source: Source) -> Self {
         Self {
             document: source.document,
+            document_fingerprint: source.document_fingerprint,
             original: source.original,
+            original_fingerprint: source.original_fingerprint,
             conversion: source.conversion,
         }
     }
@@ -221,9 +130,40 @@ impl Source {
 
         Ok(Self {
             document,
+            document_fingerprint: None,
             original,
+            original_fingerprint: None,
             conversion,
         })
+    }
+
+    /// Records fingerprints of the files this source names.
+    ///
+    /// Separate from [`Source::new`] because the two happen at different times and in
+    /// different places: `new` states what a lecture *is*, which the domain settles on its
+    /// own, while a fingerprint requires reading a file, which only an adapter can do.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CoreError::InvalidManifest`] if a fingerprint is given for an original
+    /// that does not exist. A fingerprint with nothing to be a fingerprint *of* is the one
+    /// shape here that could silently mislead — a later "has the original changed?" check
+    /// would have something to compare and no file to compare it to.
+    pub fn with_fingerprints(
+        mut self,
+        document: Option<Fingerprint>,
+        original: Option<Fingerprint>,
+    ) -> Result<Self, CoreError> {
+        if original.is_some() && self.original.is_none() {
+            return Err(CoreError::InvalidManifest {
+                reason: "a fingerprint was recorded for an original file that is not there",
+            });
+        }
+
+        self.document_fingerprint = document;
+        self.original_fingerprint = original;
+
+        Ok(self)
     }
 
     /// The PDF the viewer renders, relative to the bundle.
@@ -236,6 +176,26 @@ impl Source {
     #[must_use]
     pub fn original(&self) -> Option<&RelativePath> {
         self.original.as_ref()
+    }
+
+    /// A fingerprint of the rendered PDF, if one has been taken.
+    ///
+    /// `None` means nothing has read the file yet, not that it is unchanged. The
+    /// distinction matters: annotation geometry is normalised against this document's
+    /// pages, so a PDF that changed underneath a set of highlights puts them in the wrong
+    /// place, and "we do not know" must not be reported as "it is fine".
+    #[must_use]
+    pub fn document_fingerprint(&self) -> Option<&Fingerprint> {
+        self.document_fingerprint.as_ref()
+    }
+
+    /// A fingerprint of the originally imported file, if one has been taken.
+    ///
+    /// What makes "the source changed, reconvert?" answerable without keeping a second
+    /// copy of the file to compare against.
+    #[must_use]
+    pub fn original_fingerprint(&self) -> Option<&Fingerprint> {
+        self.original_fingerprint.as_ref()
     }
 
     /// The conversion provenance.

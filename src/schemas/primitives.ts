@@ -71,6 +71,21 @@ export const AnnotationIdSchema = z
   .string()
   .regex(/^[A-Za-z0-9_-]{1,64}$/, "not a usable annotation identifier");
 
+/**
+ * A fingerprint of a file's contents, as written into `manifest.json`.
+ *
+ * Exactly sixteen lowercase hex characters: FNV-1a 64-bit, formatted with leading zeros
+ * so the same value is always the same string. Deliberately strict -- a loosely accepted
+ * fingerprint could compare unequal to the same file's real one and prompt someone to
+ * reconvert a document that never changed.
+ *
+ * Not cryptographic, and not for deciding whether to *trust* bytes. It answers "have
+ * these bytes changed?" and nothing more. See `fingerprint.rs`.
+ */
+export const FingerprintSchema = z
+  .string()
+  .regex(/^[0-9a-f]{16}$/, "not a well-formed content fingerprint");
+
 /** A page number, counting from 1 as a person reads it. */
 export const PageNumberSchema = z.int().min(1, "documents are numbered from 1");
 

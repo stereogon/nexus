@@ -9,14 +9,23 @@
 import * as z from "zod";
 
 import {
+  FingerprintSchema,
   LabelSchema,
   OrderKeySchema,
   RelativePathSchema,
   TimestampSchema,
 } from "./primitives.js";
 
-/** The version of `manifest.json` this build reads and writes. */
-export const MANIFEST_SCHEMA_VERSION = 1;
+/**
+ * The version of `manifest.json` this build reads and writes.
+ *
+ * A literal rather than a span, unlike `MANIFEST_SCHEMA` in Rust, and that asymmetry is
+ * deliberate: Rust owns the filesystem and upgrades a version 1 manifest as it reads it,
+ * so a manifest arriving over IPC has already been brought to the current version. The UI
+ * never reads a bundle off disk, so accepting an older one here would only hide a bug in
+ * the layer that should have upgraded it.
+ */
+export const MANIFEST_SCHEMA_VERSION = 2;
 
 /** Keys the facet map reserves for its named facets. */
 const RESERVED_FACET_KEYS = new Set(["course", "module", "week", "tags"]);
@@ -41,8 +50,19 @@ export const SourceSchema = z
   .strictObject({
     /** The PDF the viewer renders. Always a PDF -- it is the canonical render format. */
     document: RelativePathSchema,
+    /**
+     * A fingerprint of the rendered PDF, once something has read it.
+     *
+     * Absent means "not yet computed", which is not the same as "unchanged" -- annotation
+     * geometry is normalised against this document's pages, so a PDF that changed under a
+     * set of highlights puts them in the wrong place, and not knowing must never be shown
+     * as being fine.
+     */
+    documentFingerprint: FingerprintSchema.optional(),
     /** The file as imported, kept so reconversion stays possible. */
     original: RelativePathSchema.optional(),
+    /** A fingerprint of that imported file, which is what makes "reconvert?" answerable. */
+    originalFingerprint: FingerprintSchema.optional(),
     conversion: ConversionSchema,
   })
   .refine(
@@ -65,6 +85,11 @@ export const SourceSchema = z
   .refine(
     ({ document, original }) => original === undefined || original !== document,
     "the original and the rendered document cannot be the same file",
+  )
+  .refine(
+    ({ original, originalFingerprint }) =>
+      originalFingerprint === undefined || original !== undefined,
+    "a fingerprint was recorded for an original file that is not there",
   );
 
 export const FacetsSchema = z

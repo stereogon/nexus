@@ -117,8 +117,9 @@ fn variants_without_free_text() -> Vec<CoreError> {
         },
         CoreError::SchemaVersionUnsupported {
             file: "manifest.json",
-            found: 2,
-            supported: 1,
+            found: 9,
+            oldest_readable: 1,
+            current: 2,
         },
         CoreError::InvalidPageNumber { number: 0 },
         CoreError::HomeDirectoryUnavailable,

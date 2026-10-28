@@ -14,7 +14,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::domain::{Facets, Label, OrderKey, Source, Timestamp};
+use crate::domain::{Facets, Label, OrderKey, SchemaRange, Source, Timestamp};
 use crate::error::CoreError;
 
 /// The schema version this build reads and writes.
@@ -23,7 +23,21 @@ use crate::error::CoreError;
 /// hold an older copy. Because unknown fields are refused, **adding any field requires
 /// bumping this**, which is deliberate: the alternative is an older reader silently
 /// dropping a newer device's data on the next save.
-pub const CURRENT_SCHEMA_VERSION: u32 = 1;
+pub const CURRENT_SCHEMA_VERSION: u32 = 2;
+
+/// The oldest manifest version this build can still read.
+///
+/// Version 1 did not record source fingerprints. Nothing else about the format changed,
+/// so a version 1 manifest is read with both fingerprints absent — which is exactly what
+/// version 1 meant — and rewritten as version 2 by the next save. Reading never writes.
+///
+/// Refusing it instead would have been wrong in a way that is easy to miss: the file is
+/// not damaged, and the person holding it cannot do anything about the refusal.
+pub const OLDEST_READABLE_SCHEMA_VERSION: u32 = 1;
+
+/// The manifest versions this build reads, and the one it writes.
+pub const MANIFEST_SCHEMA: SchemaRange =
+    SchemaRange::new(OLDEST_READABLE_SCHEMA_VERSION, CURRENT_SCHEMA_VERSION);
 
 /// The file name a manifest is stored under, and the marker that a directory *is* a
 /// lecture bundle. The vault walk prunes at the first one it finds.
@@ -59,12 +73,8 @@ impl TryFrom<RawManifest> for Manifest {
     type Error = CoreError;
 
     fn try_from(raw: RawManifest) -> Result<Self, Self::Error> {
-        if raw.schema_version != CURRENT_SCHEMA_VERSION {
-            return Err(CoreError::SchemaVersionUnsupported {
-                file: MANIFEST_FILE_NAME,
-                found: raw.schema_version,
-                supported: CURRENT_SCHEMA_VERSION,
-            });
+        if !MANIFEST_SCHEMA.accepts(raw.schema_version) {
+            return Err(MANIFEST_SCHEMA.reject(MANIFEST_FILE_NAME, raw.schema_version));
         }
 
         raw.facets.validate()?;

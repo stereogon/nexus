@@ -26,7 +26,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::domain::{BundleRef, LectureBundle, Slug};
+use crate::domain::{BundleRef, LectureBundle, SchemaRange, Slug};
 use crate::error::CoreError;
 
 /// The directory Nexus keeps derived data in, inside the vault.
@@ -46,6 +46,13 @@ pub const INDEX_FILE_NAME: &str = "index.json";
 /// version this build does not know is simply discarded and rebuilt, so a mismatch
 /// costs one slow startup rather than needing a migration.
 pub const INDEX_SCHEMA_VERSION: u32 = 1;
+
+/// The index versions this build reads, and the one it writes.
+///
+/// Exactly one, and deliberately never more. `.nexus/index.json` is derived data: an
+/// unrecognised version is discarded and rebuilt from a vault scan, so there is nothing
+/// a migration could usefully preserve.
+pub const INDEX_SCHEMA: SchemaRange = SchemaRange::exact(INDEX_SCHEMA_VERSION);
 
 /// A cached listing of every lecture in the vault.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -68,11 +75,7 @@ impl TryFrom<RawVaultIndex> for VaultIndex {
 
     fn try_from(raw: RawVaultIndex) -> Result<Self, Self::Error> {
         if raw.schema_version != INDEX_SCHEMA_VERSION {
-            return Err(CoreError::SchemaVersionUnsupported {
-                file: INDEX_FILE_NAME,
-                found: raw.schema_version,
-                supported: INDEX_SCHEMA_VERSION,
-            });
+            return Err(INDEX_SCHEMA.reject(INDEX_FILE_NAME, raw.schema_version));
         }
 
         let mut index = Self {

@@ -60,8 +60,9 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
       time. 12 tests.
 - [x] `.bak` has its first real caller: a corrupt manifest is copied aside, a manifest
       from a newer schema version is left strictly untouched.
-- [ ] Source hashes in the manifest — **deliberately deferred to Milestone 2**, see the
-      decision log. Will bump `schemaVersion` to 2 and be the first real migration.
+- [x] Source fingerprints in the manifest — done 2026-10-28 as the first substep of
+      Milestone 2. `schemaVersion` is now 2, and version 1 is still read and upgraded.
+      Named a *fingerprint*, not a hash; spec amended. 24 new tests.
 - [x] `Annotation` + `AnnotationSet` — the three annotation kinds as a tagged enum,
       with `AnnotationId`, `PageNumber`, `Excerpt` and `HighlightSemantic`. Five
       departures from the spec's example, all amended there. 21 tests.
@@ -364,6 +365,98 @@ probe file was placed where the line counter sees it but `cargo` does not — a 
 step under test. `check-line-limits.sh` exited 1 naming the file; the full gate reported
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
+
+**2026-10-28 · FNV-1a for source fingerprints, not SHA-256 — and the trigger to change**
+The spec asked for "source hashes". They are implemented as **fingerprints**, FNV-1a
+64-bit, reusing the algorithm already in the crate for vault keys and log digests.
+
+The question a fingerprint answers here is "have these bytes changed?", in two places that
+both matter: *the original changed, offer to reconvert*, and *the PDF changed under a set
+of highlights, so their geometry may now point at the wrong thing* — the second is the
+need that killed `documentId` in the spec's amendment 4, so this closes that loop. Neither
+is adversarial. These are one person's files, on their own disk, in an app with no network,
+and a 64-bit miss is around 5e-20 — far below the rate at which the disk itself lies.
+
+So the alternative was weighed and declined: `sha2` buys collision resistance against a
+*crafted* file, and nobody is crafting one. §1.5 says a new dependency needs a reason.
+
+What matters more than the choice is the **trigger that reverses it**, recorded so it is
+not rediscovered: if a fingerprint is ever used to decide whether to *trust* bytes rather
+than notice they moved, it must become cryptographic, and that is a schema migration
+because every stored value would be wrong. The name is doing work here too — "hash"
+invites a reader to assume strength this does not have, which is why the fields are
+`documentFingerprint` and `originalFingerprint`, and why `fingerprint.rs` says so in its
+own module documentation rather than only here.
+
+**2026-10-28 · The fingerprinter streams, because the domain owns the algorithm**
+`Fingerprinter` takes chunks rather than a whole `&[u8]`. Lecture PDFs run to hundreds of
+megabytes, and reading one entirely into a `Vec` to hash it would make importing a large
+deck a memory spike for nothing. It also keeps the split right: the domain owns the
+algorithm, the adapter owns the reading, so this is a chunk sink and not something that
+takes a path.
+
+That chunk boundaries cannot change the result has its own test across five different
+splits, because it is the whole reason the streaming API is allowed to exist.
+
+**2026-10-28 · The algorithm is pinned to independently computed values**
+`the_algorithm_is_pinned_to_known_values` asserts four fingerprints against constants
+computed outside this code. A test comparing the code to its own output would only prove
+it agrees with itself, and the stakes are concrete: a fingerprint is written into
+`manifest.json` and a vault key *is* a directory name on disk, so arithmetic that quietly
+changed would orphan every stored value and make every "has this changed?" answer yes.
+
+The same check was applied to the fixture: both fingerprints in `fixtures/manifest.json`
+were verified against an independent FNV-1a implementation rather than accepted because
+`UPDATE_FIXTURES` produced them.
+
+**2026-10-28 · `SchemaRange`, and why the migration is allowed to be empty**
+`schemaVersion` reads as a *span* now rather than one number, via `SchemaRange`. A type
+rather than two `u32` parameters because the two are trivially swappable and swapping them
+silently inverts the check — a build would accept exactly the files it cannot read. It also
+owns `reject`, so the one place that describes an unreadable version is the one place that
+knows the range, and no call site can cross the fields.
+
+The v1→v2 migration itself is **structurally empty**, and that is stated rather than
+dressed up. Every field v2 added is optional, and absent is precisely what v1 meant by it,
+so a v1 manifest parsed as v2 already *is* the upgrade. What is real is the span check, and
+that **saving** performs the migration: `Into<RawManifest>` always writes the current
+version, so reading never writes and the file is rewritten the first time something
+legitimately changes it. Non-destructive by construction.
+
+A future version that *retypes* a field cannot work this way and will need a raw struct per
+version. Deliberately not built: there is nothing for it to do today, and a pipeline with
+one empty stage is harder to get right later than an honest special case is to replace.
+
+**2026-10-28 · The remediation for a bad schema version was a confident lie**
+It read "This lecture was saved by a newer version of Nexus." With a span, a refused
+version can also be *below* the oldest readable one — a hand-edited `"schemaVersion": 0` —
+and telling that person to update Nexus is wrong. Now: "Nexus does not recognise the
+version this file was saved with… If it was written by a newer version of Nexus, updating
+will open it normally." True in both directions, and it still leads with the promise that
+nothing was written.
+
+**2026-10-28 · TypeScript pins one version where Rust accepts a span**
+`MANIFEST_SCHEMA_VERSION` in `manifest.ts` is `z.literal(2)`, not a range, and the
+asymmetry is deliberate. Rust owns the filesystem and upgrades a v1 manifest as it reads
+it, so a manifest arriving over IPC has already been brought current. The UI never reads a
+bundle off disk, so accepting an older one there would only hide a bug in the layer that
+should have upgraded it.
+
+The Zod schema mirrors the orphan-fingerprint rule too. Both descriptions of the shape are
+duplicated rather than generated, on purpose: a rule that holds in only one of the two
+languages is exactly the bug the fixture pair exists to catch.
+
+**2026-10-28 · Two files split because the limit check caught them mid-change**
+`source.rs` hit 306 lines and `schemas.test.ts` 340, both while this substep was in
+progress — the line-limit check earning its place twice in one day, having been added that
+morning.
+
+Neither was cut at a line count. `domain/conversion.rs` came out of `domain/source.rs`
+because `Source` says what a bundle renders and what it was built from while `Conversion`
+says how far a conversion got and what did it; they change for different reasons.
+`tests/source.rs` came out of `tests/manifest.rs` for the same split. And
+`schemas.test.ts` became three files, one per subject, keeping only the cross-cutting
+wire-format contract in the original.
 
 **2026-10-28 · The first CI run failed, and the reason was better than the fix**
 The workflow's first run went red, and not because the YAML was wrong — it ran exactly as

@@ -169,14 +169,16 @@ pub enum CoreError {
     /// Reported *without* touching the file, which is the whole point of the variant:
     /// a newer file is not damaged, and rewriting or backing it up would destroy data
     /// an updated Nexus could read.
-    #[error("`{file}` is schema version {found}; this build reads version {supported}")]
+    #[error("`{file}` is schema version {found}; this build reads {oldest_readable} to {current}")]
     SchemaVersionUnsupported {
         /// Which file, so the message can name it.
         file: &'static str,
         /// The version the file claims.
         found: u32,
-        /// The version this build understands.
-        supported: u32,
+        /// The oldest version this build can still read and upgrade.
+        oldest_readable: u32,
+        /// The version this build writes.
+        current: u32,
     },
 
     /// A page number was zero, so it cannot be a one-based page.
@@ -203,6 +205,13 @@ pub enum CoreError {
     /// The home directory could not be determined, so per-device state has nowhere to go.
     #[error("the home directory could not be determined")]
     HomeDirectoryUnavailable,
+
+    /// A stored content fingerprint that is not a fingerprint.
+    #[error("a stored fingerprint is not usable")]
+    InvalidFingerprint {
+        /// What was found where a fingerprint belongs.
+        value: String,
+    },
 
     /// A zoom factor that is not finite or is outside the supported range.
     #[error("a zoom of {value} is not usable")]

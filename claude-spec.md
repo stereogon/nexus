@@ -86,7 +86,7 @@ Every lecture is stored as a self-contained directory bundle so it can be synced
 ```text
 StudyVault/
 └── 2026-10-distributed-consensus/
-    ├── manifest.json                  # Bundle metadata, taxonomy facets, sequence, source hashes
+    ├── manifest.json                  # Bundle metadata, taxonomy facets, sequence, source fingerprints
     ├── source/
     │   ├── original.pptx              # Original imported file (if converted)
     │   └── document.pdf               # Canonical PDF rendered by the viewer
@@ -181,6 +181,17 @@ This guarantees that highlights, area boxes, and on-slide text annotations rende
 >    was reconverted and every rectangle now points somewhere slightly wrong — needs a
 >    *hash*, not a random id, and that is the deferred `source` hash in `manifest.json`.
 >    Pairing them is Milestone 2's job.
+>
+>    *Implemented 2026-10-28, and named a **fingerprint** rather than a hash.* The
+>    fields are `source.documentFingerprint` and `source.originalFingerprint`, and the
+>    algorithm is FNV-1a 64-bit, not a cryptographic hash. The rename is the honest part:
+>    "hash" invites a reader to assume collision resistance against a crafted file, and
+>    this does not provide it. What it answers is "have these bytes changed?" about a
+>    person's own files on their own disk, in an app with no network, where a 64-bit miss
+>    is around 5e-20. If a fingerprint is ever used to decide whether to **trust** bytes,
+>    it must become cryptographic, and that is a schema migration because every stored
+>    value would be wrong. Reasoning in `PROGRESS.md`; raise it if you want `sha2` paid
+>    for now, while the format holds no real data.
 > 5. **`inkStrokes` removed.** Declared as `[]` and then never mentioned again in this
 >    spec — no feature, no shortcut, no test. An always-empty array reads as working
 >    while nothing fills it. Deferred until Apple Pencil is an actual requirement, which

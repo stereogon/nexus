@@ -7,8 +7,8 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use lecture_core::{
-    CURRENT_SCHEMA_VERSION, Conversion, ConversionState, CoreError, Facets, Label, Manifest,
-    OrderKey, RelativePath, Source, Timestamp,
+    CURRENT_SCHEMA_VERSION, Conversion, CoreError, Facets, Label, Manifest, OrderKey, RelativePath,
+    Source, Timestamp,
 };
 
 fn label(raw: &str) -> Label {
@@ -21,16 +21,6 @@ fn path(raw: &str) -> RelativePath {
 
 fn at(raw: &str) -> Timestamp {
     Timestamp::parse(raw).unwrap()
-}
-
-/// A bundle holding a PDF that was imported as a PDF.
-fn native_source() -> Source {
-    Source::new(
-        path("source/document.pdf"),
-        None,
-        Conversion::not_required(),
-    )
-    .unwrap()
 }
 
 /// A bundle holding a PDF converted from a `PowerPoint` deck.
@@ -63,105 +53,6 @@ fn describes_a_newly_imported_lecture() {
 }
 
 #[test]
-fn an_unconverted_pdf_keeps_no_separate_original() {
-    let source = native_source();
-
-    assert_eq!(source.conversion().state(), ConversionState::NotRequired);
-    assert!(source.original().is_none());
-    assert!(source.conversion().converter().is_none());
-}
-
-#[test]
-fn a_converted_document_records_its_whole_provenance() {
-    // The point of recording this: an iPad that cannot run LibreOffice can still say
-    // where this PDF came from instead of guessing.
-    let source = converted_source();
-
-    assert_eq!(source.conversion().state(), ConversionState::Ready);
-    assert_eq!(
-        source.original().unwrap().to_string(),
-        "source/original.pptx"
-    );
-    assert_eq!(
-        source.conversion().converter().unwrap().as_str(),
-        "libreoffice"
-    );
-    assert_eq!(
-        source.conversion().converted_at().unwrap().as_str(),
-        "2026-10-27T16:00:00Z"
-    );
-}
-
-#[test]
-fn a_converted_document_must_keep_its_original() {
-    // Otherwise a bad conversion is the end of the road for the imported file.
-    let err = Source::new(
-        path("source/document.pdf"),
-        None,
-        Conversion::ready(label("libreoffice"), at("2026-10-27T16:00:00Z")),
-    )
-    .unwrap_err();
-
-    assert!(matches!(err, CoreError::InvalidManifest { .. }));
-    assert_eq!(err.code(), "ERR_INVALID_MANIFEST");
-}
-
-#[test]
-fn a_failed_conversion_still_keeps_the_original() {
-    let kept = Source::new(
-        path("source/document.pdf"),
-        Some(path("source/original.pptx")),
-        Conversion::failed(label("libreoffice")),
-    )
-    .unwrap();
-    assert_eq!(kept.conversion().state(), ConversionState::Failed);
-
-    let discarded = Source::new(
-        path("source/document.pdf"),
-        None,
-        Conversion::failed(label("libreoffice")),
-    );
-    assert!(discarded.is_err(), "a failure must not lose the original");
-}
-
-#[test]
-fn an_unconverted_document_cannot_claim_a_converter() {
-    let err = Source::new(
-        path("source/document.pdf"),
-        Some(path("source/original.pptx")),
-        Conversion::not_required(),
-    )
-    .unwrap_err();
-
-    assert!(matches!(err, CoreError::InvalidManifest { .. }));
-}
-
-#[test]
-fn a_conversion_in_progress_cannot_have_finished() {
-    let queued = Source::new(
-        path("source/document.pdf"),
-        Some(path("source/original.pptx")),
-        Conversion::queued(),
-    )
-    .unwrap();
-    assert_eq!(queued.conversion().state(), ConversionState::Queued);
-    assert!(queued.conversion().converted_at().is_none());
-}
-
-#[test]
-fn the_original_and_the_rendered_document_cannot_be_the_same_file() {
-    // Converting a file onto itself would destroy the import.
-    let err = Source::new(
-        path("source/document.pdf"),
-        Some(path("source/document.pdf")),
-        Conversion::ready(label("libreoffice"), at("2026-10-27T16:00:00Z")),
-    )
-    .unwrap_err();
-
-    assert!(matches!(err, CoreError::InvalidManifest { .. }));
-}
-
-#[test]
 fn touching_moves_the_changed_time_forward() {
     let original = manifest();
     let later = original.touched(at("2026-10-28T09:30:00Z")).unwrap();
@@ -184,7 +75,7 @@ fn refuses_to_be_changed_before_it_was_created() {
 fn serialises_the_shape_the_schema_describes() {
     let json = serde_json::to_string_pretty(&manifest()).unwrap();
 
-    assert!(json.contains(r#""schemaVersion": 1"#), "got: {json}");
+    assert!(json.contains(r#""schemaVersion": 2"#), "got: {json}");
     assert!(json.contains(r#""title": "Distributed Consensus""#));
     assert!(json.contains(r#""sequence": "a0""#));
     assert!(json.contains(r#""document": "source/document.pdf""#));
@@ -222,17 +113,62 @@ fn saving_always_writes_the_current_schema_version() {
 }
 
 #[test]
-fn refuses_a_manifest_from_another_schema_version() {
-    let mut value = serde_json::to_value(manifest()).unwrap();
-    let object = value
-        .as_object_mut()
-        .expect("a manifest serialises to a JSON object");
-    object.insert("schemaVersion".to_owned(), serde_json::json!(2));
+fn refuses_a_manifest_from_a_version_outside_the_readable_span() {
+    // Both directions. A newer file is the common case; a version below the oldest
+    // readable one can only come from a hand-edit, and must be refused rather than
+    // guessed at.
+    for version in [CURRENT_SCHEMA_VERSION + 1, 0] {
+        let mut value = serde_json::to_value(manifest()).unwrap();
+        let object = value
+            .as_object_mut()
+            .expect("a manifest serialises to a JSON object");
+        object.insert("schemaVersion".to_owned(), serde_json::json!(version));
 
-    let err = serde_json::from_value::<Manifest>(value).unwrap_err();
+        let err = serde_json::from_value::<Manifest>(value).unwrap_err();
+        assert!(
+            err.to_string().contains("schema"),
+            "version {version} should be refused for its version, got: {err}"
+        );
+    }
+}
+
+/// The migration, stated as the behaviour rather than as a transformation.
+#[test]
+fn reads_a_version_1_manifest_and_upgrades_it_on_the_way_in() {
+    // Exactly what version 1 wrote: no fingerprint fields at all.
+    let v1 = r#"{"schemaVersion":1,"title":"Distributed Consensus","sequence":"a0","facets":{},"source":{"document":"source/document.pdf","original":"source/original.pptx","conversion":{"state":"ready","converter":"libreoffice","convertedAt":"2026-10-27T16:00:00Z"}},"createdAt":"2026-10-27T16:00:00Z","updatedAt":"2026-10-27T16:00:00Z"}"#;
+
+    let parsed: Manifest = serde_json::from_str(v1).expect("version 1 must still be readable");
+
+    // Absent is what version 1 meant, and it must not be confused with "unchanged".
+    assert_eq!(parsed.source().document_fingerprint(), None);
+    assert_eq!(parsed.source().original_fingerprint(), None);
+    assert_eq!(parsed.title().as_str(), "Distributed Consensus");
+
+    // Reading did not rewrite anything; saving is what migrates the file.
+    let written = serde_json::to_value(&parsed).unwrap();
+    assert_eq!(
+        written
+            .get("schemaVersion")
+            .and_then(serde_json::Value::as_u64),
+        Some(u64::from(CURRENT_SCHEMA_VERSION)),
+        "a value in memory is current by construction, so writing it completes the upgrade"
+    );
+}
+
+#[test]
+fn a_version_1_manifest_is_not_rewritten_with_fields_it_never_had() {
+    // The upgrade must not invent a fingerprint. An empty string or a zero would both be
+    // indistinguishable from a real one later, and would make "has this changed?" answer
+    // confidently and wrongly.
+    let v1 = r#"{"schemaVersion":1,"title":"T","sequence":"a0","source":{"document":"source/document.pdf","conversion":{"state":"notRequired"}},"createdAt":"2026-10-27T16:00:00Z","updatedAt":"2026-10-27T16:00:00Z"}"#;
+
+    let parsed: Manifest = serde_json::from_str(v1).unwrap();
+    let written = serde_json::to_string(&parsed).unwrap();
+
     assert!(
-        err.to_string().contains("schema"),
-        "the version mismatch should be the reported cause, got: {err}"
+        !written.contains("Fingerprint"),
+        "no fingerprint field should be written when none is known: {written}"
     );
 }
 

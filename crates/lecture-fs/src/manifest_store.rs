@@ -8,7 +8,7 @@
 //! shared with `annotations.json`.
 
 use lecture_core::{
-    CURRENT_SCHEMA_VERSION, Clock, CoreError, MANIFEST_FILE_NAME, Manifest, RelativePath, Slug,
+    Clock, CoreError, MANIFEST_FILE_NAME, MANIFEST_SCHEMA, Manifest, RelativePath, Slug,
 };
 
 use crate::storage::AtomicFsStorage;
@@ -42,12 +42,7 @@ impl<C: Clock> ManifestStore<C> {
     /// here — unlike `annotations.json`, whose absence is normal.
     pub fn load(&self, bundle: &RelativePath) -> Result<Manifest, CoreError> {
         let path = manifest_path(bundle)?;
-        versioned::load(
-            &self.storage,
-            &path,
-            MANIFEST_FILE_NAME,
-            CURRENT_SCHEMA_VERSION,
-        )
+        versioned::load(&self.storage, &path, MANIFEST_FILE_NAME, MANIFEST_SCHEMA)
     }
 
     /// Saves `manifest` into the bundle at `bundle`, stamping it as changed now.

@@ -35,8 +35,9 @@ use std::fs;
 use std::path::PathBuf;
 
 use lecture_core::{
-    Annotation, AnnotationId, AnnotationSet, Conversion, Excerpt, Facets, HighlightSemantic, Label,
-    Manifest, NormalizedRect, OrderKey, PageNumber, RelativePath, Source, Timestamp,
+    Annotation, AnnotationId, AnnotationSet, Conversion, Excerpt, Facets, Fingerprint,
+    HighlightSemantic, Label, Manifest, NormalizedRect, OrderKey, PageNumber, RelativePath, Source,
+    Timestamp,
 };
 
 const CREATED: &str = "2026-10-27T16:00:00Z";
@@ -98,6 +99,14 @@ fn canonical_manifest() -> Manifest {
         RelativePath::parse("source/document.pdf").unwrap(),
         Some(RelativePath::parse("source/original.pptx").unwrap()),
         Conversion::ready(label("libreoffice"), at(CREATED)),
+    )
+    .unwrap()
+    // Both fingerprints are set so the fixture exercises the fields rather than only
+    // declaring them. A fixture that leaves an optional field out proves nothing about
+    // whether the other language can read it.
+    .with_fingerprints(
+        Some(Fingerprint::of(b"the rendered pdf")),
+        Some(Fingerprint::of(b"the imported pptx")),
     )
     .unwrap();
 

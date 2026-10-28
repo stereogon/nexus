@@ -26,7 +26,7 @@ use std::collections::BTreeSet;
 
 use serde::{Deserialize, Serialize};
 
-use crate::domain::{Annotation, AnnotationId, PageNumber};
+use crate::domain::{Annotation, AnnotationId, PageNumber, SchemaRange};
 use crate::error::CoreError;
 
 /// The schema version this build reads and writes for `annotations.json`.
@@ -35,6 +35,13 @@ use crate::error::CoreError;
 /// different reasons, and coupling them would force a migration of one whenever the
 /// other grew a field.
 pub const ANNOTATIONS_SCHEMA_VERSION: u32 = 1;
+
+/// The annotation-set versions this build reads, and the one it writes.
+///
+/// Exactly one, because there has never been another. Its own range rather than the
+/// manifest's: the two files change for different reasons, and coupling them would force
+/// a migration of one whenever the other grew a field.
+pub const ANNOTATIONS_SCHEMA: SchemaRange = SchemaRange::exact(ANNOTATIONS_SCHEMA_VERSION);
 
 /// The file name annotations are stored under.
 pub const ANNOTATIONS_FILE_NAME: &str = "annotations.json";
@@ -59,12 +66,8 @@ impl TryFrom<RawAnnotationSet> for AnnotationSet {
     type Error = CoreError;
 
     fn try_from(raw: RawAnnotationSet) -> Result<Self, Self::Error> {
-        if raw.schema_version != ANNOTATIONS_SCHEMA_VERSION {
-            return Err(CoreError::SchemaVersionUnsupported {
-                file: ANNOTATIONS_FILE_NAME,
-                found: raw.schema_version,
-                supported: ANNOTATIONS_SCHEMA_VERSION,
-            });
+        if !ANNOTATIONS_SCHEMA.accepts(raw.schema_version) {
+            return Err(ANNOTATIONS_SCHEMA.reject(ANNOTATIONS_FILE_NAME, raw.schema_version));
         }
 
         let mut set = Self {

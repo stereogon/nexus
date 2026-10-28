@@ -17,7 +17,7 @@
 
 use std::io;
 
-use lecture_core::{BackupOutcome, CoreError, RelativePath, SchemaProbe};
+use lecture_core::{BackupOutcome, CoreError, RelativePath, SchemaProbe, SchemaRange};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 
@@ -27,8 +27,8 @@ use crate::storage::AtomicFsStorage;
 ///
 /// # Errors
 ///
-/// Returns [`CoreError::SchemaVersionUnsupported`] for a file from another schema
-/// version, having touched nothing at all. For a corrupt or inconsistent one, copies it
+/// Returns [`CoreError::SchemaVersionUnsupported`] for a file from a schema version
+/// outside `schema`, having touched nothing at all. For a corrupt or inconsistent one, copies it
 /// aside and returns [`CoreError::StoredFileUnreadable`] carrying the parser's message
 /// and where the copy went. Also returns [`CoreError::Io`] if the file cannot be read,
 /// and a containment error if `path` does not resolve safely inside the vault.
@@ -36,7 +36,7 @@ pub(crate) fn load<T: DeserializeOwned>(
     storage: &AtomicFsStorage,
     path: &RelativePath,
     file: &'static str,
-    supported: u32,
+    schema: SchemaRange,
 ) -> Result<T, CoreError> {
     let bytes = storage.read(path)?;
 
@@ -46,14 +46,22 @@ pub(crate) fn load<T: DeserializeOwned>(
     let probe: SchemaProbe =
         serde_json::from_slice(&bytes).map_err(|e| preserve(storage, path, file, &e))?;
 
-    if probe.schema_version != supported {
+    if !schema.accepts(probe.schema_version) {
         // Deliberately before any backup and without writing anything.
-        return Err(CoreError::SchemaVersionUnsupported {
-            file,
-            found: probe.schema_version,
-            supported,
-        });
+        return Err(schema.reject(file, probe.schema_version));
     }
+
+    // An older but readable version needs no transformation here. Every field version 1
+    // lacked is optional, and absent is precisely what version 1 meant by it, so the
+    // value parsed below is already the upgrade. The file itself is rewritten at the
+    // current version by the next save, because `Into<Raw…>` always writes the current
+    // version -- so reading never writes, and the migration lands the first time
+    // something legitimately changes the file.
+    //
+    // A future version that *retypes* a field cannot work this way and will need its own
+    // raw struct per version. Deliberately not built yet: there is nothing for it to do,
+    // and a pipeline with one empty stage is harder to get right later than an honest
+    // special case is to replace.
 
     serde_json::from_slice::<T>(&bytes).map_err(|e| preserve(storage, path, file, &e))
 }

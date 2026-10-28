@@ -13,11 +13,12 @@ use super::CoreError;
 use crate::domain::fingerprint_hex;
 
 use wording::{
-    ALIAS_REFUSED, DATE_UNREADABLE, FILE_OPERATION_ABANDONED, HIGHLIGHT_DUPLICATE_ID,
-    HIGHLIGHT_IMPOSSIBLE_PAGE, HIGHLIGHT_POSITION, HIGHLIGHT_UNREADABLE, HOME_UNAVAILABLE,
-    LOCATION_OUTSIDE_VAULT, LOCATION_TOO_DEEP, LOCATION_UNUSABLE, LOG_UNAVAILABLE,
-    MANIFEST_INCONSISTENT, NAME_TAKEN, NAME_UNUSABLE, POSITION_UNAVAILABLE, POSITION_UNREADABLE,
-    READING_PLACE_LOST, SAVED_BY_A_NEWER_BUILD, STORED_FILE_UNREADABLE, VAULT_UNOPENABLE,
+    ALIAS_REFUSED, DATE_UNREADABLE, FILE_OPERATION_ABANDONED, FINGERPRINT_UNREADABLE,
+    HIGHLIGHT_DUPLICATE_ID, HIGHLIGHT_IMPOSSIBLE_PAGE, HIGHLIGHT_POSITION, HIGHLIGHT_UNREADABLE,
+    HOME_UNAVAILABLE, LOCATION_OUTSIDE_VAULT, LOCATION_TOO_DEEP, LOCATION_UNUSABLE,
+    LOG_UNAVAILABLE, MANIFEST_INCONSISTENT, NAME_TAKEN, NAME_UNUSABLE, POSITION_UNAVAILABLE,
+    POSITION_UNREADABLE, READING_PLACE_LOST, STORED_FILE_UNREADABLE, UNRECOGNISED_SCHEMA_VERSION,
+    VAULT_UNOPENABLE,
 };
 
 impl CoreError {
@@ -41,6 +42,7 @@ impl CoreError {
             Self::NameAlreadyTaken { .. } => "ERR_NAME_ALREADY_TAKEN",
             Self::LoggingUnavailable { .. } => "ERR_LOGGING_UNAVAILABLE",
             Self::HomeDirectoryUnavailable => "ERR_HOME_DIRECTORY_UNAVAILABLE",
+            Self::InvalidFingerprint { .. } => "ERR_INVALID_FINGERPRINT",
             Self::InvalidZoom { .. } => "ERR_INVALID_ZOOM",
             Self::InvalidPageOffset { .. } => "ERR_INVALID_PAGE_OFFSET",
             Self::InvalidTimestamp { .. } => "ERR_INVALID_TIMESTAMP",
@@ -90,7 +92,7 @@ impl CoreError {
             Self::InvalidPageNumber { .. } => HIGHLIGHT_IMPOSSIBLE_PAGE,
             Self::InvalidManifest { .. } => MANIFEST_INCONSISTENT,
             Self::StoredFileUnreadable { .. } => STORED_FILE_UNREADABLE,
-            Self::SchemaVersionUnsupported { .. } => SAVED_BY_A_NEWER_BUILD,
+            Self::SchemaVersionUnsupported { .. } => UNRECOGNISED_SCHEMA_VERSION,
             Self::InvalidTimestamp { .. } => DATE_UNREADABLE,
             Self::InvalidName { .. } => NAME_UNUSABLE,
             Self::NameAlreadyTaken { .. } => NAME_TAKEN,
@@ -102,6 +104,7 @@ impl CoreError {
             Self::Io { .. } => FILE_OPERATION_ABANDONED,
             Self::LoggingUnavailable { .. } => LOG_UNAVAILABLE,
             Self::HomeDirectoryUnavailable => HOME_UNAVAILABLE,
+            Self::InvalidFingerprint { .. } => FINGERPRINT_UNREADABLE,
             Self::InvalidZoom { .. } | Self::InvalidPageOffset { .. } => READING_PLACE_LOST,
             Self::InvalidOrderKey { .. } => POSITION_UNREADABLE,
             Self::OrderKeysNotAscending { .. } | Self::OrderSpaceExhausted { .. } => {
@@ -143,8 +146,9 @@ mod wording {
          message above says what went wrong and where a copy of the file was kept, which \
          you can open in any text editor.";
 
-    pub(super) const SAVED_BY_A_NEWER_BUILD: &str = "This lecture was saved by a newer version of Nexus. It has been left completely \
-         untouched rather than rewritten, so updating Nexus will open it normally.";
+    pub(super) const UNRECOGNISED_SCHEMA_VERSION: &str = "Nexus does not recognise the version this file was saved with, so it has been \
+         left completely untouched rather than rewritten. If it was written by a newer \
+         version of Nexus, updating will open it normally.";
 
     pub(super) const DATE_UNREADABLE: &str = "A date recorded in this lecture could not be read, so it has been left out \
          rather than shown wrongly. Nothing was deleted. If you edited a file by hand, a \
@@ -183,6 +187,10 @@ mod wording {
 
     pub(super) const HOME_UNAVAILABLE: &str = "Nexus could not find your home folder, so it cannot remember where you were \
          reading. Your vault, notes and highlights are unaffected.";
+
+    pub(super) const FINGERPRINT_UNREADABLE: &str = "Nexus could not read the record of which document this lecture was built from, \
+         so it cannot tell whether that document has changed. Your notes, highlights and \
+         the document itself are untouched. Re-importing the lecture will record it again.";
 
     pub(super) const READING_PLACE_LOST: &str = "The app could not restore where you were last reading, so this lecture opened \
          at the first page. Your notes and highlights are untouched.";
