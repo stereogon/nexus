@@ -89,7 +89,10 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
       must fully reconstruct" is now an executable test, and a byte-identical one.
 - [x] `ViewState` domain types — `Zoom`, `PageOffset`, `LectureView`, and pruning against
       a scan so the file cannot grow forever. 15 tests.
-- [ ] `DeviceStateStore` in `lecture-fs`, writing to `~/Library/Application Support/Nexus/`
+- [x] `DeviceStateStore` in `lecture-fs` — `~/Library/Application Support/Nexus/vaults/
+      <key>/view-state.json`, with the base directory injectable so no test touches the
+      real `~/Library`. 10 tests, one asserting the vault is left completely untouched.
+- [ ] `sequence` vs `01-` folder-prefix renumbering (tail-first so no rename collides)
       — **next substep**
 - [ ] `.nexus/` rebuildable cache, including per-device view state
 - [x] `AnnotationStore` — the atomic load/save path for `annotations.json`. A missing
@@ -269,6 +272,46 @@ There was `child(Slug)` for one segment and no way to append a path to a path �
 "bundle directory plus `source/document.pdf`" had no expression. Its absence is probably
 why the depth caps were conflated: nothing ever composed two paths, so the sum never
 came up.
+
+**2026-10-28 · The state location is a parameter, and not only so tests can run**
+`DeviceStateStore::under` takes the base directory; `for_vault` is the thin wrapper that
+supplies the real one from `HOME`. The immediate payoff is that no test in this repository
+writes to the real `~/Library` — checked by listing it afterwards, not assumed — but the
+shape is right independently: where a device keeps its things is a platform decision, and
+hardcoding one path would have made the store untestable *and* wrong for the iPad.
+
+`state_base` is a pure function of the home directory, so the real layout is asserted
+without a real `HOME` and without creating anything. That leaves exactly one untested
+line, the `HOME` lookup, which is named here rather than left to look like coverage.
+
+**2026-10-28 · Hand-rolled FNV-1a for the vault key, and why not `DefaultHasher`**
+The folder name for a vault is FNV-1a (64-bit) over its canonical path, in hex. Six lines
+of a named, standard algorithm, which §1.11 prefers over a bespoke mechanism.
+
+`DefaultHasher` was the obvious reach and is **wrong** here: `std` explicitly does not
+guarantee its output across versions, so a Rust upgrade would silently orphan every
+stored reading position. That is the kind of bug that surfaces months later as "the app
+forgot where I was" with no apparent cause.
+
+Encoding the path into the folder name instead was the other candidate. It fails on the
+255-byte filename limit for a deep vault, and not every legal directory name can be a
+path segment. The hash does not need to be cryptographic: a collision means two vaults
+sharing a reading position, which is an annoyance rather than a loss.
+
+What the hash costs is legibility — `vaults/8f3a1c0b5e2d7946/` tells a human nothing. So
+`vault-path.txt` is written beside the state naming the vault it belongs to. It is
+**never read back**; it exists for whoever opens that folder in six months. Writing it is
+best-effort and ignores its own failure, because a breadcrumb must never be the reason a
+reading position is lost.
+
+**2026-10-28 · The discard-not-backup rule now has three sites and one reason**
+`manifest.json` and `annotations.json` are copied to `.bak` when damaged. `index.json` and
+`view-state.json` are discarded. The rule is the same in all four: **back up what holds
+work, discard what does not** — and both discarding sites deliberately bypass `versioned`,
+which exists to share the backup behaviour.
+
+Stating it as one rule matters more than the individual cases, because the next stored
+file will be decided by it rather than by copying whichever neighbour was read first.
 
 **2026-10-28 · Per-device state lives outside the vault (decided with the user)**
 Asked, because two readings produced materially different work and the consequence is

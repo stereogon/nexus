@@ -29,6 +29,7 @@ impl CoreError {
             Self::DuplicateAnnotationId { .. } => "ERR_DUPLICATE_ANNOTATION_ID",
             Self::InvalidName { .. } => "ERR_INVALID_NAME",
             Self::InvalidPageNumber { .. } => "ERR_INVALID_PAGE_NUMBER",
+            Self::HomeDirectoryUnavailable => "ERR_HOME_DIRECTORY_UNAVAILABLE",
             Self::InvalidZoom { .. } => "ERR_INVALID_ZOOM",
             Self::InvalidPageOffset { .. } => "ERR_INVALID_PAGE_OFFSET",
             Self::InvalidTimestamp { .. } => "ERR_INVALID_TIMESTAMP",
@@ -120,6 +121,10 @@ impl CoreError {
                 "A highlight recorded a page that cannot exist, so it was left out \
                  rather than drawn on the wrong page. Nothing was deleted, and a backup \
                  is beside the file."
+            }
+            Self::HomeDirectoryUnavailable => {
+                "Nexus could not find your home folder, so it cannot remember where you \
+                 were reading. Your vault, notes and highlights are unaffected."
             }
             Self::InvalidZoom { .. } | Self::InvalidPageOffset { .. } => {
                 "The app could not restore where you were last reading, so this lecture \

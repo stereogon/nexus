@@ -18,6 +18,7 @@ mod staging;
 
 pub mod annotation_store;
 pub mod clock;
+pub mod device_state;
 mod index_store;
 mod manifest_store;
 mod versioned;
@@ -28,6 +29,7 @@ pub mod vault_root;
 
 pub use annotation_store::AnnotationStore;
 pub use clock::SystemClock;
+pub use device_state::{APP_SUPPORT_DIR_NAME, DeviceStateStore, VAULTS_DIR_NAME, state_base};
 pub use index_store::VaultIndexStore;
 pub use manifest_store::ManifestStore;
 pub use storage::AtomicFsStorage;

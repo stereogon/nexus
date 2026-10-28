@@ -186,6 +186,10 @@ pub enum CoreError {
         number: u32,
     },
 
+    /// The home directory could not be determined, so per-device state has nowhere to go.
+    #[error("the home directory could not be determined")]
+    HomeDirectoryUnavailable,
+
     /// A zoom factor that is not finite or is outside the supported range.
     #[error("a zoom of {value} is not usable")]
     InvalidZoom {
