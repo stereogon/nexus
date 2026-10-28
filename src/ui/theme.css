@@ -1,5 +1,12 @@
 /*
- * The design tokens from CLAUDE.md section 3, in one place.
+ * The design tokens, taken from the project's design canvas.
+ *
+ *   https://claude.ai/artifact/5gEifzabFanVAW9R1Wp3i2   ("Nexus UI")
+ *
+ * That canvas is the approved design and this file must follow it. Every value below is
+ * read off its "Colour and type system" artboard rather than chosen here. An earlier
+ * version of this file invented a cool pink-grey neutral ramp; the real one is a warm
+ * stone, and the difference was visible everywhere.
  *
  * # No network, ever
  *
@@ -9,27 +16,35 @@
  *
  * # Fonts are a known gap
  *
- * Section 3 names Bricolage Grotesque, IBM Plex Sans, Literata and IBM Plex Mono, all OFL
- * and all to be bundled as local woff2. They are not bundled yet, because fetching them
- * needs network access and that is the user's decision to make. Until then this falls back
- * to the system stack, which is legible and ships with the machine. Recorded in
- * PROGRESS.md rather than left to be noticed.
+ * The canvas specifies Bricolage Grotesque 800 for the wordmark, IBM Plex Sans for the
+ * interface, Literata for notes prose and IBM Plex Mono for paths, keys and code. All four
+ * are OFL and all four are to be bundled as local woff2. None is bundled yet, because
+ * fetching them needs network access and that is the user's decision. Until then this falls
+ * back to the system stack, so the type is the one part of the interface that does not yet
+ * match the canvas.
  */
 
 :root {
+  /* Brand. The accent is for app chrome; `accent-ink` is sized for white and is what
+     page-drawn annotation chrome uses, since the document surface stays light. */
   --accent: #be1a72;
   --accent-ink: #9e477b;
+  --on-accent: #ffffff;
 
-  --bed: #f4f1f3;
+  /* Neutrals — light. A warm stone ramp, not a grey one. */
+  --chrome: #f4f2ee;
   --surface: #ffffff;
-  --surface-sunken: #ebe7ea;
-  --border: #d9d2d7;
-  --text: #1c1419;
-  --text-dim: #6c5f66;
+  --viewer-bed: #eae7e1;
+  --border: #e2dfd8;
+  --border-strong: #d8d4cb;
+  --text: #1b1a18;
+  --text-secondary: #5e5a53;
+  --text-meta: #6e6a62;
 
-  /* The four highlight semantics. Each also carries a letter glyph, so the set never
-     relies on hue alone -- section 3. */
+  /* The four highlight semantics. Each also carries a letter glyph (K/D/E/Q), so the set
+     never relies on hue alone. */
   --semantic-key: #f2b63c;
+  --semantic-key-ink: #3a2a05;
   --semantic-definition: #2ea37a;
   --semantic-exam: #e0523c;
   --semantic-question: #2e86de;
@@ -44,12 +59,18 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --accent: #ff72c6;
-    --bed: #161215;
-    --surface: #211c20;
-    --surface-sunken: #191417;
-    --border: #352d32;
-    --text: #f2ecef;
-    --text-dim: #a2949c;
+    /* On the dark accent the label is dark, not white -- the canvas is explicit about it,
+       and white on #FF72C6 would not carry the contrast. */
+    --on-accent: #2b0918;
+
+    --chrome: #16161a;
+    --surface: #1a1a1f;
+    --viewer-bed: #0f0f12;
+    --border: #2c2c34;
+    --border-strong: #3a3a44;
+    --text: #eceae7;
+    --text-secondary: #a8a49d;
+    --text-meta: #8f8b84;
   }
 }
 
@@ -59,7 +80,7 @@
 
 body {
   margin: 0;
-  background: var(--bed);
+  background: var(--chrome);
   color: var(--text);
   font-family: var(--font-ui);
   font-size: 14px;
@@ -86,26 +107,37 @@ body {
 
 h1 {
   font-size: 22px;
-  letter-spacing: -0.01em;
+  font-weight: 800;
+  letter-spacing: -0.015em;
   margin: 0 0 4px;
 }
 
+h2 {
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-meta);
+  margin: 26px 0 10px;
+}
+
 .subtitle {
-  color: var(--text-dim);
+  color: var(--text-secondary);
   margin: 0 0 20px;
 }
 
-.path {
+.path,
+.code {
   font-family: var(--font-mono);
   font-size: 12px;
-  color: var(--text-dim);
+  color: var(--text-meta);
   word-break: break-all;
 }
 
 button {
   font: inherit;
-  font-weight: 550;
-  color: #fff;
+  font-weight: 500;
+  color: var(--on-accent);
   background: var(--accent);
   border: none;
   border-radius: var(--radius);
@@ -123,6 +155,12 @@ button:focus-visible {
   outline-offset: 2px;
 }
 
+.reset {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -138,22 +176,22 @@ button:focus-visible {
 }
 
 .lecture-title {
-  font-weight: 550;
+  font-weight: 500;
 }
 
 .facets {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 6px;
+  margin-top: 8px;
 }
 
 .facet {
   font-size: 12px;
-  color: var(--text-dim);
-  background: var(--surface-sunken);
+  color: var(--text-secondary);
+  background: var(--viewer-bed);
   border-radius: 6px;
-  padding: 1px 7px;
+  padding: 1px 8px;
 }
 
 .badge {
@@ -161,8 +199,8 @@ button:focus-visible {
   font-size: 12px;
   border-radius: 6px;
   padding: 1px 8px;
-  border: 1px solid var(--border);
-  color: var(--text-dim);
+  border: 1px solid var(--border-strong);
+  color: var(--text-meta);
   white-space: nowrap;
 }
 
@@ -179,7 +217,8 @@ button:focus-visible {
 
 .badge[data-state="queued"],
 .badge[data-state="converting"] {
-  color: var(--semantic-key);
+  color: var(--semantic-key-ink);
+  background: var(--semantic-key);
   border-color: var(--semantic-key);
 }
 
@@ -191,26 +230,6 @@ button:focus-visible {
   border-left: 3px solid var(--semantic-exam);
 }
 
-.code {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--text-dim);
-}
-
-h2 {
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-dim);
-  margin: 24px 0 10px;
-}
-
 .empty {
-  color: var(--text-dim);
-}
-
-.reset {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+  color: var(--text-secondary);
 }

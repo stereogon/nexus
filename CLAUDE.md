@@ -220,6 +220,16 @@ and explain why. Rationale is recorded in `PROGRESS.md`.
   requires no link rewriting. This property has a test.
 
 **Design**
+- **The approved design lives on a canvas, and it is authoritative:**
+  <https://claude.ai/artifact/5gEifzabFanVAW9R1Wp3i2> ("Nexus UI"). Four artboards —
+  *Workspace Light*, *Workspace Dark*, *Colour and type system*, *Required states*.
+  **Read it before building or changing any UI**, and take colours, type and states from
+  it rather than inventing them. The values repeated below are a convenience copy; where
+  this file and the canvas disagree, **the canvas wins** and this file is what needs
+  fixing. *(Added 2026-10-28, after a first pass at the UI invented a cool pink-grey
+  neutral ramp where the canvas specifies a warm stone one. Extracted token values are in
+  `PROGRESS.md` so the palette is usable without opening the canvas, but they are a copy
+  and not the source.)*
 - **No dark-mode PDF inversion.** Inverting a document corrupts photographs, colour-coded
   diagrams and scans. The page stays light in both themes, on a dark bed.
 - The document surface is light in both themes, so page-drawn annotation chrome uses

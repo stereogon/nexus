@@ -6,6 +6,14 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 
+# The Dock shows a dev run's binary file name, because `cargo run` launches the bare
+# executable with no `Info.plist` to read a display name from. Naming the target "Nexus"
+# makes `npm run app` show "Nexus" rather than "nexus-app", and matches `mainBinaryName`
+# in `tauri.conf.json`, which is what the bundled `.app` uses.
+[[bin]]
+name = "Nexus"
+path = "src/main.rs"
+
 [lints]
 workspace = true
 

@@ -402,6 +402,94 @@ step under test. `check-line-limits.sh` exited 1 naming the file; the full gate 
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
 
+**2026-10-28 · The approved design is a canvas, and it is now recorded as authoritative**
+The user pointed at the design canvas and said: *"you have to reference this artboard when
+creating the UI ... this is what i approved of. so add the artboard in the document or
+somewhere so that you don't forget to reference it in the future."*
+
+<https://claude.ai/artifact/5gEifzabFanVAW9R1Wp3i2> — "Nexus UI", four artboards:
+*Workspace — Light*, *Workspace — Dark*, *Colour and type system*, *Required states*.
+
+Recorded in three places, because one of them is not enough: `CLAUDE.md` §3 (read fully at
+the start of every session), this file (with the values below, so the palette is usable
+without opening the canvas), and a memory, so it survives a session that never opens this
+repo. `CLAUDE.md` now says explicitly that **where it and the canvas disagree, the canvas
+wins** — a convenience copy that silently outranks its source is worse than no copy.
+
+**What this caught.** The first `theme.css` invented a cool pink-grey neutral ramp. The
+canvas specifies a **warm stone** one, and the difference showed everywhere. Taken from the
+"Colour and type system" artboard:
+
+| Role | Light | Dark |
+|---|---|---|
+| App chrome | `#F4F2EE` | `#16161A` |
+| Page / editor | `#FFFFFF` | `#1A1A1F` |
+| Viewer bed | `#EAE7E1` | `#0F0F12` |
+| Border | `#E2DFD8` | `#2C2C34` |
+| Border, strong | `#D8D4CB` | `#3A3A44` |
+| Meta text | `#6E6A62` | `#8F8B84` |
+| Secondary text | `#5E5A53` | `#A8A49D` |
+| Primary text | `#1B1A18` | `#ECEAE7` |
+| Accent | `#BE1A72` | `#FF72C6` |
+| On the accent | `#FFFFFF` | `#2B0918` |
+
+`accentInk` `#9E477B` is unchanged in both, because the document surface stays light in both
+themes. Highlight semantics confirmed: key `#F2B63C` (ink `#3A2A05`), definition `#2EA37A`,
+exam `#E0523C`, question `#2E86DE`.
+
+**Two details worth keeping** that only the canvas says. On the dark accent the label is
+**dark** (`#2B0918`), not white — white on `#FF72C6` does not carry. And there are two
+distinct border weights, which the first pass collapsed into one.
+
+**Type, per the canvas:** Bricolage Grotesque 800 for the wordmark, 700 for note headings;
+Literata 400 for notes prose; IBM Plex Sans 400/500 for sidebar rows, toolbars and section
+labels; IBM Plex Mono for paths, cite links and error codes. **None of the four is bundled**,
+so type is the one part of the interface that still does not match the canvas. All four are
+OFL; fetching them is network access and therefore the user's decision.
+
+**The canvas holds no app icon or logo.** Its brand is the wordmark "Nexus" set in Bricolage
+800 — 15 inline SVGs across the artboards, all interface icons, and no mark. Said plainly
+because the user believed one had been added; there was nothing of theirs to use, and
+inventing one silently would have been the worse answer.
+
+**2026-10-28 · The app icon was wrong in three separate ways**
+The user: *"the dock logo is very immature, no where close to being professional and
+modern. all my apple dock logos are having the same size and have rounded corners, this one
+for some reason is completely sqare or rectangle and very big than them. also i see the app
+name in dock shown as nexus-app instead of just Nexus."*
+
+All three were real, and they had different causes.
+
+**1. Geometry — the actual bug.** A macOS app icon is not a full-bleed square. Apple's grid
+insets the artwork inside a squircle and leaves the rest transparent, and the Dock sizes
+every icon against that convention, so a 1024×1024 square of colour renders *larger* than
+every neighbour and with hard corners. Now: canvas 1024, artwork 824 (a 100px transparent
+margin each side), and corners drawn as a superellipse `|dx/a|^5 + |dy/a|^5 = 1` rather than
+a circular-arc radius — the continuous curve is why real macOS icons look softer at the same
+nominal radius.
+
+**2. The mark.** Flat accent `#BE1A72` with a white letter, both from the canvas; no
+gradient, because the system has none anywhere. The letter is the wordmark's initial, which
+is the faithful thing to put in an icon when the brand is a wordmark. It is drawn
+geometrically and is **not** Bricolage Grotesque — recorded as a known difference rather
+than passed off as the real thing. The first render centred the diagonal on the stem
+centres, which left a visible wedge in two corners; it is now aligned to the letter's outer
+edges.
+
+**3. The Dock name needed two fixes, not one.** `mainBinaryName` in `tauri.conf.json`
+handles the bundled `.app`. But a dev run launches the bare executable, which has no
+`Info.plist`, so macOS falls back to the file name — which is why it said `nexus-app`. The
+binary target is now named `Nexus` in `crates/src-tauri/Cargo.toml`.
+
+`scripts/make-icon.py` is committed rather than run once and discarded, because the geometry
+is the whole point and is not guessable from the result. It writes PNG chunks directly (no
+image library is available, and fetching one needs network), antialiasing by exact
+horizontal span coverage with vertical supersampling. It needed
+`from __future__ import annotations` to run on this machine's Python 3.9.
+
+`npx tauri icon` also emits Android, iOS and Windows assets; those were deleted. This is a
+macOS-only app and dozens of unused binaries in the tree are noise, not optionality.
+
 **2026-10-28 · The UI is wired to the backend, and the app runs**
 The user asked to start wiring the UI, and asked whether finishing Milestone 2 first would
 be better. It was not, and the reason was worth stating: **nothing in this project had ever
