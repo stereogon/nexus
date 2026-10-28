@@ -1,0 +1,62 @@
+{
+  "preview": {
+    "blocked": [
+      {
+        "directory": "first",
+        "reason": "sharedTarget",
+        "remediation": "Two lectures would end up in the same folder, because their titles differ only in capitalisation or punctuation. Rename one of them, then reorganize again.",
+        "wanted": "cs454/week-5-paxos"
+      },
+      {
+        "directory": "second",
+        "reason": "sharedTarget",
+        "remediation": "Two lectures would end up in the same folder, because their titles differ only in capitalisation or punctuation. Rename one of them, then reorganize again.",
+        "wanted": "cs454/week-5-paxos"
+      },
+      {
+        "directory": "unfiled",
+        "reason": "nameUnusable",
+        "remediation": "This lecture's title contains nothing usable as a folder name. Give it a title with at least one letter or number, then reorganize again.",
+        "wanted": null
+      }
+    ],
+    "moves": [
+      {
+        "from": "raft",
+        "to": "cs454/week-3-raft-consensus"
+      }
+    ],
+    "unchanged": 0
+  },
+  "result": {
+    "blocked": [
+      {
+        "directory": "first",
+        "reason": "sharedTarget",
+        "remediation": "Two lectures would end up in the same folder, because their titles differ only in capitalisation or punctuation. Rename one of them, then reorganize again.",
+        "wanted": "cs454/week-5-paxos"
+      },
+      {
+        "directory": "second",
+        "reason": "sharedTarget",
+        "remediation": "Two lectures would end up in the same folder, because their titles differ only in capitalisation or punctuation. Rename one of them, then reorganize again.",
+        "wanted": "cs454/week-5-paxos"
+      },
+      {
+        "directory": "unfiled",
+        "reason": "nameUnusable",
+        "remediation": "This lecture's title contains nothing usable as a folder name. Give it a title with at least one letter or number, then reorganize again.",
+        "wanted": null
+      }
+    ],
+    "complete": true,
+    "moved": [
+      {
+        "from": "raft",
+        "to": "cs454/week-3-raft-consensus"
+      }
+    ],
+    "positionsLost": null,
+    "stoppedBy": null
+  }
+}

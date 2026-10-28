@@ -203,10 +203,14 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
       built and tested.
 - [x] Import path templates — done 2026-10-28. `PathTemplate`: `{course}/{week}-{title}`
       says where a lecture's folder goes, rendered from its facets. 14 tests, pure.
-- [x] "Reorganize Vault" with dry-run preview — done 2026-10-28. `plan_reorganize` touches
-      nothing and returns the moves, in an order where each target is free when its turn
-      comes, plus every lecture it could not file and why. 13 tests. **The apply side is not
-      written** — the plan is the deliverable and the loop that walks it is the next step.
+- [~] "Reorganize Vault" with dry-run preview — the planner, the apply loop and both IPC
+      commands are done 2026-10-28. `plan_reorganize` touches nothing and returns the moves,
+      in an order where each target is free when its turn comes, plus every lecture it could
+      not file and why; `VaultReorganize` walks that plan; `preview_reorganize` and
+      `apply_reorganize` expose both halves, with the contract pinned on both sides by
+      `fixtures/reorganize.json`. A remembered reading position follows its lecture.
+      **Nothing in the window calls either command yet** — there is no button, no preview
+      panel and no confirm step, and that is the next substep.
 - [x] Tests: mock converter transitions (12, in `lecture-fs`) and **real** `.pptx`/`.docx`
       fixtures (5 end-to-end against `LibreOffice` 26.8.1.1, `#[ignore]`-gated and run by
       `scripts/gate.sh` whenever `soffice` is present). The note that LibreOffice was absent
@@ -403,6 +407,59 @@ probe file was placed where the line counter sees it but `cargo` does not — a 
 step under test. `check-line-limits.sh` exited 1 naming the file; the full gate reported
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
+
+**2026-10-28 · The reorganize commands cross the IPC boundary, and a comment that was not true**
+`preview_reorganize` and `apply_reorganize` are Tauri commands now, so the apply loop added
+earlier today has a caller outside its own tests. Two commands rather than one with a flag,
+because §3 asks for a dry run and "what would this do" is a different question from "do it".
+
+**`apply` plans again rather than taking the preview back.** A plan is a snapshot of a
+vault, and accepting one from the frontend would mean moving real folders according to a
+view that may be stale — which the frontend could not be the one to notice, because
+staleness is a fact about the disk. So `apply` re-plans and reports what it actually did. If
+a facet changed in between, re-planning is the more correct answer rather than a compromise.
+
+**The gap the previous entry named is closed.** `ReorganizeOutcome.moved` had no production
+consumer; `apply_under` now walks it and relocates each remembered `LectureView`, so the
+page someone had open follows their lecture to its new folder.
+
+**A comment claimed two things, and both were false.** `follow_the_moves` said that failing
+to rewrite the device state is "deliberately not fatal to the reorganize" and that it "is
+logged by the layer below". The caller propagated it with `?` — fatal — and
+`DeviceStateStore::save` returns its error without logging it. Together those meant the
+command could move someone's folders and then answer with an error saying the reorganize
+failed, sending them to look for lectures where the UI still showed them. That is worse than
+an unreported failure: it is a reported one that is untrue, and §1.1 is about exactly this.
+
+Fixed in the direction the comment described rather than by correcting the comment to match
+the code, because the comment was right about what should happen. `follow_the_moves` returns
+`Option<CommandError>` now, so the signature has no `?` to reach for and the fatal version
+cannot be written by accident. The failure is logged where it happens
+(`logging::failure`) and reported as `ReorganizeResult::positions_lost` — deliberately
+separate from `stopped_by`, which is about folders. The folders moved either way; what is
+lost here is the page each lecture was open at, and §1.4 counts that as work even though it
+is only a scroll offset.
+
+Its test forces the failure with a plain file where the state directory belongs, which is a
+real failing write rather than an injected one, and asserts all three things at once: the
+moves are reported, the folders really did move, and the loss comes back with a sentence to
+show for it. In that fixture `_held` became `held`, because the underscore said "never
+read" and a test now reads it. Clippy caught that, which is the name doing its job.
+
+**The TypeScript half of the contract pair did not exist.** `reorganize_contract.rs` names
+`src/ipc/reorganize.test.ts` in its own doc comment as the side that holds the Zod schemas
+to the fixture — and that file had never been written, so the pinned fixture was being
+checked against nothing. It exists now: 11 tests, including the `stopped_by` / `stoppedBy`
+drift the pair was written for, a block reason Rust might add without adding it here, and
+the two shapes the fixture cannot carry because pinning them would mean making a real
+operation fail. Each negative case was then run through a throwaway probe to confirm it is
+rejected on the path it claims rather than vacuously; all four reported the expected Zod
+path, and the probe was deleted.
+
+**Still not wired to the window.** Nothing in the UI calls either command: no "Reorganize
+Vault" item, no preview panel, no confirm step. Both sides of the contract are complete and
+tested; the panel is the next substep, and this is named so that it is a gap rather than an
+assumption.
 
 **2026-10-28 · The reorganize apply loop, and a dead enum variant it brought to life**
 `plan_reorganize` has existed since this morning with no code that walks it. Now

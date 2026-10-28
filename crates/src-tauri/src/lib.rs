@@ -10,11 +10,13 @@
 pub mod facets;
 pub mod import;
 pub mod picker;
+pub mod reorganize;
 pub mod vault;
 
 pub use facets::set_lecture_facets;
 pub use import::import_document;
 pub use picker::{pick_document, pick_vault_directory};
+pub use reorganize::{apply_reorganize, preview_reorganize};
 pub use vault::{CommandError, LectureRow, ProblemRow, VaultSummary, open_vault};
 
 /// Starts the desktop application, returning when the last window closes.
@@ -33,7 +35,9 @@ pub fn run() -> Result<(), tauri::Error> {
             pick_vault_directory,
             pick_document,
             import_document,
-            set_lecture_facets
+            set_lecture_facets,
+            preview_reorganize,
+            apply_reorganize
         ])
         .run(tauri::generate_context!())
 }
