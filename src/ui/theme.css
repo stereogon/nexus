@@ -147,6 +147,30 @@ button {
   cursor: pointer;
 }
 
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+/* The canvas allows the accent only on the primary action in a group; a secondary button
+   is the surface with a border. */
+button.secondary {
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+}
+
+.note {
+  color: var(--text-secondary);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--semantic-definition);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  margin: 16px 0 0;
+}
+
 button:disabled {
   opacity: 0.55;
   cursor: progress;

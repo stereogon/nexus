@@ -140,7 +140,7 @@ fn summarise(root: String, loaded: &LoadedVault) -> VaultSummary {
     }
 }
 
-fn row(bundle: &lecture_core::LectureBundle) -> LectureRow {
+pub(crate) fn row(bundle: &lecture_core::LectureBundle) -> LectureRow {
     let manifest = bundle.manifest();
     let facets = manifest.facets();
     let source = manifest.source();

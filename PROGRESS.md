@@ -195,10 +195,12 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
       a bundle is self-describing. Round-tripped through `ManifestStore` in a test.
 - [ ] Setup diagnostic UI — folded into the item above; recorded, not built
 - [~] Vault sidebar, drag-and-drop import, facet grouping — **partly done 2026-10-28.**
-      The shell, the IPC boundary and a list of lectures with their facets now exist and
-      run. Still missing: grouping *on* those facets (the rows are flat), drag-and-drop
-      import, and opening a lecture. `PathTemplate` and `plan_reorganize` are the domain
-      half of grouping and are already built and tested.
+      The shell, the IPC boundary, importing a document and a list of lectures with their
+      facets now exist and run. Still missing: grouping *on* those facets (the rows are
+      flat), **drag-and-drop** import (the file picker works; dropping a file on the window
+      does not), opening a lecture, and editing a title or facets after import.
+      `PathTemplate` and `plan_reorganize` are the domain half of grouping and are already
+      built and tested.
 - [x] Import path templates — done 2026-10-28. `PathTemplate`: `{course}/{week}-{title}`
       says where a lecture's folder goes, rendered from its facets. 14 tests, pure.
 - [x] "Reorganize Vault" with dry-run preview — done 2026-10-28. `plan_reorganize` touches
@@ -401,6 +403,56 @@ probe file was placed where the line counter sees it but `cargo` does not — a 
 step under test. `check-line-limits.sh` exited 1 naming the file; the full gate reported
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
+
+**2026-10-28 · Import is wired, which is what makes a `manifest.json` exist**
+The user opened `~/NexusVault`, got "No lectures here yet", and asked why no `manifest.json`
+had been created.
+
+Nothing was wrong — but the question found a real gap, and the answer is worth writing down
+because it is the part of the design that is least obvious from using the app.
+
+**Opening a vault writes nothing, on purpose.** `VaultRoot::open` canonicalises the path and
+stats it; that is all. A `manifest.json` is not a vault-level file — §3: *"A lecture is any
+directory containing `manifest.json`"*, and *"No central index is a source of truth. A
+top-level file listing every lecture is a sync-conflict magnet."* So there is nothing to
+create at the root, and an empty folder genuinely is an empty vault. The app was right.
+
+**The gap was that nothing could create one.** The shell exposed exactly two commands,
+`open_vault` and `pick_vault_directory`; `Importer` had existed and been tested in
+`lecture-fs` since this morning and **nothing called it**. The app could look at vaults and
+not change them, which is a strange thing for it to be.
+
+So `import_document` now exists, with a document picker beside the folder picker, and the
+UI re-scans after an import rather than splicing the new row into its list — the vault on
+disk is the truth, and a list maintained by appending drifts from it the first time anything
+changes a lecture without going through that button.
+
+**It runs on a worker thread, explicitly.** Import copies a whole file and may wait on
+LibreOffice for seconds; a sync command would run on the main thread and freeze the window
+exactly as the picker did an hour ago. `spawn_blocking` says where the work goes instead of
+relying on the macro's threading, which is the assumption that caused that bug.
+
+**Three decisions this command makes, and why they are small ones.** The title is the file's
+own stem — a plain guess, because inventing something cleverer would mean two places
+disagreeing about what the lecture is called, and the person can rename it. The bundle is
+that title slugified at the vault root; a `PathTemplate` is the eventual answer but applying
+one on first import would file lectures somewhere before the user has chosen a scheme. And
+the sequence appends after the last existing lecture, since `sequence` is authoritative for
+order.
+
+**A name already taken is refused, never overwritten**, with a test. Importing over an
+existing lecture would destroy its notes and annotations, which is the worst thing this
+command could do.
+
+A failed conversion is **not** a failed import: the original is kept, the row comes back
+`failed`, and the UI says so plainly. A document Nexus cannot render is still a document
+someone may want to keep notes beside.
+
+8 tests, against a temporary vault — `CLAUDE.md` §2 makes pointing the app at a real
+`StudyVault` something to ask about first, and a test is exactly where that would be easy to
+do by accident. One of them asserts the manifest exists **on disk** after an import, not
+merely that the command returned a row, because that is the thing the user went looking for
+and did not find.
 
 **2026-10-28 · The folder picker deadlocked the app, and the comment said it could not**
 The user: *"as soon as i click on choose vault folder, it opens a finder dialog, but then it

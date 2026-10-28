@@ -7,10 +7,12 @@
 //! It is also the only crate in the workspace allowed to know Tauri exists, and the only
 //! one not required to compile for `aarch64-apple-ios`.
 
+pub mod import;
 pub mod picker;
 pub mod vault;
 
-pub use picker::pick_vault_directory;
+pub use import::import_document;
+pub use picker::{pick_document, pick_vault_directory};
 pub use vault::{CommandError, LectureRow, ProblemRow, VaultSummary, open_vault};
 
 /// Starts the desktop application, returning when the last window closes.
@@ -24,6 +26,11 @@ pub use vault::{CommandError, LectureRow, ProblemRow, VaultSummary, open_vault};
 pub fn run() -> Result<(), tauri::Error> {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .invoke_handler(tauri::generate_handler![open_vault, pick_vault_directory])
+        .invoke_handler(tauri::generate_handler![
+            open_vault,
+            pick_vault_directory,
+            pick_document,
+            import_document
+        ])
         .run(tauri::generate_context!())
 }

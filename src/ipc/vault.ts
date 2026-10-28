@@ -97,6 +97,22 @@ export function asCommandError(thrown: unknown): CommandError {
 }
 
 /**
+ * Imports a document into the vault, converting it if a converter is available.
+ *
+ * Resolves to the lecture that was created. A conversion that *fails* is not a rejection:
+ * the row comes back with `conversion: "failed"`, because a document Nexus cannot render is
+ * still one the person may want to keep notes beside.
+ *
+ * @throws {CommandError} if the vault cannot be opened, the file is not an importable
+ * format, or a lecture of that name is already there.
+ */
+export async function importDocument(vault: string, file: string): Promise<LectureRow> {
+  const payload: unknown = await invoke("import_document", { vault, file });
+
+  return LectureRowSchema.parse(payload);
+}
+
+/**
  * Opens a vault and lists what is in it.
  *
  * @throws {CommandError} if the path cannot be used as a vault. One unreadable folder or

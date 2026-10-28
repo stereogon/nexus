@@ -1,18 +1,25 @@
 /**
- * The folder picker, as the UI sees it.
+ * The native pickers, as the UI sees them.
  *
- * A thin wrapper so that the one `invoke` call has the same validated shape as every
- * other: a string the person chose, or `null` because they cancelled. Cancelling is not a
- * failure and must never be reported as one.
+ * Thin wrappers so these `invoke` calls have the same validated shape as every other: a
+ * string the person chose, or `null` because they cancelled. Cancelling is not a failure
+ * and must never be reported as one.
  */
 import { invoke } from "@tauri-apps/api/core";
 import * as z from "zod";
 
-const ChosenDirectorySchema = z.string().nullable();
+const ChosenPathSchema = z.string().nullable();
 
 /** Asks the person to choose a vault folder. Resolves to `null` if they cancel. */
 export async function pickVaultDirectory(): Promise<string | null> {
   const payload: unknown = await invoke("pick_vault_directory");
 
-  return ChosenDirectorySchema.parse(payload);
+  return ChosenPathSchema.parse(payload);
+}
+
+/** Asks the person to choose a lecture document. Resolves to `null` if they cancel. */
+export async function pickDocument(): Promise<string | null> {
+  const payload: unknown = await invoke("pick_document");
+
+  return ChosenPathSchema.parse(payload);
 }
