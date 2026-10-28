@@ -100,8 +100,16 @@ if [ -x "$SOFFICE" ]; then
     # Named by target rather than `-p lecture-convert -- --ignored`, so that adding an
     # ignored test elsewhere in the crate cannot silently join the gate. Whatever runs
     # here runs on someone's machine every time they check their work.
+    #
+    # `--test-threads=1` is not about flakiness, and please do not remove it for speed.
+    # LibreOffice's macOS build registers as a GUI application whatever flags it is given --
+    # `--headless`, `--invisible`, `--nodefault` and `--nologo` were each measured and none
+    # suppresses it -- so every conversion puts an icon in the Dock for about a second.
+    # Running these four tests in parallel put four there at once. Measured with
+    # `lsappinfo`: 12 registration lines in parallel against 3 serialised. The tests take
+    # about three seconds longer and stop making a mess of someone's Dock while they work.
     run_step "converter end-to-end (LibreOffice)" \
-        cargo test -p lecture-convert --test end_to_end -- --ignored
+        cargo test -p lecture-convert --test end_to_end -- --ignored --test-threads=1
 else
     skip_step "converter end-to-end (LibreOffice)" \
         "LibreOffice is not installed; brew install --cask libreoffice"

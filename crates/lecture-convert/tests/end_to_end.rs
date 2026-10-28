@@ -11,6 +11,17 @@
 //! They are deliberately **not** written to pass when the converter is absent. A test that
 //! succeeds without running is the weakened test the anti-patchwork clause forbids.
 //!
+//! # These run one at a time, by the gate's choice
+//!
+//! `LibreOffice`'s macOS build registers as a GUI application however it is invoked —
+//! `--headless`, `--invisible`, `--nodefault` and `--nologo` were each measured and none
+//! suppresses it — so every conversion puts an icon in the Dock for about a second. Run in
+//! parallel, these tests put four there at once.
+//!
+//! `scripts/gate.sh` therefore passes `--test-threads=1`. Nothing here *depends* on running
+//! serially; it is a courtesy to whoever is at the keyboard. Running `cargo test ...
+//! --ignored` by hand will still flash several icons.
+//!
 //! # The fixture is built, not downloaded
 //!
 //! `tests/fixtures/minimal.docx` is a real Office Open XML package — three parts in a

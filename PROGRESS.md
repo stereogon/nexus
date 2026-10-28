@@ -396,6 +396,38 @@ step under test. `check-line-limits.sh` exited 1 naming the file; the full gate 
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
 
+**2026-10-28 · Why `LibreOffice` icons appeared in the Dock, and what fixed it**
+The user noticed several `LibreOffice` icons appearing in the Dock while the gate ran, and
+having to clear them by hand. Measured rather than guessed at.
+
+**Cause, in two parts.** `soffice` on macOS registers as a GUI application whatever it is
+told. `--headless`, `--invisible`, `--nodefault`, `--nologo`, `--norestore` and
+`--nolockcheck` were each tried and compared with `lsappinfo`: every combination registers
+identically, and every one still produces the PDF. The macOS build links AppKit, and no
+flag opts out. So one conversion means one Dock icon for about a second, and that part
+cannot be fixed from here.
+
+The part that *could* be fixed is how many at once. `cargo test` runs the four converting
+end-to-end tests in parallel threads, so four `soffice` processes started together — four
+icons. Measured: **12 registration lines in parallel against 3 serialised**, three lines
+being one application.
+
+**Fix:** `scripts/gate.sh` passes `--test-threads=1` to that one step. Four icons become
+one, for about a second each. It costs roughly three seconds. The comment in `gate.sh` says
+explicitly not to remove it for speed, and records the measurement, because the reason is
+invisible from the code and someone optimising later would otherwise undo it.
+
+**Honest limits of the fix.** One icon still appears per conversion; that is `LibreOffice`,
+not Nexus. And an icon that *persists* after a run is a ghost left by a process that did
+not exit cleanly — likely from the interrupted runs earlier today — which clears on a Dock
+restart. Not done here: restarting someone's Dock is their call, not a thing to do to their
+session uninvited.
+
+**Worth noting for later:** when the real app imports a deck, this will happen there too,
+once per import. A fresh profile per conversion was chosen earlier for isolation; if the
+Dock flicker becomes annoying in use, reusing one profile and serialising conversions is
+the trade to revisit, and that is a deliberate decision rather than a bug.
+
 **2026-10-28 · A path template, deliberately not a language**
 `{course}/{week}-{title}` says where a lecture's folder goes. Literals and placeholders,
 and that is all — no conditionals, no defaults, no formatting. §1.11 says not to reach for
