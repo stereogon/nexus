@@ -20,6 +20,7 @@ use lecture_core::{
     Clock, CoreError, OrderKey, OrderedFolder, RelativePath, RenumberPlan, Slug, plan_renumber,
 };
 
+use crate::logging;
 use crate::manifest_store::ManifestStore;
 use crate::vault::FsVaultDirectory;
 use lecture_core::VaultDirectory;
@@ -122,12 +123,17 @@ impl<C: Clock> VaultRenumber<C> {
             let to = child_path(parent, &rename.to)?;
 
             if let Err(error) = self.manifests.storage().rename(&from, &to) {
+                logging::failure("rename a lecture folder", &error);
                 outcome.stopped_by = Some(error);
+                logging::renumbered(outcome.renames_applied, false);
+
                 return Ok(outcome);
             }
 
             outcome.renames_applied += 1;
         }
+
+        logging::renumbered(outcome.renames_applied, true);
 
         for (from, to) in plan.net_moves() {
             outcome

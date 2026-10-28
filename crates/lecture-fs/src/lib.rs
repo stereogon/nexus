@@ -20,6 +20,7 @@ pub mod annotation_store;
 pub mod clock;
 pub mod device_state;
 mod index_store;
+pub mod logging;
 mod manifest_store;
 mod renumber_store;
 mod versioned;

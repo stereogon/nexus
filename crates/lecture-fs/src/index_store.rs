@@ -15,6 +15,7 @@ use lecture_core::{
     CoreError, INDEX_FILE_NAME, LectureBundle, RelativePath, Slug, VaultIndex, cache_dir_segment,
 };
 
+use crate::logging;
 use crate::storage::AtomicFsStorage;
 use crate::versioned;
 
@@ -47,13 +48,26 @@ impl VaultIndexStore {
             return VaultIndex::empty();
         };
 
-        let Ok(bytes) = self.storage.read(&path) else {
-            return VaultIndex::empty();
+        let bytes = match self.storage.read(&path) {
+            Ok(bytes) => bytes,
+            Err(error) => {
+                // A vault with no cache yet is the normal first run, not a problem.
+                if !versioned::is_missing(&error) {
+                    logging::failure("read the vault index cache", &error);
+                }
+
+                return VaultIndex::empty();
+            }
         };
 
         // Every failure is the same answer, including a version this build does not
-        // know: discard it and let the scan say what is really there.
-        serde_json::from_slice(&bytes).unwrap_or_else(|_| VaultIndex::empty())
+        // know: discard it and let the scan say what is really there. Logged all the
+        // same, because a cache discarded on every launch is a real problem wearing a
+        // harmless face.
+        serde_json::from_slice(&bytes).unwrap_or_else(|_| {
+            logging::derived_file_discarded(INDEX_FILE_NAME);
+            VaultIndex::empty()
+        })
     }
 
     /// Writes the listing for `bundles`, creating `.nexus/` if needed.

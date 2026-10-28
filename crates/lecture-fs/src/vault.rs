@@ -18,6 +18,7 @@ use lecture_core::{
 };
 
 use crate::error::io_error;
+use crate::logging;
 use crate::manifest_store::ManifestStore;
 use crate::vault_root::VaultRoot;
 
@@ -152,10 +153,13 @@ impl<C: Clock> VaultLoader<C> {
                 Ok(manifest) => loaded
                     .bundles
                     .push(LectureBundle::new(directory.clone(), manifest)),
-                Err(error) => loaded.unloadable.push(UnloadableLecture {
-                    directory: directory.clone(),
-                    error,
-                }),
+                Err(error) => {
+                    logging::failure("load a lecture's manifest", &error);
+                    loaded.unloadable.push(UnloadableLecture {
+                        directory: directory.clone(),
+                        error,
+                    });
+                }
             }
         }
 

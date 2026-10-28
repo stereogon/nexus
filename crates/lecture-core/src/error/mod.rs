@@ -193,6 +193,13 @@ pub enum CoreError {
         path: String,
     },
 
+    /// Logging could not be started, so this run will leave no diagnostic trail.
+    #[error("logging could not be started: {detail}")]
+    LoggingUnavailable {
+        /// What went wrong, for the developer.
+        detail: String,
+    },
+
     /// The home directory could not be determined, so per-device state has nowhere to go.
     #[error("the home directory could not be determined")]
     HomeDirectoryUnavailable,

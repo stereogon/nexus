@@ -256,8 +256,17 @@ and explain why. Rationale is recorded in `PROGRESS.md`.
 - Source files stay under **300 lines**. Over that, split into focused modules.
 - No file may be left with stub behaviour that reads as complete. Incomplete work is
   recorded in `PROGRESS.md` and named in the reply.
-- Structured logging via `tracing` to `~/Library/Logs/LectureVault/app.log`. Log codes and
-  timings, never the contents of someone's notes.
+- Structured logging via `tracing` to `~/Library/Logs/Nexus/app.log`. Log codes and
+  timings, never the contents of someone's notes. *(Amended 2026-10-28: this said
+  `~/Library/Logs/LectureVault/`, which is the project's earlier name — it survives in the
+  `lecture-core` / `lecture-fs` crate names, but the app is Nexus and this directory is
+  one a person actually opens in Finder. Nothing had been written to the old path, so
+  there is nothing to migrate.)*
+- **Nothing a person typed or named reaches the log.** Not notes, not excerpts, and not
+  paths — a path contains folder names, which contain course and lecture titles. An
+  error is logged as its code plus `CoreError::log_digest`, never its `Display` text, and
+  `lecture_fs::logging` exposes typed events rather than a general macro so a call site
+  cannot express the unsafe version.
 
 **Anti-patchwork clause**
 

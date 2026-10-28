@@ -100,8 +100,8 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
       lecture went so a reading position can follow it. 12 tests on real directories.
 - [x] The log's privacy contract — `CoreError::log_digest`, one shared `fingerprint`,
       and a test asserting no error variant can put what someone named into a log line.
-- [ ] `tracing` to `~/Library/Logs/LectureVault/app.log` — **blocked on three
-      dependencies, asked**
+- [x] `tracing` to `~/Library/Logs/Nexus/app.log` — daily rotation, typed events, and
+      logging wired into the four places that previously discarded an error in silence.
 - [ ] `schemaVersion` migration machinery (lands with the first real migration in M2)
 - [ ] `.nexus/` rebuildable cache, including per-device view state
 - [x] `AnnotationStore` — the atomic load/save path for `annotations.json`. A missing
@@ -321,6 +321,61 @@ which exists to share the backup behaviour.
 
 Stating it as one rule matters more than the individual cases, because the next stored
 file will be decided by it rather than by copying whichever neighbour was read first.
+
+**2026-10-28 · The logging API exposes typed events, not a macro**
+The redaction rule is only worth as much as the hardest-to-misuse way of logging. So
+`lecture_fs::logging` has no general macro: `failure(during, error)` takes the error and
+records its code and digest, and `during` is `&'static str` so it cannot carry formatted
+input either. A caller cannot express the unsafe version.
+
+Same technique as `ResolvedPath` — the rule holds because the API will not say the other
+thing, not because everyone remembers it.
+
+`derived_file_discarded` is deliberately separate from `failure` and logs at info rather
+than warning, because discarding a damaged cache is designed behaviour and warning about
+it would train someone to ignore warnings. It is still worth a line: a cache discarded on
+*every* launch is a real problem wearing a harmless face.
+
+**2026-10-28 · Logging went into the four places that were silently discarding errors**
+`VaultIndexStore::load` and `DeviceStateStore::load` are both infallible by design, which
+is right — but it meant a genuinely unreadable file was indistinguishable from a missing
+one, which is the swallowed error §1.1 warns about. Both now log when the failure is not
+simply "no file yet", told apart with `versioned::is_missing`. `VaultLoader` logs each
+unloadable manifest, and `VaultRenumber` logs what it renamed and whether it finished.
+
+This is the part that makes the logging real rather than an unused API, and it closes a
+softness that had been accumulating quietly across four substeps.
+
+**2026-10-28 · Synchronous writes, and no worker thread**
+`tracing_appender::non_blocking` is the usual choice and is wrong here. It costs a worker
+thread, a flush guard that silently drops lines if dropped early, and one more thing to
+reason about at shutdown — all to buy throughput for an app that logs codes and timings at
+human pace. Daily rotation is kept, so a log held across years cannot quietly fill
+someone's disk.
+
+**2026-10-28 · `~/Library/Logs/LectureVault/` was the old project name**
+§4 named a directory that no longer matches the app. "LectureVault" survives in the
+`lecture-core` / `lecture-fs` crate names, which is fine — they are internal — but this
+directory is one a person opens in Finder. Amended to `~/Library/Logs/Nexus/`, with the
+reason beside it. Nothing had ever been written to the old path, so there was nothing to
+migrate.
+
+**2026-10-28 · One test per process, because a subscriber is global**
+The first version of the end-to-end test put three `#[test]`s in one file. Tests in a
+binary run in parallel threads of one process, and a `tracing` subscriber is global to a
+process, so they raced for it and the one that mattered failed. `logging_file.rs` now
+holds exactly one test that covers the successful start and the refused second one in
+sequence, and says why in its own documentation so nobody helpfully splits it again.
+
+**2026-10-28 · `remediation` outgrew a function, so the sentences got names**
+It reached 104 lines and clippy's limit is 100. Rather than an `allow`, each message
+became a named constant in a `wording` module.
+
+The split is along a real seam: the match is reviewed for *completeness*, which the
+compiler enforces, and the sentences are reviewed for *tone* — §1.4's tired student the
+night before an exam. Those are different jobs. Naming them also makes a shared message
+explicit, so `InvalidZoom | InvalidPageOffset => READING_PLACE_LOST` reads as a decision
+rather than two arms that happen to hold identical prose.
 
 **2026-10-28 · The log cannot carry an error's `Display` text, so it carries a digest**
 §4 allows codes and timings into the log and nothing a person typed or named. The obvious

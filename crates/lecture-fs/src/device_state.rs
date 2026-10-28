@@ -25,6 +25,7 @@ use lecture_core::{
 };
 
 use crate::error::io_error;
+use crate::logging;
 use crate::storage::AtomicFsStorage;
 use crate::vault_root::VaultRoot;
 use crate::versioned;
@@ -92,11 +93,22 @@ impl DeviceStateStore {
             return ViewState::empty();
         };
 
-        let Ok(bytes) = self.storage.read(&path) else {
-            return ViewState::empty();
+        let bytes = match self.storage.read(&path) {
+            Ok(bytes) => bytes,
+            Err(error) => {
+                // No state yet is the normal case on a new device.
+                if !versioned::is_missing(&error) {
+                    logging::failure("read this device's view state", &error);
+                }
+
+                return ViewState::empty();
+            }
         };
 
-        serde_json::from_slice(&bytes).unwrap_or_else(|_| ViewState::empty())
+        serde_json::from_slice(&bytes).unwrap_or_else(|_| {
+            logging::derived_file_discarded(VIEW_STATE_FILE_NAME);
+            ViewState::empty()
+        })
     }
 
     /// Writes this device's state.
