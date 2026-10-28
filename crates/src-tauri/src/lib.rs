@@ -7,12 +7,14 @@
 //! It is also the only crate in the workspace allowed to know Tauri exists, and the only
 //! one not required to compile for `aarch64-apple-ios`.
 
+pub mod document;
 pub mod edit;
 pub mod import;
 pub mod picker;
 pub mod reorganize;
 pub mod vault;
 
+pub use document::open_document;
 pub use edit::edit_lecture;
 pub use import::{import_document, importable_formats};
 pub use picker::{pick_document, pick_vault_directory};
@@ -36,6 +38,7 @@ pub fn run() -> Result<(), tauri::Error> {
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             open_vault,
+            open_document,
             remember_vault,
             last_vault,
             pick_vault_directory,

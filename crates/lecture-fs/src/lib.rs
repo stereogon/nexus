@@ -19,6 +19,7 @@ mod staging;
 pub mod annotation_store;
 pub mod clock;
 pub mod device_state;
+pub mod document_scan;
 mod import;
 mod index_store;
 pub mod last_vault;

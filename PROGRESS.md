@@ -414,6 +414,88 @@ step under test. `check-line-limits.sh` exited 1 naming the file; the full gate 
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
 
+**2026-10-28 · Screening a foreign PDF, and saying what was found without overstating it**
+User instruction the same day: *"make sure you code safe against any possible security
+thread while importing and reading foreign pdfs"*, then *"if possible we can even flag pdfs
+that potentially are dangerous"*. Both are now built on the Rust side, ahead of any viewer
+code, because a screening step added after a renderer works is a screening step that gets
+skipped on one code path.
+
+**The three viewer decisions the user approved**: the asset protocol with a scope narrowed to
+the opened document, `'wasm-unsafe-eval'` on `script-src` only, and JavaScript embedded in a
+PDF never executed (`isEvalSupported: false`, `quickjs-eval.wasm` not shipped). Recorded here
+as settled.
+
+**The scan matches PDF *names*, not substrings, and that is the whole design.** A PDF name may
+write any character as a `#` hex escape, so `/J#61vaScript` is the same name as
+`/JavaScript` to every reader and invisible to a byte search for `"/JavaScript"`. The obvious
+implementation is one an attacker steps around by typing three characters. So `RiskScan` is a
+state machine over name tokens that decodes `#xx` escapes, which also kills the opposite
+error: `/JavaScriptSettings` is a real name in some producers' output and is no longer a
+match.
+
+**It is resumable, because a lecture PDF can be hundreds of megabytes.** The caller streams
+64 KiB at a time and the scanner holds a partial name across the boundary. A test feeds one
+document split at *every* offset and asserts the answer never changes, and another feeds a
+document one byte at a time so every `#xx` escape is split across three calls. Name length is
+capped, so a file that opens a name and never closes it cannot grow memory.
+
+**What it refuses to claim.** A malformed escape (`/J#zz`) makes the name *unmatchable*
+rather than being repaired into a guess — reporting a name we misread would be worse than
+missing it. Matching is case-sensitive because PDF names are: `/js` is a different name and
+means nothing.
+
+**The limits are written into the module doc, not buried.** This is a surface scan, so it can
+miss things — indicators inside a compressed object stream (`/ObjStm`) are deflated bytes no
+byte scan can see — and it can over-report, since no structure is tracked. An empty result
+therefore means *nothing found*, never *nothing there*, and there is a test named for that
+distinction whose only job is to document it. A full PDF parser in `lecture-core` would be a
+larger attack surface than the thing it guards.
+
+**The scan reports, it does not gate**, and nothing refuses a document for having indicators.
+A study app that would not open a lecture deck because it contains a hyperlink is useless, and
+the actual defence is not the scan: it is that the viewer does not execute JavaScript, does
+not launch programs and cannot reach the network. The scan exists so a person is *told*.
+
+**Every explanation is two sentences, and the second one is the point.** "This document
+carries JavaScript inside it. Nexus never runs a document's script, so it cannot do anything
+here." A person given only the first sentence has been handed a worry with no way to put it
+down (§1.4). There is a test asserting every variant names Nexus, and **it failed when
+written** — `Encrypted` said only what the file was. That also surfaced a real gap, now
+recorded: Nexus cannot prompt for a PDF password, so an encrypted document's pages will not
+appear.
+
+**`needs_attention` is computed in Rust and sent.** The severity rule has one home; a second
+copy in TypeScript would drift, and the first time it did the UI would either nag about
+hyperlinks or stay quiet about a launch action. It also gives `warrants_a_warning` a real
+caller rather than leaving a function nothing uses.
+
+**The PDF signature is checked.** A file named `.pdf` is not a PDF, and the viewer gets a
+document or an error, never a surprise — a conversion that wrote something else is a
+converter fault worth reporting. Read across buffer boundaries, so `%PDF` without the hyphen
+and a zero-byte file are both refused, each with a test.
+
+**`BufReader::fill_buf` rather than reading into our own buffer**, which is not a style
+preference: it hands back a slice the reader owns, so there is no `buffer[..read]` anywhere
+in the inspector and §4's ban on indexing that can panic is satisfied by construction rather
+than by inspection.
+
+**The webview will be given one file, not a directory.** `open_document` is written to grant
+the asset scope for exactly the document being opened — not the vault, and not the
+`$HOME/**` glob these configurations usually become. The webview renders foreign documents,
+so its reach is the thing most worth keeping small.
+
+### Open task, raised 2026-10-28 (document viewer)
+- ~~The window cannot yet read the file `open_document` returns.~~ **Done the same day**,
+  with permission: `protocol-asset` enabled, `http-range` 0.1.6 (MIT) fetched and recorded,
+  and the grant made for one screened file at a time. The static scope stays `[]`.
+- **The scan runs on every open.** Reading a 200 MB PDF to screen it is roughly a fifth of a
+  second, which is probably fine and has not been measured. If it needs caching, the result
+  belongs in `.nexus/` — it is derived from the vault and fully rebuildable by rescanning,
+  which is exactly §3's test for what may live there.
+- **Encrypted PDFs are not supported.** No password prompt exists, so an encrypted document
+  reports the `encrypted` indicator and then fails to render. The indicator's wording says so.
+
 **2026-10-28 · `pdfjs-dist` is in, and what it drags behind it**
 Installed with permission (§2): `pdfjs-dist` **6.4.299**, Apache-2.0, pinned exactly, which
 is this repository's convention — `package.json` carries no version ranges, so a fresh
@@ -3317,6 +3399,42 @@ All permissive and compatible with distributing a binary. `unicode-ident` and
 `unicode-normalization` carry an additional term (Unicode-3.0, attribution-only), so the
 shipped app must include a notices file; that is an open task, listed in §4.
 `lecture-core` itself is MIT.
+
+#### The whole resolved tree, read on 2026-10-28
+
+The tables above were written before `crates/src-tauri` joined the workspace, so they
+covered `lecture-core` and nothing else — which left Tauri's dependency tree unrecorded
+against §1.2. Read from `cargo metadata` rather than from memory: **424 third-party
+crates**, every one permissive. Counting them row by row would be a table nobody reads, so
+what follows is the aggregate plus every licence that needs a decision.
+
+| Family | Crates |
+|---|---|
+| `MIT OR Apache-2.0` and its spellings (`Apache-2.0 OR MIT`, `MIT/Apache-2.0`, …) | 239 |
+| `MIT` alone | 106 |
+| `Zlib`/`BSD-3-Clause`/`ISC`/`Unlicense`/`0BSD`/`CC0` variants, each dual with MIT or Apache | 37 |
+| `Unicode-3.0` (the ICU crates) | 20 |
+| `MPL-2.0` | 5 |
+| `Apache-2.0` alone, incl. one with the LLVM exception | 3 |
+
+Three of those need a stated position rather than a count:
+
+- **`Unicode-3.0`, 20 crates** — the ICU family (`icu_*`, `zerovec`, `yoke`, `tinystr`,
+  `writeable`, `litemap`, `potential_utf`, `zerotrie`, `zerofrom`). Permissive and
+  attribution-only, same term already noted above for `unicode-ident`. It enlarges the
+  notices file the shipped app owes; it does not change what may be distributed.
+- **`MPL-2.0`, 5 crates** — `cssparser`, `cssparser-macros`, `selectors`, `dtoa-short`,
+  `option-ext`, pulled in through the webview stack. MPL-2.0 is file-level copyleft: linking
+  into a larger work is fine and the obligation attaches only to *modified* MPL files. None
+  is modified, and none will be. Recorded here so that remains a decision rather than an
+  assumption.
+- **`r-efi`, dual MIT / Apache-2.0 / LGPL-2.1-or-later** — the LGPL arm is one choice among
+  three, so MIT applies and nothing copyleft is taken. It is a UEFI target crate and is not
+  compiled for macOS at all.
+
+| Crate | Version | Licence | Why |
+|---|---|---|---|
+| `http-range` | 0.1.6 | MIT | pulled by Tauri's `protocol-asset`, which is how the window reads a lecture's PDF |
 
 Dev-only dependencies, which do not ship in the binary. Pulled in by `tempfile`, needed
 because storage containment cannot be tested against an in-memory fake — the behaviour

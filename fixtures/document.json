@@ -1,0 +1,40 @@
+{
+  "clean": {
+    "bytes": 27,
+    "needsAttention": false,
+    "path": "/vault/raft/source/document.pdf",
+    "risks": []
+  },
+  "flagged": {
+    "bytes": 117,
+    "needsAttention": true,
+    "path": "/vault/raft/source/document.pdf",
+    "risks": [
+      {
+        "code": "embeddedJavascript",
+        "explanation": "This document carries JavaScript inside it. Nexus never runs a document's script, so it cannot do anything here.",
+        "severity": "notable"
+      },
+      {
+        "code": "actionOnOpen",
+        "explanation": "This document has something set to happen when it is opened. Nexus ignores it and simply shows the pages.",
+        "severity": "notable"
+      },
+      {
+        "code": "attachedFile",
+        "explanation": "This document carries another file inside it. Nexus does not open or extract attachments.",
+        "severity": "notable"
+      },
+      {
+        "code": "xfaForm",
+        "explanation": "This document uses an XFA form, which is a separate format inside the PDF. Nexus does not render XFA, so those parts will not appear.",
+        "severity": "informational"
+      },
+      {
+        "code": "externalLink",
+        "explanation": "This document contains links to the internet. Nexus is offline and will not follow one. Common in lecture slides.",
+        "severity": "informational"
+      }
+    ]
+  }
+}

@@ -56,7 +56,11 @@ tempfile = "3.27.0"
 
 # The desktop shell. `tauri-build` runs in a build script and is a build-dependency of
 # the adapter crate alone, so nothing else in the workspace carries it.
-tauri = { version = "2", features = [] }
+# `protocol-asset` is what lets the window read a file from disk, and its scope is what
+# decides which files. Enabled deliberately and with permission (§2): it pulls `http-range`,
+# which is how the protocol answers a range request -- the thing that makes the viewer's
+# loading genuinely lazy rather than reading a whole lecture to show page one.
+tauri = { version = "2", features = ["protocol-asset"] }
 tauri-build = { version = "2", features = [] }
 # The folder picker, which is a platform capability rather than something to reimplement.
 tauri-plugin-dialog = "2"
