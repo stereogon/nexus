@@ -410,6 +410,61 @@ step under test. `check-line-limits.sh` exited 1 naming the file; the full gate 
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
 
+**2026-10-28 · Every real conversion was crashing, and the tests could not have caught it**
+Reported from use: a dropped `.pptx` came in as "could not be converted to a PDF", with a
+macOS "soffice quit unexpectedly" dialog behind it. The gate had converted a real `.pptx`
+an hour earlier.
+
+**Root cause: `-env:UserInstallation` takes a URL, and we were handing it a path.** The
+profile base is `~/Library/Application Support/Nexus/profiles/...`, so the argument read
+`file:///Users/.../Application Support/...` with a raw space in it. `soffice` parses that as
+a URL, fails to open its own configuration, throws a
+`com::sun::star::uno::RuntimeException` inside `desktop::Desktop::Init`, and -- having no
+handler -- calls `abort()`. SIGABRT, which macOS reports as a crash.
+
+**Why no test caught it, which is the more useful half.** `command_arguments` is asserted
+exactly, and the end-to-end tests run the real binary; both passed throughout. The asserted
+path was `/profiles/libreoffice-1` and the end-to-end profile base was a `TempDir` under
+`/var/folders/...`. Neither contains a space. The tests were not weak about the argument
+*list* -- they were blind to the argument's *encoding*, because every path they chose
+happened to need none, and the one path the app actually uses needs it every time.
+
+Confirmed before fixing, by running the real `soffice` twice on the repo's own fixture,
+changing nothing but the profile directory: no space converted and produced a PDF; `with
+space` printed `libc++abi: terminating due to uncaught exception` and produced nothing. The
+crash report named the same frames.
+
+**Fixed by percent-encoding the path into the URL**, with `/` left alone. Hand-written
+rather than adding `percent-encoding`: §1.5 makes a dependency a permanent cost, and this is
+fifteen lines over a byte range. It encodes bytes, not chars, so a non-UTF-8 or accented home
+directory survives.
+
+**And the fixture now has a space in it.** `tests/end_to_end.rs` builds its profile base
+under a directory called `Application Support`, because the tests that run the real binary
+are the only place this class of bug can be caught, and they were the ones missing it. The
+new `tests/profile_url.rs` covers the encoding directly, including `#` and `?` -- those
+truncate a URL rather than breaking it, so they would have pointed `soffice` at a *different*
+directory silently.
+
+**Separately, and found while looking for the log: nothing ever started logging.**
+`logging::start_for_this_device` had no caller, so the shipped app wrote no log at all and
+`~/Library/Logs/Nexus/` did not exist. A previous entry here recorded logging as "wired into
+the four places that previously discarded an error in silence", which was true of the call
+sites and false of the subscriber -- so this crash had to be diagnosed from a macOS crash
+report. §1.1: the claim was reported as outcome without being observed.
+
+`run()` now starts it, and a failure to start is not fatal -- no log is bad, refusing to open
+a vault because a log file would not open is worse. Files are `app.log.<date>`, since the
+appender rotates daily.
+
+**Still missing, and worth saying plainly:** the converter records *that* `soffice` failed,
+not *how*. We use `Command::status()`, so its stderr goes nowhere and neither the exit code
+nor the signal is kept. Exit 134 would have said "crashed" rather than "refused" immediately.
+The canvas's diagnostics drawer specifies converter stdout and stderr "verbatim", which
+**conflicts with §4** -- `soffice` prints the path it is converting, and §4 forbids a path
+reaching the log. Not resolved unilaterally: the safe subset is the exit code and signal,
+which are numbers, and that is what should land first.
+
 **2026-10-28 · A lecture can be renamed, and the blocked reason finally tells the truth**
 Two fixes the real vault asked for, done together because they are both one-field edits to a
 manifest and neither is worth its own gate run.

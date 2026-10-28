@@ -46,6 +46,22 @@ use lecture_core::{
 use lecture_core::Conversion;
 use vault::Fixture;
 
+/// The profile base, under a directory whose name contains a space.
+///
+/// Deliberate, and the reason this helper exists rather than `fixture.profiles.path()`.
+/// `-env:UserInstallation` is a URL, and the app's real profile base is
+/// `~/Library/Application Support/Nexus/...` -- so every genuine conversion carries a space
+/// through it, while a `TempDir` under `/var/folders/...` carries none. That one difference
+/// let a crash ship with these very tests passing: `soffice` threw inside `Desktop::Init`
+/// and aborted on every real import. The space belongs in the fixture so the only tests
+/// that run the real binary cannot miss it again.
+fn profiles(fixture: &Fixture) -> PathBuf {
+    let base = fixture.profiles.path().join("Application Support");
+    fs::create_dir_all(&base).unwrap();
+
+    base
+}
+
 /// The real binary, or a skip-worthy failure explaining itself.
 fn soffice() -> PathBuf {
     let path = PathBuf::from(SOFFICE_BUNDLE_PATH);
@@ -97,7 +113,7 @@ fn a_real_libreoffice_converts_a_real_document() {
     // `at` rather than `discover`, so the profile is made under a temporary directory and
     // this test never touches the real LibreOffice profile on this machine.
     let converter =
-        LibreOfficeConverter::at(soffice(), fixture.profiles.path(), fixture.storage()).unwrap();
+        LibreOfficeConverter::at(soffice(), &profiles(&fixture), fixture.storage()).unwrap();
 
     converter
         .convert(&request_for("docx", DocumentFormat::Docx))
@@ -134,7 +150,7 @@ fn a_real_conversion_drives_the_state_machine_to_ready() {
     // itself with.
     let fixture = fixture_holding("minimal.docx", "docx");
     let converter =
-        LibreOfficeConverter::at(soffice(), fixture.profiles.path(), fixture.storage()).unwrap();
+        LibreOfficeConverter::at(soffice(), &profiles(&fixture), fixture.storage()).unwrap();
 
     let conversion = Conversion::queued()
         .started(converter.label().clone())
@@ -174,7 +190,7 @@ fn a_real_libreoffice_is_lenient_about_what_it_will_convert() {
     .unwrap();
 
     let converter =
-        LibreOfficeConverter::at(soffice(), fixture.profiles.path(), fixture.storage()).unwrap();
+        LibreOfficeConverter::at(soffice(), &profiles(&fixture), fixture.storage()).unwrap();
 
     converter
         .convert(&request_for("docx", DocumentFormat::Docx))
@@ -204,7 +220,7 @@ fn a_real_libreoffice_converts_a_real_powerpoint_package() {
     // reads what `PowerPoint` writes.
     let fixture = fixture_holding("minimal.pptx", "pptx");
     let converter =
-        LibreOfficeConverter::at(soffice(), fixture.profiles.path(), fixture.storage()).unwrap();
+        LibreOfficeConverter::at(soffice(), &profiles(&fixture), fixture.storage()).unwrap();
 
     converter
         .convert(&request_for("pptx", DocumentFormat::Pptx))

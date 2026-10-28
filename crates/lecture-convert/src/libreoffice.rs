@@ -182,8 +182,10 @@ impl DocumentConverterPort for LibreOfficeConverter {
 /// observed here.
 #[must_use]
 pub fn command_arguments(profile: &Path, outdir: &Path, original: &Path) -> Vec<OsString> {
-    let mut installation = OsString::from("-env:UserInstallation=file://");
-    installation.push(profile);
+    let installation = OsString::from(format!(
+        "-env:UserInstallation=file://{}",
+        percent_encoded(profile)
+    ));
 
     vec![
         // First, so the isolated profile is in force before anything else is interpreted.
@@ -195,6 +197,51 @@ pub fn command_arguments(profile: &Path, outdir: &Path, original: &Path) -> Vec<
         outdir.as_os_str().to_owned(),
         original.as_os_str().to_owned(),
     ]
+}
+
+/// Percent-encodes a path for use inside a `file://` URL.
+///
+/// `-env:UserInstallation` takes a **URL**, not a path, and `soffice` answers a malformed
+/// one by throwing inside `Desktop::Init` and calling `abort()` -- which macOS reports to
+/// the person as "soffice quit unexpectedly", with no PDF and nothing in our own log to say
+/// why. A space is enough to do it.
+///
+/// This was not hypothetical. The app's profile base is
+/// `~/Library/Application Support/Nexus/...`, so **every** real conversion carried a space
+/// into this URL and crashed, while every test passed, because a `TempDir` lands under
+/// `/var/folders/...` where there is no space to encode. Reproduced both ways before fixing.
+///
+/// Everything outside the unreserved set is encoded, with `/` left alone because it is the
+/// path separator the URL needs. That is stricter than the grammar requires and much
+/// cheaper to be confident in than a table of what each URL component happens to permit.
+fn percent_encoded(path: &Path) -> String {
+    const HEX_DIGITS: [char; 16] = [
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+    ];
+
+    let mut encoded = String::new();
+
+    for byte in path.as_os_str().as_encoded_bytes() {
+        match byte {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'.' | b'_' | b'~' | b'/' => {
+                encoded.push(char::from(*byte));
+            }
+            // Non-UTF-8 bytes included: a path is bytes on this platform, and encoding them
+            // is the only way one reaches `soffice` intact.
+            other => {
+                encoded.push('%');
+
+                // Both nibbles are in `0..16`, so neither lookup can miss. `get` is used
+                // regardless: §4 bans indexing that can panic, and this states the bound
+                // instead of asking the reader to re-derive it from the shift.
+                for nibble in [other >> 4, other & 0x0f] {
+                    encoded.extend(HEX_DIGITS.get(usize::from(nibble)));
+                }
+            }
+        }
+    }
+
+    encoded
 }
 
 /// A profile directory name no concurrent conversion will also choose.

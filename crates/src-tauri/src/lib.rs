@@ -28,6 +28,8 @@ pub use vault::{CommandError, LectureRow, ProblemRow, VaultSummary, open_vault};
 /// no carve-out for "it cannot really happen", and the caller can at least set an exit code
 /// and say something.
 pub fn run() -> Result<(), tauri::Error> {
+    start_logging();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
@@ -41,4 +43,20 @@ pub fn run() -> Result<(), tauri::Error> {
             apply_reorganize
         ])
         .run(tauri::generate_context!())
+}
+
+/// Opens the log file, before anything exists that could need it.
+///
+/// Nothing called this until 2026-10-28, so the shipped app wrote **no log at all** while
+/// `PROGRESS.md` recorded logging as wired. The cost showed up the first time it mattered: a
+/// converter crash had to be diagnosed from a macOS crash report, because
+/// `~/Library/Logs/Nexus/` did not exist.
+///
+/// A failure to start logging is deliberately **not** fatal. Running without a log is bad;
+/// refusing to open someone's vault because a log file would not open is worse. The sentence
+/// carries no path, per §4, and goes to stderr because there is by definition nowhere else.
+fn start_logging() {
+    if lecture_fs::logging::start_for_this_device().is_err() {
+        eprintln!("Nexus could not open its log file, and is continuing without one.");
+    }
 }
