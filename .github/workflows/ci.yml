@@ -35,10 +35,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install the iPadOS target
-        # CLAUDE.md §3: a `lecture-core` that stops compiling for iPadOS is a build
-        # failure, not a warning. The target is what makes that enforceable.
-        run: rustup target add aarch64-apple-ios
+      # The toolchain, its components and the iPadOS target all come from
+      # `rust-toolchain.toml`, which rustup honours automatically. Deliberately not a
+      # `rustup target add` step here as well: two mechanisms for one fact is how they
+      # drift apart.
 
       - name: Report the toolchain
         # So a failure that turns out to be a toolchain change is visible in the log

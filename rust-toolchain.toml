@@ -1,0 +1,19 @@
+# Pins the toolchain so the §5 gate means the same thing everywhere.
+#
+# Without this, CI installs whatever stable is current the day it runs. That is how the
+# first real CI run failed: the runner had 1.99.0, this machine had 1.97.0, and a lint
+# added in between fired on CI where it could not fire locally. An unpinned toolchain
+# makes a green local run no evidence about CI, which is precisely the drift the single
+# gate script exists to remove.
+#
+# Upgrading is therefore a deliberate change with its own commit, made when the new
+# toolchain is installed here and its new lints can be seen and fixed locally -- not a
+# surprise delivered by a release that happened to land overnight.
+#
+# `targets` is what enforces CLAUDE.md §3: `lecture-core` must compile for iPadOS, so the
+# target is part of the toolchain definition rather than a separate step in a workflow
+# that could be forgotten or drift out of step with this file.
+[toolchain]
+channel = "1.97.0"
+components = ["rustfmt", "clippy"]
+targets = ["aarch64-apple-ios"]
