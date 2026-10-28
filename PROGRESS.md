@@ -145,13 +145,21 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
       unreadable file as `.bak`, itself written atomically. RAII guard removes the
       staging file on any failure. 18 tests, including a write that fails against a
       read-only directory while the previous contents stay byte-identical.
-- [ ] Vault walk — prunes at first `manifest.json`; rejects nested lectures
-- [ ] `schemaVersion` 1 → 2 migration
-- [ ] `tracing` + `tracing-appender` to `~/Library/Logs/LectureVault/app.log`
-- [ ] `aarch64-apple-ios` target check wired into CI
-- [ ] Tests: coordinate validation, atomic/crash safety, order-key invariants, path
-      traversal, index rebuild-from-scan, bundle-move link integrity
-- [ ] `cargo fmt --check` + `cargo test` + `cargo clippy -D warnings` green
+- [x] Vault walk — prunes at first `manifest.json`; reports nested lectures rather than
+      dropping them, behind a `VaultDirectory` port so the rules stay in the domain
+- [x] `tracing` + `tracing-appender` to `~/Library/Logs/Nexus/app.log` — path amended
+      from `LectureVault/`, which was the project's earlier name
+- [x] `aarch64-apple-ios` target check wired into CI — `scripts/gate.sh` runs the whole
+      §5 gate as one command and the workflow calls that same script, so there is one
+      definition rather than two. **Written and verified locally in both directions; the
+      workflow itself has not yet been observed running on GitHub.**
+- [x] Tests: coordinate validation, atomic/crash safety, order-key invariants, path
+      traversal, index rebuild-from-scan (`deleting_the_cache_directory_loses_nothing_a_scan_cannot_rebuild`),
+      bundle-move link integrity (`relocating_a_bundle_rewrites_nothing_inside_it`)
+- [x] `cargo fmt --check` + `cargo test` + `cargo clippy -D warnings` green — 335 Rust
+      tests, 21 TypeScript tests
+- [ ] `schemaVersion` 1 → 2 migration — **deliberately deferred to Milestone 2**, where
+      source hashes give it a real migration to perform rather than a speculative one
 
 ### [ ] Milestone 2 — Importer and PPTX/DOCX→PDF converter
 - [ ] `DocumentConverterPort` trait + state machine (`Queued → Converting → Ready |
@@ -321,6 +329,52 @@ which exists to share the backup behaviour.
 
 Stating it as one rule matters more than the individual cases, because the next stored
 file will be decided by it rather than by copying whichever neighbour was read first.
+
+**2026-10-28 · One definition of the gate, called by both CI and me**
+§3 says CI enforces the iPadOS build and that a violation is a build failure rather than a
+warning. Until now it was neither: it was a command I typed each substep, which is how a
+check gets quietly skipped — and §5 forbids reporting a milestone done when something was
+not run.
+
+The workflow therefore runs `scripts/gate.sh`, the same script run locally. Not a list of
+steps duplicated into YAML: that would be two definitions of passing, free to drift, which
+is the thing being fixed. One job on `macos-latest`, because the iPadOS check needs the
+Apple SDK, because macOS is the only platform the app targets, and because `lecture-fs`'s
+tests exercise real symlinks and APFS behaviour. Parallel jobs would be faster and would
+reintroduce the drift.
+
+`gate.sh` runs every step even after one fails, because knowing everything that is broken
+beats knowing the first thing. It **never installs anything**: a missing `node_modules` or
+a missing iPadOS target is reported as a failed step naming the command to run, because §2
+makes installing the user's decision — and because a check that silently skips itself when
+a prerequisite is absent is worse than no check.
+
+**2026-10-28 · The line limit became a script, because remembering it did not work**
+§4's 300-line limit has drifted repeatedly in this session — `error.rs` at 357,
+`relative_path.rs` at 308, four test files between 312 and 391. Every one was caught by me
+noticing, which is not a mechanism. It is now `scripts/check-line-limits.sh`, part of the
+gate, and it counts tests too: they are source, they are read more often than written, and
+they have needed splitting as often as anything else here.
+
+**2026-10-28 · The gate's red path was tested, not assumed**
+A green check that cannot go red is worthless, so both directions were run. An oversized
+probe file was placed where the line counter sees it but `cargo` does not — a `.rs` file in
+`crates/` that no `mod` declares is never compiled — which isolates the failure to the one
+step under test. `check-line-limits.sh` exited 1 naming the file; the full gate reported
+seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
+re-checked clean.
+
+**2026-10-28 · Honest gap: the workflow has never run**
+The YAML is written and committed but has not executed, and there is no YAML parser on
+this machine to even check that it parses — installing one for that is not worth a §2
+question. So the workflow is **unverified**: the scripts it calls are tested in both
+directions, the file that calls them is not. It will be validated by GitHub on the next
+push. Recorded here rather than left to look like coverage.
+
+Only first-party actions are used — `checkout`, `setup-node`, `cache` — so there is no
+third-party action trusted with a checkout of this repository. Pinned to major tags rather
+than commit SHAs, which is accepted practice for first-party actions and is the weaker of
+the two choices; worth revisiting if the repository ever becomes public.
 
 **2026-10-28 · The logging API exposes typed events, not a macro**
 The redaction rule is only worth as much as the hardest-to-misuse way of logging. So

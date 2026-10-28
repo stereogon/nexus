@@ -1,0 +1,77 @@
+# The definition of done from CLAUDE.md §5, enforced on every push.
+#
+# One job, not several. The job runs `scripts/gate.sh` -- the same script run locally --
+# so there is exactly one definition of what passing means and nothing for CI and a
+# developer's machine to disagree about. Splitting the gate into parallel jobs would be
+# faster and would reintroduce precisely the drift this exists to prevent.
+#
+# macOS, because CLAUDE.md §3 requires `lecture-core` to compile for `aarch64-apple-ios`
+# and that needs the Apple SDK. It is also the only platform the app targets, and
+# `lecture-fs`'s tests exercise real symlinks and APFS behaviour.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Least privilege: this workflow only ever reads the repository.
+permissions:
+  contents: read
+
+# A superseded run tells you about code nobody is looking at any more.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: CLAUDE.md §5 gate
+    runs-on: macos-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the iPadOS target
+        # CLAUDE.md §3: a `lecture-core` that stops compiling for iPadOS is a build
+        # failure, not a warning. The target is what makes that enforceable.
+        run: rustup target add aarch64-apple-ios
+
+      - name: Report the toolchain
+        # So a failure that turns out to be a toolchain change is visible in the log
+        # rather than puzzling.
+        run: |
+          rustc --version
+          cargo clippy --version
+          cargo fmt --version
+          node --version
+          npm --version
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Only first-party actions are used here, so there is no third-party action to
+      # trust with a checkout of this repository.
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            target
+          key: cargo-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+          restore-keys: cargo-${{ runner.os }}-
+
+      - name: Install node dependencies
+        # `npm ci` rather than `npm install`: it installs exactly the lockfile and fails
+        # if package.json and the lockfile disagree.
+        run: npm ci
+
+      - name: Run the gate
+        run: ./scripts/gate.sh
