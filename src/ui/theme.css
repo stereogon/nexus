@@ -14,14 +14,11 @@
  * Nexus is offline by definition, the webview enforces it with a `default-src 'self'` CSP,
  * and a stylesheet is the easiest place for that promise to be broken by accident.
  *
- * # Fonts are a known gap
+ * # Type
  *
- * The canvas specifies Bricolage Grotesque 800 for the wordmark, IBM Plex Sans for the
- * interface, Literata for notes prose and IBM Plex Mono for paths, keys and code. All four
- * are OFL and all four are to be bundled as local woff2. None is bundled yet, because
- * fetching them needs network access and that is the user's decision. Until then this falls
- * back to the system stack, so the type is the one part of the interface that does not yet
- * match the canvas.
+ * The four typefaces the canvas names are bundled as local woff2 by
+ * `scripts/fetch-fonts.py`, and declared in `fonts.css` beside this file. Each stack still
+ * ends in a system fallback, so a missing file degrades to readable rather than to nothing.
  */
 
 :root {
@@ -49,8 +46,12 @@
   --semantic-exam: #e0523c;
   --semantic-question: #2e86de;
 
-  --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* Per the canvas: Bricolage for the wordmark and headings, Plex Sans for the interface,
+     Literata for notes prose, Plex Mono for paths, keys and code. */
+  --font-brand: "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-ui: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-prose: "Literata", Georgia, "Times New Roman", serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
   --radius: 10px;
   --gap: 12px;
@@ -106,6 +107,7 @@ body {
 }
 
 h1 {
+  font-family: var(--font-brand);
   font-size: 22px;
   font-weight: 800;
   letter-spacing: -0.015em;

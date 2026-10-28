@@ -402,6 +402,52 @@ step under test. `check-line-limits.sh` exited 1 naming the file; the full gate 
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
 
+**2026-10-28 · The real typefaces, and the icon drawn in the real one**
+The user: *"i added bricolate grotesque in my system, you can check, or if you want you can
+install freshly and store whereever you want, and for the rest, check in machine, if not
+there you can fetch."*
+
+Checked first. Bricolage Grotesque was there — a variable TTF in `~/Library/Fonts` with
+`opsz,wdth,wght` axes, and `system_profiler` confirmed it registered. The other three were
+on neither the system nor the user path, so they were fetched.
+
+**The icon now uses the genuine glyph.** The generator was Python, which meant drawing the
+letter geometrically because no font library was available — a decent approximation of
+Bricolage's ExtraBold, but not it. It is now `scripts/make-icon.swift`: CoreText is the only
+thing on a stock machine that can rasterise a variable font at a chosen weight, and it needs
+no installed dependency. The weight axis is pinned to 800 explicitly rather than trusting a
+default instance. The difference is visible — the real N has an angled vertex where the
+diagonal meets the right stem, which is the typeface's own and not something anyone would
+draw by hand.
+
+Two details worth keeping from that rewrite. The letter is sized by **measuring** it —
+rendered at a reference size, its inked bounds read, then scaled so that height is exactly
+the intended cap height — because a variable font's reported cap height and its actual inked
+bounds are different numbers. And it is centred on those inked bounds rather than on
+typographic metrics, so it sits optically centred rather than mathematically centred with a
+visible lean.
+
+**Fonts are bundled, not linked.** `scripts/fetch-fonts.py` is the one thing in the project
+that touches the network, it is run by hand, and what it produces is committed. A `<link>`
+to a font service would make the interface depend on a network the app is not allowed to
+use, and would tell that service when someone opens their notes. The CSP would refuse it
+anyway, which is the point of having one.
+
+**It deduplicates, and that mattered.** Google Fonts now serves a single variable woff2 for
+several weights: IBM Plex Sans 400, 500 and 600 came back byte-identical. Writing each out
+would have tripled that family's weight for nothing. Files are grouped by content hash and
+emitted once, with a `font-weight` range covering the weights that shared them — 14 faces
+became 10 files, 442 KiB became 313 KiB. Found by noticing three downloads reporting
+identical byte counts and checking the hashes rather than assuming coincidence.
+
+Only `latin` and `latin-ext` are bundled; the second carries the accented characters a
+course or lecture name can easily contain. `font-display: block` rather than `swap`, because
+the files are local so the wait is imperceptible, and swapping would flash the system font
+over the real one on every launch.
+
+Licences recorded in the dependency table above: all four are SIL OFL 1.1, which permits
+bundling and redistribution (§1.2).
+
 **2026-10-28 · The approved design is a canvas, and it is now recorded as authoritative**
 The user pointed at the design canvas and said: *"you have to reference this artboard when
 creating the UI ... this is what i approved of. so add the artboard in the document or
@@ -443,9 +489,9 @@ distinct border weights, which the first pass collapsed into one.
 
 **Type, per the canvas:** Bricolage Grotesque 800 for the wordmark, 700 for note headings;
 Literata 400 for notes prose; IBM Plex Sans 400/500 for sidebar rows, toolbars and section
-labels; IBM Plex Mono for paths, cite links and error codes. **None of the four is bundled**,
-so type is the one part of the interface that still does not match the canvas. All four are
-OFL; fetching them is network access and therefore the user's decision.
+labels; IBM Plex Mono for paths, cite links and error codes. ~~None of the four is
+bundled.~~ **Resolved the same day** — all four are now bundled as local woff2; see the
+entry on the real typefaces.
 
 **The canvas holds no app icon or logo.** Its brand is the wordmark "Nexus" set in Bricolage
 800 — 15 inline SVGs across the artboards, all interface icons, and no mark. Said plainly
@@ -475,6 +521,10 @@ geometrically and is **not** Bricolage Grotesque — recorded as a known differe
 than passed off as the real thing. The first render centred the diagonal on the stem
 centres, which left a visible wedge in two corners; it is now aligned to the letter's outer
 edges.
+
+*(The geometric letter described above was replaced the same day with the real Bricolage
+glyph once the user confirmed the font was installed — see the entry on the real typefaces.
+The squircle geometry is unchanged and carried over into the Swift generator.)*
 
 **3. The Dock name needed two fixes, not one.** `mainBinaryName` in `tauri.conf.json`
 handles the bundled `.app`. But a dev run launches the bare executable, which has no
@@ -2598,6 +2648,16 @@ packages resolved, every one with a stated licence.
 | `typescript-eslint` | 8.72.1 | MIT |
 | `vite` | 8.3.5 | MIT |
 | `vitest` | 5.0.5 | MIT |
+
+**Bundled typefaces** (not npm packages; fetched by `scripts/fetch-fonts.py` and committed
+as woff2 under `src/ui/fonts/`). All four permit bundling and redistribution:
+
+| Typeface | Role | Licence |
+|---|---|---|
+| Bricolage Grotesque | wordmark, headings | SIL OFL 1.1 |
+| IBM Plex Sans | interface | SIL OFL 1.1 |
+| IBM Plex Mono | paths, keys, code | SIL OFL 1.1 |
+| Literata | notes prose | SIL OFL 1.1 |
 
 Whole tree, by licence: MIT 100, Apache-2.0 14, ISC 6, BSD-2-Clause 6,
 `Apache-2.0 OR MIT` 3, MPL-2.0 2, BSD-3-Clause 2, BlueOak-1.0.0 1.
