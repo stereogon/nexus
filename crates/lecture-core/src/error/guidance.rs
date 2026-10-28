@@ -29,6 +29,7 @@ impl CoreError {
             Self::DuplicateAnnotationId { .. } => "ERR_DUPLICATE_ANNOTATION_ID",
             Self::InvalidName { .. } => "ERR_INVALID_NAME",
             Self::InvalidPageNumber { .. } => "ERR_INVALID_PAGE_NUMBER",
+            Self::NameAlreadyTaken { .. } => "ERR_NAME_ALREADY_TAKEN",
             Self::HomeDirectoryUnavailable => "ERR_HOME_DIRECTORY_UNAVAILABLE",
             Self::InvalidZoom { .. } => "ERR_INVALID_ZOOM",
             Self::InvalidPageOffset { .. } => "ERR_INVALID_PAGE_OFFSET",
@@ -121,6 +122,10 @@ impl CoreError {
                 "A highlight recorded a page that cannot exist, so it was left out \
                  rather than drawn on the wrong page. Nothing was deleted, and a backup \
                  is beside the file."
+            }
+            Self::NameAlreadyTaken { .. } => {
+                "Something already has the name this folder needed, so it was left where \
+                 it is rather than replacing it. Nothing was changed or deleted."
             }
             Self::HomeDirectoryUnavailable => {
                 "Nexus could not find your home folder, so it cannot remember where you \

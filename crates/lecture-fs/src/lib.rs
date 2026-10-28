@@ -21,6 +21,7 @@ pub mod clock;
 pub mod device_state;
 mod index_store;
 mod manifest_store;
+mod renumber_store;
 mod versioned;
 
 pub mod storage;
@@ -32,6 +33,7 @@ pub use clock::SystemClock;
 pub use device_state::{APP_SUPPORT_DIR_NAME, DeviceStateStore, VAULTS_DIR_NAME, state_base};
 pub use index_store::VaultIndexStore;
 pub use manifest_store::ManifestStore;
+pub use renumber_store::{RenumberOutcome, VaultRenumber};
 pub use storage::AtomicFsStorage;
 pub use vault::{FsVaultDirectory, LoadedVault, UnloadableLecture, VaultLoader};
 pub use vault_root::{ResolvedPath, VaultRoot};

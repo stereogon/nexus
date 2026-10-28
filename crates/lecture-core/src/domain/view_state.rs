@@ -227,6 +227,25 @@ impl ViewState {
         self.lectures.is_empty() && self.last_opened.is_none()
     }
 
+    /// Follows a lecture that has moved, keeping the place in it.
+    ///
+    /// Positions are keyed by path, so renaming a lecture's folder would otherwise orphan
+    /// its entry and `prune_to` would then delete it — meaning a renumber that touched
+    /// thirty folders would silently cost someone their place in all thirty. Losing a
+    /// scroll position is cheap, but losing it as a side effect of a tidying operation
+    /// someone asked for is a bad surprise.
+    ///
+    /// Does nothing if `from` has no remembered position, which is the common case.
+    pub fn relocate(&mut self, from: &RelativePath, to: &RelativePath) {
+        if let Some(view) = self.lectures.remove(from) {
+            self.lectures.insert(to.clone(), view);
+        }
+
+        if self.last_opened.as_ref() == Some(from) {
+            self.last_opened = Some(to.clone());
+        }
+    }
+
     /// Drops positions for lectures that are no longer in the vault.
     ///
     /// Without this the file grows forever: every lecture ever deleted or renamed would

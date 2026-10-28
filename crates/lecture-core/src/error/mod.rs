@@ -186,6 +186,13 @@ pub enum CoreError {
         number: u32,
     },
 
+    /// A rename was refused because something already holds the destination name.
+    #[error("{path} already exists")]
+    NameAlreadyTaken {
+        /// The destination that was already in use.
+        path: String,
+    },
+
     /// The home directory could not be determined, so per-device state has nowhere to go.
     #[error("the home directory could not be determined")]
     HomeDirectoryUnavailable,

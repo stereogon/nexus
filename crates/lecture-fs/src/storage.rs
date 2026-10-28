@@ -15,7 +15,7 @@ use std::path::PathBuf;
 
 use lecture_core::{CoreError, RelativePath};
 
-use crate::error::io_error;
+use crate::error::{io_error, render};
 use crate::staging::StagingFile;
 use crate::vault_root::{ResolvedPath, VaultRoot};
 
@@ -115,6 +115,41 @@ impl AtomicFsStorage {
         let path = resolved.as_path();
 
         fs::create_dir_all(path).map_err(|e| io_error("create the folder", path, e))
+    }
+
+    /// Renames `from` to `to`, refusing if anything already holds `to`.
+    ///
+    /// The refusal is the whole point. POSIX `rename` replaces an existing **file**
+    /// silently, and replaces an existing empty **directory** too, so the obvious call
+    /// is a data-loss path: a renumber whose target had been filled in the meantime
+    /// would delete whatever was there.
+    ///
+    /// # Known limitation
+    ///
+    /// The check and the rename are two steps, so something appearing at `to` in between
+    /// would not be caught — the same time-of-check/time-of-use window as
+    /// [`VaultRoot::resolve`](crate::VaultRoot::resolve), and closed the same way, by
+    /// `renameat2`-style calls that `std` does not expose and that would need `unsafe`.
+    /// Recorded in `PROGRESS.md` rather than papered over. For a single-user offline app
+    /// the residual risk is someone racing their own filesystem.
+    ///
+    /// # Errors
+    ///
+    /// Returns a containment error if either path does not resolve safely,
+    /// [`CoreError::NameAlreadyTaken`] if `to` exists, and [`CoreError::Io`] if the
+    /// rename fails.
+    pub fn rename(&self, from: &RelativePath, to: &RelativePath) -> Result<(), CoreError> {
+        let source = self.root.resolve(from)?;
+        let destination = self.root.resolve(to)?;
+
+        if fs::symlink_metadata(destination.as_path()).is_ok() {
+            return Err(CoreError::NameAlreadyTaken {
+                path: render(destination.as_path()),
+            });
+        }
+
+        fs::rename(source.as_path(), destination.as_path())
+            .map_err(|e| io_error("rename", source.as_path(), e))
     }
 
     /// Copies `at` aside to `<name>.bak`, returning where it went.

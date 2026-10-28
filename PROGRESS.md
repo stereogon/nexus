@@ -95,8 +95,11 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
 - [x] Renumber **planning** — `plan_renumber` projects `sequence` onto `NN-` prefixes,
       ordering renames so each target is free and breaking a cycle with one temporary
       name. 14 tests, including a simulator that proves no rename ever collides.
-- [ ] Renumber **application** in `lecture-fs` (rename directories, remap view state)
-      — **next substep**
+- [x] Renumber **application** — `VaultRenumber` plans from real manifests and applies
+      the renames through a non-clobbering `AtomicFsStorage::rename`, reporting where each
+      lecture went so a reading position can follow it. 12 tests on real directories.
+- [ ] `schemaVersion` migration machinery (lands with the first real migration in M2)
+      — **next substep**: `tracing` to `~/Library/Logs/LectureVault/app.log`
 - [ ] `.nexus/` rebuildable cache, including per-device view state
 - [x] `AnnotationStore` — the atomic load/save path for `annotations.json`. A missing
       file loads as an empty set (the normal state of a freshly imported lecture) while
@@ -315,6 +318,48 @@ which exists to share the backup behaviour.
 
 Stating it as one rule matters more than the individual cases, because the next stored
 file will be decided by it rather than by copying whichever neighbour was read first.
+
+**2026-10-28 · `AtomicFsStorage::rename` refuses rather than replaces**
+POSIX `rename` replaces an existing **file** silently, and an existing empty **directory**
+too. So the obvious `fs::rename` call is a data-loss path: a renumber whose target had
+been filled in the meantime would delete whatever was there. The storage method checks
+first and returns `NameAlreadyTaken`.
+
+The planner already refuses an occupied target, so this is the second line of defence
+rather than the first — and it is the one that matters, because the plan is computed
+before the renames happen. There is a test that writes a file into the destination
+*between* planning and applying, and asserts the file survives and the lecture stays
+where it was.
+
+`renameat2`/`renamex_np` with a no-replace flag would close the remaining
+time-of-check/time-of-use window properly, but both need `unsafe`, which is forbidden
+here. Same window as `VaultRoot::resolve`, recorded the same way rather than papered over.
+
+**2026-10-28 · Stopping at the first failed rename is correctness, not caution**
+The plan's renames are ordered so that each frees a name a later one needs. Carrying on
+past a failure would mean a later rename finding its target still occupied — refused if we
+are lucky, overwriting something if we are not. So `apply` stops and reports.
+
+Stopping is cheap precisely because of the locked decision: renumbering touches only the
+derived projection, `sequence` is never written, so a half-finished run still shows the
+right order in the app and only the Finder-facing names are briefly inconsistent. A test
+applies one rename by hand, re-plans, and asserts the second run finishes the job — which
+is what makes "stop" a complete answer rather than an abandoned operation.
+
+A separate test reads a `manifest.json`'s bytes before and after and asserts they are
+identical, pinning the claim that the order itself is never touched.
+
+**2026-10-28 · A renumber must not cost someone their place in thirty lectures**
+View state is keyed by path, so renaming a folder orphans its entry, and `prune_to` would
+then delete it. A renumber touching thirty folders would quietly lose the reading position
+in all thirty. Losing a scroll position is cheap; losing it as a side effect of a tidying
+operation someone asked for is a bad surprise.
+
+So `RenumberPlan::net_moves` reports net old→new names with temporary names skipped,
+`apply` turns those into full vault paths, and `ViewState::relocate` follows one. The
+alternative — giving lectures a stable id so nothing is keyed by path — is a bigger change
+than the problem, and the `cite://` links that need stability are already scoped inside a
+bundle. Recorded as the option not taken.
 
 **2026-10-28 · "Tail-first so no rename collides" is not sufficient — but my first
 counterexample for it was wrong**
