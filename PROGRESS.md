@@ -151,8 +151,9 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
       from `LectureVault/`, which was the project's earlier name
 - [x] `aarch64-apple-ios` target check wired into CI — `scripts/gate.sh` runs the whole
       §5 gate as one command and the workflow calls that same script, so there is one
-      definition rather than two. **Written and verified locally in both directions; the
-      workflow itself has not yet been observed running on GitHub.**
+      definition rather than two. Verified locally in both directions **and observed
+      green on GitHub** (run 40663652739, 46s, all eight steps `ok`) after the toolchain
+      pin below.
 - [x] Tests: coordinate validation, atomic/crash safety, order-key invariants, path
       traversal, index rebuild-from-scan (`deleting_the_cache_directory_loses_nothing_a_scan_cannot_rebuild`),
       bundle-move link integrity (`relocating_a_bundle_rewrites_nothing_inside_it`)
@@ -364,12 +365,44 @@ step under test. `check-line-limits.sh` exited 1 naming the file; the full gate 
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
 
-**2026-10-28 · Honest gap: the workflow has never run**
-The YAML is written and committed but has not executed, and there is no YAML parser on
-this machine to even check that it parses — installing one for that is not worth a §2
-question. So the workflow is **unverified**: the scripts it calls are tested in both
-directions, the file that calls them is not. It will be validated by GitHub on the next
-push. Recorded here rather than left to look like coverage.
+**2026-10-28 · The first CI run failed, and the reason was better than the fix**
+The workflow's first run went red, and not because the YAML was wrong — it ran exactly as
+intended. The runner had Rust **1.99.0**; this machine has **1.97.0**; and
+`clippy::assert_is_empty`, added somewhere between them, fired on
+`crates/lecture-core/tests/renumber.rs:78` where it could not possibly fire locally.
+
+That is a sharper lesson than the one the gate script was written for. One definition of
+*the steps* is not enough if the *compiler running them* differs — an unpinned toolchain
+makes a green local gate no evidence at all about CI. So `rust-toolchain.toml` pins the
+channel and names the components and the iPadOS target, which also lets the separate
+`rustup target add` step go: two mechanisms for one fact is how they come apart.
+
+Pinned to 1.97.0, not 1.99.0, deliberately. 1.99.0 is not installed here, and pinning to
+a toolchain that cannot be run locally would recreate the same blindness pointing the
+other way. Upgrading is now a deliberate change with its own commit, made when the new
+lints can be *seen* rather than guessed at.
+
+**2026-10-28 · Known item: 33 assertions that show nothing on failure**
+1.99.0's `assert_is_empty` is a true positive, and the lint is right about why:
+`assert!(x.is_empty())` prints no value when it fails, so a broken test says only that
+something was not empty. There are 33 of these across the suite. Not fixed in the pinning
+commit, because the fix form cannot be verified against a lint this machine cannot run —
+guessing at it would have been a second red CI run dressed up as diligence. It belongs to
+the deliberate 1.99.0 bump.
+
+**2026-10-28 · Also outstanding: the first-party actions target a deprecated Node**
+GitHub annotates every run: `actions/checkout@v4`, `actions/setup-node@v4` and
+`actions/cache@v4` target Node.js 20 and are being forced onto Node.js 24. Harmless
+today and fixed by moving to `@v5`. Recorded rather than bundled into an unrelated
+commit.
+
+**2026-10-28 · Superseded: the workflow had never run**
+*Resolved the same day — kept because the reasoning stands and the resolution is the
+point.* The YAML was committed without ever having executed, and with no YAML parser on
+this machine to check that it even parsed. Recorded as unverified rather than left to
+look like coverage. It has since run twice: once red for the toolchain reason above, then
+green. A local YAML parser was never installed and is not needed — GitHub validating the
+real file is a strictly stronger check of the same property.
 
 Only first-party actions are used — `checkout`, `setup-node`, `cache` — so there is no
 third-party action trusted with a checkout of this repository. Pinned to major tags rather
