@@ -210,7 +210,9 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
       `apply_reorganize` expose both halves, with the contract pinned on both sides by
       `fixtures/reorganize.json`. A remembered reading position follows its lecture.
       **Nothing in the window calls either command yet** — there is no button, no preview
-      panel and no confirm step, and that is the next substep.
+      panel and no confirm step. The *design* now exists: a `Reorganize vault · dry run`
+      state was added to the canvas's *Required states* artboard on 2026-10-28 (Version 15),
+      so building the panel no longer needs anything invented.
 - [x] Tests: mock converter transitions (12, in `lecture-fs`) and **real** `.pptx`/`.docx`
       fixtures (5 end-to-end against `LibreOffice` 26.8.1.1, `#[ignore]`-gated and run by
       `scripts/gate.sh` whenever `soffice` is present). The note that LibreOffice was absent
@@ -407,6 +409,74 @@ probe file was placed where the line counter sees it but `cargo` does not — a 
 step under test. `check-line-limits.sh` exited 1 naming the file; the full gate reported
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
+
+**2026-10-28 · Reorganize: where it came from, and a sentence that points the wrong way**
+The user asked what the reorganize feature is for, saying they were not sure why it was
+being built. A fair question, and the answer is worth writing down because the provenance is
+not obvious from the code.
+
+**It is not in the spec.** `claude-spec.md` contains no mention of reorganize, renumber,
+folder prefixes, path templates or dry runs — checked, zero hits. The capability traces to
+two other places:
+
+- `CLAUDE.md` §3's locked decisions, which say `01-` prefixes are a *derived projection* of
+  `sequence` kept "for Finder and Files-app legibility", that `sequence` wins when they
+  disagree, and that "the app offers a renumber". That mandates **renumber**.
+- The user's question earlier the same day — *why does the vault look flat, and what
+  happened to organising by weeks and modules*. The answer given was that facets are the
+  taxonomy and folders are physical (correct, §3), and alongside it `PathTemplate` and
+  `plan_reorganize` were built so the folder layout *could also* reflect the facets.
+
+So **reorganize is a generalisation of §3's renumber rule, not a requirement anyone wrote
+down**: filing by facets rather than by sequence prefix. That is recorded here so the next
+session does not re-derive it as something the spec asked for. The capability is sound and
+the vault is a good argument for it — three lectures deep, one of them named
+`tmscomssad18~tmscomssse01~2026~1`, a flat vault is already hard to browse in Finder. Its
+*priority* is the open question, not its correctness.
+
+**What it actually does**, so the explanation exists in one place: `preview_reorganize`
+renders each lecture's target from a `PathTemplate` and reports the moves, every lecture it
+cannot file with a reason, and how many are already in place — touching nothing.
+`apply_reorganize` re-plans rather than trusting that preview, orders the renames so each
+target is free when its turn comes, breaks a cycle with one temporary name, and reports what
+it did. `sequence` and the facets are untouched throughout; a remembered reading position
+follows its lecture; an interrupted run is safe to repeat.
+
+**The canvas now has the state it was missing.** Checked before building any of the UI, as
+§3 requires: *Required states* covered seven states and reorganize was not one of them, and
+neither workspace artboard had an entry point. Added to `States.dc.html` as `Reorganize vault
+· dry run` — the pattern field, the three counts, the moves as from/to pairs, the blocked
+list carrying its reason code, and a confirm row saying nothing has moved yet. The board grew
+from 1700 to 2180 px, so `canvas.json` was sent with it. **Version 15.**
+
+**A real defect, found by drawing it.** Writing the blocked rows meant writing the sentence a
+person actually reads, and `ReorganizeBlock::NameUnusable`'s is wrong for the common case. It
+says *"This lecture's title contains nothing usable as a folder name. Give it a title with at
+least one letter or number"* — but the usual cause is a lecture with **no course or week**
+under a template that needs one, whose title is perfectly fine. The vault has exactly that
+case today: `week-3-make`, with `facets: {}`.
+
+The cause is lost at `lecture_fs::VaultReorganize::plan`, which matches `Err(_) =>` and
+discards the render error. There are two genuinely different failures behind it:
+
+- `Slug::from_title` refuses a level — a title of only punctuation. The current sentence is
+  right for this one.
+- `RelativePath::from_segments` refuses an empty list — every level was dropped because the
+  facets it names are missing. The current sentence is wrong for this one, and this is the
+  common case.
+
+One variant, two causes, one sentence that fits only the rarer of them. The canvas now draws
+the **accurate** sentence, which makes the code the thing that has to change: split the
+variant, give each cause its own remediation, and stop discarding the error that distinguishes
+them. **Recorded as an open task and not fixed in this change** — it reaches across the domain
+enum, the IPC wire name, the Zod enum and the fixture, and it is not what the user asked for
+in the same breath.
+
+**Two other things on the canvas are now out of date**, noted rather than changed, since the
+canvas is the user's approved artefact: the *No converter found* card offers "Try Keynote
+instead", and Keynote/Pages support was removed on the user's own decision the same day; and
+the diagnostics drawer shows `~/Library/Logs/LectureVault/app.log`, which §4 amended to
+`~/Library/Logs/Nexus/`. Both would otherwise be built as drawn.
 
 **2026-10-28 · Drag-and-drop import, and the two things the canvas settled for me**
 The last gap in §2.3's sidebar line that is not actually the viewer. Dropping files on the
@@ -2957,6 +3027,17 @@ the user's instruction, 2026-10-27), local only, never pushed without being aske
   When this is picked up, the work is: detect that the vault sits on a file-provider
   volume, and either refuse with a plain explanation or switch to a write strategy that
   does not assume `rename` atomicity. Guessing which, now, would be speculative.
+
+### Open task, raised 2026-10-28
+- **`ReorganizeBlock::NameUnusable` collapses two causes and its remediation fits only the
+  rarer one.** A lecture with no course or week is told to fix its title. Split the variant,
+  give each cause a sentence, and stop discarding the render error at
+  `VaultReorganize::plan` (`Err(_) =>`). Touches the domain enum, `name_of` in
+  `crates/src-tauri/src/reorganize.rs`, `BlockReasonSchema` in `src/ipc/reorganize.ts` and
+  `fixtures/reorganize.json`. The canvas (Version 15) already shows the corrected wording.
+- **The canvas has two stale states**: *No converter found* offers Keynote, which was
+  removed; the diagnostics drawer names `~/Library/Logs/LectureVault/`. Fix on the canvas
+  before either is built.
 
 ### Design questions still open
 - **Page thumbnails.** §2.3 asks for them in the sidebar, but the sidebar already carries
