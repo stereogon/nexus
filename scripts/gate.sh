@@ -97,9 +97,9 @@ fi
 # because the dependency is genuinely environmental; running them here when it is present
 # is what stops the ignore becoming a place work goes to be forgotten.
 if [ -x "$SOFFICE" ]; then
-    # Scoped to this one target rather than `-p lecture-convert -- --ignored`, which
-    # would also run any future ignored test for Keynote or Pages -- and those launch an
-    # application in front of whoever is sitting there. A gate must not do that.
+    # Named by target rather than `-p lecture-convert -- --ignored`, so that adding an
+    # ignored test elsewhere in the crate cannot silently join the gate. Whatever runs
+    # here runs on someone's machine every time they check their work.
     run_step "converter end-to-end (LibreOffice)" \
         cargo test -p lecture-convert --test end_to_end -- --ignored
 else

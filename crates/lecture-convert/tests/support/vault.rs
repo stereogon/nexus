@@ -17,17 +17,8 @@ pub(crate) struct Fixture {
 impl Fixture {
     /// Creates `cs454/raft/source/original.pptx` inside a fresh vault.
     pub(crate) fn new() -> Self {
-        Self::rooted_at("vault")
-    }
-
-    /// The same, in a vault whose **root directory** is named `name`.
-    ///
-    /// The root is not a `Slug` -- it is wherever the person chose to keep their vault --
-    /// so it can hold characters that are forbidden inside the vault, a quote among them.
-    /// That is exactly what the iWork adapter must survive.
-    pub(crate) fn rooted_at(name: &str) -> Self {
         let vault = TempDir::new().expect("a temporary vault");
-        let root = vault.path().join(name);
+        let root = vault.path().join("vault");
         let source = root.join("cs454").join("raft").join("source");
         fs::create_dir_all(&source).expect("the bundle layout");
         fs::write(source.join("original.pptx"), b"a slide deck").expect("the original");

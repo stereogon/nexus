@@ -1,8 +1,9 @@
 //! Converting documents by driving `LibreOffice` in headless mode.
 //!
-//! The primary strategy named in `claude-spec.md` §2.2, and the one worth preferring: it
-//! handles all four non-PDF formats, runs without a GUI, and does not touch a person's
-//! open documents the way scripting Keynote does.
+//! The only converter, as of 2026-10-28. It handles all four non-PDF formats and runs
+//! without a GUI, and the `osascript` fallback that `claude-spec.md` §2.2 named beside it
+//! was built, tried against the real applications, and then removed — reasoning in
+//! `PROGRESS.md`, with the spec amended beside the original requirement.
 //!
 //! # The output name is `LibreOffice`'s to choose, not ours
 //!

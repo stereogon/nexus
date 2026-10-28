@@ -1,15 +1,15 @@
 //! Deciding whether a converter actually produced a PDF, and putting it in place.
 //!
-//! Shared by every adapter in this crate, because the checks are the same and two copies
-//! of them would drift. What a converter *is* differs; what counts as having succeeded
-//! does not.
+//! Apart from the adapter because the two concerns are different: how a converter is
+//! invoked, against what counts as having succeeded. Kept separate after the second
+//! adapter was removed, both because the seam is real and because folding it back would
+//! put `libreoffice.rs` over the 300-line limit in `CLAUDE.md` §4.
 //!
 //! # Why the exit status is not enough
 //!
 //! `LibreOffice` exits 0 having written nothing when it has no filter for a document.
-//! `osascript` exits 0 when the script ran, which is not the same as the export having
-//! worked. Either would otherwise be recorded as a `Ready` conversion pointing at a file
-//! that is not there — a lecture that imports cleanly and cannot be opened, with the cause
+//! That would otherwise be recorded as a `Ready` conversion pointing at a file that is not
+//! there — a lecture that imports cleanly and cannot be opened, with the cause
 //! no longer visible by the time anyone notices.
 
 use std::fs::{self, File};
@@ -89,10 +89,7 @@ pub(crate) fn commit(
 /// Where a converter writes its PDF before it is moved into place.
 ///
 /// Derived from the *original's* stem and placed in the destination's directory, because
-/// that is what `soffice` does with `--outdir` and there is no choice about it. The iWork
-/// adapter, which could write anywhere, follows the same convention deliberately: one
-/// intermediate name means one cleanup rule, and two conventions would eventually leave
-/// one adapter's leavings behind.
+/// that is what `soffice` does with `--outdir` and there is no choice about it.
 ///
 /// Never the destination itself. A converter that dies partway would otherwise leave a
 /// fragment at the path the manifest calls the document, and a fragment that opens is a

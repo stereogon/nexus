@@ -60,32 +60,41 @@ To achieve native speed, instant startup, low RAM usage, and effortless cross-de
        > port rather than a service and `CLAUDE.md` §3 names it that way.
      - **Secondary Fallback (macOS Native AppleScript/JXA):** If LibreOffice is not installed, invoke `/usr/bin/osascript` to silently convert `.ppt`/`.pptx` via Apple Keynote or `.doc`/`.docx` via Apple Pages in the background.
 
-      > *Amended 2026-10-28: "silently … in the background" is not achievable, and the
-      > paths are passed as arguments rather than written into the script.*
+
+      > *Removed 2026-10-28, by the user's decision: there is no secondary fallback.
+      > `LibreOffice` is the only converter.* The adapter was built, tested against a stub,
+      > and then tried against the real Keynote and Pages — and what that showed is the
+      > reason it is gone.
       >
-      > **It is not silent.** Driving Keynote or Pages through `osascript` **launches the
-      > application**. It appears in the Dock and may take focus, and AppleScript offers no
-      > flag that prevents it. The script opens one document and closes it with
-      > `saving no`, so nothing else the person has open is touched and nothing is
-      > modified — but the app does appear, and promising otherwise in a spec would become
-      > a bug report.
+      > A six-line script was wrong in two independent ways that no amount of reading
+      > would have found. `tell application "Pages"` does not start the app, and nor does
+      > an explicit `launch`: both fail with `AppleEvent` error `-600`, "Application isn't
+      > running". And `set theDocument to open sourceFile` does not return a usable
+      > document reference, so the export fails with `-609`, "Connection is invalid"; the
+      > working form opens the file and then refers to `document 1` separately. It
+      > succeeded only on the third attempt, and only with the application already running.
       >
-      > **It also needs a permission.** The first run triggers macOS's automation consent
-      > dialog, which the person must answer, and a refusal comes back as `AppleEvent`
-      > error `-1743`. That is reported as `CoreError::ConverterNotPermitted`, whose
-      > remediation names System Settings → Privacy & Security → Automation rather than
-      > suggesting a pointless retry.
+      > Each of those is an undocumented per-app quirk, and nothing pins them: they can
+      > differ between Keynote and Pages, between iWork versions, and between macOS
+      > releases, with no compiler and no test able to tell us in advance. That is a poor
+      > foundation for a path that would run rarely and be exercised least. The spec's own
+      > "silently … in the background" was also not achievable — exporting through Keynote
+      > launches Keynote, where it appears in the Dock and may take focus, and the first
+      > run needs automation consent the person has to grant in System Settings.
       >
-      > Together these are the user-visible reason `LibreOffice` is preferred when present,
-      > and they make the setup modal in the next bullet the better path rather than a
-      > consolation.
-      >
-      > **The paths are arguments, not script text.** The script is a constant containing
-      > `on run argv`; the file paths reach it as `argv`. Interpolating them would be script
-      > injection: a `Slug` forbids quotes inside a vault, but the vault's *own root* is an
-      > arbitrary path the person chose, and a quote there would end the string literal and
-      > execute what followed. Reasoning in `PROGRESS.md`.
-     - **Actionable Diagnostic:** If neither converter is available on the system, display a clean in-app setup modal with a one-click copy/run command: `brew install --cask libreoffice`.
+      > **One converter, relied on properly, beats two where the second is a guess.**
+      > Reasoning in `PROGRESS.md`.
+
+    - **Actionable Diagnostic:** If neither converter is available on the system, display a clean in-app setup modal with a one-click copy/run command: `brew install --cask libreoffice`.
+
+      > *Amended 2026-10-28: "neither converter" is now "the converter", and this is no
+      > longer a courtesy.* With the `osascript` fallback removed, this modal is the only
+      > thing standing between a machine without `LibreOffice` and a person who cannot
+      > import anything but PDFs. It is **load-bearing**, and is specified accordingly:
+      > reachable from the import that failed, not only from a settings pane, and it says
+      > plainly that the file was kept and the import will finish once `LibreOffice` is
+      > installed — because it will: the conversion stays `Queued` and the original is
+      > never discarded.
 
 ### 2.3 Side-by-Side Comprehension Workspace & On-Document Annotations
 1. **Collapsible Vault Sidebar (`Cmd+B`):**

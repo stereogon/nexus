@@ -2,10 +2,13 @@
 //!
 //! # Why this is a port and not a module
 //!
-//! Converting a `.pptx` means running `LibreOffice` or driving Keynote through
-//! `osascript`. Both are processes, both are macOS-only, and `CLAUDE.md` §3 forbids
-//! either from existing inside `lecture-core` — the crate has to compile for iPadOS,
-//! where neither can run at all.
+//! Converting a `.pptx` means running `LibreOffice`: a process, macOS-only, which
+//! `CLAUDE.md` §3 forbids from existing inside `lecture-core` — the crate has to compile
+//! for iPadOS, where it cannot run at all.
+//!
+//! A port rather than a direct call even though there is now exactly **one**
+//! implementation, because the number of implementations was never the reason. The reason
+//! is that `lecture-core` must compile where none of them can run.
 //!
 //! So the domain states *what* conversion is and *when* it may happen, and an adapter
 //! supplies *how*. The iPad gets the same state machine without a single `#[cfg]`.

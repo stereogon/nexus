@@ -198,13 +198,6 @@ pub enum CoreError {
         reason: &'static str,
     },
 
-    /// macOS refused to let Nexus control the app a converter needs.
-    #[error("Nexus is not permitted to control {converter}")]
-    ConverterNotPermitted {
-        /// The application macOS would not allow, so the message can name it.
-        converter: String,
-    },
-
     /// A conversion was asked to move from a state that does not allow it.
     #[error("a conversion cannot go from {from} to {attempted}")]
     ConversionNotPossible {
