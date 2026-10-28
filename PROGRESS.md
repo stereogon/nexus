@@ -104,7 +104,11 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
 - [x] `tracing` to `~/Library/Logs/Nexus/app.log` — daily rotation, typed events, and
       logging wired into the four places that previously discarded an error in silence.
 - [ ] `schemaVersion` migration machinery (lands with the first real migration in M2)
-- [ ] `.nexus/` rebuildable cache, including per-device view state
+- [ ] `.nexus/` rebuildable cache *(corrected 2026-10-28: this read "including per-device
+      view state", which §3 forbids outright — per-device state cannot live in `.nexus/`,
+      because deleting `.nexus/` has to lose nothing. The view state was never in scope for
+      this item; it lives in `~/Library/Application Support/Nexus/`, and the part of it that
+      names the last-opened vault now exists.)*
 - [x] `AnnotationStore` — the atomic load/save path for `annotations.json`. A missing
       file loads as an empty set (the normal state of a freshly imported lecture) while
       an unreadable one is an error, so a corrupt file can never read back as "no
@@ -409,6 +413,72 @@ probe file was placed where the line counter sees it but `cargo` does not — a 
 step under test. `check-line-limits.sh` exited 1 naming the file; the full gate reported
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
+
+**2026-10-28 · The app reopens the vault you had open, and the spec was wrong about dark mode**
+Reported from use: every launch showed the picker, and the question that came with it was
+"what happened to the `.nexus` directory which was supposed to hold all this?" — worth
+answering in full, because the answer is a locked decision rather than a missing file.
+
+**Remembering a vault was never `.nexus/`'s job.** §3's test for `.nexus/` is "can a vault
+scan rebuild it?", and this fails it twice: a scan cannot know which vault someone last
+chose, and more simply, this names *which* vault, so it cannot live inside one. It is
+per-device state, so it goes in `~/Library/Application Support/Nexus/last-vault.txt` — where
+no sync client can see it, so two devices cannot conflict over it and each keeps its own
+place.
+
+`.nexus/` itself is still unbuilt — the M1 cache item is unticked, which is why the folder
+has never appeared. That item's own wording said "`.nexus/` rebuildable cache, **including
+per-device view state**", which contradicts the locked decision it was meant to serve. The
+line was corrected rather than the design.
+
+**A line of text, not JSON.** `device_state` uses JSON because `ViewState` has fields that
+will grow. One path has nowhere to grow to, and a versioned envelope around it would be
+ceremony. The honest cost is recorded in the module: a vault directory whose name *ends* in
+a newline does not round-trip, since the trailing newline is stripped. Only `\n` is
+stripped, not all whitespace — a name ending in a space is legal and survives, and there is
+a test for it.
+
+**`recall` is infallible on purpose.** Nothing recorded, a file that will not read, a vault
+since moved, renamed or deleted — every one has the same answer, which is to ask which vault
+they want. A launch that refused to proceed because of a stale breadcrumb would be strictly
+worse than one that shows the picker, so none of these is an error to return.
+
+**But a vault that is *there* and will not open is different**, and is reported. It worked
+last launch, so silently showing the picker would read as the app having lost it (§1.4).
+`useRememberedVault` carries that one out as `lost` and the shell shows it as a note rather
+than as a failed launch.
+
+**Recording is a separate command from opening, and best-effort.** `open_vault` runs again
+after every import and every edit; a person *choosing* a vault happens once, and that is the
+event worth recording — so folding the write into `open_vault` would have made the read
+command write on every refresh. `remember_vault` is also deliberately infallible, following
+`device_state`'s breadcrumb: failing to record a convenience must never be the reason
+opening a vault reports an error. The failure is logged as its code.
+
+**The shell holds its render while looking.** One file read, so it is imperceptible, and
+painting "Open a vault" first and replacing it reads as the app forgetting and then
+remembering. The restore is folded into the existing state with a functional update, so
+someone who clicks *Open a vault* before it lands keeps the vault they chose rather than
+having it replaced.
+
+**`GroupPicker` was extracted** because `App.tsx` hit the 300-line limit — the limit doing
+its job rather than getting in the way, since the shell had started accumulating controls
+that are not the shell's business.
+
+**Not tested, and said plainly:** `useRememberedVault` has no test. There is no React
+component harness in the repo — `@testing-library/react` is an install, and §2 makes that
+the user's call — so the hook's decisions are covered only by the Rust tests underneath it
+and the payload schema beside it. The store itself has eleven tests, including the moved,
+deleted, replaced-by-a-file and hand-emptied cases.
+
+**Dark mode: the spec was wrong, and the user confirmed which way.** `claude-spec.md` line
+104 asked for an "optional Dark Mode filter for late-night reading" on the PDF, which
+contradicts §3's locked "no dark-mode PDF inversion". Raised rather than implemented, per
+§1.7; the user's answer (2026-10-28): *"i didn't want the pdf it self to become dark. only
+the UI should become dark, becuase pdf becoming dark can cuase issues with images in the
+pdf"* — which is §3's reasoning exactly. The spec is amended in place with a dated note
+beside the original wording, so nobody has to guess later whether the difference was
+intentional.
 
 **2026-10-28 · Every real conversion was crashing, and the tests could not have caught it**
 Reported from use: a dropped `.pptx` came in as "could not be converted to a PDF", with a

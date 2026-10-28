@@ -158,3 +158,36 @@ export async function openVault(path: string): Promise<VaultSummary> {
 
   return VaultSummarySchema.parse(payload);
 }
+
+/**
+ * What `last_vault` sends: a path, or nothing remembered.
+ *
+ * Exported so the shape can be asserted directly. It is the one payload in this file with
+ * no object around it, which makes it the one most easily got wrong on either side — Rust
+ * sends `null` for `None`, and a schema that accepted `""` as well would turn "nothing
+ * remembered" into a path pointing at the app bundle.
+ */
+export const LastVaultSchema = z.string().nullable();
+
+/**
+ * Records the vault to reopen on the next launch.
+ *
+ * Does not reject on a failure to record: the Rust side logs it and carries on, because
+ * losing a convenience must not be the reason opening a vault reports an error.
+ */
+export async function rememberVault(path: string): Promise<void> {
+  await invoke("remember_vault", { path });
+}
+
+/**
+ * The vault to reopen, or `null` if there is none to reopen.
+ *
+ * `null` covers nothing recorded yet *and* a vault that has since moved, been renamed or
+ * been deleted. They are not distinguished because the answer to all of them is the same
+ * screen: choose a vault.
+ */
+export async function lastVault(): Promise<string | null> {
+  const payload: unknown = await invoke("last_vault");
+
+  return LastVaultSchema.parse(payload);
+}

@@ -101,7 +101,7 @@ To achieve native speed, instant startup, low RAM usage, and effortless cross-de
    - Displays all lecture bundles in the local vault with instant fuzzy search (`Cmd+P`) across lecture titles, Markdown notes, and highlighted PDF quotes.
    - Displays PDF page thumbnails and document outline/bookmarks for the active lecture.
 2. **Left Split Pane — High-Speed Virtualized PDF & Slide Viewer:**
-   - Virtualized continuous scroll and single-page/slide presentation modes, zoom controls (`Cmd++`, `Cmd+-`, Fit Width, Fit Page), and optional Dark Mode filter for late-night reading.
+   - Virtualized continuous scroll and single-page/slide presentation modes, zoom controls (`Cmd++`, `Cmd+-`, Fit Width, Fit Page). *(Amended 2026-10-28: this read "and optional Dark Mode filter for late-night reading". There is no PDF dark mode and there will not be one — inverting a page corrupts photographs, colour-coded diagrams and scans, which is the locked decision in `CLAUDE.md` §3. Confirmed with the user the same day: the intent was always that only the **UI** goes dark, with the page staying light on a dark bed. Reasoning in `PROGRESS.md`.)*
    - **Text Selection Highlights:** Select sentences on any PDF/slide to highlight in customizable semantic colors (Yellow = Key Concept, Green = Definition, Red = Exam/Important, Blue = Question).
    - **Area / Region Highlights:** Hold `Alt/Option` and drag a bounding box around slide diagrams, equations, or scanned regions.
    - **Direct On-Slide / Margin Text Boxes:** Select the Text Tool (`T`), click anywhere on a slide or margin, and type annotations directly on top of the document. Text boxes must be draggable, resizable, and persisted in `annotations.json`.

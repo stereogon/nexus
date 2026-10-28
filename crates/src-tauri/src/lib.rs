@@ -17,7 +17,9 @@ pub use edit::edit_lecture;
 pub use import::{import_document, importable_formats};
 pub use picker::{pick_document, pick_vault_directory};
 pub use reorganize::{apply_reorganize, preview_reorganize};
-pub use vault::{CommandError, LectureRow, ProblemRow, VaultSummary, open_vault};
+pub use vault::{
+    CommandError, LectureRow, ProblemRow, VaultSummary, last_vault, open_vault, remember_vault,
+};
 
 /// Starts the desktop application, returning when the last window closes.
 ///
@@ -34,6 +36,8 @@ pub fn run() -> Result<(), tauri::Error> {
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             open_vault,
+            remember_vault,
+            last_vault,
             pick_vault_directory,
             pick_document,
             import_document,

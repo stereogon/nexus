@@ -23,7 +23,8 @@
 
 use lecture_core::{ConversionState, CoreError, Label};
 use lecture_fs::{
-    AtomicFsStorage, LoadedVault, ManifestStore, SystemClock, VaultLoader, VaultRoot,
+    AtomicFsStorage, LoadedVault, ManifestStore, SystemClock, VaultLoader, VaultRoot, last_vault,
+    logging,
 };
 use serde::Serialize;
 
@@ -174,4 +175,38 @@ const fn name_of(state: ConversionState) -> &'static str {
         ConversionState::Ready => "ready",
         ConversionState::Failed => "failed",
     }
+}
+
+/// Records the vault to reopen on the next launch.
+///
+/// Separate from [`open_vault`] rather than folded into it, because `open_vault` runs again
+/// after every import and every edit, while a person *choosing* a vault happens once — and
+/// that is the event worth recording. It also keeps this crate's read command a read.
+///
+/// Deliberately infallible, following `device_state`'s breadcrumb: failing to write a
+/// convenience must never be the reason opening a vault reports an error. A failure is
+/// logged as its code, and the person simply picks their vault again next time.
+#[tauri::command]
+pub fn remember_vault(path: &str) {
+    if let Err(error) = record(path) {
+        logging::failure("remember the vault to reopen", &error);
+    }
+}
+
+/// The fallible half, so the command itself stays one decision.
+fn record(path: &str) -> Result<(), CoreError> {
+    let root = VaultRoot::open(std::path::Path::new(path))?;
+
+    last_vault::remember_for_this_device(&root)
+}
+
+/// The vault to reopen, if one was recorded and is still there.
+///
+/// `None` covers every absence — nothing recorded yet, or a vault since moved, renamed or
+/// deleted. They are not distinguished because the UI's answer to all of them is the same
+/// screen, and inventing a difference here would invite a branch that cannot be useful.
+#[tauri::command]
+#[must_use]
+pub fn last_vault() -> Option<String> {
+    last_vault::recall_for_this_device().map(|path| path.display().to_string())
 }

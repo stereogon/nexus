@@ -12,7 +12,7 @@
  * which vault is open, and folding them in would mean enumerating combinations that cannot
  * actually occur — an editing-with-no-vault state, a grouped-but-failed one.
  */
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { pickDocument, pickVaultDirectory } from "./ipc/picker";
 import {
@@ -20,17 +20,20 @@ import {
   editLecture,
   importDocument,
   openVault,
+  rememberVault,
   type CommandError,
   type LectureEdit,
   type LectureRow,
   type VaultSummary,
 } from "./ipc/vault";
 import { DropOverlay } from "./ui/DropOverlay";
+import { GroupPicker } from "./ui/GroupPicker";
 import { noteFor, noteForDrop, type DropOutcome } from "./ui/dropped";
 import { LectureEditor } from "./ui/LectureEditor";
 import { LectureList, type GroupBy } from "./ui/LectureList";
 import { useDropZone } from "./ui/useDropZone";
 import { useMetaShortcut } from "./ui/useMetaShortcut";
+import { useRememberedVault } from "./ui/useRememberedVault";
 
 type VaultState =
   | { readonly kind: "idle" }
@@ -40,24 +43,6 @@ type VaultState =
       readonly note: string | null;
     }
   | { readonly kind: "failed"; readonly error: CommandError };
-
-const GROUPINGS: readonly (readonly [GroupBy, string])[] = [
-  ["none", "Nothing"],
-  ["course", "Course"],
-  ["module", "Module"],
-  ["week", "Week"],
-];
-
-/**
- * The grouping a `<select>` value names.
- *
- * Matched against the list the options were drawn from rather than asserted with `as`:
- * the value is a string as far as the DOM is concerned, and claiming otherwise would be
- * exactly the unchecked cast §4 rules out.
- */
-function groupingFrom(value: string): GroupBy {
-  return GROUPINGS.find(([name]) => name === value)?.[0] ?? "none";
-}
 
 function Failure({ error }: { readonly error: CommandError }) {
   return (
@@ -73,6 +58,25 @@ export function App() {
   const [busy, setBusy] = useState(false);
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
   const [editing, setEditing] = useState<LectureRow | null>(null);
+  const remembered = useRememberedVault();
+
+  // Folded into `state` once it arrives, rather than rendering from two sources. The
+  // functional update is what makes that safe: it fills an *idle* shell and leaves any
+  // other state alone, so someone who clicks "Open a vault" before the restore lands keeps
+  // the vault they chose.
+  useEffect(() => {
+    const restored = remembered.summary;
+
+    if (restored === null) {
+      return;
+    }
+
+    setState((current) =>
+      current.kind === "idle"
+        ? { kind: "open", summary: restored, note: null }
+        : current,
+    );
+  }, [remembered.summary]);
 
   /** Runs an action that changes the vault, then re-reads the vault from disk. */
   const against = useCallback(
@@ -108,11 +112,13 @@ export function App() {
         // point: someone who opens the picker by accident keeps the vault they had.
         if (chosen !== null) {
           setEditing(null);
-          setState({
-            kind: "open",
-            summary: await openVault(chosen),
-            note: null,
-          });
+
+          const summary = await openVault(chosen);
+
+          // Recorded only once the open has succeeded, so a folder that turns out not to be
+          // a vault is not the one waiting on the next launch.
+          await rememberVault(chosen);
+          setState({ kind: "open", summary, note: null });
         }
       } catch (thrown: unknown) {
         setState({ kind: "failed", error: asCommandError(thrown) });
@@ -203,6 +209,16 @@ export function App() {
   // The canvas's drop state promises ⌘O opens the browser, so it has to.
   useMetaShortcut("o", state.kind === "open" && !busy, add);
 
+  // One file read, so this is imperceptible -- and painting the empty state first would
+  // read as the app having forgotten the vault and then remembered it.
+  if (remembered.checking && state.kind === "idle") {
+    return (
+      <div className="app">
+        <div className="titlebar" />
+      </div>
+    );
+  }
+
   return (
     <div className="app">
       <div className="titlebar" />
@@ -226,25 +242,14 @@ export function App() {
               >
                 Add a lecture
               </button>
-              <label className="field inline">
-                <span>Group by</span>
-                <select
-                  onChange={(event) => {
-                    setGroupBy(groupingFrom(event.target.value));
-                  }}
-                  value={groupBy}
-                >
-                  {GROUPINGS.map(([value, name]) => (
-                    <option key={value} value={value}>
-                      {name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <GroupPicker onChange={setGroupBy} value={groupBy} />
             </>
           )}
         </div>
 
+        {state.kind === "idle" && remembered.lost !== null && (
+          <Failure error={remembered.lost} />
+        )}
         {state.kind === "failed" && <Failure error={state.error} />}
         {zone.failure !== null && <Failure error={zone.failure} />}
         {state.kind === "open" && (
