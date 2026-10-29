@@ -414,6 +414,53 @@ step under test. `check-line-limits.sh` exited 1 naming the file; the full gate 
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
 
+**2026-10-29 · Three things the first real run of the viewer exposed**
+The user opened a lecture successfully in the app, and in doing so found two bugs and one
+missing feature. All three were in what surrounds the viewer rather than in it.
+
+**1. `logging::vault_opened` had no caller, so a working session logged nothing.** The
+function was written, documented and never invoked. Every failure path *was* wired, so the
+log file was created and stayed zero bytes on every run that went right — which is
+indistinguishable from logging being broken, and was reported as exactly that. Now
+`open_vault` times the walk and records it.
+
+The test is `crates/src-tauri/tests/vault_logging.rs`, and it was checked by removing the
+call again: it fails with an empty log, which is the symptom that was reported, and passes
+with the call. It asserts the counts and the timing reach disk **and** that neither the
+lecture title nor the vault path does — a path carries folder names, which carry course
+titles, so §4's rule is one the one new log line could most easily have broken.
+
+Worth naming: the missing call was invisible to every existing test, because a test that
+exercises a function cannot notice that production never calls it. The only thing that
+catches a *missing* call is a test that drives the real entry point and looks at the
+output, which is what this one does.
+
+**2. A remediation sentence pointed at a file that is never written.** The fallback error
+named `~/Library/Logs/Nexus/app.log`; `tracing_appender::rolling::daily` writes
+`app.log.2026-10-29`. So the one message whose entire job is to tell a stuck reader where to
+look sent them to a path that does not exist. §1.4 is specifically about this reader. The
+message now names the folder, and CLAUDE.md §4 carries a dated clarification because the
+wrong wording had been copied out of it.
+
+**3. The dev server opened in a browser said "this is a bug in Nexus", which was false.**
+`localhost:1420` in a real browser has no IPC to reach, so every call fails and the generic
+fallback blamed Nexus for a bug that is not there. `asCommandError` now checks `isTauri()`
+first and says what is actually true: this page is the development server, the window is
+where Nexus can read files, run `npm run tauri dev`.
+
+Three tests cover it, including one proving the check did not become a filter in front of
+every rejection — a well-formed `CoreError` still passes through outside the window. The
+generic branch needed `globalThis.isTauri` set in the test, because that flag is what
+`isTauri()` reads and the Tauri runtime is what sets it; without that the old test would
+have silently started checking the new branch instead of the one it was written for.
+
+**4. Text selection does not exist yet, and it is this milestone's next item.** The viewer
+renders pages to canvas only. A canvas has no text, so there is nothing to select — pdf.js
+builds a separate transparent text layer, positioned glyph by glyph over the canvas, and
+that layer is what a cursor interacts with. It is M3's third checklist item ("text
+highlights"), and selection is its prerequisite rather than a separate feature: spec line
+105 and Journey 2 both start from selected text. Not deferred, just not reached.
+
 **2026-10-29 · The viewer draws pages, and one withheld file was not withheld enough**
 Milestone 3's first working substep: a lecture opens, its pages render, virtualised, with
 the toolbar the canvas specifies.

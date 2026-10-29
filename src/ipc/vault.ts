@@ -18,7 +18,7 @@
  * `Display` text, which interpolates paths. So a rejection is itself a payload needing
  * validation, and `asCommandError` does that rather than trusting its shape.
  */
-import { invoke } from "@tauri-apps/api/core";
+import { invoke, isTauri } from "@tauri-apps/api/core";
 import * as z from "zod";
 
 /** The conversion states the UI can be told about, matching `name_of` in `vault.rs`. */
@@ -87,12 +87,24 @@ export function asCommandError(thrown: unknown): CommandError {
     return parsed.data;
   }
 
+  // Checked before the generic message, because outside the Nexus window every call
+  // fails for one knowable reason and blaming Nexus for it would be untrue.
+  if (!isTauri()) {
+    return {
+      code: "ERR_NOT_THE_NEXUS_WINDOW",
+      remediation:
+        "This page is the development server, opened in a browser. Nexus reads your " +
+        "files through its own window, which a browser tab has no way to reach, so " +
+        "nothing here can work. Run `npm run tauri dev` and use the window it opens.",
+    };
+  }
+
   return {
     code: "ERR_UNEXPECTED_IPC_FAILURE",
     remediation:
       "Nexus hit a failure it does not have a message for. This is a bug in Nexus " +
-      "rather than something you did; the log at ~/Library/Logs/Nexus/app.log has the " +
-      "detail.",
+      "rather than something you did. The log is in the ~/Library/Logs/Nexus folder, " +
+      "in the file for today's date.",
   };
 }
 

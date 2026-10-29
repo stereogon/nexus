@@ -110,11 +110,23 @@ pub struct VaultSummary {
 /// summary instead, not as a failure.
 #[tauri::command]
 pub fn open_vault(path: &str) -> Result<VaultSummary, CommandError> {
+    let started = std::time::Instant::now();
     let root = VaultRoot::open(std::path::Path::new(path))?;
     let opened = root.as_path().display().to_string();
     let loader = VaultLoader::new(ManifestStore::new(AtomicFsStorage::new(root), SystemClock));
+    let walked = loader.load()?;
 
-    Ok(summarise(opened, &loader.load()?))
+    // The one event an ordinary, successful session produces. Without it the log stayed
+    // empty on every run that went right, which read as logging being broken -- see the
+    // 2026-10-29 note in PROGRESS.md.
+    lecture_fs::logging::vault_opened(
+        walked.bundles.len(),
+        walked.skipped.len(),
+        walked.unloadable.len(),
+        started.elapsed(),
+    );
+
+    Ok(summarise(opened, &walked))
 }
 
 /// Flattens a loaded vault into the rows the UI draws.

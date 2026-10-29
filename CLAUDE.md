@@ -266,8 +266,12 @@ and explain why. Rationale is recorded in `PROGRESS.md`.
 - Source files stay under **300 lines**. Over that, split into focused modules.
 - No file may be left with stub behaviour that reads as complete. Incomplete work is
   recorded in `PROGRESS.md` and named in the reply.
-- Structured logging via `tracing` to `~/Library/Logs/Nexus/app.log`. Log codes and
-  timings, never the contents of someone's notes. *(Amended 2026-10-28: this said
+- Structured logging via `tracing` to `~/Library/Logs/Nexus/`. Log codes and
+  timings, never the contents of someone's notes. *(Clarified 2026-10-29: this read
+  `.../Nexus/app.log`, and no such file is ever written — the appender rolls daily, so the
+  files are `app.log.2026-10-29` and so on. The wording mattered because a `CoreError`
+  remediation sentence had copied it and was sending the reader to a path that does not
+  exist. The folder is the stable thing to name.)* *(Amended 2026-10-28: this said
   `~/Library/Logs/LectureVault/`, which is the project's earlier name — it survives in the
   `lecture-core` / `lecture-fs` crate names, but the app is Nexus and this directory is
   one a person actually opens in Finder. Nothing had been written to the old path, so
