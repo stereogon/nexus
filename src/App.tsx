@@ -43,6 +43,7 @@ import { useDropZone } from "./ui/useDropZone";
 import { useMetaShortcut } from "./ui/useMetaShortcut";
 import { useOpenLecture } from "./ui/useOpenLecture";
 import { useRememberedVault } from "./ui/useRememberedVault";
+import { useTheme } from "./ui/useTheme";
 import { Welcome } from "./ui/Welcome";
 
 type VaultState =
@@ -63,6 +64,7 @@ export function App() {
   const [editing, setEditing] = useState<LectureRow | null>(null);
   const remembered = useRememberedVault();
   const reading = useOpenLecture();
+  const appearance = useTheme();
 
   // Folded into `state` once it arrives, rather than rendering from two sources. The
   // functional update is what makes that safe: it fills an *idle* shell and leaves any
@@ -222,10 +224,12 @@ export function App() {
     <div className="app">
       <TitleBar
         lecture={editing ?? open?.lecture ?? null}
+        onCycleTheme={appearance.cycle}
         onToggleSidebar={() => {
           setSidebarShown(!sidebarShown);
         }}
         sidebarShown={sidebarShown}
+        theme={appearance.theme}
       />
 
       <div className="panes">

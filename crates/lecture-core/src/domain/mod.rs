@@ -31,6 +31,7 @@ mod schema;
 mod slug;
 mod source;
 mod text;
+mod theme;
 mod timestamp;
 mod vault_index;
 mod vault_scan;
@@ -73,6 +74,7 @@ pub use reorganize::{
 pub use schema::{SchemaProbe, SchemaRange};
 pub use slug::Slug;
 pub use source::Source;
+pub use theme::Theme;
 pub use timestamp::Timestamp;
 pub use vault_index::{
     CACHE_DIR_NAME, INDEX_FILE_NAME, INDEX_SCHEMA, INDEX_SCHEMA_VERSION, VaultIndex,

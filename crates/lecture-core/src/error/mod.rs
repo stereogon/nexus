@@ -79,6 +79,13 @@ pub enum CoreError {
 
     /// A component of a path inside the vault was a symbolic link.
     ///
+    /// A theme name that is not one of the three.
+    #[error("`{given}` is not a theme Nexus knows")]
+    UnknownTheme {
+        /// What was given, reproduced so a hand-edited file is diagnosable.
+        given: String,
+    },
+
     /// Refused whatever the link points at, including another location inside the same
     /// vault: an alias creates two routes to one bundle, which double-counts lectures
     /// on a vault walk and can make a sync client chase its own tail.

@@ -30,6 +30,7 @@ mod reorganize_store;
 mod versioned;
 
 pub mod storage;
+pub mod theme;
 pub mod vault;
 pub mod vault_root;
 

@@ -23,6 +23,8 @@ import {
 import { usePdfDocument } from "../pdf/useDocument";
 import { DocumentNotice } from "./DocumentNotice";
 import { PdfPage } from "./PdfPage";
+import { PdfToolbar } from "./PdfToolbar";
+import type { ViewMode } from "./viewMode";
 
 /** The gap between pages, matching the artboard's page separation. */
 const PAGE_GAP = 16;
@@ -58,6 +60,11 @@ export function PdfViewer({
   const { state, page } = usePdfDocument(documentUrl(document));
   const scroller = useRef<HTMLDivElement | null>(null);
   const [zoom, setZoom] = useState<Zoom>({ kind: "fit" });
+  const [mode, setMode] = useState<ViewMode>("scroll");
+  // Only consulted in page mode. In scroll mode the page being read is derived from the
+  // scroll offset instead, so there is one source of truth per mode rather than two that
+  // can disagree.
+  const [pageIndex, setPageIndex] = useState(0);
   const [scrollTop, setScrollTop] = useState(0);
   const [viewport, setViewport] = useState({ width: 0, height: 0 });
 
@@ -100,8 +107,23 @@ export function PdfViewer({
     state.sizes.map((size) => size.height * scale),
     PAGE_GAP,
   );
-  const window = renderWindow(boxes, scrollTop, viewport.height);
-  const showing = currentIndex(boxes, scrollTop, viewport.height);
+  const lastPage = Math.max(0, state.sizes.length - 1);
+  const showing =
+    mode === "page"
+      ? Math.min(pageIndex, lastPage)
+      : currentIndex(boxes, scrollTop, viewport.height);
+
+  // One page mounted in page mode, the visible run plus its buffer in scroll mode.
+  const window =
+    mode === "page"
+      ? state.sizes.length === 0
+        ? null
+        : { first: showing, last: showing }
+      : renderWindow(boxes, scrollTop, viewport.height);
+
+  const shown = boxes[showing];
+  const stackHeight =
+    mode === "page" ? (shown?.height ?? 0) : totalHeight(boxes);
 
   const onScroll = useCallback(() => {
     setScrollTop(scroller.current?.scrollTop ?? 0);
@@ -114,55 +136,81 @@ export function PdfViewer({
     [scale],
   );
 
+  /**
+   * Goes to a page, in whichever way the current mode means.
+   *
+   * Scrolling rather than setting state in scroll mode is deliberate: the counter is
+   * derived from the scroll offset there, so moving the offset is what moves the counter.
+   * Setting a separate index as well would give two sources of truth that drift apart the
+   * moment someone scrolls by hand.
+   */
+  const goTo = useCallback(
+    (index: number) => {
+      const wanted = Math.min(Math.max(0, index), lastPage);
+
+      if (mode === "page") {
+        setPageIndex(wanted);
+
+        // Back to the top of the new page: keeping the old offset would open a page
+        // part-way down for no reason the reader can see.
+        scroller.current?.scrollTo({ top: 0 });
+
+        return;
+      }
+
+      const box = boxes[wanted];
+
+      if (box !== undefined) {
+        scroller.current?.scrollTo({ top: box.top, behavior: "smooth" });
+      }
+    },
+    [boxes, lastPage, mode],
+  );
+
+  /** Switches layout, keeping the page the person was reading. */
+  const changeMode = useCallback(
+    (next: ViewMode) => {
+      if (next === mode) {
+        return;
+      }
+
+      // Captured before the switch, because `showing` is computed differently either side
+      // of it and the whole point is to land on the same page.
+      const staying = showing;
+
+      setMode(next);
+      setPageIndex(staying);
+
+      if (next === "scroll") {
+        // After the stack is laid out again, or the offset is applied to the old one.
+        requestAnimationFrame(() => {
+          scroller.current?.scrollTo({ top: boxes[staying]?.top ?? 0 });
+        });
+      } else {
+        scroller.current?.scrollTo({ top: 0 });
+      }
+    },
+    [boxes, mode, showing],
+  );
+
   return (
     <section className="viewer">
-      <div className="viewer-bar">
-        <button className="quiet" onClick={onClose} type="button">
-          ← Vault
-        </button>
-        <span className="viewer-title">{title}</span>
-
-        <span className="viewer-pages">
-          {state.sizes.length === 0
-            ? "—"
-            : `${String(showing + 1)} / ${String(state.sizes.length)}`}
-        </span>
-
-        <div className="viewer-zoom">
-          <button
-            aria-label="Zoom out"
-            className="quiet"
-            disabled={scale <= ZOOM_LIMITS.min}
-            onClick={() => {
-              changeZoom(-1);
-            }}
-            type="button"
-          >
-            −
-          </button>
-          <span className="viewer-scale">{`${String(Math.round(scale * 100))}%`}</span>
-          <button
-            aria-label="Zoom in"
-            className="quiet"
-            disabled={scale >= ZOOM_LIMITS.max}
-            onClick={() => {
-              changeZoom(1);
-            }}
-            type="button"
-          >
-            +
-          </button>
-          <button
-            className={zoom.kind === "fit" ? "quiet on" : "quiet"}
-            onClick={() => {
-              setZoom({ kind: "fit" });
-            }}
-            type="button"
-          >
-            Fit width
-          </button>
-        </div>
-      </div>
+      <PdfToolbar
+        fitting={zoom.kind === "fit"}
+        limits={ZOOM_LIMITS}
+        mode={mode}
+        onClose={onClose}
+        onFit={() => {
+          setZoom({ kind: "fit" });
+        }}
+        onGoTo={goTo}
+        onMode={changeMode}
+        onZoom={changeZoom}
+        pages={state.sizes.length}
+        scale={scale}
+        showing={showing}
+        title={title}
+      />
 
       <DocumentNotice
         needsAttention={document.needsAttention}
@@ -178,7 +226,7 @@ export function PdfViewer({
           </div>
         )}
 
-        <div className="pdf-stack" style={{ height: totalHeight(boxes) }}>
+        <div className="pdf-stack" style={{ height: stackHeight }}>
           {window !== null &&
             page !== null &&
             state.sizes.slice(window.first, window.last + 1).map((size, offset) => {
@@ -192,7 +240,9 @@ export function PdfViewer({
                   key={index}
                   scale={scale}
                   source={page}
-                  top={box.top}
+                  // In page mode the one mounted page sits at the top of its own stack,
+                  // not at the offset it would have had in the full document.
+                  top={mode === "page" ? 0 : box.top}
                   width={size.width * scale}
                 />
               );

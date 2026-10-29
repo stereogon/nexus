@@ -10,7 +10,7 @@
  * the canvas should gain, rather than left as quiet differences.
  */
 import type { LectureRow, ProblemRow } from "../ipc/vault";
-import { GROUPINGS, type GroupBy, type SidebarRow } from "./sidebarRows";
+import { GROUPINGS, shortPath, type GroupBy, type SidebarRow } from "./sidebarRows";
 
 function SearchIcon() {
   return (
@@ -84,7 +84,7 @@ function Lecture({
         <span className="row-num">{row.num}</span>
         <span className="row-title">{row.lecture.title}</span>
         {waiting && (
-          <span className="row-meta" data-busy={row.meta === "Converting"}>
+          <span className="row-meta" data-state={row.lecture.conversion}>
             {row.meta}
           </span>
         )}
@@ -232,7 +232,7 @@ export function Sidebar({
 
       <div className="sidebar-foot">
         <FolderIcon />
-        <span title={root}>{root}</span>
+        <span title={root}>{shortPath(root)}</span>
       </div>
     </aside>
   );

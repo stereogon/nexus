@@ -59,6 +59,9 @@
   /* The accent at a tenth, for a selected row's bed. An explicit value per theme rather
      than a `color-mix`, as with `accent-wash` above. */
   --accent-soft: rgba(190, 26, 114, 0.1);
+  /* The exam semantic at a tenth, for the pill on a lecture that could not be converted.
+     An explicit value per theme, like the other washes in this file. */
+  --exam-wash: rgba(224, 82, 60, 0.12);
 
   /* The four highlight semantics. Each also carries a letter glyph (K/D/E/Q), so the set
      never relies on hue alone. */
@@ -79,35 +82,41 @@
   --gap: 12px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --accent: #ff72c6;
-    /* On the dark accent the label is dark, not white -- the canvas is explicit about it,
-       and white on #FF72C6 would not carry the contrast. */
-    --on-accent: #2b0918;
-    /* Derived, not taken: the canvas draws the drop state on the light artboard only. The
-       dark accent is lighter, so a 6% wash all but disappears on #16161a. */
-    --accent-wash: rgba(255, 114, 198, 0.1);
-    --scrim: rgba(22, 22, 26, 0.86);
+/* The dark palette, declared once.
+   `useTheme` resolves "follow the system" in JavaScript and always writes a concrete
+   `data-theme`, so this needs no `prefers-color-scheme` twin. The alternative -- a media
+   query for the system case plus this rule for a pinned one -- means maintaining two
+   copies of every token, and the first of them to be forgotten is a bug nobody sees until
+   they switch themes. */
+:root[data-theme="dark"] {
+  --accent: #ff72c6;
+  /* On the dark accent the label is dark, not white -- the canvas is explicit about it,
+     and white on #FF72C6 would not carry the contrast. */
+  --on-accent: #2b0918;
+  /* Derived, not taken: the canvas draws the drop state on the light artboard only. The
+     dark accent is lighter, so a 6% wash all but disappears on #16161a. */
+  --accent-wash: rgba(255, 114, 198, 0.1);
+  --scrim: rgba(22, 22, 26, 0.86);
 
-    --chrome: #16161a;
-    --surface: #1a1a1f;
-    --viewer-bed: #0f0f12;
-    --border: #2c2c34;
-    --border-strong: #3a3a44;
-    --text: #eceae7;
-    --text-faint: #8f8b84;
-    --row-text: #d6d3ce;
-    --field: #1f1f25;
-    --track: #1f1f25;
-    --segment-on: #2e2e38;
-    --kbd: #26262e;
-    --kbd-border: #333340;
-    --accent-soft: rgba(255, 114, 198, 0.1);
-    --text-secondary: #a8a49d;
-    --text-meta: #8f8b84;
-  }
+  --chrome: #16161a;
+  --surface: #1a1a1f;
+  --viewer-bed: #0f0f12;
+  --border: #2c2c34;
+  --border-strong: #3a3a44;
+  --text: #eceae7;
+  --text-faint: #8f8b84;
+  --row-text: #d6d3ce;
+  --field: #1f1f25;
+  --track: #1f1f25;
+  --segment-on: #2e2e38;
+  --kbd: #26262e;
+  --kbd-border: #333340;
+  --accent-soft: rgba(255, 114, 198, 0.1);
+  --exam-wash: rgba(224, 82, 60, 0.2);
+  --text-secondary: #a8a49d;
+  --text-meta: #8f8b84;
 }
+
 
 * {
   box-sizing: border-box;
@@ -443,7 +452,15 @@ button:focus-visible {
    photographs, colour-coded diagrams and scans. Only the bed around it changes.
    --------------------------------------------------------------------------------- */
 
+/* `flex: 1` is load-bearing. Without it this sizes to its content inside `.panes`, which
+   leaves the rest of the window blank -- and, because the bed then measures zero, fit-width
+   falls back to 100% and the page overflows a pane narrower than itself. The canvas gives
+   this pane `flex: 999 1 460px`; one growing pane beside a fixed sidebar is the same thing.
+   `min-width: 0` lets it shrink below the page's width rather than pushing the layout
+   wider, which is what makes the bed scroll instead of the window. */
 .viewer {
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -467,14 +484,6 @@ button:focus-visible {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-/* Pushed right, and tabular so the number does not shift the toolbar as pages change. */
-.viewer-pages {
-  margin-left: auto;
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  color: var(--text-meta);
 }
 
 .viewer-zoom {
@@ -526,10 +535,16 @@ button.quiet.on {
   width: 100%;
 }
 
+/* Centred with `margin: auto` between `left: 0` and `right: 0`, not with a translate.
+   A `translateX(-50%)` off `left: 50%` pushes the left half of an over-wide page outside
+   the scrollable area, where no amount of scrolling reaches it -- which is what cut the
+   first few characters off every line. With auto margins, an element wider than its
+   container resolves them to zero and aligns to the start, so it stays reachable. */
 .pdf-page {
   position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
+  margin-inline: auto;
   background: var(--surface);
   box-shadow: 0 1px 3px rgb(0 0 0 / 18%), 0 8px 24px rgb(0 0 0 / 10%);
 }
@@ -788,6 +803,16 @@ button.chrome-icon:hover:not(:disabled) {
   border-color: var(--border);
 }
 
+/* A toggle has to show its state, not just change something elsewhere. */
+button.chrome-icon[aria-pressed="true"] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+button.chrome-icon:disabled {
+  opacity: 0.4;
+}
+
 .panes {
   flex: 1 1 auto;
   min-height: 0;
@@ -942,9 +967,12 @@ button.chrome-icon:hover:not(:disabled) {
   font-weight: 500;
 }
 
+/* The canvas shows two-digit prefixes and sizes this at 16px. Real folders here are named
+   `0104-J-no-solutions`, so the column has to be able to hold four digits: fixed at 16px,
+   `0104` simply drew on top of the title. A minimum keeps the common case aligned. */
 .row-num {
   flex: 0 0 auto;
-  width: 16px;
+  min-width: 16px;
   color: var(--text-faint);
   font-family: var(--font-mono);
   font-size: 11px;
@@ -969,15 +997,31 @@ button.chrome-icon:hover:not(:disabled) {
   font-size: 11px;
 }
 
-/* A lecture mid-conversion says so in a pill, per the artboards. */
-.row-meta[data-busy="true"] {
+/* A lecture that is waiting, or that could not be converted, says so in a pill -- per the
+   artboards, which draw `Converting` that way. `Failed` was being drawn as bare monospace
+   text, which read as debugging output rather than as a state. */
+.row-meta[data-state="converting"],
+.row-meta[data-state="queued"],
+.row-meta[data-state="failed"] {
   padding: 1px 6px;
-  background: var(--accent-soft);
   border-radius: 20px;
-  color: var(--accent);
   font-family: var(--font-ui);
   font-size: 10px;
   font-weight: 500;
+}
+
+.row-meta[data-state="converting"],
+.row-meta[data-state="queued"] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* Not alarming, but not the same as "working": the exam semantic is the canvas's colour
+   for something needing attention, and it differs from the accent in lightness as well as
+   hue, so the two pills are distinguishable without relying on colour at all. */
+.row-meta[data-state="failed"] {
+  background: var(--exam-wash);
+  color: var(--semantic-exam);
 }
 
 /* Revealed on hover, and always present for a keyboard: a control that appears only on
@@ -1014,6 +1058,10 @@ button.row-edit:focus-visible {
   font-size: 11px;
 }
 
+/* No `direction: rtl` here. It was a trick to keep the end of a long path visible, and it
+   moved the leading slash to the end: `/Users/me/NexusVault` was drawn as
+   `Users/me/NexusVault/`. The tail is chosen in `shortPath` instead, where it can be
+   tested. */
 .sidebar-foot span {
   flex: 1 1 auto;
   min-width: 0;
@@ -1021,7 +1069,6 @@ button.row-edit:focus-visible {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: var(--font-mono);
-  direction: rtl;
 }
 
 .sidebar-empty {
@@ -1039,4 +1086,99 @@ button.row-edit:focus-visible {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------------------------
+   The pane beside the sidebar when no document is open.
+
+   No artboard: every Workspace artboard shows a lecture open. Centred rather than left at
+   the top, which is where it sat when these rules did not exist at all.
+   --------------------------------------------------------------------------------- */
+
+.pane {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 32px;
+  overflow-y: auto;
+  background: var(--viewer-bed);
+}
+
+.pane-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-meta);
+  font-size: 14px;
+}
+
+.pane-empty p {
+  margin: 0;
+}
+
+.pane-empty-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* The page controls in the viewer's toolbar. Not on the canvas, which shows a counter
+   that only reports; these step, jump and switch layout. */
+.viewer-pages {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--text-meta);
+}
+
+.viewer-pages input {
+  width: 42px;
+  height: 24px;
+  box-sizing: border-box;
+  padding: 0 4px;
+  background: var(--field);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* The spinners are redundant beside the arrows either side, and they crowd a 42px field. */
+.viewer-pages input::-webkit-outer-spin-button,
+.viewer-pages input::-webkit-inner-spin-button {
+  margin: 0;
+  appearance: none;
+}
+
+.viewer-total {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Narrower than the sidebar's, which stretches to fill a 264px column. */
+.viewer-bar .segmented {
+  flex: 0 0 auto;
+}
+
+.viewer-bar .segmented button {
+  flex: 0 0 auto;
+  padding: 0 10px;
+}
+
+button.quiet[aria-pressed="true"],
+button.quiet.on {
+  background: var(--segment-on);
+  border-color: var(--border-strong);
+  color: var(--accent);
 }

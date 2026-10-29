@@ -414,6 +414,88 @@ step under test. `check-line-limits.sh` exited 1 naming the file; the full gate 
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
 
+**2026-10-29 · What the first real look at the workspace found**
+Six defects and two requests, from seeing it running. Most of the defects were mine and
+every one of them was invisible to the whole test suite, because nothing here renders.
+
+**1. The viewer never claimed its share of the window, and that caused two symptoms.**
+`.viewer` had no `flex`, so inside `.panes` it sized to its content and left the rest of
+the window blank. The second symptom was worse and looked unrelated: because the bed then
+measured zero width, `fitWidth` hit its `available <= 0` guard and returned 100%, so a page
+wider than the pane overflowed. One missing declaration, two bugs that read as separate.
+
+**2. Centring that failed exactly when it mattered.** `.pdf-page` centred with
+`left: 50%; transform: translateX(-50%)`. For a page wider than the bed that pushes the
+left half outside the scrollable area, where no scrolling reaches it — which is why every
+line was missing its first few characters. Now `left: 0; right: 0; margin-inline: auto`,
+because auto margins resolve to zero for an element wider than its container and it aligns
+to the start instead, staying reachable.
+
+**3. `.pane` and `.pane-empty` had no rules at all.** The shell referenced two class names
+that were never written, so the empty state sat at the top left of an unstyled box. This is
+the one that should embarrass: the classes were invented while writing the component and
+never added to the stylesheet, and nothing anywhere could notice.
+
+**4. A four-digit folder prefix drew on top of the title.** The canvas sizes the number
+column at a fixed 16px and shows two-digit prefixes; real folders here are named
+`0104-J-no-solutions`. Now a `min-width`, so the common case still aligns.
+
+**5. `Failed` was drawn as bare monospace text** beside `Converting`'s pill, which read as
+debugging output rather than a state. It is now a pill in the exam semantic — which differs
+from the accent in lightness as well as hue, so the two are distinguishable without colour.
+
+**6. `direction: rtl` mangled the vault path.** It was a trick to keep the end of a long
+path visible, and it moved the leading slash: `/Users/me/NexusVault` was drawn as
+`Users/me/NexusVault/`. The tail is now chosen in `shortPath`, where six tests cover it,
+including one asserting the slash does not move.
+
+Also: the sidebar toggle had `aria-pressed` but no visual state, which is a toggle that
+does not look like one.
+
+### Theme choice, which did not exist
+Following macOS was the only behaviour; there was no way to pin light or dark. The
+preference is per-device state (§3), so it lives in
+`~/Library/Application Support/Nexus/theme.txt` beside `last-vault.txt`, with the same
+shape: one word of text, an atomic write, and an infallible read that answers `system` for
+anything it cannot parse — refusing to start over a preference file would be absurd. A
+value that is present but unreadable is logged, because that differs from never having
+chosen and would otherwise look like the setting not sticking. Eight tests.
+
+**`system` is stored as a choice rather than as an empty file.** Someone who pins dark and
+then goes back to following the system must get the system theme next launch, not dark
+again; there is a test for exactly that.
+
+**The dark palette is declared once.** `useTheme` resolves "follow the system" in
+JavaScript and always writes a concrete `data-theme`, so the stylesheet needs no
+`prefers-color-scheme` twin of the token block. The alternative — a media query for the
+system case plus a rule for a pinned one — means two copies of forty tokens, and the first
+one forgotten is a bug nobody sees until they switch themes. The system listener is
+detached while a theme is pinned, so a pinned theme does not change under you at sunset.
+
+### Page navigation, which the canvas does not have
+The canvas's toolbar reads `4 / 18` and that counter only reports. Asked for and added,
+marked in the code as additions: arrows to step a page, a number field to jump to one, and
+a **Scroll / Page** switch, since reading one slide at a time is a different way to work.
+
+The two modes keep **one source of truth each**: in scroll mode the page being read is
+derived from the scroll offset, so `goTo` scrolls rather than setting an index — keeping a
+separate index as well would drift the moment someone scrolled by hand. In page mode the
+index is the truth and only that page is mounted. Switching modes carries the page across,
+captured before the switch because `showing` is computed differently either side of it.
+
+The number field ignores an out-of-range value while typing rather than clamping it:
+clamping turns a half-typed `12` into `1` the moment the `1` lands, and the field fights
+the person.
+
+### Not done, and worth knowing
+- **None of this has been seen running.** The reasoning for each fix is in the code; the
+  flex fix in particular is argued, not observed.
+- **The welcome screen has no theme control**, because it has no title bar. Someone who has
+  never opened a vault cannot change the theme.
+- **`theme.css` is past eleven hundred lines.** §4's line check covers `.rs`, `.ts` and
+  `.tsx` only, so nothing flags it. It wants splitting.
+- **Still no component test.** Every defect above would have been caught by one.
+
 **2026-10-29 · The window finally looks like the canvas**
 The app looked like a to-do list of PDFs — a column of cards — and the canvas specifies a
 workspace. This replaces the shell with the one on the *Workspace Light* and *Workspace

@@ -12,6 +12,7 @@ pub mod edit;
 pub mod import;
 pub mod picker;
 pub mod reorganize;
+pub mod theme;
 pub mod vault;
 
 pub use document::open_document;
@@ -19,6 +20,7 @@ pub use edit::edit_lecture;
 pub use import::{import_document, importable_formats};
 pub use picker::{pick_document, pick_vault_directory};
 pub use reorganize::{apply_reorganize, preview_reorganize};
+pub use theme::{last_theme, remember_theme};
 pub use vault::{
     CommandError, LectureRow, ProblemRow, VaultSummary, last_vault, open_vault, remember_vault,
 };
@@ -40,6 +42,8 @@ pub fn run() -> Result<(), tauri::Error> {
             open_vault,
             open_document,
             remember_vault,
+            last_theme,
+            remember_theme,
             last_vault,
             pick_vault_directory,
             pick_document,

@@ -19,7 +19,7 @@ use wording::{
     HOME_UNAVAILABLE, LOCATION_OUTSIDE_VAULT, LOCATION_TOO_DEEP, LOCATION_UNUSABLE,
     LOG_UNAVAILABLE, MANIFEST_INCONSISTENT, NAME_TAKEN, NAME_UNUSABLE, PATH_TEMPLATE_UNUSABLE,
     POSITION_UNAVAILABLE, POSITION_UNREADABLE, READING_PLACE_LOST, STORED_FILE_UNREADABLE,
-    UNRECOGNISED_SCHEMA_VERSION, VAULT_UNOPENABLE,
+    UNKNOWN_THEME, UNRECOGNISED_SCHEMA_VERSION, VAULT_UNOPENABLE,
 };
 
 impl CoreError {
@@ -52,6 +52,7 @@ impl CoreError {
             Self::InvalidPageOffset { .. } => "ERR_INVALID_PAGE_OFFSET",
             Self::InvalidTimestamp { .. } => "ERR_INVALID_TIMESTAMP",
             Self::VaultRootUnusable { .. } => "ERR_VAULT_ROOT_UNUSABLE",
+            Self::UnknownTheme { .. } => "ERR_UNKNOWN_THEME",
             Self::SymlinkRefused { .. } => "ERR_SYMLINK_REFUSED",
             Self::PathEscapesVault { .. } => "ERR_PATH_ESCAPES_VAULT",
             Self::Io { .. } => "ERR_IO",
@@ -104,6 +105,7 @@ impl CoreError {
             Self::InvalidRelativePath { .. } => LOCATION_UNUSABLE,
             Self::RelativePathTooDeep { .. } => LOCATION_TOO_DEEP,
             Self::VaultRootUnusable { .. } => VAULT_UNOPENABLE,
+            Self::UnknownTheme { .. } => UNKNOWN_THEME,
             Self::SymlinkRefused { .. } => ALIAS_REFUSED,
             Self::PathEscapesVault { .. } => LOCATION_OUTSIDE_VAULT,
             Self::Io { .. } => FILE_OPERATION_ABANDONED,
@@ -178,6 +180,10 @@ mod wording {
 
     pub(super) const VAULT_UNOPENABLE: &str = "Nexus could not open that folder as a vault. Nothing was changed. Check the \
          folder still exists and that you have permission to open it.";
+
+    pub(super) const UNKNOWN_THEME: &str = "Nexus can follow the system theme, or stay light or dark. The saved preference is \
+         none of those, so the system theme is being used. Change the theme once from the \
+         title bar to record a new one.";
 
     pub(super) const ALIAS_REFUSED: &str = "That item is an alias pointing somewhere else, and Nexus does not follow \
          aliases inside a vault — following one could put your notes outside the vault \
