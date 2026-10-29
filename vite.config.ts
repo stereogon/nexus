@@ -1,5 +1,5 @@
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 
 import { pdfjsAssets } from "./vite/pdfjs-assets";
 
@@ -24,4 +24,11 @@ export default defineConfig({
 
   // Vite clearing the terminal would wipe the Rust compiler's output above it.
   clearScreen: false,
+
+  test: {
+    // Vitest stubs CSS imports by default, which makes `theme.css?raw` an empty string and
+    // `styles.test.ts` -- the test that checks every class name a component uses is
+    // actually defined -- silently vacuous. It needs the real text.
+    css: true,
+  },
 });

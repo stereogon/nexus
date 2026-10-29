@@ -1182,3 +1182,23 @@ button.quiet.on {
   border-color: var(--border-strong);
   color: var(--accent);
 }
+
+/* The second grouping level. Not on the canvas -- see `sidebarRows.ts`. Its own row under
+   the primary control, and the label sits beside it rather than above so the pair reads
+   as one sentence: group by Module, then by Week. */
+.then-by {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.then-by .overline {
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.then-by .segmented {
+  flex: 1 1 auto;
+  min-width: 0;
+}

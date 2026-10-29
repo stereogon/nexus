@@ -37,7 +37,7 @@ import { importEach, noteFor } from "./ui/dropped";
 import { LectureEditor } from "./ui/LectureEditor";
 import { PdfViewer } from "./ui/PdfViewer";
 import { Sidebar } from "./ui/Sidebar";
-import { sidebarRows, type GroupBy } from "./ui/sidebarRows";
+import { sidebarRows, type GroupBy, type ThenBy } from "./ui/sidebarRows";
 import { TitleBar } from "./ui/TitleBar";
 import { useDropZone } from "./ui/useDropZone";
 import { useMetaShortcut } from "./ui/useMetaShortcut";
@@ -59,6 +59,7 @@ export function App() {
   const [state, setState] = useState<VaultState>({ kind: "idle" });
   const [busy, setBusy] = useState(false);
   const [groupBy, setGroupBy] = useState<GroupBy>("folder");
+  const [thenBy, setThenBy] = useState<ThenBy>("none");
   const [query, setQuery] = useState("");
   const [sidebarShown, setSidebarShown] = useState(true);
   const [editing, setEditing] = useState<LectureRow | null>(null);
@@ -243,10 +244,12 @@ export function App() {
               reading.open(summary.root, lecture);
             }}
             onQuery={setQuery}
+            onThenBy={setThenBy}
             openDirectory={open?.lecture.directory ?? null}
             query={query}
             root={summary.root}
-            rows={sidebarRows(summary.lectures, groupBy, query)}
+            thenBy={thenBy}
+            rows={sidebarRows(summary.lectures, groupBy, thenBy, query)}
             skipped={summary.skipped}
             unloadable={summary.unloadable}
           />

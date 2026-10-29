@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { shortPath } from "./sidebarRows";
+import { shortPath } from "./path";
 
 describe("the vault path in the sidebar's footer", () => {
   it("keeps the end, which is the part that identifies the vault", () => {

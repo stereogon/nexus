@@ -12,8 +12,27 @@
  */
 import type { LectureRow } from "../ipc/vault";
 
+/** A facet lectures can be gathered under. */
+export type Facet = "week" | "module" | "tag";
+
 /** The four groupings the canvas's segmented control offers. */
-export type GroupBy = "folder" | "week" | "module" | "tag";
+export type GroupBy = "folder" | Facet;
+
+/**
+ * A second facet to divide each group by, or `none`.
+ *
+ * **Not on the canvas, and the canvas is wrong here.** Its segmented control picks exactly
+ * one grouping, which means asking for lectures by module gets every lecture of that
+ * module in one flat pile — on a real course that is thirty rows with no structure, and
+ * the grouping has bought nothing. Teaching material is organised on two axes at once:
+ * module *and* week. Raised by the user on 2026-10-29; §1.7 says a design that is wrong is
+ * to be argued with rather than implemented faithfully.
+ *
+ * Two levels, not arbitrarily many: two covers module-by-week and tag-by-week, and a tree
+ * deep enough to need scrolling to find a heading is its own problem. `Folder` already
+ * nests as deeply as the directories do, so it takes no second level.
+ */
+export type ThenBy = Facet | "none";
 
 export const GROUPINGS: readonly (readonly [GroupBy, string])[] = [
   ["folder", "Folder"],
@@ -48,11 +67,28 @@ export type SidebarRow =
     };
 
 /** Where a lecture with no value for the facet being grouped on is put. */
-const WITHOUT: Record<Exclude<GroupBy, "folder">, string> = {
+const WITHOUT: Record<Facet, string> = {
   week: "No week set",
   module: "Unfiled",
   tag: "Untagged",
 };
+
+/** The values a lecture has for a facet. Empty means it has none. */
+function valuesOf(lecture: LectureRow, facet: Facet): readonly string[] {
+  switch (facet) {
+    case "week":
+      return lecture.week === null ? [] : [lecture.week];
+    case "module":
+      return lecture.module === null ? [] : [lecture.module];
+    case "tag":
+      return lecture.tags;
+  }
+}
+
+/** The facets offered as a second level, given the first. */
+export function secondaryFacets(by: GroupBy): readonly Facet[] {
+  return by === "folder" ? [] : (["week", "module", "tag"] as const).filter((f) => f !== by);
+}
 
 /**
  * What the row's metadata column says.
@@ -121,19 +157,34 @@ function ordered(lectures: readonly LectureRow[]): LectureRow[] {
   );
 }
 
-/** Groups a facet into headings, with the lectures that have no value for it last. */
-function byFacet(
+/**
+ * Groups by one facet, then by the next, nesting a heading per level.
+ *
+ * Recursive rather than two hard-coded levels, because the shape is the same at every
+ * depth and writing it twice is how the two copies drift apart. The UI offers two levels;
+ * nothing here depends on that.
+ */
+function byFacets(
   lectures: readonly LectureRow[],
-  valueOf: (lecture: LectureRow) => readonly string[],
-  without: string,
+  levels: readonly Facet[],
+  depth: number,
+  path: string,
 ): SidebarRow[] {
+  const [facet, ...rest] = levels;
+
+  if (facet === undefined) {
+    return ordered(lectures).map((lecture) => lectureRow(lecture, depth, path));
+  }
+
+  const without = WITHOUT[facet];
   const groups = new Map<string, LectureRow[]>();
 
   for (const lecture of lectures) {
-    const values = valueOf(lecture);
-    // A lecture with no value for the facet still appears, under `without`. A lecture with
-    // several — which only tags can have — appears under each of them, because hiding it
-    // from all but the first would make a tag an unreliable way to find anything.
+    const values = valuesOf(lecture, facet);
+
+    // A lecture with no value still appears, under `without`. A lecture with several --
+    // only tags can have several -- appears under each, because hiding it from all but the
+    // first would make a tag an unreliable way to find anything.
     for (const value of values.length === 0 ? [without] : values) {
       const held = groups.get(value);
 
@@ -154,13 +205,19 @@ function byFacet(
       return -1;
     }
 
+    // Numeric, or "Week 10" sorts before "Week 9" and reads as broken to anyone with ten
+    // weeks of lectures.
     return left.localeCompare(right, undefined, { numeric: true });
   });
 
-  return names.flatMap((name) => [
-    { kind: "group" as const, key: `g:${name}`, label: name, depth: 0 },
-    ...ordered(groups.get(name) ?? []).map((lecture) => lectureRow(lecture, 1, name)),
-  ]);
+  return names.flatMap((name) => {
+    const within = `${path}/${name}`;
+
+    return [
+      { kind: "group" as const, key: `g:${within}`, label: name, depth },
+      ...byFacets(groups.get(name) ?? [], rest, depth + 1, within),
+    ];
+  });
 }
 
 function lectureRow(lecture: LectureRow, depth: number, within: string): SidebarRow {
@@ -217,40 +274,18 @@ function byFolder(lectures: readonly LectureRow[]): SidebarRow[] {
 export function sidebarRows(
   lectures: readonly LectureRow[],
   by: GroupBy,
+  thenBy: ThenBy,
   query: string,
 ): SidebarRow[] {
   const found = lectures.filter((lecture) => matches(lecture, query.trim()));
 
-  switch (by) {
-    case "folder":
-      return byFolder(found);
-    case "week":
-      return byFacet(found, (l) => (l.week === null ? [] : [l.week]), WITHOUT.week);
-    case "module":
-      return byFacet(found, (l) => (l.module === null ? [] : [l.module]), WITHOUT.module);
-    case "tag":
-      return byFacet(found, (l) => l.tags, WITHOUT.tag);
-  }
-}
-
-/**
- * A vault path short enough for the sidebar's footer.
- *
- * The footer is 264px wide and a vault path is usually far longer, so what matters is the
- * end of it — `NexusVault` identifies the vault, `/Users/chandangupta` does not. Plain
- * truncation keeps the wrong half, and the first attempt at this used `direction: rtl` to
- * keep the tail visible, which moved the leading slash to the end and drew
- * `/Users/me/NexusVault` as `Users/me/NexusVault/`.
- *
- * So the tail is chosen here, where it is a string operation that can be tested, and the
- * full path stays in the element's `title` for anyone who wants it.
- */
-export function shortPath(path: string, segments = 2): string {
-  const parts = path.split("/").filter((part) => part !== "");
-
-  if (parts.length <= segments) {
-    return path;
+  if (by === "folder") {
+    return byFolder(found);
   }
 
-  return `…/${parts.slice(-segments).join("/")}`;
+  // A second level only where it says something: asking for module then module would draw
+  // every heading twice.
+  const levels = thenBy === "none" || thenBy === by ? [by] : [by, thenBy];
+
+  return byFacets(found, levels, 0, "");
 }

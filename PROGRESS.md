@@ -414,6 +414,76 @@ step under test. `check-line-limits.sh` exited 1 naming the file; the full gate 
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
 
+**2026-10-29 · Grouping on two axes, because one was not enough**
+Raised by the user, and they are right: the canvas's segmented control picks exactly one
+grouping, so asking for lectures by module puts every lecture of that module in one flat
+pile. On a real course that is thirty rows with no structure, and the grouping has bought
+nothing. Teaching material is organised by module **and** week at once.
+
+§3 makes the canvas authoritative and §1.7 says a design that is wrong is to be argued with
+rather than implemented faithfully. This is the second kind: the control is not wrong about
+what it offers, it is wrong about offering only one at a time.
+
+**A second level, not arbitrarily many.** `Then by` sits under the primary control and
+offers the facets not already in use. Two levels cover module-by-week and tag-by-week, and
+a tree deep enough that finding a heading needs scrolling is its own problem. `Folder` takes
+no second level, because it already nests as deeply as the directories do.
+
+The builder is recursive even though the UI offers two levels, because the shape is
+identical at every depth and writing it twice is how two copies drift apart. A second level
+that repeats the first is ignored rather than drawing every heading twice. Ten tests,
+including that a nested row's key is unique across the whole tree — two levels multiply the
+chance of a collision, since one lecture can appear under two tags inside different weeks.
+
+**Still not on the canvas**, and now a second thing the canvas should gain, alongside the
+per-row edit control and the problem lists.
+
+**2026-10-29 · Components under test, and what that does not buy**
+`@testing-library/react` 16.3.3 and `jsdom` 30.1.3, both MIT, installed with permission.
+Worth being exact about what they do and do not catch, because the user asked the right
+question — how can anything be tested without seeing it?
+
+**They cannot see a layout.** jsdom has no layout engine and applies no stylesheet:
+`getBoundingClientRect` returns zeros. **Not one** of the six defects found by looking at
+the window would have been caught by a component test — not the missing `flex`, not the
+centring that failed for an over-wide page, not the four-digit prefix overlapping a title.
+Those need a real browser, which is the Playwright suite in Milestone 5, and that milestone
+now looks like it should come sooner rather than later.
+
+**What they do catch is everything between the props and the DOM**: which rows appear and
+in what order, what is disabled and why, what each control calls, and what assistive
+technology is told. That class of bug was entirely unguarded, and the first run of the new
+tests found one.
+
+**The bug the tests found immediately.** A sidebar row renders
+`<span>01</span><span>Raft</span>`, with the gap between them coming from a CSS `gap` —
+which is not text. So the name the browser computes is **"01Raft"**, one word, and the
+conversion state ran straight on after it: a disabled lecture announced as "01VectorClocks
+Converting". The row now carries an explicit `aria-label` of the title, with the state
+folded in as `Vector Clocks, Converting`, and the number is `aria-hidden` — it is the
+folder's prefix, the rows are already in that order, and reading it aloud on every row is
+noise. I had written the test expecting "Raft", found it failing, and the right fix was in
+the component.
+
+**`styles.test.ts` covers the cheap half of the layout problem without a browser.** It
+asserts that every class name any `.tsx` asks for is defined in `theme.css`, which is
+exactly the `.pane` / `.pane-empty` defect: names invented while writing a component and
+never added to the stylesheet. Proved by adding a class the stylesheet never mentions and
+watching it fail with `EmptyPane.tsx: .pane-nowhere`.
+
+Two things make it honest rather than decorative: a second test asserts it actually finds
+names on both sides, so a regex that matched nothing could not make it vacuously pass; and
+the sources and the stylesheet are read through Vite's `?raw` and `import.meta.glob` rather
+than `node:fs`, which avoids pulling in `@types/node` for a test that wants two strings.
+That needed `test: { css: true }` in the Vite config — Vitest stubs CSS imports by default,
+which made `theme.css?raw` an empty string and the whole test silently vacuous. It passed
+in that state, which is a good reminder of why the second test is there.
+
+**The first attempt at proving it was wrong**, and worth recording: deleting the
+`.pane-empty` rule did not make it fail, because `.pane-empty p` further down still
+mentions the name. The proof only means something when it reproduces the real shape of the
+bug — a name used and defined *nowhere*.
+
 **2026-10-29 · What the first real look at the workspace found**
 Six defects and two requests, from seeing it running. Most of the defects were mine and
 every one of them was invisible to the whole test suite, because nothing here renders.
@@ -3867,6 +3937,8 @@ packages resolved, every one with a stated licence.
 | `pdfjs-dist` | 6.4.299 | Apache-2.0 |
 | `@tauri-apps/api` | 2.12.4 | Apache-2.0 OR MIT |
 | `@tauri-apps/cli` | 2.12.4 | Apache-2.0 OR MIT |
+| `@testing-library/react` | 16.3.3 | MIT | *(added 2026-10-29)* |
+| `jsdom` | 30.1.3 | MIT | *(added 2026-10-29)* |
 | `@types/react` | 19.3.0 | MIT |
 | `@types/react-dom` | 19.3.0 | MIT |
 | `@vitejs/plugin-react` | 6.1.2 | MIT |

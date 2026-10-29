@@ -10,7 +10,17 @@
  * the canvas should gain, rather than left as quiet differences.
  */
 import type { LectureRow, ProblemRow } from "../ipc/vault";
-import { GROUPINGS, shortPath, type GroupBy, type SidebarRow } from "./sidebarRows";
+import { shortPath } from "./path";
+import {
+  GROUPINGS,
+  secondaryFacets,
+  type GroupBy,
+  type SidebarRow,
+  type ThenBy,
+} from "./sidebarRows";
+
+/** What each facet is called in the second row of controls. */
+const FACET_LABEL = { week: "Week", module: "Module", tag: "Tag" } as const;
 
 function SearchIcon() {
   return (
@@ -67,6 +77,13 @@ function Lecture({
   return (
     <div className="lecture-row" data-open={open}>
       <button
+        // Named explicitly, because the name the browser computes from the content is
+        // wrong: the spans are separated by a CSS `gap`, which is not text, so `01` and
+        // `Raft` run together as "01Raft". The number is left out of the name entirely —
+        // it is the folder's prefix, the rows are already in that order, and reading it
+        // aloud on every row is noise. The conversion state is folded in instead, so a
+        // lecture that cannot be opened says why rather than being silently disabled.
+        aria-label={waiting ? `${row.lecture.title}, ${row.meta}` : row.lecture.title}
         className="open"
         disabled={busy || !row.lecture.documentReady}
         onClick={() => {
@@ -81,7 +98,9 @@ function Lecture({
         }
         type="button"
       >
-        <span className="row-num">{row.num}</span>
+        <span aria-hidden="true" className="row-num">
+          {row.num}
+        </span>
         <span className="row-title">{row.lecture.title}</span>
         {waiting && (
           <span className="row-meta" data-state={row.lecture.conversion}>
@@ -136,12 +155,14 @@ export function Sidebar({
   rows,
   root,
   groupBy,
+  thenBy,
   query,
   busy,
   openDirectory,
   skipped,
   unloadable,
   onGroupBy,
+  onThenBy,
   onQuery,
   onOpen,
   onEdit,
@@ -149,16 +170,20 @@ export function Sidebar({
   readonly rows: readonly SidebarRow[];
   readonly root: string;
   readonly groupBy: GroupBy;
+  readonly thenBy: ThenBy;
   readonly query: string;
   readonly busy: boolean;
   readonly openDirectory: string | null;
   readonly skipped: readonly ProblemRow[];
   readonly unloadable: readonly ProblemRow[];
   readonly onGroupBy: (grouping: GroupBy) => void;
+  readonly onThenBy: (grouping: ThenBy) => void;
   readonly onQuery: (text: string) => void;
   readonly onOpen: (lecture: LectureRow) => void;
   readonly onEdit: (lecture: LectureRow) => void;
 }) {
+  const secondary = secondaryFacets(groupBy);
+
   return (
     <aside className="sidebar">
       <div className="sidebar-search">
@@ -194,6 +219,40 @@ export function Sidebar({
             </button>
           ))}
         </div>
+
+        {/* Not on the canvas, whose control picks exactly one grouping. Asking for
+            lectures by module then gets every lecture of that module in one flat pile,
+            which on a real course is thirty rows with no structure. Teaching material is
+            organised on two axes at once. Hidden for Folder, which already nests as
+            deeply as the directories do. */}
+        {secondary.length > 0 && (
+          <div className="then-by">
+            <span className="overline">Then by</span>
+            <div aria-label="Then group by" className="segmented" role="group">
+              <button
+                aria-pressed={thenBy === "none"}
+                onClick={() => {
+                  onThenBy("none");
+                }}
+                type="button"
+              >
+                None
+              </button>
+              {secondary.map((facet) => (
+                <button
+                  aria-pressed={thenBy === facet}
+                  key={facet}
+                  onClick={() => {
+                    onThenBy(facet);
+                  }}
+                  type="button"
+                >
+                  {FACET_LABEL[facet]}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="sidebar-list">
