@@ -454,6 +454,39 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-10-29 · The page field that only worked in one mode**
+Reported: typing a page number does nothing in scroll mode.
+
+The field was controlled entirely by the page being shown — and in scroll mode that number
+is *derived from the scroll offset*. So a keystroke asked for a smooth scroll, the offset
+had not moved by the time React re-rendered, and the field snapped back to the old number.
+The second digit of "15" could never be typed. Page mode hid it completely, because the
+index is state there and updates synchronously.
+
+**The field now keeps a draft while it has focus** and commits on Enter or blur, with
+Escape to abandon it. That also fixes something page mode was doing wrong quietly:
+navigating on every keystroke meant typing "15" went to page 1 on the way past. And a page
+past the end is now **clamped rather than ignored** — someone typing 99 in a 19-page
+document means the end, and ignoring it left a field that silently did nothing.
+
+It moved into `PageField.tsx` on the way. The draft, the commit points and the clamp are a
+concern of their own, and inside the toolbar none of it could be tested without rendering
+the whole bar.
+
+**A judgement call worth naming:** a typed jump now scrolls instantly while the arrows
+still scroll smoothly. Animating fourteen pages is a long wait the reader can do nothing
+during, and every page it passes renders on the way — work nobody asked for, to show pages
+nobody asked to see. One page either side is the case where the movement *is* the feedback,
+so that stayed smooth. This was not reported; it would have been the next thing reported.
+
+**Two toolbar tests pinned the behaviour that was wrong** — navigate on every keystroke,
+and ignore a page past the end rather than clamp it — the second with a comment explaining
+why ignoring was kinder. They were not weakened to get green: the contract they described
+is the bug, so they were replaced by two that check the toolbar is *wired* to the viewer,
+and the field's own rules are tested in full beside the field. Said plainly here because
+"a test changed in the same commit as the behaviour it tested" is exactly the shape that
+should make a reader suspicious.
+
 **2026-10-29 · The editor you had to close a document to see**
 Reported: pressing Edit on a sidebar row while a lecture was open appeared to do nothing —
 you had to go back to the vault to find the form. `LectureEditor` rendered only in the

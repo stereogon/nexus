@@ -7,6 +7,7 @@
  * continuous scroller and a page counter that only reports; reading one slide at a time is
  * a different way to work and the counter alone does not serve it.
  */
+import { PageField } from "./PageField";
 import type { ViewMode } from "./viewMode";
 
 function Chevron({ back }: { readonly back: boolean }) {
@@ -77,23 +78,7 @@ export function PdfToolbar({
         <label className="vh" htmlFor="page-number">
           Page number
         </label>
-        <input
-          disabled={empty}
-          id="page-number"
-          max={Math.max(1, pages)}
-          min={1}
-          onChange={(event) => {
-            const asked = Number.parseInt(event.target.value, 10);
-
-            // Ignored rather than clamped while typing: clamping turns a half-typed "12"
-            // into "1" the moment the 1 lands, and the field fights the person.
-            if (Number.isInteger(asked) && asked >= 1 && asked <= pages) {
-              onGoTo(asked - 1);
-            }
-          }}
-          type="number"
-          value={empty ? "" : showing + 1}
-        />
+        <PageField onGoTo={onGoTo} pages={pages} showing={showing} />
         <span className="viewer-total">{empty ? "—" : `/ ${String(pages)}`}</span>
 
         <button

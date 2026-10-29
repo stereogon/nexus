@@ -179,10 +179,16 @@ export function PdfViewer({
       const box = boxes[wanted];
 
       if (box !== undefined) {
-        scroller.current?.scrollTo({ top: box.top, behavior: "smooth" });
+        // Smooth for a nudge, instant for a jump. Animating fourteen pages is a long wait
+        // the reader can do nothing during, and every page it passes renders on the way --
+        // work nobody asked for, to show pages nobody asked to see. One page either side
+        // is the case where the movement itself is the feedback.
+        const behavior = Math.abs(wanted - showing) <= 1 ? "smooth" : "auto";
+
+        scroller.current?.scrollTo({ top: box.top, behavior });
       }
     },
-    [boxes, lastPage, mode],
+    [boxes, lastPage, mode, showing],
   );
 
   /** Switches layout, keeping the page the person was reading. */

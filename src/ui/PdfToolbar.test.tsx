@@ -81,30 +81,26 @@ describe("stepping through pages", () => {
 });
 
 describe("jumping to a page", () => {
-  it("goes to the page typed, converting to a zero-based index", () => {
+  // What the field does with what you type now lives in `PageField.test.tsx`. What is
+  // left for the toolbar is that it is wired to the viewer at all.
+  //
+  // Two tests here used to pin the opposite contract -- navigate on every keystroke, and
+  // ignore a page past the end rather than clamp it -- which is the behaviour that was
+  // reported as broken on 2026-10-29. They were not weakened to pass; the rule they
+  // described was wrong, and its replacement is tested in full beside the field.
+  it("reaches the viewer with a zero-based index", () => {
     const props = show({ pages: 18 });
 
     fireEvent.change(field(), { target: { value: "12" } });
+    fireEvent.keyDown(field(), { key: "Enter" });
 
     expect(props.onGoTo).toHaveBeenCalledWith(11);
   });
 
-  it("ignores a page past the end rather than clamping it", () => {
-    // Clamping turns a half-typed "12" into "1" the moment the 1 lands, and the field
-    // fights the person. Ignoring leaves what they typed alone until it means something.
+  it("does not move the document while a number is still being typed", () => {
     const props = show({ pages: 18 });
 
-    fireEvent.change(field(), { target: { value: "99" } });
-
-    expect(props.onGoTo).not.toHaveBeenCalled();
-  });
-
-  it("ignores zero, a negative, a blank and a word", () => {
-    const props = show({ pages: 18 });
-
-    for (const value of ["0", "-3", "", "twelve"]) {
-      fireEvent.change(field(), { target: { value } });
-    }
+    fireEvent.change(field(), { target: { value: "1" } });
 
     expect(props.onGoTo).not.toHaveBeenCalled();
   });
