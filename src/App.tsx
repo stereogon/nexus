@@ -258,9 +258,11 @@ export function App() {
 
         {open !== null ? (
           <PdfViewer
+            directory={open.lecture.directory}
             document={open.document}
             onClose={reading.close}
             title={open.lecture.title}
+            vault={summary.root}
           />
         ) : (
           <main className="pane">

@@ -75,6 +75,20 @@
 
   /* The four highlight semantics. Each also carries a letter glyph (K/D/E/Q), so the set
      never relies on hue alone. */
+  /* The four highlights as washes over a page. Explicit rgba per semantic rather than a
+     `color-mix`, as with `accent-wash` above: `color-mix` arrived in Safari 16.2 and this
+     build targets Safari 15.
+
+     There is deliberately **no dark variant**. §3 keeps the document surface light in both
+     themes -- no dark-mode inversion, because inverting a page ruins photographs and
+     colour-coded diagrams -- so a highlight always sits on white and always needs the same
+     wash. Alphas differ per hue rather than being one number, because amber at the weight
+     that suits blue is barely there. */
+  --highlight-key: rgba(242, 182, 60, 0.38);
+  --highlight-definition: rgba(46, 163, 122, 0.3);
+  --highlight-exam: rgba(224, 82, 60, 0.28);
+  --highlight-question: rgba(46, 134, 222, 0.28);
+
   --semantic-key: #f2b63c;
   --semantic-key-ink: #3a2a05;
   --semantic-definition: #2ea37a;

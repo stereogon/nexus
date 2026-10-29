@@ -22,8 +22,12 @@ import {
 } from "../pdf/pages";
 import { usePdfDocument } from "../pdf/useDocument";
 import { DocumentNotice } from "./DocumentNotice";
+import { Failure } from "./Failure";
+import { HighlightMenu } from "./HighlightMenu";
 import { PdfPage } from "./PdfPage";
 import { PdfToolbar } from "./PdfToolbar";
+import { onPage, useAnnotations } from "./useAnnotations";
+import { useHighlightMenu } from "./useHighlightMenu";
 import type { ViewMode } from "./viewMode";
 
 /** The gap between pages, matching the artboard's page separation. */
@@ -51,12 +55,18 @@ function stepFrom(scale: number, direction: 1 | -1): number {
 export function PdfViewer({
   document,
   title,
+  vault,
+  directory,
   onClose,
 }: {
   readonly document: OpenedDocument;
   readonly title: string;
+  readonly vault: string;
+  readonly directory: string;
   readonly onClose: () => void;
 }) {
+  const highlights = useAnnotations(vault, directory);
+  const menu = useHighlightMenu(highlights);
   const { state, page } = usePdfDocument(documentUrl(document));
   const scroller = useRef<HTMLDivElement | null>(null);
   const [zoom, setZoom] = useState<Zoom>({ kind: "fit" });
@@ -127,7 +137,12 @@ export function PdfViewer({
 
   const onScroll = useCallback(() => {
     setScrollTop(scroller.current?.scrollTop ?? 0);
-  }, []);
+
+    // The menu is positioned against the window while the pages scroll underneath it, so
+    // leaving it open would park it over unrelated text. Dismissing is also the honest
+    // behaviour: a selection scrolled out of sight should not keep a menu on screen.
+    menu.dismiss();
+  }, [menu]);
 
   const changeZoom = useCallback(
     (direction: 1 | -1) => {
@@ -217,6 +232,17 @@ export function PdfViewer({
         risks={document.risks}
       />
 
+      {highlights.failure !== null && <Failure error={highlights.failure} />}
+
+      {menu.open !== null && (
+        <HighlightMenu
+          at={menu.open.at}
+          onChoose={menu.open.onChoose}
+          onDismiss={menu.dismiss}
+          onRemove={menu.open.onRemove}
+        />
+      )}
+
       <div className="viewer-bed" onScroll={onScroll} ref={scroller}>
         {state.loading && <p className="note">Opening the document…</p>}
         {state.failure !== null && (
@@ -235,9 +261,11 @@ export function PdfViewer({
 
               return box === undefined ? null : (
                 <PdfPage
+                  annotations={onPage(highlights.all, index)}
                   height={box.height}
                   index={index}
                   key={index}
+                  onPick={menu.pick}
                   scale={scale}
                   source={page}
                   // In page mode the one mounted page sits at the top of its own stack,

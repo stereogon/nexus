@@ -454,6 +454,55 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-10-29 · Highlights, end to end**
+Fourth substep, and the feature now works: select text, pick one of four semantics, and it
+is drawn on the page and stored in `annotations.json`. Clicking its glyph removes it.
+
+**The fill takes no clicks.** The layer sits above the pdf.js text layer, and that text
+layer is what makes selection work — a highlight accepting pointer events would make the
+words under it permanently unselectable, so highlighting a sentence would be the last thing
+anyone could ever do to it. `pointer-events: none` on the fill, `auto` on the glyph badge
+alone.
+
+**The glyph is placed after the text, not before it.** In front means either hanging it in
+the margin, which falls off the page for a highlight starting at the left edge, or covering
+the first characters. Trailing whitespace at the end of the last line is almost always
+free, and the badge clamps to the page edge when it is not — so the letter that §3 requires
+is there exactly when the highlight is widest, rather than falling off at that moment.
+
+**No re-tagging, deliberately.** The menu for an existing highlight offers Remove and
+nothing else. Changing its semantic would mean remove-and-add, which mints a new id — and
+the id is what `cite://` in the notes points at. Until there is a command that edits in
+place, the menu does not pretend to offer it. A test names that reason, so the gap is not
+mistaken for an oversight.
+
+**Washes are explicit rgba, with no dark variant.** `color-mix` arrived in Safari 16.2 and
+this build targets 15, which the file's existing `accent-wash` had already settled. No dark
+variant because §3 keeps the document surface light in both themes, so a highlight always
+sits on white. The alphas differ per hue rather than being one number: amber at the weight
+that suits blue is barely there.
+
+**`useHighlightMenu` exists because two states with a rule about their combination is the
+shape that drifts.** A selection and a clicked badge are different questions — *mark this
+as what?* and *what is this?* — and only one menu can be open. Kept apart in the viewer,
+a selection made while a badge menu was open would have shown two. The rule is now one
+expression, and the badge wins because clicking one is deliberate while a stale selection
+often just happens to still exist.
+
+Two things the window counts differently from the file: pages. `asNewHighlight` and
+`onPage` are named functions rather than inline expressions for exactly that reason, with
+tests on the zero/one boundary, because an off-by-one there is invisible until someone
+reopens the lecture.
+
+53 tests across the substep. **What is still unverified is where anything lands**: jsdom
+gives every element a zero rectangle, so the arithmetic and the markup are checked and the
+pixels are not. That is now true of four separate features, and it is the whole argument
+for the browser suite.
+
+Not done, and not pretended: area highlights and text boxes can be stored and the layer
+draws an area highlight, but nothing creates either; and re-tagging needs the update
+command described above.
+
 **2026-10-29 · A selection becomes something storable**
 Third substep of the highlight feature, and deliberately small: `geometry.ts` already did
 the part that has to be right — collapsing the browser's client rects into one rectangle

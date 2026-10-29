@@ -10,7 +10,9 @@
  */
 import { useEffect, useRef, useState } from "react";
 
+import type { Annotation } from "../ipc/annotations";
 import type { PageSource } from "../pdf/useDocument";
+import { HighlightLayer } from "./HighlightLayer";
 import { PdfTextLayer } from "./PdfTextLayer";
 
 /**
@@ -47,6 +49,8 @@ export function PdfPage({
   top,
   height,
   width,
+  annotations,
+  onPick,
 }: {
   readonly index: number;
   readonly scale: number;
@@ -54,6 +58,11 @@ export function PdfPage({
   readonly top: number;
   readonly height: number;
   readonly width: number;
+  readonly annotations: readonly Annotation[];
+  readonly onPick: (
+    annotation: Annotation,
+    at: { readonly left: number; readonly top: number },
+  ) => void;
 }) {
   const canvas = useRef<HTMLCanvasElement | null>(null);
   const [undrawn, setUndrawn] = useState(false);
@@ -137,6 +146,12 @@ export function PdfPage({
         style={{ width, height }}
       />
       <PdfTextLayer index={index} scale={scale} source={source} />
+      <HighlightLayer
+        annotations={annotations}
+        height={height}
+        onPick={onPick}
+        width={width}
+      />
       {undrawn && (
         <p className="pdf-undrawn">
           This page could not be drawn. The rest of the document is unaffected.

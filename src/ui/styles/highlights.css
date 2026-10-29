@@ -1,0 +1,153 @@
+/**
+ * Highlights drawn over a page, and the menu for making one.
+ *
+ * Its own file because these rules are the only ones in the app that sit **on the
+ * document surface** rather than in app chrome. That surface is light in both themes
+ * (§3), so nothing here has a dark variant, and everything here is sized against the
+ * page rather than against the window.
+ */
+
+/* Above the canvas and the text layer, and transparent to the pointer: the text layer
+   below is what makes selection work, and a fill that took clicks would make the words
+   under a highlight permanently unselectable. */
+.highlight-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.highlight {
+  position: absolute;
+  border-radius: 2px;
+  mix-blend-mode: multiply;
+}
+
+.highlight[data-semantic="key"] {
+  background: var(--highlight-key);
+}
+
+.highlight[data-semantic="definition"] {
+  background: var(--highlight-definition);
+}
+
+.highlight[data-semantic="exam"] {
+  background: var(--highlight-exam);
+}
+
+.highlight[data-semantic="question"] {
+  background: var(--highlight-question);
+}
+
+/* The letter that lets the four be told apart without relying on hue (§3). The one part
+   of the layer that takes a pointer, so a highlight can be changed or removed without the
+   fill stealing selection from the text. */
+.highlight-badge {
+  position: absolute;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1;
+  color: #ffffff;
+  cursor: pointer;
+  opacity: 0.85;
+}
+
+.highlight-badge:hover,
+.highlight-badge:focus-visible {
+  opacity: 1;
+}
+
+.highlight-badge[data-semantic="key"] {
+  background: var(--semantic-key);
+  /* Amber is the one of the four that white does not sit on. */
+  color: var(--semantic-key-ink);
+}
+
+.highlight-badge[data-semantic="definition"] {
+  background: var(--semantic-definition);
+}
+
+.highlight-badge[data-semantic="exam"] {
+  background: var(--semantic-exam);
+}
+
+.highlight-badge[data-semantic="question"] {
+  background: var(--semantic-question);
+}
+
+/* Against the window, not the page: the pages scroll under it, and a menu anchored into
+   the scrolling content would drift away from the selection it belongs to. */
+.highlight-menu {
+  position: fixed;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 9px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
+}
+
+.highlight-pick {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.highlight-pick[data-semantic="key"] {
+  background: var(--semantic-key);
+  color: var(--semantic-key-ink);
+}
+
+.highlight-pick[data-semantic="definition"] {
+  background: var(--semantic-definition);
+}
+
+.highlight-pick[data-semantic="exam"] {
+  background: var(--semantic-exam);
+}
+
+.highlight-pick[data-semantic="question"] {
+  background: var(--semantic-question);
+}
+
+.highlight-pick:hover,
+.highlight-pick:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.highlight-remove {
+  background: none;
+  border: none;
+  border-radius: 6px;
+  padding: 0 8px;
+  height: 24px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.highlight-remove:hover {
+  color: var(--semantic-exam);
+}
