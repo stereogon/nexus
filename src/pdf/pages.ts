@@ -85,6 +85,43 @@ function visibleHeight(
  * A negative `scrollTop` is clamped, because a trackpad rubber-band on macOS reports one
  * and the answer there is the first page, not an empty window.
  */
+/** Where the scroller should go, and how it should get there. */
+export interface ScrollTarget {
+  readonly top: number;
+  /** `smooth` when the movement itself is the feedback, `auto` for a jump. */
+  readonly behavior: "smooth" | "auto";
+}
+
+/**
+ * Where to scroll to put a page at the top, or `null` if there is no such page.
+ *
+ * Here rather than inline in the viewer because this is the rule that was reported broken
+ * twice — once for not working in scroll mode at all, once for still not working — and
+ * both times it could not be tested, since reaching it meant rendering a PDF. The
+ * arithmetic being right is now something a test says rather than something a reading of
+ * the component suggests.
+ *
+ * `smooth` only for a neighbouring page. Animating a jump of fourteen pages is a long wait
+ * the reader can do nothing during, and every page it passes renders on the way — work
+ * nobody asked for, to show pages nobody asked to see.
+ */
+export function scrollTarget(
+  boxes: readonly PageBox[],
+  wanted: number,
+  from: number,
+): ScrollTarget | null {
+  const box = boxes[wanted];
+
+  if (box === undefined) {
+    return null;
+  }
+
+  return {
+    top: box.top,
+    behavior: Math.abs(wanted - from) <= 1 ? "smooth" : "auto",
+  };
+}
+
 export function renderWindow(
   boxes: readonly PageBox[],
   scrollTop: number,

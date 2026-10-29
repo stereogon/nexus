@@ -38,12 +38,29 @@ describe("while typing", () => {
     expect(input.value).toBe("1");
   });
 
-  it("does not navigate on every keystroke", () => {
-    // Page mode did, which is why typing "15" went to page 1 on the way past.
-    const { input, onGoTo } = field();
+  it("moves the document as the number is typed", () => {
+    // Requiring Enter was the first fix, and the report came back unchanged: nothing on
+    // screen says a field needs Enter. The draft is what makes this safe -- the value no
+    // longer comes from the page being shown, so a scroll that has not happened yet
+    // cannot overwrite what was typed.
+    // Starting from page 6, so that typing "1" is a real change. Starting from page 1
+    // sets the field to the value it already holds, React fires no change event, and the
+    // test passes or fails for a reason that has nothing to do with the code.
+    const { input, onGoTo } = field(5);
 
     fireEvent.change(input, { target: { value: "1" } });
     fireEvent.change(input, { target: { value: "15" } });
+
+    expect(onGoTo).toHaveBeenNthCalledWith(1, 0);
+    expect(onGoTo).toHaveBeenNthCalledWith(2, 14);
+  });
+
+  it("waits before chasing a number that is still past the end", () => {
+    // Otherwise "99" in a 19-page document drags the reader to the last page while they
+    // are still typing. It is clamped once they are done, not while they are going.
+    const { input, onGoTo } = field();
+
+    fireEvent.change(input, { target: { value: "99" } });
 
     expect(onGoTo).not.toHaveBeenCalled();
   });
@@ -100,13 +117,23 @@ describe("committing", () => {
 });
 
 describe("abandoning", () => {
-  it("drops the draft on Escape and goes nowhere", () => {
+  it("goes back to where you were on Escape", () => {
+    // The only reading of "abandon" that means anything once typing moves the document.
+    // Dropping the text alone would leave the reader six pages from where they started.
     const { input, onGoTo } = field(5);
 
     fireEvent.change(input, { target: { value: "12" } });
     fireEvent.keyDown(input, { key: "Escape" });
 
-    expect(onGoTo).not.toHaveBeenCalled();
+    expect(onGoTo).toHaveBeenLastCalledWith(5);
+  });
+
+  it("follows the document again once abandoned", () => {
+    const { input } = field(5);
+
+    fireEvent.change(input, { target: { value: "12" } });
+    fireEvent.keyDown(input, { key: "Escape" });
+
     expect(input.value).toBe("6");
   });
 });

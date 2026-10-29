@@ -17,6 +17,7 @@ import {
   currentIndex,
   fitWidth,
   renderWindow,
+  scrollTarget,
   stack,
   totalHeight,
 } from "../pdf/pages";
@@ -110,7 +111,7 @@ export function PdfViewer({
       : currentIndex(boxes, scrollTop, viewport.height);
 
   // One page mounted in page mode, the visible run plus its buffer in scroll mode.
-  const window =
+  const mounted =
     mode === "page"
       ? state.sizes.length === 0
         ? null
@@ -176,16 +177,10 @@ export function PdfViewer({
         return;
       }
 
-      const box = boxes[wanted];
+      const target = scrollTarget(boxes, wanted, showing);
 
-      if (box !== undefined) {
-        // Smooth for a nudge, instant for a jump. Animating fourteen pages is a long wait
-        // the reader can do nothing during, and every page it passes renders on the way --
-        // work nobody asked for, to show pages nobody asked to see. One page either side
-        // is the case where the movement itself is the feedback.
-        const behavior = Math.abs(wanted - showing) <= 1 ? "smooth" : "auto";
-
-        scroller.current?.scrollTo({ top: box.top, behavior });
+      if (target !== null) {
+        scroller.current?.scrollTo(target);
       }
     },
     [boxes, lastPage, mode, showing],
@@ -262,10 +257,10 @@ export function PdfViewer({
         )}
 
         <div className="pdf-stack" style={{ height: stackHeight }}>
-          {window !== null &&
+          {mounted !== null &&
             page !== null &&
-            state.sizes.slice(window.first, window.last + 1).map((size, offset) => {
-              const index = window.first + offset;
+            state.sizes.slice(mounted.first, mounted.last + 1).map((size, offset) => {
+              const index = mounted.first + offset;
               const box = boxes[index];
 
               return box === undefined ? null : (

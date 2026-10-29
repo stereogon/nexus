@@ -454,6 +454,48 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-10-29 · The page field, second attempt**
+The report came back unchanged: *"i put a number and it is not taking me to the page."*
+
+The first fix was right about the cause and wrong about the remedy. Making Enter the only
+way to commit was a change in its own right, and an invisible one — nothing on screen says
+a field needs Enter, and page mode had always moved as you typed. From the reader's seat
+nothing had changed.
+
+**Typing moves the document again.** The draft is what makes that safe now: the field no
+longer reads its value back from the page being shown, so a scroll that has not happened
+yet cannot overwrite what was typed — which is the whole of the original bug. The cost is
+an intermediate jump, since "15" passes through page 1. Worth paying for a control that
+responds. Out-of-range numbers are the exception and still wait for Enter or blur: "99" in
+a 19-page document should not drag the reader to the end mid-keystroke, but should go
+somewhere sensible once they stop, so the clamp lives at the commit.
+
+**Escape had to grow a meaning.** With typing moving the document, dropping the text alone
+would leave the reader wherever the half-typed number took them — a way out of the field,
+not a way out of what it did. It now returns to the page the draft started from.
+
+**`scrollTarget` moved into `pdf/pages.ts` and has tests.** This is the rule that was
+reported broken twice, and both times it sat inline in the viewer where reaching it meant
+rendering a PDF — so nothing ever checked the arithmetic, and each diagnosis was a reading
+of the code rather than a measurement of it. Eight cases now, including that `stack`
+measures from the top of the scroller, which is what `scrollTo` wants.
+
+*Two of my own mistakes, both caught by the tests rather than by me.* The last-page
+expectation used 800 for a page the fixture makes 600 tall. And the first version of
+"moves as the number is typed" started from page 1, so setting the field to "1" was not a
+change, React fired no event, and the test would have passed or failed for reasons
+unrelated to the code — the same way of fooling itself as the text-layer fixture earlier
+today. Three of today's tests have now had that fault; it is worth treating "does this
+fixture actually differ from the default?" as a standing question.
+
+*Also:* `window` as a local in `PdfViewer` shadowed the global for the whole component
+body. Nothing there reaches for the real one, which is the only reason it was harmless —
+and not a reason to keep it. Renamed to `mounted`.
+
+**If it still does not work**, the cause is not in the arithmetic or the wiring, both of
+which are now tested, and the next step is running the app rather than reading it — which
+needs either a throwaway fixture vault or permission to point it at the real one (§2).
+
 **2026-10-29 · The page field that only worked in one mode**
 Reported: typing a page number does nothing in scroll mode.
 

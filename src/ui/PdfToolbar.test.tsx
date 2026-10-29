@@ -97,10 +97,10 @@ describe("jumping to a page", () => {
     expect(props.onGoTo).toHaveBeenCalledWith(11);
   });
 
-  it("does not move the document while a number is still being typed", () => {
+  it("does not chase a number that is still past the end", () => {
     const props = show({ pages: 18 });
 
-    fireEvent.change(field(), { target: { value: "1" } });
+    fireEvent.change(field(), { target: { value: "99" } });
 
     expect(props.onGoTo).not.toHaveBeenCalled();
   });

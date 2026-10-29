@@ -14,6 +14,7 @@ import {
   currentIndex,
   fitWidth,
   renderWindow,
+  scrollTarget,
   stack,
   totalHeight,
 } from "./pages";
@@ -163,5 +164,49 @@ describe("fitting a page to the width", () => {
     // A zero width would otherwise produce a scale of 0 and a canvas with no pixels.
     expect(fitWidth(500, 0, limits)).toBe(1);
     expect(fitWidth(0, 1000, limits)).toBe(1);
+  });
+});
+
+describe("where to scroll to reach a page", () => {
+  // The rule reported broken twice. Both times it sat inline in the viewer, where
+  // reaching it meant rendering a PDF, so nothing checked the arithmetic.
+  const BOXES = stack([800, 800, 800, 600, 800], 16);
+
+  it("puts the page's top at the top of the scroller", () => {
+    // `stack` measures from the top of the scroller, which is what `scrollTo` wants.
+    expect(scrollTarget(BOXES, 2, 0)?.top).toBe(1632);
+  });
+
+  it("reaches the first page", () => {
+    expect(scrollTarget(BOXES, 0, 3)?.top).toBe(0);
+  });
+
+  it("reaches the last page", () => {
+    // 0, 816, 1632, 2448, then 2448 + 600 + 16: the fourth page is the short one, which
+    // is exactly why the fixture has a short one.
+    expect(scrollTarget(BOXES, 4, 0)?.top).toBe(3064);
+  });
+
+  it("has nowhere to go for a page the document does not have", () => {
+    expect(scrollTarget(BOXES, 5, 0)).toBeNull();
+    expect(scrollTarget(BOXES, -1, 0)).toBeNull();
+  });
+
+  it("has nowhere to go in an empty document", () => {
+    expect(scrollTarget([], 0, 0)).toBeNull();
+  });
+
+  it("glides to a neighbouring page, where the movement is the feedback", () => {
+    expect(scrollTarget(BOXES, 1, 0)?.behavior).toBe("smooth");
+    expect(scrollTarget(BOXES, 2, 3)?.behavior).toBe("smooth");
+  });
+
+  it("jumps straight to a distant page", () => {
+    // Animating the distance would render every page it passed on the way.
+    expect(scrollTarget(BOXES, 4, 0)?.behavior).toBe("auto");
+  });
+
+  it("treats staying put as a glide rather than a jump", () => {
+    expect(scrollTarget(BOXES, 2, 2)?.behavior).toBe("smooth");
   });
 });
