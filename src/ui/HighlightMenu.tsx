@@ -9,10 +9,18 @@
  * menu anchored into the scrolling content would drift away from the selection it belongs
  * to. It is dismissed on scroll instead, which is also the honest behaviour — a selection
  * scrolled out of sight should not keep a menu on screen.
+ *
+ * # Why it measures itself
+ *
+ * Where it fits depends on how wide it is, and how wide it is depends on what it holds —
+ * four swatches, or a Remove button. Measuring after mount and before paint is the only
+ * way to know, and the alternative, an estimated width in a constant, is wrong the first
+ * time the menu gains a control.
  */
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import type { HighlightSemantic } from "../ipc/annotations";
+import { placeMenu, type MenuAt } from "./menuPlacement";
 import { SEMANTIC_GLYPH, SEMANTIC_LABEL, SEMANTICS } from "./semantics";
 
 export function HighlightMenu({
@@ -21,7 +29,7 @@ export function HighlightMenu({
   onRemove,
   onDismiss,
 }: {
-  readonly at: { readonly left: number; readonly top: number };
+  readonly at: MenuAt;
   /**
    * Offered for a new selection. `null` for a highlight that already exists, because
    * re-tagging one needs a command that keeps its id: removing and adding would mint a
@@ -34,6 +42,32 @@ export function HighlightMenu({
   readonly onRemove: (() => void) | null;
   readonly onDismiss: () => void;
 }) {
+  const box = useRef<HTMLDivElement | null>(null);
+  const { left, top, above } = at;
+  const [placed, setPlaced] = useState({ left, top });
+
+  // Before paint, not after: `useEffect` would show the menu off the edge for one frame
+  // and then snap it back, which reads as a flicker rather than as a menu opening.
+  useLayoutEffect(() => {
+    const element = box.current;
+
+    if (element === null) {
+      return;
+    }
+
+    const measured = element.getBoundingClientRect();
+
+    setPlaced(
+      placeMenu(
+        { left, top, above },
+        { width: measured.width, height: measured.height },
+        { width: window.innerWidth, height: window.innerHeight },
+      ),
+    );
+    // Depends on the three numbers rather than on `at`, which is rebuilt every render and
+    // would make this effect run forever.
+  }, [left, top, above]);
+
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -52,8 +86,9 @@ export function HighlightMenu({
     <div
       aria-label="Highlight as"
       className="highlight-menu"
+      ref={box}
       role="group"
-      style={{ left: at.left, top: at.top }}
+      style={{ left: placed.left, top: placed.top }}
     >
       {onChoose !== null &&
         SEMANTICS.map((semantic) => (

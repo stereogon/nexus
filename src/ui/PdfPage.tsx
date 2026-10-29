@@ -13,6 +13,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Annotation } from "../ipc/annotations";
 import type { PageSource } from "../pdf/useDocument";
 import { HighlightLayer } from "./HighlightLayer";
+import type { MenuAt } from "./menuPlacement";
 import { PdfTextLayer } from "./PdfTextLayer";
 
 /**
@@ -59,10 +60,7 @@ export function PdfPage({
   readonly height: number;
   readonly width: number;
   readonly annotations: readonly Annotation[];
-  readonly onPick: (
-    annotation: Annotation,
-    at: { readonly left: number; readonly top: number },
-  ) => void;
+  readonly onPick: (annotation: Annotation, at: MenuAt) => void;
 }) {
   const canvas = useRef<HTMLCanvasElement | null>(null);
   const [undrawn, setUndrawn] = useState(false);

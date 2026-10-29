@@ -10,7 +10,7 @@ import { SEMANTICS } from "./semantics";
 
 afterEach(cleanup);
 
-const AT = { left: 120, top: 340 };
+const AT = { left: 120, top: 340, above: 320 };
 
 describe("marking a new selection", () => {
   it("offers every semantic, each with its letter", () => {

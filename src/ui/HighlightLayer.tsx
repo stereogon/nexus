@@ -18,6 +18,7 @@
  * looking like a decision.
  */
 import type { Annotation, NormalizedRect } from "../ipc/annotations";
+import type { MenuAt } from "./menuPlacement";
 import { BADGE_SIZE, badgeAt } from "./highlightBadge";
 import { SEMANTIC_GLYPH, SEMANTIC_LABEL } from "./semantics";
 
@@ -56,10 +57,7 @@ export function HighlightLayer({
   readonly annotations: readonly Annotation[];
   readonly width: number;
   readonly height: number;
-  readonly onPick: (
-    annotation: Annotation,
-    at: { readonly left: number; readonly top: number },
-  ) => void;
+  readonly onPick: (annotation: Annotation, at: MenuAt) => void;
 }) {
   if (annotations.length === 0) {
     return null;
@@ -103,7 +101,11 @@ export function HighlightLayer({
                   // including from the keyboard, where there is no pointer at all.
                   const box = event.currentTarget.getBoundingClientRect();
 
-                  onPick(annotation, { left: box.left, top: box.bottom + 8 });
+                  onPick(annotation, {
+                    left: box.left,
+                    top: box.bottom + 8,
+                    above: box.top - 8,
+                  });
                 }}
                 style={{ left: badge.left, top: badge.top, width: BADGE_SIZE, height: BADGE_SIZE }}
                 type="button"

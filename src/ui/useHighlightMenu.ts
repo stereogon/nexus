@@ -16,14 +16,11 @@
 import { useCallback, useState } from "react";
 
 import type { Annotation, HighlightSemantic } from "../ipc/annotations";
+import type { MenuAt } from "./menuPlacement";
 import type { Annotations } from "./useAnnotations";
 import { useSelection } from "./useSelection";
 
-/** Where a menu sits, in viewport coordinates. */
-export interface MenuAt {
-  readonly left: number;
-  readonly top: number;
-}
+export type { MenuAt };
 
 /** An open menu, and what its controls do. */
 export interface OpenMenu {

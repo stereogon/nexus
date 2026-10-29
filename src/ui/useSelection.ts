@@ -13,19 +13,20 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { candidateFrom, type HighlightCandidate } from "../pdf/selection";
+import type { MenuAt } from "./menuPlacement";
 
 /** A selection worth offering a menu for, and where that menu should sit. */
 export interface Selected {
   readonly candidate: HighlightCandidate;
   /** Viewport coordinates, since the menu is positioned against the window. */
-  readonly at: { readonly left: number; readonly top: number };
+  readonly at: MenuAt;
 }
 
 /** How far below the selection the menu sits, so it does not cover the last line. */
 const MENU_GAP = 8;
 
 /** Where to put the menu for the current selection, or `null` if there is nowhere. */
-function anchorFor(selection: Selection | null): Selected["at"] | null {
+function anchorFor(selection: Selection | null): MenuAt | null {
   if (selection === null || selection.rangeCount === 0) {
     return null;
   }
@@ -35,7 +36,13 @@ function anchorFor(selection: Selection | null): Selected["at"] | null {
 
   return last === undefined
     ? null
-    : { left: last.left, top: last.bottom + MENU_GAP };
+    : {
+        left: last.left,
+        top: last.bottom + MENU_GAP,
+        // The top of the last line, so the menu can flip above it near the bottom of the
+        // window rather than covering the words it belongs to.
+        above: last.top - MENU_GAP,
+      };
 }
 
 export function useSelection(): {

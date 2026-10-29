@@ -454,6 +454,37 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-10-29 · The menu that ran off the right edge**
+Reported after the first real use of highlights: a highlight near the right margin opened
+its menu off the screen, so Remove could not be reached. The menu was positioned from the
+selection's own left edge, which is correct right up until the selection is near the
+margin — which is exactly where a menu needs to move.
+
+**The menu measures itself**, because where it fits depends on how wide it is and how wide
+it is depends on what it holds: four swatches, or a single Remove. In `useLayoutEffect`
+rather than `useEffect`, so it is placed before paint — otherwise it appears off the edge
+for a frame and snaps back, which reads as a flicker rather than as a menu opening. The
+alternative, an estimated width in a constant, is wrong the first time the menu gains a
+control.
+
+**Vertically it flips rather than slides.** Sliding a menu up to fit would park it over the
+very text it belongs to, which is the one place it must not be. So near the bottom of the
+window it moves above the line instead. Two cases make that rule honest: a selection on the
+first line has no room either way, and covering the text below beats being cut off by the
+top of the window where there is nothing to drag it back; and the flip is **clamped
+afterwards**, because an anchor already off the bottom flips to somewhere equally off the
+bottom and the menu is just as unreachable. The first version of this missed that, and the
+test caught it.
+
+`placeMenu` takes the viewport as an argument rather than reading `window`, which is the
+whole reason the ten cases could be written down at all: a menu wider than the screen, a
+selection on the last line, a one-pixel overflow that should move by one pixel rather than
+jump to the margin.
+
+This is the first defect found by *using* the feature rather than by looking at it, and
+it is a good argument for the same thing as the rest: it is a geometry bug, and geometry
+is what nothing in the suite can see without a browser.
+
 **2026-10-29 · Highlights, end to end**
 Fourth substep, and the feature now works: select text, pick one of four semantics, and it
 is drawn on the page and stored in `annotations.json`. Clicking its glyph removes it.
