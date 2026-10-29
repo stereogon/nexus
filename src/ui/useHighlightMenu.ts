@@ -36,7 +36,7 @@ export function useHighlightMenu(highlights: Annotations): {
   readonly pick: (annotation: Annotation, at: MenuAt) => void;
   readonly dismiss: () => void;
 } {
-  const selection = useSelection();
+  const { selected, clear } = useSelection();
   const [picked, setPicked] = useState<{
     readonly annotation: Annotation;
     readonly at: MenuAt;
@@ -46,10 +46,15 @@ export function useHighlightMenu(highlights: Annotations): {
     setPicked({ annotation, at });
   }, []);
 
+  // Stable across renders, which is load-bearing rather than tidy: the viewer dismisses
+  // the menu from an effect whenever the page under it moves, and an effect depending on
+  // a function rebuilt every render would fire every render and the menu could never
+  // open. `clear` is itself stable, so depending on it rather than on the object holding
+  // it is what keeps this one stable too.
   const dismiss = useCallback(() => {
     setPicked(null);
-    selection.clear();
-  }, [selection]);
+    clear();
+  }, [clear]);
 
   if (picked !== null) {
     return {
@@ -66,7 +71,7 @@ export function useHighlightMenu(highlights: Annotations): {
     };
   }
 
-  const marking = selection.selected;
+  const marking = selected;
 
   if (marking === null) {
     return { open: null, pick, dismiss };
@@ -77,7 +82,7 @@ export function useHighlightMenu(highlights: Annotations): {
       at: marking.at,
       onChoose: (semantic: HighlightSemantic) => {
         highlights.add(marking.candidate, semantic);
-        selection.clear();
+        clear();
       },
       onRemove: null,
     },

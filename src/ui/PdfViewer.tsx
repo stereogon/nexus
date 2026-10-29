@@ -28,6 +28,7 @@ import { PdfPage } from "./PdfPage";
 import { PdfToolbar } from "./PdfToolbar";
 import { onPage, useAnnotations } from "./useAnnotations";
 import { useHighlightMenu } from "./useHighlightMenu";
+import { stepFrom, ZOOM_LIMITS, type Zoom } from "./zoom";
 import type { ViewMode } from "./viewMode";
 
 /** The gap between pages, matching the artboard's page separation. */
@@ -35,22 +36,6 @@ const PAGE_GAP = 16;
 
 /** Room for the bed to breathe either side of a page at fit-width. */
 const BED_PADDING = 48;
-
-const ZOOM_LIMITS = { min: 0.25, max: 6 } as const;
-
-/** The zoom steps `−` and `+` move through, rather than a blind multiplier. */
-const ZOOM_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4, 6] as const;
-
-type Zoom = { readonly kind: "fit" } | { readonly kind: "at"; readonly scale: number };
-
-function stepFrom(scale: number, direction: 1 | -1): number {
-  const ordered = direction === 1 ? ZOOM_STEPS : [...ZOOM_STEPS].reverse();
-  const next = ordered.find((step) =>
-    direction === 1 ? step > scale + 0.001 : step < scale - 0.001,
-  );
-
-  return next ?? scale;
-}
 
 export function PdfViewer({
   document,
@@ -67,6 +52,7 @@ export function PdfViewer({
 }) {
   const highlights = useAnnotations(vault, directory);
   const menu = useHighlightMenu(highlights);
+  const dismissMenu = menu.dismiss;
   const { state, page } = usePdfDocument(documentUrl(document));
   const scroller = useRef<HTMLDivElement | null>(null);
   const [zoom, setZoom] = useState<Zoom>({ kind: "fit" });
@@ -141,8 +127,25 @@ export function PdfViewer({
     // The menu is positioned against the window while the pages scroll underneath it, so
     // leaving it open would park it over unrelated text. Dismissing is also the honest
     // behaviour: a selection scrolled out of sight should not keep a menu on screen.
-    menu.dismiss();
-  }, [menu]);
+    dismissMenu();
+  }, [dismissMenu]);
+
+  /**
+   * Anything that moves the page out from under the menu closes it.
+   *
+   * Driven by what changed rather than by each control calling `dismiss`, which was the
+   * first version and was already wrong: scrolling was handled, so the arrows, the page
+   * field, the mode switch and the zoom buttons each looked fine on their own while none
+   * of them closed the menu. Reported on 2026-10-29 after switching from scroll to page
+   * mode left a Remove button floating over a different page.
+   *
+   * The list is the three things that can move a page: which page is showing, which mode
+   * lays it out, and what scale it is drawn at. A control added later moves one of them
+   * or it does not move the page at all, so it needs no line here.
+   */
+  useEffect(() => {
+    dismissMenu();
+  }, [showing, mode, scale, dismissMenu]);
 
   const changeZoom = useCallback(
     (direction: 1 | -1) => {
