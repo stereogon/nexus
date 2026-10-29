@@ -226,3 +226,70 @@ fn an_excerpt_can_hold_a_whole_paragraph() {
     assert!(Excerpt::parse(&"a".repeat(4_001)).is_err());
     assert!(Excerpt::parse("").is_err());
 }
+
+#[test]
+fn quoted_text_keeps_its_words_when_the_pdf_hides_characters_in_it() {
+    // Reported 2026-10-29: highlighting a formula reading "R cap" failed outright. Text
+    // extracted from a PDF carries soft hyphens, zero-width joiners and the rest as a
+    // matter of course -- the reader did not put them there and cannot take them out, so
+    // refusing the highlight loses work for a reason nobody can act on (§1.4).
+    let hidden = "R\u{00AD} cap\u{200B} is the estimate\u{FEFF}";
+
+    assert_eq!(
+        Excerpt::parse(hidden).unwrap().as_str(),
+        "R cap is the estimate"
+    );
+}
+
+#[test]
+fn quoted_text_drops_a_control_character_rather_than_refusing_the_highlight() {
+    let stray = "Raft\u{0000} achieves\u{001B} consensus";
+
+    assert_eq!(
+        Excerpt::parse(stray).unwrap().as_str(),
+        "Raft achieves consensus"
+    );
+}
+
+#[test]
+fn a_direction_override_cannot_survive_into_a_stored_quote() {
+    // Stripping is not a weakening of the rule it replaced. The override is gone from the
+    // stored text, so it cannot reorder anything wherever the quote is later shown -- the
+    // difference is only that the highlight survives.
+    let spoofed = "total\u{202E}gnp\u{202C} rises";
+    let stored = Excerpt::parse(spoofed).unwrap();
+
+    assert!(!stored.as_str().contains('\u{202E}'));
+    assert!(!stored.as_str().contains('\u{202C}'));
+    assert_eq!(stored.as_str(), "totalgnp rises");
+}
+
+#[test]
+fn a_selection_of_nothing_but_hidden_characters_is_still_refused() {
+    // Stripping cannot rescue a selection that had no words in it -- which is what
+    // dragging across a diagram or a scanned page produces.
+    let nothing = Excerpt::parse("\u{200B}\u{FEFF}  \u{00AD}");
+
+    assert!(nothing.is_err());
+}
+
+#[test]
+fn the_refusal_talks_about_the_highlight_and_not_about_a_folder() {
+    // The actual defect reported: ERR_INVALID_NAME, remediated with "try a shorter name,
+    // or one without punctuation such as slashes or colons". A person highlighting a
+    // formula cannot act on that at all.
+    let refused = Excerpt::parse("").unwrap_err();
+
+    assert_eq!(refused.code(), "ERR_INVALID_EXCERPT");
+    assert!(refused.remediation().contains("selection"));
+    assert!(!refused.remediation().contains("folder"));
+}
+
+#[test]
+fn a_quote_that_is_too_long_is_measured_after_the_hidden_characters_go() {
+    // Otherwise a paragraph padded with zero-width characters could be refused for a
+    // length it does not actually have once stored.
+    let padded = format!("{}{}", "a".repeat(3_999), "\u{200B}".repeat(500));
+
+    assert!(Excerpt::parse(&padded).is_ok());
+}

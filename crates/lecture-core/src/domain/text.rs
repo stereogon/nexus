@@ -49,6 +49,35 @@ pub(crate) fn has_invisible(text: &str) -> bool {
     text.chars().any(is_invisible)
 }
 
+/// Removes characters that carry no meaning and could misrepresent the text.
+///
+/// The invisibles from [`INVISIBLE`] and every control character that is not whitespace.
+///
+/// # Why quoted text is stripped where a name is refused
+///
+/// [`Slug`](crate::domain::Slug) and [`Label`](crate::domain::Label) *refuse* these,
+/// because a name is something a person chose: refusing it asks them to choose again, and
+/// a lecture title carrying a bidi override is a way to hide a file in a sidebar.
+///
+/// An [`Excerpt`](crate::domain::Excerpt) is not chosen. It is copied out of a document
+/// someone else wrote, and PDF extraction yields soft hyphens, zero-width joiners and
+/// stray controls as a matter of course. Refusing those loses a highlight for a reason the
+/// reader cannot act on, which §1.4 puts above almost everything. Stripping is also
+/// *safer* than refusing would be if the text were stored: an override that is removed
+/// cannot reorder anything, so the display risk is gone either way, and this way the
+/// highlight survives.
+pub(crate) fn strip_unprintable(raw: &str) -> String {
+    raw.chars().filter(|ch| is_printable(*ch)).collect()
+}
+
+/// Whether `ch` carries meaning a reader could see.
+///
+/// Whitespace counts: a tab or a newline between words is real, and [`normalise`] is what
+/// turns a run of it into one space.
+fn is_printable(ch: char) -> bool {
+    !is_invisible(ch) && (!ch.is_control() || ch.is_whitespace())
+}
+
 /// Normalises human-supplied text for storage and display.
 ///
 /// NFC, then outer whitespace trimmed, then inner whitespace runs collapsed to a single

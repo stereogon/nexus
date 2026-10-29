@@ -15,11 +15,11 @@ use crate::domain::fingerprint_hex;
 use wording::{
     ALIAS_REFUSED, CONVERSION_DID_NOT_PRODUCE_A_PDF, CONVERSION_STUCK, DATE_UNREADABLE,
     FILE_OPERATION_ABANDONED, FINGERPRINT_UNREADABLE, FORMAT_NOT_IMPORTABLE,
-    HIGHLIGHT_DUPLICATE_ID, HIGHLIGHT_IMPOSSIBLE_PAGE, HIGHLIGHT_POSITION, HIGHLIGHT_UNREADABLE,
-    HOME_UNAVAILABLE, LOCATION_OUTSIDE_VAULT, LOCATION_TOO_DEEP, LOCATION_UNUSABLE,
-    LOG_UNAVAILABLE, MANIFEST_INCONSISTENT, NAME_TAKEN, NAME_UNUSABLE, PATH_TEMPLATE_UNUSABLE,
-    POSITION_UNAVAILABLE, POSITION_UNREADABLE, READING_PLACE_LOST, STORED_FILE_UNREADABLE,
-    UNKNOWN_THEME, UNRECOGNISED_SCHEMA_VERSION, VAULT_UNOPENABLE,
+    HIGHLIGHT_DUPLICATE_ID, HIGHLIGHT_IMPOSSIBLE_PAGE, HIGHLIGHT_POSITION, HIGHLIGHT_TEXT_EMPTY,
+    HIGHLIGHT_UNREADABLE, HOME_UNAVAILABLE, LOCATION_OUTSIDE_VAULT, LOCATION_TOO_DEEP,
+    LOCATION_UNUSABLE, LOG_UNAVAILABLE, MANIFEST_INCONSISTENT, NAME_TAKEN, NAME_UNUSABLE,
+    PATH_TEMPLATE_UNUSABLE, POSITION_UNAVAILABLE, POSITION_UNREADABLE, READING_PLACE_LOST,
+    STORED_FILE_UNREADABLE, UNKNOWN_THEME, UNRECOGNISED_SCHEMA_VERSION, VAULT_UNOPENABLE,
 };
 
 impl CoreError {
@@ -38,6 +38,7 @@ impl CoreError {
             Self::SchemaVersionUnsupported { .. } => "ERR_SCHEMA_VERSION_UNSUPPORTED",
             Self::InvalidAnnotation { .. } => "ERR_INVALID_ANNOTATION",
             Self::DuplicateAnnotationId { .. } => "ERR_DUPLICATE_ANNOTATION_ID",
+            Self::InvalidExcerpt { .. } => "ERR_INVALID_EXCERPT",
             Self::InvalidName { .. } => "ERR_INVALID_NAME",
             Self::InvalidPageNumber { .. } => "ERR_INVALID_PAGE_NUMBER",
             Self::NameAlreadyTaken { .. } => "ERR_NAME_ALREADY_TAKEN",
@@ -100,6 +101,7 @@ impl CoreError {
             Self::StoredFileUnreadable { .. } => STORED_FILE_UNREADABLE,
             Self::SchemaVersionUnsupported { .. } => UNRECOGNISED_SCHEMA_VERSION,
             Self::InvalidTimestamp { .. } => DATE_UNREADABLE,
+            Self::InvalidExcerpt { .. } => HIGHLIGHT_TEXT_EMPTY,
             Self::InvalidName { .. } => NAME_UNUSABLE,
             Self::NameAlreadyTaken { .. } => NAME_TAKEN,
             Self::InvalidRelativePath { .. } => LOCATION_UNUSABLE,
@@ -138,6 +140,22 @@ mod wording {
     pub(super) const HIGHLIGHT_POSITION: &str = "This highlight's position could not be read, so it was left out rather than \
          drawn in the wrong place. Your notes and the rest of your highlights are \
          untouched. If you edited annotations.json by hand, a backup is beside it.";
+
+    /// Said to someone whose selection could not be quoted.
+    ///
+    /// This sentence is why `InvalidExcerpt` exists at all. Until 2026-10-29 an excerpt
+    /// borrowed `InvalidName`, so highlighting a formula reading "R cap" failed with
+    /// `ERR_INVALID_NAME` and `NAME_UNUSABLE`: *"That name cannot be used for a folder on
+    /// disk... Try a shorter name, or one without punctuation such as slashes or colons."*
+    ///
+    /// The two are not the same failure and must not share a sentence. A name is
+    /// something a person chose and can change; an excerpt is text copied out of someone
+    /// else's PDF. §1.4 asks what the reader should do next, and the answer for a name is
+    /// "pick another one" while the answer here is "select some words" -- or, on a scan,
+    /// "this page has no text at all".
+    pub(super) const HIGHLIGHT_TEXT_EMPTY: &str = "That selection has no text in it, so there is nothing to quote. Select the words \
+         themselves -- on a scanned page or a diagram there may be none, and a note is the \
+         better tool there.";
 
     pub(super) const HIGHLIGHT_UNREADABLE: &str = "One highlight could not be read, so it was left out rather than drawn in the \
          wrong place. Your notes and your other highlights are untouched, and a backup \

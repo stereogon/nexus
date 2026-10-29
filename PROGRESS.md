@@ -454,6 +454,73 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-10-29 · The menu that outlived the page under it**
+Reported: switching from scroll mode to page mode left a Remove button floating over a
+different page, and the arrows did the same.
+
+Dismissal had been wired into `onScroll`, which is the one way of moving a page that
+*isn't* involved here — changing page in page mode swaps the mounted page, and switching
+mode or zooming re-lays it out, none of which scrolls. Each control looked right on its
+own while none of them closed the menu.
+
+So it is now driven by **what changed rather than by each control remembering to call
+`dismiss`**: one effect on the three things that can move a page — which page is showing,
+which mode lays it out, what scale it is drawn at. A control added later either moves one
+of those or does not move the page, so it needs no line.
+
+That made `dismiss` identity load-bearing rather than tidy. It had depended on the object
+returned by `useSelection`, which is rebuilt every render, so an effect depending on it
+would have fired every render and the menu could never have stayed open. It now depends on
+`clear`, which is stable, and `useHighlightMenu.test.tsx` asserts the stability directly —
+the property is invisible in the component and silently fatal.
+
+Two things came out of the same change. `PdfViewer` hit exactly 300 lines, so the zoom
+steps moved to `src/ui/zoom.ts`: a real seam, and they had been untestable inside the
+component — ten tests now cover the tolerance that stops `+` from a fit-width of 0.9999
+looking like a dead button. Both bugs so far in this feature have been geometry, and
+geometry is what nothing in the suite can see without a browser.
+
+**2026-10-29 · A highlight refused with a sentence about folder names**
+Reported: highlighting a formula reading "R cap" failed with
+`ERR_INVALID_NAME` — *"That name cannot be used for a folder on disk... Try a shorter
+name, or one without punctuation such as slashes or colons."*
+
+Two defects, and the message was the worse one. `Excerpt::parse` had been borrowing
+`CoreError::InvalidName`, so a reader who highlighted a formula was told to rename a
+folder. §1.4 asks what the reader should do next; the answer for a name is "pick another
+one" and the answer here is "select some words", and no single sentence can be both. Hence
+`CoreError::InvalidExcerpt` / `ERR_INVALID_EXCERPT`, carrying **no copy of the text** —
+§1.2, and this error's whole subject is someone's study material. The rationale sits beside
+the remediation in `guidance`, where someone changing the wording will see it.
+
+The policy underneath it was also wrong. `Excerpt::parse` refused text containing invisible
+or control characters, a rule inherited from `Slug` and `Label` — where it is right, because
+a name is *chosen*, and a lecture title carrying a bidi override is a way to hide a file in
+a sidebar. An excerpt is not chosen. It is copied out of a document someone else wrote, and
+PDF extraction yields soft hyphens, zero-width joiners and stray controls as a matter of
+course. Refusing lost a highlight for a reason the reader could not act on.
+
+So excerpts **strip** where names refuse, via `text::strip_unprintable`. This is not a
+weakened rule: an override that is removed cannot reorder anything, so the display risk is
+gone either way and the difference is only that the highlight survives. A selection with no
+words in it at all — a diagram, a scanned page — is still refused, now with a sentence that
+says so. The length cap is measured after stripping, so a paragraph padded with zero-width
+characters is not refused for a length it would not have once stored.
+
+Six tests, including the reported string. None had asserted the old refusal, which is its
+own small finding: the strictness was inherited rather than decided.
+
+*Two things found while in there.* `error/mod.rs` crossed 300 lines, and a single `enum`
+cannot be split across files — so the seam taken was the one its siblings had already
+established: `mod.rs` is now the module root and `CoreError` lives in `core_error.rs`
+beside `backup_outcome.rs` and `guidance.rs`. That buys room rather than solving it; when
+it bites again the answer is layered errors (`CoreError::Highlight(HighlightError)`), which
+is a refactor of every call site and match arm and does not belong inside a bug fix.
+And reading the enum end to end turned up two **crossed doc comments**: `UnknownTheme`
+opened with "A component of a path inside the vault was a symbolic link" while
+`SymlinkRefused` had no summary line at all. Documentation only, no behaviour, but it would
+have misled the next reader.
+
 **2026-10-29 · The menu that ran off the right edge**
 Reported after the first real use of highlights: a highlight near the right margin opened
 its menu off the screen, so Remove could not be reached. The menu was positioned from the

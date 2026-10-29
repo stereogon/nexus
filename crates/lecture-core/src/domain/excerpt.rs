@@ -52,33 +52,33 @@ impl fmt::Display for Excerpt {
 impl Excerpt {
     /// Validates and normalises quoted text.
     ///
+    /// Invisible and control characters are **stripped rather than refused**, which is
+    /// where this parts company with [`Label`](crate::domain::Label). Text pulled out of a
+    /// PDF carries soft hyphens, zero-width joiners and stray controls as a matter of
+    /// course — the reader did not put them there and cannot take them out — so refusing
+    /// would lose a highlight for a reason nobody can act on. See
+    /// [`text::strip_unprintable`] for why that is also no less safe.
+    ///
+    /// *(Changed 2026-10-29, after highlighting a formula reading "R cap" failed with
+    /// `ERR_INVALID_NAME` and a sentence about folder names.)*
+    ///
     /// # Errors
     ///
-    /// Returns [`CoreError::InvalidName`] if nothing visible survives normalisation, if
-    /// the text exceeds 4000 bytes, or if it contains a control or invisible character
-    /// that is not whitespace.
+    /// Returns [`CoreError::InvalidExcerpt`] if nothing visible survives, or if what
+    /// survives exceeds 4000 bytes.
     pub fn parse(raw: &str) -> Result<Self, CoreError> {
-        let reject = |reason: &'static str| {
-            Err(CoreError::InvalidName {
-                name: truncate_for_error(raw),
-                reason,
-            })
-        };
-
-        if text::has_non_whitespace_control(raw) {
-            return reject("contains a control character");
-        }
-        if text::has_invisible(raw) {
-            return reject("contains an invisible character that could disguise the text");
-        }
-
-        let normalised = text::normalise(raw);
+        let normalised = text::normalise(&text::strip_unprintable(raw));
 
         if normalised.is_empty() {
-            return reject("contains no visible text");
+            return Err(CoreError::InvalidExcerpt {
+                reason: "contains no visible text",
+            });
         }
+
         if normalised.len() > MAX_BYTES {
-            return reject("is longer than a highlight can hold");
+            return Err(CoreError::InvalidExcerpt {
+                reason: "is longer than a highlight can hold",
+            });
         }
 
         Ok(Self(normalised))
@@ -89,24 +89,4 @@ impl Excerpt {
     pub fn as_str(&self) -> &str {
         &self.0
     }
-}
-
-/// Shortens text for an error message.
-///
-/// An excerpt can be thousands of bytes, and the error is logged. `CLAUDE.md` §1.2 says
-/// a person's study material is never written verbatim into diagnostics, so only enough
-/// to identify which highlight failed goes into the message.
-fn truncate_for_error(raw: &str) -> String {
-    const KEEP: usize = 40;
-
-    if raw.len() <= KEEP {
-        return raw.to_owned();
-    }
-
-    let mut end = KEEP;
-    while end > 0 && !raw.is_char_boundary(end) {
-        end -= 1;
-    }
-
-    format!("{}…", raw.get(..end).unwrap_or(""))
 }
