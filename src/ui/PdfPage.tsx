@@ -11,6 +11,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import type { PageSource } from "../pdf/useDocument";
+import { PdfTextLayer } from "./PdfTextLayer";
 
 /**
  * The most pixels one canvas may hold.
@@ -115,14 +116,22 @@ export function PdfPage({
   }, [index, scale, source]);
 
   return (
-    <div className="pdf-page" style={{ top, height, width }}>
+    <div
+      aria-label={`Page ${String(index + 1)}`}
+      className="pdf-page"
+      style={{ top, height, width }}
+    >
+      {/* The canvas is hidden from assistive technology on purpose: it is a picture of
+          text that the layer below carries as real text. Labelling both would read the
+          page twice, and labelling only the canvas would read it as "Page 4" and no
+          content. */}
       <canvas
-        aria-label={`Page ${String(index + 1)}`}
+        aria-hidden="true"
         className="pdf-canvas"
         ref={canvas}
-        role="img"
         style={{ width, height }}
       />
+      <PdfTextLayer index={index} scale={scale} source={source} />
       {undrawn && (
         <p className="pdf-undrawn">
           This page could not be drawn. The rest of the document is unaffected.

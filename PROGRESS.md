@@ -414,6 +414,50 @@ step under test. `check-line-limits.sh` exited 1 naming the file; the full gate 
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
 
+**2026-10-29 · Text you can actually select**
+The viewer drew pages but a cursor had nothing to hold: a canvas is pixels, and pixels
+contain no text. pdf.js's `TextLayer` lays the page's text out as transparent spans,
+positioned glyph by glyph over the same pixels, and the browser's own selection works on
+those. So selecting and copying now work, and `⌘C` takes the real characters.
+
+**Its own component, for the same reason each page is.** A text layer is rebuilt on every
+zoom change, so unmounting has to cancel it — and `cancel()` stops the work while leaving
+whatever it already appended, so the cleanup clears the element too. Without that, a zoom
+would stack a second set of spans over the first, which reads as doubled, unselectable text.
+
+**The CSS is pdf.js's contract, not a design choice.** The layer writes per-span custom
+properties (`--font-height`, `--scale-x`, `--rotate`) and expects the stylesheet to turn
+them into position and size; get them wrong and selection lands on the wrong glyphs. Taken
+from `pdfjs-dist/web/pdf_viewer.css` rather than invented, and **flattened out of its nested
+form on purpose**: CSS nesting needs Safari 16.5 and this build targets Safari 15, so the
+nested original would ship unparsed and every span would pile up at the page's top-left
+corner. The selection colour is the one part that is ours, derived from `accentInk` because
+the canvas has no artboard for a text selection — `accentInk` is the token §3 designates for
+chrome drawn on the page, and the page is light in both themes, so one value serves both.
+
+**The accessibility structure was wrong before this and is fixed by it.** The canvas carried
+`role="img"` with a `Page 4` label, which is all a screen reader got: a page of text
+announced as a picture called "Page 4". Now the canvas is `aria-hidden` — it is a picture of
+text the layer below carries as real text — and the page's own element holds the label.
+
+**One trade worth writing down: `disableFontFace: true` costs some text-layer precision.**
+With it set, no foreign font program reaches the operating system's font engine, which is
+the security property that matters most in this file and is why it is set. The cost is that
+the text layer cannot measure with the document's real font; pdf.js falls back to standard
+families and stretches each span with `--scale-x` to match the recorded width. Span-level
+geometry stays right, which is what sentence highlighting needs, but character-level
+positions inside a span are approximate. Keeping the security property and accepting
+approximate intra-span geometry is the right way round for this app, and if highlight
+geometry ever looks off by a character, this is the reason — not a coordinate bug.
+
+**Not tested, and this is the honest limit of the substep.** `PdfTextLayer` has no test, for
+the same reason as the other components: there is no React harness here, and
+`@testing-library/react` is an install (§2). What *is* coming next is testable and is where
+the real risk lives — turning a DOM selection into the normalised, rotation-aware
+`[0.0, 1.0]` coordinates §3 requires, which is pure arithmetic and gets the same treatment
+`src/pdf/pages.ts` got. Selection was the prerequisite; the coordinate math and the four
+highlight semantics are the next substep.
+
 **2026-10-29 · Three things the first real run of the viewer exposed**
 The user opened a lecture successfully in the app, and in doing so found two bugs and one
 missing feature. All three were in what surrounds the viewer rather than in it.

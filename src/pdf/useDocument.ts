@@ -10,6 +10,8 @@
 import { useEffect, useState } from "react";
 
 import { asCommandError, type CommandError } from "../ipc/vault";
+import { TextLayer } from "pdfjs-dist";
+
 import { loadPdf } from "./engine";
 
 /** One page's unscaled size. */
@@ -36,6 +38,18 @@ export interface RenderablePage {
   readonly viewportAt: (scale: number) => { width: number; height: number };
   readonly draw: (
     canvas: HTMLCanvasElement,
+    scale: number,
+  ) => { readonly promise: Promise<void>; readonly cancel: () => void };
+  /**
+   * Lays this page's text out, invisibly, over the drawn pixels.
+   *
+   * A canvas is pixels and holds no text, so without this there is nothing on a page for a
+   * cursor to take hold of. pdf.js builds a transparent run of spans positioned glyph by
+   * glyph; the browser's own selection then works on them, which is what makes selecting,
+   * copying and — next — highlighting possible.
+   */
+  readonly drawText: (
+    container: HTMLElement,
     scale: number,
   ) => { readonly promise: Promise<void>; readonly cancel: () => void };
 }
@@ -107,6 +121,23 @@ export function usePdfDocument(url: string | null): {
                 promise: render.promise,
                 cancel: () => {
                   render.cancel();
+                },
+              };
+            },
+
+            drawText: (container: HTMLElement, scale: number) => {
+              // Streamed rather than awaited whole, so a dense page's spans appear as they
+              // are measured instead of after the last one.
+              const layer = new TextLayer({
+                textContentSource: loaded.streamTextContent(),
+                container,
+                viewport: loaded.getViewport({ scale }),
+              });
+
+              return {
+                promise: layer.render(),
+                cancel: () => {
+                  layer.cancel();
                 },
               };
             },
