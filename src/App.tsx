@@ -33,6 +33,7 @@ import {
 import { DropOverlay } from "./ui/DropOverlay";
 import { EmptyPane } from "./ui/EmptyPane";
 import { Failure } from "./ui/Failure";
+import { Notice } from "./ui/Notice";
 import { importEach, noteFor } from "./ui/dropped";
 import { LectureEditor } from "./ui/LectureEditor";
 import { PdfViewer } from "./ui/PdfViewer";
@@ -41,6 +42,7 @@ import { sidebarRows, type GroupBy, type ThenBy } from "./ui/sidebarRows";
 import { TitleBar } from "./ui/TitleBar";
 import { useDropZone } from "./ui/useDropZone";
 import { useMetaShortcut } from "./ui/useMetaShortcut";
+import { useNotice } from "./ui/useNotice";
 import { useOpenLecture } from "./ui/useOpenLecture";
 import { useRememberedVault } from "./ui/useRememberedVault";
 import { useTheme } from "./ui/useTheme";
@@ -48,11 +50,7 @@ import { Welcome } from "./ui/Welcome";
 
 type VaultState =
   | { readonly kind: "idle" }
-  | {
-      readonly kind: "open";
-      readonly summary: VaultSummary;
-      readonly note: string | null;
-    }
+  | { readonly kind: "open"; readonly summary: VaultSummary }
   | { readonly kind: "failed"; readonly error: CommandError };
 
 export function App() {
@@ -66,6 +64,7 @@ export function App() {
   const remembered = useRememberedVault();
   const reading = useOpenLecture();
   const appearance = useTheme();
+  const notice = useNotice();
 
   // Folded into `state` once it arrives, rather than rendering from two sources. The
   // functional update is what makes that safe: it fills an *idle* shell and leaves any
@@ -80,7 +79,7 @@ export function App() {
 
     setState((current) =>
       current.kind === "idle"
-        ? { kind: "open", summary: restored, note: null }
+        ? { kind: "open", summary: restored }
         : current,
     );
   }, [remembered.summary]);
@@ -97,7 +96,8 @@ export function App() {
           // Re-scanned rather than having rows patched in place: the vault on disk is the
           // truth, and a list maintained by editing drifts from it the first time anything
           // changes a lecture without going through this window.
-          setState({ kind: "open", summary: await openVault(vault), note });
+          setState({ kind: "open", summary: await openVault(vault) });
+          notice.show(note);
         } catch (thrown: unknown) {
           setState({ kind: "failed", error: asCommandError(thrown) });
         } finally {
@@ -105,7 +105,7 @@ export function App() {
         }
       })();
     },
-    [],
+    [notice],
   );
 
   const choose = useCallback(() => {
@@ -125,7 +125,8 @@ export function App() {
           // Recorded only once the open has succeeded, so a folder that turns out not to be
           // a vault is not the one waiting on the next launch.
           await rememberVault(chosen);
-          setState({ kind: "open", summary, note: null });
+          setState({ kind: "open", summary });
+          notice.show(null);
         }
       } catch (thrown: unknown) {
         setState({ kind: "failed", error: asCommandError(thrown) });
@@ -133,7 +134,7 @@ export function App() {
         setBusy(false);
       }
     })();
-  }, []);
+  }, [notice]);
 
   const add = useCallback(() => {
     if (state.kind !== "open") {
@@ -263,7 +264,9 @@ export function App() {
           />
         ) : (
           <main className="pane">
-            {state.note !== null && <p className="note">{state.note}</p>}
+            {notice.text !== null && (
+              <Notice onDismiss={notice.dismiss} text={notice.text} />
+            )}
             {reading.failure !== null && <Failure error={reading.failure} />}
             {zone.failure !== null && <Failure error={zone.failure} />}
 

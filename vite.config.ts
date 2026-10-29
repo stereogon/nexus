@@ -26,9 +26,24 @@ export default defineConfig({
   clearScreen: false,
 
   test: {
-    // Vitest stubs CSS imports by default, which makes `theme.css?raw` an empty string and
-    // `styles.test.ts` -- the test that checks every class name a component uses is
-    // actually defined -- silently vacuous. It needs the real text.
+    // Vitest stubs CSS imports by default, which makes a `?raw` stylesheet import an empty
+    // string and `styles.test.ts` -- the test that checks every class name a component
+    // uses is actually defined -- silently vacuous. It needs the real text.
     css: true,
+
+    // `styles.test.ts` finds its inputs with `import.meta.glob`, which Vite resolves at
+    // transform time and, with `eager` and `?raw`, inlines into the transformed module.
+    // The on-disk transform cache is keyed by the importing file's own content, so adding
+    // a component does not change `styles.test.ts` and the cached transform is reused --
+    // with the old file list baked in. The new component is then not scanned at all, and
+    // the check passes while seeing nothing.
+    //
+    // Observed on 2026-10-29: `Notice.tsx` was invisible to the scan until an unrelated
+    // byte was added to the test file. Its own "cannot pass vacuously" guards did not
+    // catch it, because a stale list still has plausible counts -- which is the point
+    // worth remembering about guards of that shape.
+    //
+    // Measured at no cost here: the suite runs in 1.0s either way.
+    fsModuleCache: false,
   },
 });

@@ -414,6 +414,63 @@ step under test. `check-line-limits.sh` exited 1 naming the file; the full gate 
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
 
+**2026-10-29 · The confirmation that would not leave**
+Reported with a screenshot: `Added "1. Foundations".` sat over the empty pane and never
+went away. It was in `VaultState` as `note`, set after an import and cleared by nothing, so
+it stayed until the next action replaced it.
+
+`App` already argues that `busy`, `groupBy` and `editing` sit outside that union because
+each is orthogonal to which vault is open. A confirmation is orthogonal in the same way and
+more so — it describes an action that has already finished — so folding it in meant every
+transition had to remember to carry or drop it, and the one that forgot is what shipped. It
+now lives in `useNotice`, takes itself away after six seconds, and can be dismissed by hand.
+
+The identity field is the subtle half: importing the same file twice produces the same
+sentence, and without an id of its own the second notice would be the same value, the
+effect would not re-run, and the message would vanish on the first timer instead of
+resetting. Nine tests on fake timers, which is what turns "it disappears eventually" into
+"it disappears at 6000ms and not at 5999".
+
+**2026-10-29 · The style check had gone stale without saying so**
+Found while verifying the fix above: `styles.test.ts` reported `.note-dismiss` as unused
+while `Notice.tsx` used it on screen. The file was not being scanned at all.
+
+`import.meta.glob` is resolved at **transform time**, and with `eager` and `?raw` the file
+list and contents are inlined into the transformed module. Vitest's on-disk transform cache
+(`node_modules/.vitest-cache`, which is why clearing `node_modules/.vite` did nothing) is
+keyed by the importing file's own content. Adding a component does not change
+`styles.test.ts`, so the cached transform is reused with the old list baked in — and the
+new component is never scanned.
+
+The consequence is worse than the symptom. The symptom was a false positive, which is
+loud. The same staleness makes **false negatives** silent: a new component using a class
+defined nowhere would have passed. Its own "cannot pass vacuously" guards did not catch it,
+and could not: a stale list still has plausible counts. That is the lesson worth keeping
+about guards of that shape — they check that the inputs are *plausible*, not that they are
+*current*.
+
+Fixed at the cause with `fsModuleCache: false`, measured at no cost (the suite runs in 1.0s
+either way). Proved by adding a component with a class the stylesheets never mention and
+watching the test fail **without** touching the test file — which is precisely what it
+could not do before.
+
+**2026-10-29 · The window's half of the annotation contract**
+Second substep of the highlight feature. `src/ipc/annotations.ts` mirrors the Rust tagged
+enum as a Zod discriminated union rather than one wide object with everything optional: a
+flat shape would type-check against a file claiming `kind: "textHighlight"` with no
+rectangles, which is the contradiction the Rust side was built to make undescribable.
+
+Bounds are checked per component, with the same `1e-6` tolerance Rust uses — a selection of
+the last word on a line arrives as `1.0000000000000002` after several float transforms, and
+refusing it would drop a legitimate highlight. **Containment is deliberately not
+re-checked**: that `x + width` fits the page is Rust's invariant, enforced on the way in and
+off disk, and a second copy in a different floating-point implementation is a second thing
+to disagree.
+
+11 tests against `fixtures/annotations.json`, the bytes the Rust tests write, covering all
+three kinds and what the schema must refuse: an empty `rects`, an unknown kind, an unknown
+semantic, a page of zero, and a coordinate off the page.
+
 **2026-10-29 · A shared pill that placed itself**
 Reported by the user: on the pane you land on, `⌘O` sat on top of the title bar's
 diagnostics button, nearly hiding it — and they reasonably read it as the diagnostics

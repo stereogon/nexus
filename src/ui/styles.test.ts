@@ -261,6 +261,11 @@ describe("the stylesheets and the components agree", () => {
   });
 
   it("finds names on both sides, so an empty result cannot pass silently", () => {
+    // Worth knowing what this guard cannot do: it cannot tell a *stale* file list from a
+    // current one, because a stale list still has plausible counts. That hazard is real --
+    // `import.meta.glob` is resolved at transform time and the transform cache is keyed by
+    // this file's own content -- and it is prevented by `fsModuleCache: false` in the Vite
+    // config, not by anything assertable here.
     // Without this, a regex that matched nothing would make both tests above vacuous --
     // and one of them did exactly that: Vitest stubs CSS imports unless `css: true` is
     // set, so the stylesheet arrived as an empty string and the suite stayed green.
