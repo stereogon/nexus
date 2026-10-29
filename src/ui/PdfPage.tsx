@@ -119,6 +119,11 @@ export function PdfPage({
     <div
       aria-label={`Page ${String(index + 1)}`}
       className="pdf-page"
+      // Read back by `candidateFrom` to say which page a selection is on. An attribute
+      // rather than a lookup through React, because the selection arrives as a DOM node
+      // and climbing from it is the only thing that works for a text node inside the
+      // layer pdf.js builds.
+      data-page={index}
       style={{ top, height, width }}
     >
       {/* The canvas is hidden from assistive technology on purpose: it is a picture of

@@ -454,6 +454,36 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-10-29 · A selection becomes something storable**
+Third substep of the highlight feature, and deliberately small: `geometry.ts` already did
+the part that has to be right — collapsing the browser's client rects into one rectangle
+per line and normalising them against the unscaled page. What was left is entirely about
+the DOM: which page was selected, which rects belong to it, and what was said.
+
+**The page comes from where the selection started**, read off a `data-page` attribute by
+climbing from the node. An attribute rather than anything in React, because the selection
+arrives as a text node inside the layer pdf.js builds, and climbing the DOM is the only
+thing that works from there. A selection in the sidebar yields `null` rather than page 1.
+
+**A selection dragged onto the next page keeps only the part on the page it began on.**
+This is the case worth having: the browser reports rects for both pages, and `normalise`
+*clamps* rather than rejects, so feeding it the next page's rectangles would place them
+somewhere plausible and wrong. Membership is judged on each rectangle's vertical centre,
+so a line overhanging the boundary by a pixel stays with the page it mostly sits on
+instead of being dropped from both and lost.
+
+**`Number("")` is `0`**, so a present-but-blank `data-page` would have read as a perfectly
+good page 1 and stored a highlight against the wrong page. Checked before converting, with
+a test naming the trap.
+
+A candidate is refused when the quote is blank or no rectangle survives, which mirrors
+Rust: a text highlight covering nothing is rejected there, so offering a menu for one would
+mean offering something that fails the moment it is chosen.
+
+23 tests, split by what they need — 13 pure in Node, 10 under jsdom for the DOM climb.
+**Where a highlight actually lands is still unverified.** jsdom reports every rectangle as
+zero, so nothing here can check a position; that needs the browser suite.
+
 **2026-10-29 · The window's half of the annotation contract**
 Second substep of the highlight feature. `src/ipc/annotations.ts` mirrors the Rust tagged
 enum as a Zod discriminated union rather than one wide object with everything optional: a
