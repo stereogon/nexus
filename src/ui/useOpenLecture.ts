@@ -32,7 +32,33 @@ export interface Opening {
   /** Why it could not be opened, if it could not. */
   readonly failure: CommandError | null;
   readonly open: (vault: string, lecture: LectureRow) => void;
+  /** Replaces the open lecture's row after an edit, if the edit was to that lecture. */
+  readonly refile: (edited: string, saved: LectureRow) => void;
   readonly close: () => void;
+}
+
+/**
+ * The open lecture after an edit, which may or may not be the one that was edited.
+ *
+ * Pure and exported so the rule can be tested without opening a document: the interesting
+ * case is editing a *different* lecture while one is open, which must leave the open one
+ * alone.
+ *
+ * The document is carried across untouched rather than re-opened. An edit writes facets
+ * into `manifest.json` and, as the editor's own hint says, does not move the folder — so
+ * the bytes on screen are still the right bytes, and re-screening them would throw away a
+ * loaded PDF to arrive back where it started.
+ */
+export function refiled(
+  open: OpenLecture | null,
+  edited: string,
+  saved: LectureRow,
+): OpenLecture | null {
+  if (open === null || open.lecture.directory !== edited) {
+    return open;
+  }
+
+  return { document: open.document, lecture: saved };
 }
 
 export function useOpenLecture(): Opening {
@@ -62,10 +88,14 @@ export function useOpenLecture(): Opening {
     })();
   }, []);
 
+  const refile = useCallback((edited: string, saved: LectureRow) => {
+    setLecture((current) => refiled(current, edited, saved));
+  }, []);
+
   const close = useCallback(() => {
     setLecture(null);
     setFailure(null);
   }, []);
 
-  return { lecture, opening, failure, open, close };
+  return { lecture, opening, failure, open, refile, close };
 }

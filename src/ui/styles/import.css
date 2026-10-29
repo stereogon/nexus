@@ -101,3 +101,65 @@
   font-size: 12px;
   color: var(--text-meta);
 }
+
+/* The editor, beside whatever is open rather than instead of it.
+
+   A flex sibling of the viewer, so opening it narrows the page and the viewer re-fits,
+   instead of covering the slide whose title you are reading the answers off. Fixed width
+   rather than a fraction: the form is five short fields, and a panel that grew with the
+   window would only stretch the inputs. */
+.editor-panel {
+  flex: 0 0 320px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px 20px;
+  overflow-y: auto;
+  background: var(--surface);
+  border-left: 1px solid var(--border-strong);
+}
+
+.editor-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.editor-panel-head h2 {
+  margin: 0;
+  font-family: var(--font-brand);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.editor-panel-close {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.editor-panel-close:hover:not(:disabled) {
+  background: var(--track);
+  color: var(--text);
+}
+
+/* Which lecture is being edited. With a document open this is often not the one on
+   screen, so it is stated rather than left to be inferred from the sidebar. */
+.editor-panel-subject {
+  margin: 0 0 2px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}

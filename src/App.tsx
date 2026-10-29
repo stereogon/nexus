@@ -35,7 +35,7 @@ import { EmptyPane } from "./ui/EmptyPane";
 import { Failure } from "./ui/Failure";
 import { Notice } from "./ui/Notice";
 import { importEach, noteFor } from "./ui/dropped";
-import { LectureEditor } from "./ui/LectureEditor";
+import { EditorPanel } from "./ui/EditorPanel";
 import { PdfViewer } from "./ui/PdfViewer";
 import { Sidebar } from "./ui/Sidebar";
 import { sidebarRows, type GroupBy, type ThenBy } from "./ui/sidebarRows";
@@ -178,6 +178,11 @@ export function App() {
       against(vault, async () => {
         const saved = await editLecture(vault, lecture.directory, edit);
 
+        // The open lecture holds its own copy of the row, so renaming the lecture that is
+        // on screen has to refresh it -- otherwise the breadcrumb and the viewer's title
+        // keep the old name until it is closed and opened again.
+        reading.refile(lecture.directory, saved);
+
         // Named after what changed, since one command does both. "Filed" in front of
         // someone who only corrected a title would read as though it had moved.
         return saved.title === lecture.title
@@ -185,7 +190,7 @@ export function App() {
           : `Renamed to "${saved.title}".`;
       });
     },
-    [against, editing, state],
+    [against, editing, reading, state],
   );
 
   const zone = useDropZone(dropped);
@@ -225,7 +230,7 @@ export function App() {
   return (
     <div className="app">
       <TitleBar
-        lecture={editing ?? open?.lecture ?? null}
+        lecture={open?.lecture ?? editing ?? null}
         onCycleTheme={appearance.cycle}
         onToggleSidebar={() => {
           setSidebarShown(!sidebarShown);
@@ -272,19 +277,19 @@ export function App() {
             {reading.failure !== null && <Failure error={reading.failure} />}
             {zone.failure !== null && <Failure error={zone.failure} />}
 
-            {editing === null ? (
-              <EmptyPane busy={busy} onAdd={add} onChooseVault={choose} />
-            ) : (
-              <LectureEditor
-                busy={busy}
-                lecture={editing}
-                onCancel={() => {
-                  setEditing(null);
-                }}
-                onSave={save}
-              />
-            )}
+            <EmptyPane busy={busy} onAdd={add} onChooseVault={choose} />
           </main>
+        )}
+
+        {editing !== null && (
+          <EditorPanel
+            busy={busy}
+            lecture={editing}
+            onCancel={() => {
+              setEditing(null);
+            }}
+            onSave={save}
+          />
         )}
       </div>
 

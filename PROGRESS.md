@@ -454,6 +454,55 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-10-29 · The editor you had to close a document to see**
+Reported: pressing Edit on a sidebar row while a lecture was open appeared to do nothing —
+you had to go back to the vault to find the form. `LectureEditor` rendered only in the
+branch that draws the empty pane, so with a document open the click set `editing` and
+showed no form at all. Worse than invisible: the breadcrumb *did* change, because the title
+bar preferred the lecture being edited, so the one visible response pointed somewhere the
+form was not.
+
+**Now a panel beside the viewer, not an overlay over it.** Either fixes the reported
+problem; the panel wins on what the form is *for*. The fields are the lecture's title,
+course, module and week, and the thing that tells you what they should be is usually the
+title slide — an overlay would cover the one document you are reading the answers off. It
+is a flex sibling inside `.panes`, so the page narrows and re-fits rather than being
+hidden, and the viewer already observes its own width, so nothing there changed.
+
+**Not a modal, deliberately.** The document stays scrollable and selectable beside it. So
+it is an `aside` labelled by its heading rather than a `dialog`, and there is no focus
+trap: trapping focus inside a panel whose purpose is to sit beside something you can still
+use would be a lie told to a screen reader. Focus does move into the form on open and
+return to the control that opened it on close — the panel appears far from that control,
+and a keyboard user left on `body` has to tab in from the top of the window.
+
+One path, not two: the panel renders whether or not a document is open, so the empty pane
+no longer has an editing branch at all.
+
+*Found while wiring it.* `useOpenLecture` holds its own copy of the row, so renaming the
+lecture that is **open** would have left the breadcrumb and the viewer's title showing the
+old name until it was closed and reopened — a bug the panel newly made reachable, since
+until now you could not edit while reading. `refiled` is the rule, pure and tested: it
+takes the new row only when the edited lecture is the open one, and carries the loaded
+document across untouched. The folder does not move on a rename (the editor's own hint
+says so), so the directory is stable and annotations were never at risk.
+
+*Also:* the title bar now prefers the **open** lecture over the one being edited. That
+preference was right when the editor replaced the whole pane and is wrong now that the
+panel names its own subject. And `.editor` lost its card chrome to `.editor-panel`, since
+the panel is the surface and a card inside it would draw a border inside a border.
+
+**A fourth stylesheet check.** The panel's first draft used `var(--surface-sunken)` and
+`var(--text-primary)`; the tokens are `--track` and `--text`. Nothing anywhere reports
+that: CSS drops a declaration whose custom property is undefined, so the button simply
+renders without a hover state, which is indistinguishable from a design decision until
+someone compares it with the canvas. `styles.tokens.test.ts` now asserts every
+`var(--token)` resolves, and includes a guard that the scan matches anything at all — the
+`lineRects` fixture that fooled itself earlier today is a fresh enough lesson.
+
+The canvas still has no artboard for the editor in either form, so this is designed here on
+purpose rather than by default, and the panel joins the list of things owing one.
+
 **2026-10-29 · The badge that sat in the corner of the page**
 Reported with a screenshot: a highlight on the first line of a slide drew in the right
 place, but its glyph was in the bottom-right corner of the page — far from the highlight,
