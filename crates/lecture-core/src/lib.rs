@@ -36,6 +36,6 @@ pub use domain::{
 };
 pub use error::{BackupOutcome, CoreError};
 pub use ports::{
-    Clock, DirectoryEntry, DocumentConverterPort, EntryKind, FixedClock, VaultDirectory,
-    select_converter,
+    Clock, DirectoryEntry, DocumentConverterPort, EntryKind, FixedClock, IdSource, SequentialIds,
+    VaultDirectory, select_converter,
 };

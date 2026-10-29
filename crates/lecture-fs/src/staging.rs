@@ -11,27 +11,21 @@
 //! error on the way, an early return — it removes its own temporary file, so a failed
 //! write leaves nothing behind to confuse the next one.
 
+use lecture_core::CoreError;
 use std::fs::{self, File, OpenOptions};
 use std::io::Write;
 use std::os::unix::fs::OpenOptionsExt;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicU16, Ordering};
-use std::time::{SystemTime, UNIX_EPOCH};
-
-use lecture_core::CoreError;
 
 use crate::error::{io_error, render};
-
-/// Breaks ties between two writes landing in the same nanosecond in one process.
-static SEQUENCE: AtomicU16 = AtomicU16::new(0);
+use crate::unique::{TOKEN_BYTES, token};
 
 /// The longest a staging suffix can be, in bytes.
 ///
-/// Fixed-width by construction: `.tmp.` plus 16 hex digits of timestamp, 8 of process
-/// id and 4 of sequence. `Slug` caps names at 200 bytes on the stated basis that
-/// staging adds no more than 41, and a test here holds this to that promise, so the two
-/// numbers cannot drift apart unnoticed.
-pub(crate) const SUFFIX_BYTES: usize = 5 + 16 + 8 + 4;
+/// Fixed-width by construction: `.tmp.` plus one `crate::unique` token. `Slug` caps names
+/// at 200 bytes on the stated basis that staging adds no more than 41, and a test here
+/// holds this to that promise, so the two numbers cannot drift apart unnoticed.
+pub(crate) const SUFFIX_BYTES: usize = 5 + TOKEN_BYTES;
 
 /// `Slug` caps names at 200 bytes on the stated basis that staging adds no more than 41.
 /// Checked here at compile time, so the two constants cannot drift apart: if this suffix
@@ -189,19 +183,11 @@ fn staging_path(target: &Path) -> Result<PathBuf, CoreError> {
 }
 
 /// A suffix no other concurrent or past write will produce.
+///
+/// `create_new` is what actually guarantees the file is ours; the token only has to make
+/// a clash unlikely. See `crate::unique` for what it is made of.
 fn suffix() -> String {
-    // A clock set backwards cannot collide here, because the process id and sequence
-    // still differ; the timestamp only spreads names out, it is not relied on for
-    // uniqueness. `create_new` is what actually guarantees it.
-    let nanos = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_or(0, |elapsed| elapsed.as_nanos());
-    let truncated = u64::try_from(nanos & u128::from(u64::MAX)).unwrap_or(0);
-
-    let process = std::process::id();
-    let sequence = SEQUENCE.fetch_add(1, Ordering::Relaxed);
-
-    format!(".tmp.{truncated:016x}{process:08x}{sequence:04x}")
+    format!(".tmp.{}", token())
 }
 
 #[cfg(test)]

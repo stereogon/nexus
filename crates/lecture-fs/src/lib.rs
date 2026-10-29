@@ -15,11 +15,13 @@
 
 mod error;
 mod staging;
+mod unique;
 
 pub mod annotation_store;
 pub mod clock;
 pub mod device_state;
 pub mod document_scan;
+pub mod ids;
 mod import;
 mod index_store;
 pub mod last_vault;
@@ -37,6 +39,7 @@ pub mod vault_root;
 pub use annotation_store::AnnotationStore;
 pub use clock::SystemClock;
 pub use device_state::{APP_SUPPORT_DIR_NAME, DeviceStateStore, VAULTS_DIR_NAME, state_base};
+pub use ids::SystemIds;
 pub use import::{ImportOutcome, ImportRequest, Importer};
 pub use index_store::VaultIndexStore;
 pub use manifest_store::ManifestStore;

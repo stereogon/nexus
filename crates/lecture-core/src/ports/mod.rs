@@ -15,8 +15,10 @@
 
 mod clock;
 mod document_converter;
+mod ids;
 mod vault_directory;
 
 pub use clock::{Clock, FixedClock};
 pub use document_converter::{DocumentConverterPort, select_converter};
+pub use ids::{IdSource, SequentialIds};
 pub use vault_directory::{DirectoryEntry, EntryKind, VaultDirectory};
