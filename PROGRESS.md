@@ -414,6 +414,35 @@ step under test. `check-line-limits.sh` exited 1 naming the file; the full gate 
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
 
+**2026-10-29 · A shared pill that placed itself**
+Reported by the user: on the pane you land on, `⌘O` sat on top of the title bar's
+diagnostics button, nearly hiding it — and they reasonably read it as the diagnostics
+shortcut, and as a zero rather than the letter O.
+
+It is neither. `⌘O` is the standard macOS Open, and it opens the import picker. It was on
+the title bar because `.kbd` carried **`position: absolute; right: 20px; top: 20px`** —
+offsets written for the one place the pill existed, the sidebar's search field. Reusing the
+class for an inline shortcut inside a sentence, added the same day, sent it out of its
+paragraph to the top-right of the window. A regression I introduced in `931d1da`, found by
+the user looking at it, as the last several have been.
+
+**The fix is where the split had just put the seam.** A shared primitive says what a thing
+looks like; where it sits belongs to the pane around it. The offsets now live beside the
+search field in `sidebar.css`, and `.kbd` in `text.css` is a plain inline pill.
+
+That seam is now a test: nothing in `tokens.css`, `text.css` or `controls.css` may set
+`position: absolute`/`fixed` or a `top`/`right`/`bottom`/`left` offset. Those three are
+imported before every pane, so a positioned rule in them follows the class into each pane
+that reuses it — which is exactly how this happened. Proved by restoring the three
+declarations and watching the test name all three. A second test asserts the three
+filenames exist, so a rename cannot quietly make the check vacuous.
+
+Worth being honest about the pattern: `styles.test.ts` now catches *used-but-undefined*,
+*defined-but-unused*, and *shared-but-positioned* — three static classes of stylesheet bug,
+all found by someone opening the window. Each new check has come from a defect that reached
+the user first. That is the cost of having no renderer, and it is an argument for Playwright
+over any further feature.
+
 **2026-10-29 · One stylesheet became nine**
 `theme.css` had reached **1204 lines**, and the user asked for it split. It was not only
 long: the viewer's rules were in two separate places with four hundred lines of sidebar

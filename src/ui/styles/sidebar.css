@@ -41,6 +41,14 @@
   color: var(--text-faint);
 }
 
+/* Over the right end of the search input, which `.sidebar-search` is `position: relative`
+   for. Here rather than on `.kbd` itself, so the pill stays reusable inline. */
+.sidebar-search .kbd {
+  position: absolute;
+  right: 20px;
+  top: 20px;
+}
+
 .sidebar-group-by {
   flex: 0 0 auto;
   padding: 4px 12px 10px;

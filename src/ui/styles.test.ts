@@ -200,6 +200,44 @@ function defined(): Set<string> {
  */
 const APPLIED_BY_PDFJS = new Set(["markedContent"]);
 
+/**
+ * The stylesheets that hold shared primitives rather than one pane's layout.
+ *
+ * `index.css` imports these before any pane, which is what lets a pane tighten a shared
+ * control. The same ordering makes a positioned rule in here dangerous: it follows the
+ * class into every pane that reuses it.
+ */
+const SHARED = ["tokens.css", "text.css", "controls.css"];
+
+/** Properties that place an element somewhere, as opposed to styling it. */
+const PLACES_ITSELF = /(position:\s*(absolute|fixed))|(^\s*(top|right|bottom|left):)/gmu;
+
+describe("the shared stylesheets stay shareable", () => {
+  it("keeps positioning out of them", () => {
+    // `.kbd` set `position: absolute; right: 20px; top: 20px` for the sidebar's search
+    // field. Reusing the same pill for an inline shortcut in a sentence sent it out of its
+    // paragraph and onto the title bar's diagnostics button, nearly hiding it. A shared
+    // primitive says what a thing looks like; where it sits belongs to the pane around it.
+    const placed = Object.entries(STYLESHEETS)
+      .filter(([file]) => SHARED.some((shared) => file.endsWith(shared)))
+      .flatMap(([file, sheet]) =>
+        [...sheet.replaceAll(/\/\*[\s\S]*?\*\//gu, "").matchAll(PLACES_ITSELF)].map(
+          (found) => `${file}: ${found[0].trim()}`,
+        ),
+      );
+
+    expect(placed).toEqual([]);
+  });
+
+  it("names stylesheets that exist, so a rename cannot make it vacuous", () => {
+    const files = Object.keys(STYLESHEETS);
+
+    for (const shared of SHARED) {
+      expect(files.some((file) => file.endsWith(shared))).toBe(true);
+    }
+  });
+});
+
 describe("the stylesheets and the components agree", () => {
   it("defines every class name a component asks for", () => {
     const rules = defined();

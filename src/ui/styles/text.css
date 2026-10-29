@@ -56,10 +56,13 @@ h2 {
   font-family: var(--font-mono);
 }
 
+/* A keyboard hint, as an inline pill. It carries **no position**: where a hint sits is the
+   business of the thing it labels, and this rule used to say `absolute; right: 20px;
+   top: 20px` for the sidebar's search field. That was invisible until the same class was
+   reused for an inline shortcut in a sentence, which then flew out of its paragraph and
+   landed on the title bar's diagnostics button. The offsets now live beside the search
+   field in `sidebar.css`, and a test keeps positioning out of this file. */
 .kbd {
-  position: absolute;
-  right: 20px;
-  top: 20px;
   padding: 1px 5px;
   background: var(--kbd);
   border: 1px solid var(--kbd-border);
