@@ -102,3 +102,36 @@ export function noteForDrop(outcomes: readonly DropOutcome[]): string | null {
 
   return parts.join(" ");
 }
+
+/**
+ * Imports everything dropped on the window, one file at a time, and says how it went.
+ *
+ * Sequential rather than concurrent: an import allocates a folder name from the document's
+ * title, so two files landing together could race for the same one. Slower by exactly the
+ * amount that makes it correct.
+ *
+ * Each failure is caught per file. One screenshot among four slide decks must not discard
+ * the news that the decks are in — §1.4 — so outcomes are collected and reported together
+ * rather than thrown on the first refusal.
+ *
+ * `importOne` is a parameter rather than an import so this is testable without a Tauri
+ * window, which is the same reason the rest of this module is pure.
+ */
+export async function importEach(
+  vault: string,
+  paths: readonly string[],
+  importOne: (vault: string, path: string) => Promise<LectureRow>,
+  asError: (thrown: unknown) => CommandError,
+): Promise<string | null> {
+  const outcomes: DropOutcome[] = [];
+
+  for (const path of paths) {
+    try {
+      outcomes.push({ kind: "added", lecture: await importOne(vault, path) });
+    } catch (thrown: unknown) {
+      outcomes.push({ kind: "refused", error: asError(thrown) });
+    }
+  }
+
+  return noteForDrop(outcomes);
+}

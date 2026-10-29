@@ -8,7 +8,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { CommandError, ConversionState, LectureRow } from "../ipc/vault";
-import { noteFor, noteForDrop, type DropOutcome } from "./dropped";
+import { importEach, noteFor, noteForDrop, type DropOutcome } from "./dropped";
 
 function lecture(title: string, conversion: ConversionState): LectureRow {
   return {
@@ -138,6 +138,100 @@ describe("the note for a whole drop", () => {
   it("reports a drop where everything was refused as no additions at all", () => {
     const note = noteForDrop([refused("Not a document Nexus can read.")]);
 
+    expect(note).not.toContain("Added");
+  });
+});
+
+describe("importing a drop", () => {
+  const lecture = (title: string): LectureRow => ({
+    directory: title.toLowerCase(),
+    title,
+    sequence: "a0",
+    course: null,
+    module: null,
+    week: null,
+    tags: [],
+    conversion: "notRequired" satisfies ConversionState,
+    documentReady: true,
+  });
+
+  const asError = (thrown: unknown): CommandError => ({
+    code: "ERR_TEST",
+    remediation: String(thrown),
+  });
+
+  it("imports one file at a time, in the order they were dropped", async () => {
+    // Sequential is not an implementation detail: an import allocates a folder name from
+    // the document's title, so two running together can race for the same one. The test
+    // asserts the second call has not started before the first has finished.
+    const started: string[] = [];
+    const finished: string[] = [];
+
+    await importEach(
+      "/vault",
+      ["a.pdf", "b.pdf", "c.pdf"],
+      async (_vault, path) => {
+        started.push(path);
+
+        expect(started.length - finished.length).toBe(1);
+        await Promise.resolve();
+        finished.push(path);
+
+        return lecture(path);
+      },
+      asError,
+    );
+
+    expect(started).toEqual(["a.pdf", "b.pdf", "c.pdf"]);
+    expect(finished).toEqual(["a.pdf", "b.pdf", "c.pdf"]);
+  });
+
+  it("reports the imports that worked even when one is refused", async () => {
+    // §1.4: one screenshot among four decks must not discard the news that the decks are
+    // in. Throwing on the first refusal is what that would look like.
+    const note = await importEach(
+      "/vault",
+      ["raft.pdf", "screenshot.png", "paxos.pdf"],
+      (_vault, path) => {
+        if (path.endsWith(".png")) {
+          return Promise.reject(new Error("not a document"));
+        }
+
+        return Promise.resolve(lecture(path));
+      },
+      asError,
+    );
+
+    expect(note).toContain("Added 2 lectures.");
+    expect(note).toContain("1 file could not be added.");
+  });
+
+  it("names the single lecture when only one was dropped", async () => {
+    const note = await importEach(
+      "/vault",
+      ["raft.pdf"],
+      () => Promise.resolve(lecture("Raft Consensus")),
+      asError,
+    );
+
+    expect(note).toBe('Added "Raft Consensus".');
+  });
+
+  it("says nothing for a drop of nothing", async () => {
+    expect(
+      await importEach("/vault", [], () => Promise.resolve(lecture("x")), asError),
+    ).toBeNull();
+  });
+
+  it("reports every file being refused without claiming any were added", async () => {
+    const note = await importEach(
+      "/vault",
+      ["a.txt", "b.txt"],
+      () => Promise.reject(new Error("not a document")),
+      asError,
+    );
+
+    expect(note).toContain("2 files could not be added.");
     expect(note).not.toContain("Added");
   });
 });

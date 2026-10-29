@@ -5,7 +5,7 @@
  * matters more than usual for this payload: it describes a *foreign* document, and the one
  * thing worse than not screening a file is screening it and then mis-reading the answer.
  */
-import { invoke } from "@tauri-apps/api/core";
+import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { z } from "zod";
 
 /**
@@ -56,4 +56,16 @@ export async function openDocument(
   const payload: unknown = await invoke("open_document", { vault, directory });
 
   return OpenedDocumentSchema.parse(payload);
+}
+
+/**
+ * The URL the window loads a document from.
+ *
+ * `path` is where the file is on disk; the window cannot open that directly and should
+ * not be able to. `convertFileSrc` turns it into the asset-protocol URL that Tauri will
+ * serve — and will serve only because `open_document` granted the scope for this exact
+ * file. Keeping the conversion here means the viewer never handles a raw filesystem path.
+ */
+export function documentUrl(opened: OpenedDocument): string {
+  return convertFileSrc(opened.path);
 }

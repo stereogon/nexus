@@ -28,11 +28,13 @@ import {
 } from "./ipc/vault";
 import { DropOverlay } from "./ui/DropOverlay";
 import { GroupPicker } from "./ui/GroupPicker";
-import { noteFor, noteForDrop, type DropOutcome } from "./ui/dropped";
+import { importEach, noteFor } from "./ui/dropped";
 import { LectureEditor } from "./ui/LectureEditor";
 import { LectureList, type GroupBy } from "./ui/LectureList";
+import { PdfViewer } from "./ui/PdfViewer";
 import { useDropZone } from "./ui/useDropZone";
 import { useMetaShortcut } from "./ui/useMetaShortcut";
+import { useOpenLecture } from "./ui/useOpenLecture";
 import { useRememberedVault } from "./ui/useRememberedVault";
 
 type VaultState =
@@ -59,6 +61,7 @@ export function App() {
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
   const [editing, setEditing] = useState<LectureRow | null>(null);
   const remembered = useRememberedVault();
+  const reading = useOpenLecture();
 
   // Folded into `state` once it arrives, rather than rendering from two sources. The
   // functional update is what makes that safe: it fills an *idle* shell and leaves any
@@ -142,17 +145,6 @@ export function App() {
     });
   }, [against, state]);
 
-  /**
-   * Imports everything dropped on the window, one file at a time.
-   *
-   * Sequential rather than concurrent: an import allocates a folder name from the
-   * document's title, so two files landing together could race for the same one. Slower by
-   * exactly the amount that makes it correct.
-   *
-   * Each failure is caught per file. One screenshot among four slide decks must not discard
-   * the news that the decks are in — §1.4 — so the outcomes are collected and reported
-   * together rather than thrown on the first refusal.
-   */
   const dropped = useCallback(
     (paths: readonly string[]) => {
       if (state.kind !== "open") {
@@ -161,22 +153,9 @@ export function App() {
 
       const vault = state.summary.root;
 
-      against(vault, async () => {
-        const outcomes: DropOutcome[] = [];
-
-        for (const path of paths) {
-          try {
-            outcomes.push({
-              kind: "added",
-              lecture: await importDocument(vault, path),
-            });
-          } catch (thrown: unknown) {
-            outcomes.push({ kind: "refused", error: asCommandError(thrown) });
-          }
-        }
-
-        return noteForDrop(outcomes);
-      });
+      against(vault, () =>
+        importEach(vault, paths, importDocument, asCommandError),
+      );
     },
     [against, state],
   );
@@ -219,6 +198,22 @@ export function App() {
     );
   }
 
+  // The viewer replaces the shell rather than sitting inside it. The canvas's workspace is
+  // the document and the notes beside it, not a document inside a vault browser -- and the
+  // notes pane is Milestone 4, so for now the document has the window.
+  if (reading.lecture !== null) {
+    return (
+      <div className="app">
+        <div className="titlebar" />
+        <PdfViewer
+          document={reading.lecture.document}
+          onClose={reading.close}
+          title={reading.lecture.title}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="app">
       <div className="titlebar" />
@@ -250,6 +245,7 @@ export function App() {
         {state.kind === "idle" && remembered.lost !== null && (
           <Failure error={remembered.lost} />
         )}
+        {reading.failure !== null && <Failure error={reading.failure} />}
         {state.kind === "failed" && <Failure error={state.error} />}
         {zone.failure !== null && <Failure error={zone.failure} />}
         {state.kind === "open" && (
@@ -266,9 +262,12 @@ export function App() {
               />
             )}
             <LectureList
-              busy={busy}
+              busy={busy || reading.opening}
               groupBy={groupBy}
               onEdit={setEditing}
+              onOpen={(lecture) => {
+                reading.open(state.summary.root, lecture);
+              }}
               summary={state.summary}
             />
           </>

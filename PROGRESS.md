@@ -414,6 +414,89 @@ step under test. `check-line-limits.sh` exited 1 naming the file; the full gate 
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
 
+**2026-10-29 · The viewer draws pages, and one withheld file was not withheld enough**
+Milestone 3's first working substep: a lecture opens, its pages render, virtualised, with
+the toolbar the canvas specifies.
+
+**Read the canvas first, per §3.** The *Workspace* artboard's viewer toolbar reads
+`4 / 18 · − · 124% · + · Fit width`, so those are the controls, in that order. The page
+surface is `--surface` in both themes and only the bed around it changes, which is §3's no
+dark-mode-inversion decision rendered rather than restated.
+
+**The arithmetic is a separate, tested module.** `src/pdf/pages.ts` is pure numbers —
+stacking, the render window, which page is "showing", fit-width — because there is no React
+component harness in this repository and anything inside a component is logic nothing
+checks. Twenty-two tests, and they are mostly the cases that are wrong by one: the buffer
+clamped at both ends, a page touching the fold counting as visible, a macOS rubber-band
+overscroll reporting a negative `scrollTop`, a viewport with no height on first paint, and
+scrolled-past-the-end falling back to the last pages instead of a blank window. One of my
+own expectations in that file was wrong and the code was right, which is the test earning
+its place.
+
+**"Showing" is the page with the most of itself visible, earliest on a tie.** Reading the
+page under the top edge instead is the flicker every PDF reader gets wrong at some point,
+and a toolbar that alternates between two numbers at one scroll position looks broken.
+
+**Each page is its own component so that unmounting cancels its render.** One canvas redrawn
+for whichever page is visible needs that bookkeeping written by hand, and the bug is a stale
+render finishing after a new one started and painting the wrong page over the right one.
+Canvas pixels are sized by `devicePixelRatio` *and* capped at 16 megapixels, because WebKit
+refuses a canvas past a platform limit and then hands back a blank surface — a page
+magnified to 600% on a retina display has to render slightly soft rather than not at all.
+
+**A withheld file was not withheld enough, and the build is what caught it.**
+`WITHHELD_FILES` named `quickjs-eval.wasm`, which is the engine that would execute a PDF's
+own JavaScript. Inspecting the built bundle showed **`quickjs-eval.js` still in it**: pdf.js
+ships a plain-JavaScript fallback beside every wasm module for environments where wasm will
+not load, so withholding only the `.wasm` left the script engine reachable by precisely the
+path that opens when wasm is blocked — which, given the CSP, is a path that could open.
+
+Now a prefix (`WITHHELD_PREFIXES`) swept by basename after the copy, so it covers both files
+and anything else added under that name later. The image-codec fallbacks
+(`jbig2_nowasm_fallback.js`, `openjpeg_nowasm_fallback.js`) are deliberately **kept**:
+decoding a picture is not executing a document, and losing them would mean a scanned page
+rendering blank if wasm ever fails.
+
+Worth naming as a lesson rather than a fix: the list was written from what the directory
+*appeared* to contain, and the error was only visible in the output. Verifying the artefact
+rather than the intention is what found it.
+
+**The assets are served from one path in dev and in the build.** `vite/pdfjs-assets.ts`
+serves `/pdfjs/...` from `node_modules` in development and copies the four directories at
+build, so the installed package stays the single source and the engine is configured against
+one URL. Copying them into `public/` would have committed four megabytes of vendored binaries
+and let them drift from the installed version. The dev middleware normalises the path and
+checks containment before serving — dev-only, and done anyway, because the habit is what
+makes the build-time copy obviously safe.
+
+**Every engine option is annotated with the threat it closes.** `isEvalSupported: false` for
+the CVE-2024-4367 class, `enableScripting: false`, `enableXfa: false`, `disableFontFace: true`
+so no foreign font program reaches the operating system's font engine (which also keeps
+`font-src 'self'` from needing `blob:`), `disableAutoFetch: true` so only the ranges a visible
+page needs are read, `maxImageSize` as a decompression-bomb guard, and no `docBaseUrl` so a
+reference to an outside file cannot be built from the document.
+
+**`importEach` moved out of `App.tsx`** when the file crossed 300 lines. That is the limit
+doing its job: the sequential import loop belongs with `dropped.ts`, which already owns what
+to do with dropped files, and it arrived with five tests it could not have had inside a
+component — including one asserting the second import has not begun before the first has
+finished, which is the property the sequencing exists for.
+
+### Open task, raised 2026-10-29
+- **`DocumentNotice` has no artboard.** §3 makes the canvas authoritative and this state was
+  asked for after it was drawn. Tokens are the canvas's own rather than invented, and the
+  canvas wants the state added, as was done for the reorganize dry run.
+- **`vite/` is not type-checked.** `tsconfig.json` includes `src` and `fixtures`, so the
+  plugin is transpiled by esbuild without a type check and a mistake there would reach the
+  build rather than the gate. Including it needs `@types/node`, which is an install and
+  therefore §2. Named rather than quietly accepted.
+- **No component is tested.** `PdfViewer`, `PdfPage`, `DocumentNotice`,
+  `useRememberedVault` and `useOpenLecture` have no tests, because
+  `@testing-library/react` is an install. The logic under them is tested; the wiring is not.
+- **Nothing has been measured.** Not the scan on open, not the render of a large lecture,
+  not `disableFontFace`'s cost against the system font engine. All three are recorded as
+  trades made on reasoning, to be revisited with numbers rather than by feel.
+
 **2026-10-28 · Screening a foreign PDF, and saying what was found without overstating it**
 User instruction the same day: *"make sure you code safe against any possible security
 thread while importing and reading foreign pdfs"*, then *"if possible we can even flag pdfs
@@ -3435,6 +3518,37 @@ Three of those need a stated position rather than a count:
 | Crate | Version | Licence | Why |
 |---|---|---|---|
 | `http-range` | 0.1.6 | MIT | pulled by Tauri's `protocol-asset`, which is how the window reads a lecture's PDF |
+
+#### What ships inside `pdfjs-dist`, read on 2026-10-29
+
+`pdfjs-dist` is Apache-2.0, but the asset directories the viewer bundles carry third-party
+work under their own terms, each with a `LICENSE_*` file beside it. Read from the built
+`dist/pdfjs/` rather than assumed:
+
+| Bundled | Licence | Note |
+|---|---|---|
+| `wasm/jbig2.wasm` | BSD-3-Clause (PDFium Authors) | the JBIG2 codec scanned pages use |
+| `wasm/openjpeg.wasm` | BSD-2-Clause | JPEG 2000 |
+| `wasm/qcms_bg.wasm` | MIT-style (Mozilla, Marti Maria) | colour management |
+| pdf.js's own wrappers | Apache-2.0 | `LICENSE_PDFJS_*` |
+| `standard_fonts/Foxit*.pfb` | BSD-3-Clause (PDFium Authors) | the 14 standard faces |
+| `standard_fonts/Liberation*` | **GPL-2.0 with a font exception** (Red Hat) | metric-compatible substitutes |
+
+**The Liberation fonts are the one that needs a stated position.** They are *not* OFL, unlike
+the four typefaces Nexus chose for its own interface. The terms are GPLv2 plus two
+exceptions: embedding the font in a document does not make that document GPL, and
+distributing the object code in a physical product must come with access to the source.
+
+For Nexus as it exists — one person's own machine, not a shipped product — nothing follows.
+If it were ever distributed, three things would: the fonts stay separate data files rather
+than linked code, so GPLv2's mere-aggregation clause means they do **not** make Nexus GPL;
+their licence text must ship, which it does, because the asset copy is recursive and carries
+every `LICENSE_*` file beside the fonts it copies; and a source offer would be owed for the
+fonts themselves. Recorded so that stays a decision rather than a surprise.
+
+The alternative — not bundling `standard_fonts` — was considered and rejected: a document
+that embeds no fonts would then render in whatever the fallback is, which is exactly the
+quiet degradation §1.1 is about.
 
 Dev-only dependencies, which do not ship in the binary. Pulled in by `tempfile`, needed
 because storage containment cannot be tested against an in-memory fake — the behaviour

@@ -1,6 +1,8 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
+import { pdfjsAssets } from "./vite/pdfjs-assets";
+
 /**
  * Vite configuration for the Nexus desktop shell.
  *
@@ -10,7 +12,7 @@ import { defineConfig } from "vite";
  * bundled, never fetched from a CDN.
  */
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), pdfjsAssets()],
 
   // Tauri's `devUrl` points at this exact port. `strictPort` makes a clash a loud failure
   // rather than Vite quietly moving to 1421 and the window loading nothing.

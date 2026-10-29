@@ -92,10 +92,12 @@ function Lecture({
   lecture,
   busy,
   onEdit,
+  onOpen,
 }: {
   readonly lecture: LectureRow;
   readonly busy: boolean;
   readonly onEdit: (lecture: LectureRow) => void;
+  readonly onOpen: (lecture: LectureRow) => void;
 }) {
   const facets = [lecture.course, lecture.module, lecture.week].filter(
     (facet): facet is string => facet !== null,
@@ -109,6 +111,18 @@ function Lecture({
         <span className="badge" data-state={lecture.conversion}>
           {CONVERSION_LABEL[lecture.conversion]}
         </span>
+        <button
+          className="secondary"
+          // Disabled on the state the domain decides, not on a conversion name read here:
+          // `documentReady` is sent precisely so this rule lives in one place.
+          disabled={busy || !lecture.documentReady}
+          onClick={() => {
+            onOpen(lecture);
+          }}
+          type="button"
+        >
+          Open
+        </button>
       </div>
       <div className="path">{lecture.directory}</div>
       <div className="facets">
@@ -173,11 +187,13 @@ export function LectureList({
   groupBy,
   busy,
   onEdit,
+  onOpen,
 }: {
   readonly summary: VaultSummary;
   readonly groupBy: GroupBy;
   readonly busy: boolean;
   readonly onEdit: (lecture: LectureRow) => void;
+  readonly onOpen: (lecture: LectureRow) => void;
 }) {
   return (
     <>
@@ -203,6 +219,7 @@ export function LectureList({
                   key={lecture.directory}
                   lecture={lecture}
                   onEdit={onEdit}
+                  onOpen={onOpen}
                 />
               ))}
             </ul>
