@@ -414,6 +414,41 @@ step under test. `check-line-limits.sh` exited 1 naming the file; the full gate 
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
 
+**2026-10-29 · Selection into coordinates that can be stored**
+`src/pdf/geometry.ts`: what the cursor did, turned into §3's normalised `[0.0, 1.0]`
+rectangles. Pure arithmetic, 19 tests, no DOM.
+
+**Normalising against the rendered page box satisfies §3 for free.** The zoom divides out,
+so a highlight made at 300% is the same stored numbers as the same highlight made at 50% —
+there is a test asserting exactly that across the four zoom levels the milestone names, and
+another for the round trip back through pixels. Rotation needs no special case either,
+because `getViewport` has already applied the page's `/Rotate` to the box being divided by.
+That is also what makes these coordinates portable to an iPad rendering at a third size.
+
+**It clamps and drops rather than letting Rust refuse.** `NormalizedRect::new` rejects a
+component outside the unit interval, a non-positive side, and a rectangle that starts on
+the page but extends past its edge. A selection grazing a margin is ordinary cursor
+behaviour, not an error worth showing anyone, so each edge is clamped independently — which
+keeps the part of the rectangle that is on the page instead of discarding it whole — and
+what is left degenerate is dropped. A test drives the awkward cases through and asserts
+every surviving rectangle satisfies all four of Rust's rules.
+
+A sliver is dropped at one part in a hundred thousand of a page rather than at zero,
+because "positive" is not the same as "findable": a rectangle 1e-17 of a page wide passes
+Rust's check, would be stored, and could never be seen or clicked again.
+
+**`lineRects` is the part with real behaviour in it.** The browser reports one client rect
+per text fragment, so a sentence crossing three spans arrives as three rects, and a nested
+span reports one that overlaps its parent's. Drawn directly that gives a highlight with
+seams and double-darkened patches. Rects are grouped into lines by **vertical overlap, not
+matching tops**, because a line containing a superscript or an inline formula has rects of
+different heights and tops that a reader sees as one line — grouping on tops would split it
+and draw a notch. Sorted first, so a backwards drag stores the same rectangles as a forward
+one, and the caller's array — the DOM's own list — is copied rather than sorted in place.
+
+`toSorted` would have been the natural way to do that and is not used: it is ES2023, it
+arrived in Safari 16, and this build targets Safari 15. The compiler caught it.
+
 **2026-10-29 · Text you can actually select**
 The viewer drew pages but a cursor had nothing to hold: a canvas is pixels, and pixels
 contain no text. pdf.js's `TextLayer` lays the page's text out as transparent spans,
