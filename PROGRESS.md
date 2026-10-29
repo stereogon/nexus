@@ -454,6 +454,38 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-10-29 · One declaration, two bugs**
+Reported, and it named the cause: *"the scroll mode actually is scrolling the entire app
+structure — the header, the sidebar, everything — instead of only the pdf"*, and the page
+field still did nothing in scroll mode.
+
+`.app` declared **`min-height: 100vh`**. A minimum is not a bound: the app grew to its
+content, so `.viewer-bed`'s `overflow: auto` had nothing to overflow *into* — a child can
+only scroll inside a box with a bounded height — and the whole window scrolled instead.
+
+That is both reports. Scrolling the window moves no element the viewer observes, so
+`onScroll` never fired, `scrollTop` stayed at zero, the counter never changed, and
+`scrollTo` on a bed that does not scroll did nothing at all. Page mode worked throughout
+because it never scrolls to navigate — it swaps the mounted page — and because one page is
+about one screen tall, so the overflow was invisible there.
+
+Every scroll region inside was already correct: `.sidebar-list`, `.pane` and `.viewer-bed`
+each pair an overflow with the right `min-*: 0`. None of them could engage while the root
+was unbounded. **The fix is one word**: `min-height` → `height`.
+
+*Two readings of mine were wrong because of it.* I diagnosed the field twice from the code
+— first the controlled-value snap-back, then the missing Enter — and both were real, but
+neither was the reason it did nothing in scroll mode. The lesson is not about CSS: it is
+that I twice explained a symptom from a reading instead of a measurement, and said so only
+in the caveat at the end. The caveat was right both times.
+
+**A fifth stylesheet check, in two parts.** `.app` must declare a real `height`, and any
+flex child that scrolls must also declare `min-height: 0` or `min-width: 0` — flex items
+default to `min-height: auto`, meaning "at least as tall as my content", which is the same
+bug one level down. Both were proven by reintroducing their defect; the second names the
+offending rule when it fires. Nothing we can run sees a layout — jsdom has no engine — but
+these are the declarations that *decide* one, and their shape is checkable.
+
 **2026-10-29 · The page field, second attempt**
 The report came back unchanged: *"i put a number and it is not taking me to the page."*
 

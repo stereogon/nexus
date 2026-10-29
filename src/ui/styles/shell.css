@@ -20,10 +20,22 @@ body {
 }
 
 /* The window uses a transparent title bar, so the app owns the strip behind it. */
+/* `height`, not `min-height`.
+
+   A minimum lets the app grow to its content, and a child's `overflow: auto` can only
+   scroll inside a box with a bounded height -- so with `min-height` the viewer bed grew
+   to the whole document and the *window* scrolled instead: title bar, sidebar and all.
+   Page mode hid it for months, because one page is about one screen tall.
+
+   Everything that needs to scroll already did so correctly (`.sidebar-list`, `.pane`,
+   `.viewer-bed`); none of it could engage while the root was unbounded. Reported
+   2026-10-29, together with its other half: scrolling the window moved nothing the viewer
+   could observe, so the page counter never changed and `scrollTo` on the bed did nothing,
+   which is why typing a page number did nothing in scroll mode. */
 .app {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
 }
 
 .titlebar {
