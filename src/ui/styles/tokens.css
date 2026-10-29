@@ -1,0 +1,128 @@
+/**
+ * The palette, type scale and spacing every other stylesheet reads.
+ *
+ * Imported first, because everything below is written in terms of these names. The dark
+ * palette is declared **once**, under `:root[data-theme="dark"]`, rather than twinned in a
+ * `prefers-color-scheme` block: `useTheme` resolves `system` in JavaScript and always
+ * writes a concrete `data-theme`, so there is one place a colour can be wrong.
+ *
+ * Values come from the design canvas (CLAUDE.md §3), which wins over anything here.
+ */
+
+/*
+ * The design tokens, taken from the project's design canvas.
+ *
+ *   https://claude.ai/artifact/5gEifzabFanVAW9R1Wp3i2   ("Nexus UI")
+ *
+ * That canvas is the approved design and this file must follow it. Every value below is
+ * read off its "Colour and type system" artboard rather than chosen here. An earlier
+ * version of this file invented a cool pink-grey neutral ramp; the real one is a warm
+ * stone, and the difference was visible everywhere.
+ *
+ * # No network, ever
+ *
+ * There is no `@import url(...)` and no `<link>` to a font service here or anywhere else.
+ * Nexus is offline by definition, the webview enforces it with a `default-src 'self'` CSP,
+ * and a stylesheet is the easiest place for that promise to be broken by accident.
+ *
+ * # Type
+ *
+ * The four typefaces the canvas names are bundled as local woff2 by
+ * `scripts/fetch-fonts.py`, and declared in `fonts.css` beside this file. Each stack still
+ * ends in a system fallback, so a missing file degrades to readable rather than to nothing.
+ */
+:root {
+  /* Brand. The accent is for app chrome; `accent-ink` is sized for white and is what
+     page-drawn annotation chrome uses, since the document surface stays light. */
+  --accent: #be1a72;
+  --accent-ink: #9e477b;
+  --on-accent: #ffffff;
+  /* The drop zone's fill, which the canvas gives as rgba(190,26,114,0.06). A literal
+     rather than a `color-mix` of `--accent`: this file's pattern is one explicit value per
+     theme, and `color-mix` is newer than the Safari 15 baseline the build targets. */
+  --accent-wash: rgba(190, 26, 114, 0.06);
+  /* The scrim behind the drop overlay: the chrome colour, mostly opaque. Same reasoning as
+     above -- an explicit value per theme rather than a `color-mix` of `--chrome`. */
+  --scrim: rgba(244, 242, 238, 0.82);
+
+  /* Neutrals — light. A warm stone ramp, not a grey one. */
+  --chrome: #f4f2ee;
+  --surface: #ffffff;
+  --viewer-bed: #eae7e1;
+  --border: #e2dfd8;
+  --border-strong: #d8d4cb;
+  --text: #1b1a18;
+  --text-secondary: #5e5a53;
+  --text-meta: #6e6a62;
+  /* Fainter than `text-meta`: row numbers, the search glyph, the vault path. */
+  --text-faint: #8a857c;
+  /* A sidebar row's label, a touch lighter than `text` so a selected row stands out. */
+  --row-text: #2e2c29;
+  /* A text field's own fill, which is not `surface` in dark. */
+  --field: #ffffff;
+  /* The track a segmented control sits in, and the raised state of its chosen segment. */
+  --track: #eae7e1;
+  --segment-on: #ffffff;
+  /* A keyboard shortcut badge. */
+  --kbd: #efece6;
+  --kbd-border: #e2dfd8;
+  /* The accent at a tenth, for a selected row's bed. An explicit value per theme rather
+     than a `color-mix`, as with `accent-wash` above. */
+  --accent-soft: rgba(190, 26, 114, 0.1);
+  /* The exam semantic at a tenth, for the pill on a lecture that could not be converted.
+     An explicit value per theme, like the other washes in this file. */
+  --exam-wash: rgba(224, 82, 60, 0.12);
+
+  /* The four highlight semantics. Each also carries a letter glyph (K/D/E/Q), so the set
+     never relies on hue alone. */
+  --semantic-key: #f2b63c;
+  --semantic-key-ink: #3a2a05;
+  --semantic-definition: #2ea37a;
+  --semantic-exam: #e0523c;
+  --semantic-question: #2e86de;
+
+  /* Per the canvas: Bricolage for the wordmark and headings, Plex Sans for the interface,
+     Literata for notes prose, Plex Mono for paths, keys and code. */
+  --font-brand: "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-ui: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-prose: "Literata", Georgia, "Times New Roman", serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --radius: 10px;
+  --gap: 12px;
+}
+
+/* The dark palette, declared once.
+   `useTheme` resolves "follow the system" in JavaScript and always writes a concrete
+   `data-theme`, so this needs no `prefers-color-scheme` twin. The alternative -- a media
+   query for the system case plus this rule for a pinned one -- means maintaining two
+   copies of every token, and the first of them to be forgotten is a bug nobody sees until
+   they switch themes. */
+:root[data-theme="dark"] {
+  --accent: #ff72c6;
+  /* On the dark accent the label is dark, not white -- the canvas is explicit about it,
+     and white on #FF72C6 would not carry the contrast. */
+  --on-accent: #2b0918;
+  /* Derived, not taken: the canvas draws the drop state on the light artboard only. The
+     dark accent is lighter, so a 6% wash all but disappears on #16161a. */
+  --accent-wash: rgba(255, 114, 198, 0.1);
+  --scrim: rgba(22, 22, 26, 0.86);
+
+  --chrome: #16161a;
+  --surface: #1a1a1f;
+  --viewer-bed: #0f0f12;
+  --border: #2c2c34;
+  --border-strong: #3a3a44;
+  --text: #eceae7;
+  --text-faint: #8f8b84;
+  --row-text: #d6d3ce;
+  --field: #1f1f25;
+  --track: #1f1f25;
+  --segment-on: #2e2e38;
+  --kbd: #26262e;
+  --kbd-border: #333340;
+  --accent-soft: rgba(255, 114, 198, 0.1);
+  --exam-wash: rgba(224, 82, 60, 0.2);
+  --text-secondary: #a8a49d;
+  --text-meta: #8f8b84;
+}

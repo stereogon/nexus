@@ -1,0 +1,80 @@
+/**
+ * Type: headings, prose, and the small labels that recur across panes.
+ *
+ * Apart from the components, because a heading looks the same wherever it is, and the four
+ * families are a decision about the whole app rather than about one pane.
+ */
+
+h1 {
+  font-family: var(--font-brand);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  margin: 0 0 4px;
+}
+
+h2 {
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-meta);
+  margin: 26px 0 10px;
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  margin: 0 0 20px;
+}
+
+/* `.path` shared this rule until 2026-10-29, when the dead-rule check found nothing used
+   it: the one place that shows a path -- the sidebar footer -- styles its own. */
+.code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-meta);
+  word-break: break-all;
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--text-meta);
+}
+
+.note {
+  color: var(--text-secondary);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--semantic-definition);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  margin: 16px 0 0;
+}
+
+/* A key cap in running text, as the canvas sets ⌘O and ⌘P. */
+.key {
+  font-family: var(--font-mono);
+}
+
+.kbd {
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  padding: 1px 5px;
+  background: var(--kbd);
+  border: 1px solid var(--kbd-border);
+  border-radius: 4px;
+  color: var(--text-meta);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+/* Also the heading style for a group of lectures: 11px, uppercase, 0.3px tracking. */
+.overline {
+  margin: 0 0 6px;
+  color: var(--text-meta);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}

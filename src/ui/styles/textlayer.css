@@ -1,0 +1,135 @@
+/**
+ * The pdf.js text layer: invisible glyphs laid exactly over the drawn page.
+ *
+ * **These rules are a contract with pdf.js, not our design.** It writes `--font-height`,
+ * `--scale-x` and `--rotate` onto every span and sets `--total-scale-factor` on the
+ * container, and expects a stylesheet to consume them; the numbers below are pdf.js's own,
+ * copied from its `text_layer_builder.css`. Change them and selection stops landing on the
+ * glyphs it looks like it is landing on.
+ *
+ * Which is why they are apart from `viewer.css`: everything in that file is a decision we
+ * made and may revisit, and everything in this one is not ours to redesign.
+ */
+
+.textLayer {
+  position: absolute;
+  inset: 0;
+  overflow: clip;
+  z-index: 0;
+  opacity: 1;
+  line-height: 1;
+  text-align: initial;
+  letter-spacing: normal;
+  word-spacing: normal;
+  text-size-adjust: none;
+  -webkit-text-size-adjust: none;
+  forced-color-adjust: none;
+  transform-origin: 0 0;
+  caret-color: CanvasText;
+
+  /* Set per page by the component, from the current zoom. Declared here so a layer that
+     renders before the property is written collapses to nothing visible rather than
+     scattering spans at scale 0. */
+  --total-scale-factor: 1;
+  --min-font-size: 1;
+  --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size));
+  --min-font-size-inv: calc(1 / var(--min-font-size));
+}
+
+/* Transparent, not hidden: `display: none` or `visibility: hidden` would make the text
+   unselectable, which is the entire point of the layer. */
+.textLayer span,
+.textLayer br {
+  position: absolute;
+  color: transparent;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.textLayer > :not(.markedContent),
+.textLayer .markedContent span:not(.markedContent) {
+  z-index: 1;
+  --font-height: 0;
+  --scale-x: 1;
+  --rotate: 0deg;
+  font-size: calc(var(--text-scale-factor) * var(--font-height));
+  transform: rotate(var(--rotate)) scaleX(var(--scale-x))
+    scale(var(--min-font-size-inv));
+}
+
+.textLayer .markedContent {
+  display: contents;
+}
+
+/* An image run is not text, so dragging across one should not select a caret's worth of
+   nothing. */
+.textLayer span[role="img"] {
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+}
+
+/* The selection colour. The canvas has no artboard for a text selection, so this is
+   derived from it rather than taken: `accentInk` is the token §3 designates for chrome
+   drawn *on the page* — sized for white — and the page is light in both themes, so one
+   value serves both. Kept well under half opacity so the glyphs underneath stay readable
+   through it. */
+.textLayer ::selection {
+  background: rgba(158, 71, 123, 0.3);
+}
+
+.textLayer::selection {
+  background: rgba(158, 71, 123, 0.3);
+}
+
+/* The page controls in the viewer's toolbar. Not on the canvas, which shows a counter
+   that only reports; these step, jump and switch layout. */
+.viewer-pages {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--text-meta);
+}
+
+.viewer-pages input {
+  width: 42px;
+  height: 24px;
+  box-sizing: border-box;
+  padding: 0 4px;
+  background: var(--field);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* The spinners are redundant beside the arrows either side, and they crowd a 42px field. */
+.viewer-pages input::-webkit-outer-spin-button,
+.viewer-pages input::-webkit-inner-spin-button {
+  margin: 0;
+  appearance: none;
+}
+
+.viewer-total {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Narrower than the sidebar's, which stretches to fill a 264px column. */
+.viewer-bar .segmented {
+  flex: 0 0 auto;
+}
+
+.viewer-bar .segmented button {
+  flex: 0 0 auto;
+  padding: 0 10px;
+}

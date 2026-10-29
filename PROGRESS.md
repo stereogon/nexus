@@ -414,6 +414,102 @@ step under test. `check-line-limits.sh` exited 1 naming the file; the full gate 
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
 
+**2026-10-29 · One stylesheet became nine**
+`theme.css` had reached **1204 lines**, and the user asked for it split. It was not only
+long: the viewer's rules were in two separate places with four hundred lines of sidebar
+between them, because every addition went to the bottom of the file.
+
+**Why it got that big without anyone noticing.** `scripts/check-line-limits.sh` globbed
+`*.rs`, `*.ts` and `*.tsx` — **not `*.css`**. The one file the 300-line limit existed to
+prevent was the one file the limit did not look at. `*.css` is now in the glob, which is
+the real fix; the split is the cleanup.
+
+**The seams, which are concerns and not line counts:**
+
+| File | Holds | Lines |
+|---|---|---|
+| `tokens.css` | the palette, type scale and spacing every other file reads | 128 |
+| `text.css` | headings, prose, and the small recurring labels | 77 |
+| `controls.css` | buttons, fields, the segmented switch — the *shared* primitives | 191 |
+| `shell.css` | title bar, pane grid, the empty pane; the reset and `body` | 170 |
+| `sidebar.css` | search, grouping, lecture rows | 215 |
+| `viewer.css` | toolbar, page bed, the notice strip | 191 |
+| `textlayer.css` | the pdf.js text-layer **contract** | 135 |
+| `import.css` | drop overlay, facet chips, the editor's cards | 103 |
+
+`textlayer.css` is split from the viewer for a reason worth keeping: those rules are
+pdf.js's own, consuming `--font-height` and `--scale-x` that it writes onto each span.
+Everything in `viewer.css` is a decision we made and may revisit; nothing in
+`textlayer.css` is ours to redesign, and mixing the two invites someone to tidy the wrong
+half.
+
+**The order in `index.css` is load-bearing** — generic to specific, so a pane can tighten a
+shared control (`.viewer-bar .segmented button`) without a specificity fight. Moving a pane
+above `controls.css` would silently lose those overrides, which is the one way that file
+can be got wrong, so it says so.
+
+**The split was done by a script that proved it lossless** rather than by hand: parse the
+133 rules, route each by selector, then assert the multiset of surviving `(selector, body)`
+pairs is unchanged. It caught its own gap immediately — the universal `*` reset matched no
+module, and the script refused to write anything rather than drop it. Verified again
+afterwards against the built bundle: one 17KB CSS file, zero unresolved `@import`, every
+pane's rules present.
+
+**2026-10-29 · The stylesheet had ten rules nothing used**
+Splitting the file meant reading all of it, which raised the obvious question. `.badge`,
+`.facets`, `.field.inline`, `.lecture-title`, `button.link`, `.problem`, `.reset` and the
+three `.badge[data-state]` variants were all leftovers of the lecture-card list deleted in
+`7762ea0` — still styled, still shipped, three commits after the component went. `.path`
+went too: the one place that shows a path, the sidebar footer, styles its own.
+
+`styles.test.ts` now checks **both** directions, and the two need different strictness,
+which is the part worth recording:
+
+- **Used but undefined is a bug**, so that scan is precise — `className` positions only.
+  A loose reading would demand a rule for every string in the codebase.
+- **Defined but unused is a cleanup**, so that scan is deliberately loose — any string
+  literal anywhere counts. Over-reading lets a dead rule survive a little longer;
+  under-reading would delete a rule that is genuinely in use. The asymmetry is the point.
+
+`markedContent` is named as applied-by-pdf.js rather than excused by a looser rule that
+would also excuse a real mistake.
+
+**Two bugs in the test itself, both found by it failing on something I knew was correct.**
+The `className={…}` scan matched with a non-greedy `[^}]*`, which stops at the `}` inside
+`` `dot ${risk.severity}` `` — so `.dot`, `.notable` and `.informational` had never been
+checked at all. It now walks braces counting depth. Then the string scan read a pair of
+backticks **in a doc comment** as a template literal and swallowed the `className` line
+after it, which is how `.pixel-ghost` reported as unused while being used on the next line.
+Comments are stripped first now. Both were the test being wrong about correct code, which
+is the failure mode to watch for in a test that reads source as text.
+
+**2026-10-29 · A ghost on the empty pane**
+The user's words: the pane is "pretty empty", and could it do something like GitHub's or
+Reddit's mascot. It was one grey sentence in the middle of the largest surface in the
+window.
+
+There is now a pixel-art ghost, drawn from a 12×12 character grid in `PixelGhost.tsx`.
+A bitmap rather than an asset for three reasons that all hold here: it ships inside the
+bundle, so there is no image request and nothing to go missing (§3 forbids the app reaching
+the network); it takes `currentColor`, so one token themes it and it cannot drift from the
+palette the way a baked-in PNG would; and moving an eye is a character in a string, legible
+in a diff. Rows are merged into horizontal runs, so the sprite is about twenty rects rather
+than 110. The eyes are *absent* pixels, so the pane's own background shows through and it
+needs no halo on any surface.
+
+The greeting rotates over five mild lines, one rolled per mount — the pane is seen every
+time a lecture is closed, and a fixed joke stops being one by the third reading.
+`lineFor(roll)` takes the roll as a parameter rather than calling `Math.random()` inside,
+which is the whole reason it can be tested rather than sampled.
+
+**The joke is never the instruction.** The line under it does not rotate and always names
+the same three ways to open something, including ⌘O, because a shortcut nobody is told
+about is a shortcut nobody has. An empty state that is only witty leaves a tired student no
+better off than a blank pane (§1.4).
+
+Also now using `.pane-empty-actions`, which was written in the same session that added
+`.pane` and then never applied — the dead-rule check found it, which is a fair first catch.
+
 **2026-10-29 · Grouping on two axes, because one was not enough**
 Raised by the user, and they are right: the canvas's segmented control picks exactly one
 grouping, so asking for lectures by module puts every lecture of that module in one flat

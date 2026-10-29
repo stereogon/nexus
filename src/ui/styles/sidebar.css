@@ -1,0 +1,215 @@
+/**
+ * The sidebar: search, grouping, and the lecture rows.
+ *
+ * The largest single pane, and the one that changed most often -- its own file means a row
+ * tweak no longer involves opening a stylesheet that also knows about PDF text layers.
+ */
+
+.sidebar {
+  flex: 0 0 264px;
+  min-width: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  background: var(--chrome);
+  border-right: 1px solid var(--border);
+}
+
+.sidebar-search {
+  flex: 0 0 auto;
+  padding: 12px 12px 8px;
+  position: relative;
+}
+
+.sidebar-search input {
+  width: 100%;
+  box-sizing: border-box;
+  height: 32px;
+  padding: 0 34px 0 30px;
+  background: var(--field);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+
+.sidebar-search svg {
+  position: absolute;
+  left: 22px;
+  top: 21px;
+  color: var(--text-faint);
+}
+
+.sidebar-group-by {
+  flex: 0 0 auto;
+  padding: 4px 12px 10px;
+}
+
+.sidebar-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 2px 8px 8px;
+}
+
+.sidebar-list .overline {
+  margin: 14px 0 5px;
+  padding: 0 8px;
+}
+
+.sidebar-list .overline:first-child {
+  margin-top: 6px;
+}
+
+/* The row is a container rather than one button, because it holds a second control and a
+   button inside a button is not valid HTML. */
+.lecture-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border-radius: 7px;
+}
+
+.lecture-row:hover {
+  background: var(--surface);
+}
+
+.lecture-row button.open {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 30px;
+  padding: 0 8px;
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  color: var(--row-text);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 400;
+  text-align: left;
+}
+
+.lecture-row[data-open="true"] {
+  background: var(--accent-soft);
+}
+
+.lecture-row[data-open="true"] button.open {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+/* The canvas shows two-digit prefixes and sizes this at 16px. Real folders here are named
+   `0104-J-no-solutions`, so the column has to be able to hold four digits: fixed at 16px,
+   `0104` simply drew on top of the title. A minimum keeps the common case aligned. */
+.row-num {
+  flex: 0 0 auto;
+  min-width: 16px;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.lecture-row[data-open="true"] .row-num {
+  color: var(--accent);
+}
+
+.row-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-meta {
+  flex: 0 0 auto;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+/* A lecture that is waiting, or that could not be converted, says so in a pill -- per the
+   artboards, which draw `Converting` that way. `Failed` was being drawn as bare monospace
+   text, which read as debugging output rather than as a state. */
+.row-meta[data-state="converting"],
+.row-meta[data-state="queued"],
+.row-meta[data-state="failed"] {
+  padding: 1px 6px;
+  border-radius: 20px;
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.row-meta[data-state="converting"],
+.row-meta[data-state="queued"] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* Not alarming, but not the same as "working": the exam semantic is the canvas's colour
+   for something needing attention, and it differs from the accent in lightness as well as
+   hue, so the two pills are distinguishable without relying on colour at all. */
+.row-meta[data-state="failed"] {
+  background: var(--exam-wash);
+  color: var(--semantic-exam);
+}
+
+.lecture-row:hover button.row-edit,
+button.row-edit:focus-visible {
+  opacity: 1;
+}
+
+.sidebar-foot {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 12px;
+  border-top: 1px solid var(--border);
+  color: var(--text-meta);
+  font-size: 11px;
+}
+
+/* No `direction: rtl` here. It was a trick to keep the end of a long path visible, and it
+   moved the leading slash to the end: `/Users/me/NexusVault` was drawn as
+   `Users/me/NexusVault/`. The tail is chosen in `shortPath` instead, where it can be
+   tested. */
+.sidebar-foot span {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+}
+
+.sidebar-empty {
+  padding: 12px 10px;
+  color: var(--text-meta);
+  font-size: 12px;
+}
+
+/* The second grouping level. Not on the canvas -- see `sidebarRows.ts`. Its own row under
+   the primary control, and the label sits beside it rather than above so the pair reads
+   as one sentence: group by Module, then by Week. */
+.then-by {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.then-by .overline {
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.then-by .segmented {
+  flex: 1 1 auto;
+  min-width: 0;
+}

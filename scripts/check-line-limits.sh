@@ -8,6 +8,10 @@
 #
 # Tests count. They are source, they are read far more often than they are written, and
 # the files that have needed splitting here have as often been tests as not.
+#
+# Stylesheets count too, added 2026-10-29. They were not checked, and that is exactly how
+# `theme.css` reached 1204 lines without anything complaining -- the file the limit existed
+# to prevent was the one file the limit did not look at.
 
 set -euo pipefail
 

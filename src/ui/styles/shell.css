@@ -1,0 +1,175 @@
+/**
+ * The window itself: title bar, the pane grid, and the pane with nothing in it.
+ *
+ * Everything here is structure that exists before any content does, which is why the
+ * universal reset and `body` live here too.
+ */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--chrome);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The window uses a transparent title bar, so the app owns the strip behind it. */
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.titlebar {
+  height: 38px;
+  flex: 0 0 auto;
+}
+
+.content {
+  flex: 1 1 auto;
+  padding: 0 24px 32px;
+}
+
+/* ---------------------------------------------------------------------------------
+   The workspace shell: title bar, sidebar, panes.
+
+   Values are the canvas's Workspace Light and Workspace Dark artboards, read off them
+   rather than chosen here: 40px title bar, 264px sidebar, 30px rows at 13px, headings at
+   11px uppercase with 0.3px tracking, 13px indent per level, 7px row radius.
+   --------------------------------------------------------------------------------- */
+.titlebar {
+  flex: 0 0 auto;
+  height: 40px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 14px;
+  background: var(--chrome);
+  border-bottom: 1px solid var(--border);
+}
+
+/* The window's own controls sit here, so this much width is left alone. The window uses
+   `titleBarStyle: Transparent`, which draws them over our chrome. */
+.titlebar-controls {
+  flex: 0 0 auto;
+  width: 54px;
+}
+
+.wordmark {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-brand);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  color: var(--text);
+}
+
+.crumbs {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.crumbs-path {
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.crumbs-here {
+  color: var(--text);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.panes {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: stretch;
+}
+
+/* Visually hidden, but read aloud and focusable: for a label whose field already carries
+   a placeholder and an icon. */
+.vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------------------------
+   The pane beside the sidebar when no document is open.
+
+   No artboard: every Workspace artboard shows a lecture open. Centred rather than left at
+   the top, which is where it sat when these rules did not exist at all.
+   --------------------------------------------------------------------------------- */
+.pane {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 32px;
+  overflow-y: auto;
+  background: var(--viewer-bed);
+}
+
+.pane-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-meta);
+  font-size: 14px;
+}
+
+.pane-empty p {
+  margin: 0;
+}
+
+.pane-empty-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* The ghost on the empty pane. Sized in rem-ish pixels rather than by its 12x12 grid, so
+   the sprite scales with the pane instead of the grid dictating the layout. `crispEdges`
+   is on the element; without it the browser smooths the squares and the pixel art reads as
+   a blurry blob. */
+.pixel-ghost {
+  width: 72px;
+  height: 72px;
+  color: var(--border-strong);
+  margin-bottom: 4px;
+}
+
+/* Larger and darker than the sentence under it: the line is what the eye lands on, and the
+   instruction is what it reads next. */
+.pane-empty-line {
+  font-family: var(--font-brand);
+  font-size: 17px;
+  color: var(--text-secondary);
+}
+
+.pane-empty .kbd {
+  margin: 0 1px;
+}

@@ -1,0 +1,21 @@
+/**
+ * Every stylesheet the app uses, in cascade order.
+ *
+ * One import site, so `main.tsx` does not grow a line per stylesheet and the order lives
+ * in the place that depends on it. Vite inlines these at build time -- the shipped bundle
+ * is one file, so the split costs no requests.
+ *
+ * **The order is generic to specific, and it matters.** Tokens define the names; type and
+ * controls are the shared primitives; then one file per pane, which may tighten a shared
+ * control for its own context (`.viewer-bar .segmented button`) without a specificity
+ * fight. Moving a pane above `controls.css` would silently lose those overrides, which is
+ * the one way this file can be got wrong.
+ */
+@import "./tokens.css";
+@import "./text.css";
+@import "./controls.css";
+@import "./shell.css";
+@import "./sidebar.css";
+@import "./viewer.css";
+@import "./textlayer.css";
+@import "./import.css";

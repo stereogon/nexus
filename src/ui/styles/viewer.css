@@ -1,0 +1,191 @@
+/**
+ * The document pane: toolbar, page bed, and the pdf.js text layer.
+ *
+ * The invisible text layer that makes selection work has its own file,
+ * `textlayer.css`: those rules are a contract with pdf.js rather than our design.
+ */
+
+/* ---------------------------------------------------------------------------------
+   The document pane.
+
+   From the canvas's Workspace artboards: a light page on a dark bed, with the toolbar
+   reading `4 / 18 · − · 124% · + · Fit width`. The page surface is `--surface` in both
+   themes on purpose -- §3 forbids dark-mode inversion, because inverting a page ruins
+   photographs, colour-coded diagrams and scans. Only the bed around it changes.
+   --------------------------------------------------------------------------------- */
+/* `flex: 1` is load-bearing. Without it this sizes to its content inside `.panes`, which
+   leaves the rest of the window blank -- and, because the bed then measures zero, fit-width
+   falls back to 100% and the page overflows a pane narrower than itself. The canvas gives
+   this pane `flex: 999 1 460px`; one growing pane beside a fixed sidebar is the same thing.
+   `min-width: 0` lets it shrink below the page's width rather than pushing the layout
+   wider, which is what makes the bed scroll instead of the window. */
+.viewer {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.viewer-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: var(--chrome);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+
+.viewer-title {
+  font-weight: 500;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.viewer-zoom {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.viewer-scale {
+  min-width: 48px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.viewer-bed {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: var(--viewer-bed);
+  padding: 24px 0;
+}
+
+/* The pages are absolutely placed inside this, so its height is the whole document's and
+   the scrollbar does not change length as pages mount and unmount. */
+.pdf-stack {
+  position: relative;
+  width: 100%;
+}
+
+/* Centred with `margin: auto` between `left: 0` and `right: 0`, not with a translate.
+   A `translateX(-50%)` off `left: 50%` pushes the left half of an over-wide page outside
+   the scrollable area, where no amount of scrolling reaches it -- which is what cut the
+   first few characters off every line. With auto margins, an element wider than its
+   container resolves them to zero and aligns to the start, so it stays reachable. */
+.pdf-page {
+  position: absolute;
+  left: 0;
+  right: 0;
+  margin-inline: auto;
+  background: var(--surface);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 18%), 0 8px 24px rgb(0 0 0 / 10%);
+}
+
+.pdf-canvas {
+  display: block;
+}
+
+.pdf-undrawn {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 24px;
+  text-align: center;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--text-meta);
+}
+
+/* ---------------------------------------------------------------------------------
+   What the screening found.
+
+   No artboard for this state: it was asked for after the canvas was drawn. Tokens are
+   the canvas's own rather than invented, and it wants an artboard -- noted in PROGRESS.
+   --------------------------------------------------------------------------------- */
+.notice {
+  padding: 10px 16px;
+  background: var(--chrome);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+
+/* A left edge in the accent rather than a red panel. Nothing here has gone wrong: the
+   viewer already refuses everything being reported, so alarming the reader would be
+   both inaccurate and unkind (§1.4). */
+.notice.attention {
+  border-left: 3px solid var(--accent);
+}
+
+.notice-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.notice-summary {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.notice-head button {
+  margin-left: auto;
+}
+
+.notice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notice-list li {
+  display: grid;
+  grid-template-columns: 8px 1fr auto;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--text-secondary);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-meta);
+}
+
+.dot.notable {
+  background: var(--semantic-exam);
+}
+
+.dot.informational {
+  background: var(--text-meta);
+}
+
+/* ---------------------------------------------------------------------------------
+   The text layer: invisible, selectable text over the drawn page.
+
+   These rules are pdf.js's own contract, not a design choice. The layer sets per-span
+   custom properties (`--font-height`, `--scale-x`, `--rotate`, `--min-font-size`) and
+   expects the stylesheet to turn them into position and size; getting them wrong makes
+   selection land on the wrong glyphs. Taken from `pdfjs-dist/web/pdf_viewer.css`
+   (Apache-2.0, recorded in the licence register) rather than invented.
+
+   Flattened out of their nested form deliberately: CSS nesting needs Safari 16.5 and this
+   build targets Safari 15, so the nested original would be shipped unparsed and every
+   span would stack at the page's top-left corner.
+   --------------------------------------------------------------------------------- */
