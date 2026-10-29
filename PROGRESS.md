@@ -445,14 +445,16 @@ a tag an unreliable way to find anything — and gives each of those rows a dist
 React reuses one element for both. Within a group, order is `sequence`, which §3 makes
 authoritative.
 
-**Three files are now dead and have not been deleted.** `LectureList.tsx`,
-`GroupPicker.tsx` and `grouping.test.ts` reference only each other; nothing live imports
-them. Deleting a file not created in the session is §2's ask-first, so they are still on
-disk, named here and in the reply rather than removed quietly. Before they go, the two
-guarantees `grouping.test.ts` held that the new tests did not were added to
-`sidebarRows.test.ts`: that no lecture is dropped or duplicated under a single-valued
-facet, and that a group's order is `sequence` — the latter a deliberate change from
-`grouped`, which kept the order the vault walk returned.
+**Three files were dead and are now deleted** (398 lines), with the user's permission on
+2026-10-29: `LectureList.tsx` (the card list), `GroupPicker.tsx` (the old `<select>`) and
+`grouping.test.ts`. They referenced only each other; nothing live imported them.
+
+Before they went, the two guarantees `grouping.test.ts` held that the new tests did not were
+added to `sidebarRows.test.ts`: that no lecture is dropped or duplicated under a
+single-valued facet, and that a group's order is `sequence` — the latter a deliberate change
+from `grouped`, which kept the order the vault walk returned. The other three of its five
+tests covered `grouped`'s own behaviour and went with it. The TS suite therefore reads 148
+rather than 153, and that drop is those five and nothing else.
 
 ### Not on the canvas, and needing an artboard
 Each is marked in the code where it appears:
