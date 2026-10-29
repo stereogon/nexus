@@ -91,3 +91,44 @@ describe("the four semantics", () => {
     expect(SEMANTICS.map((s) => SEMANTIC_GLYPH[s]).join("")).toBe("KDEQ");
   });
 });
+
+describe("a highlight carrying the text layer's foot", () => {
+  // Reported 2026-10-29: a highlight on the first line of a slide drew correctly but put
+  // its glyph in the bottom-right corner of the page, where it read as unremovable.
+  //
+  // The pdf.js text layer ends with an element pinned across the foot of the page, which
+  // the browser reports a hair above zero high. Normalised it is the rectangle below:
+  // invisible as a fill, last once sorted by `top`, and so the one the badge was placed
+  // from -- landing on both clamps at once.
+  const SLIVER = { x: 0, y: 0.999_8, width: 1, height: 0.000_2 };
+  const FIRST_LINE = { x: 0.23, y: 0.36, width: 0.06, height: 0.03 };
+  const PAGE = { width: 1000, height: 800 };
+
+  it("places the badge from the line, not from the sliver", () => {
+    const at = badgeAt([FIRST_LINE, SLIVER], PAGE);
+
+    // Per field, since the left edge is a sum of fractions and lands a float's breadth
+    // off the round number.
+    expect(at?.left).toBeCloseTo(0.29 * 1000 + 2, 6);
+    expect(at?.top).toBeCloseTo(0.36 * 800, 6);
+  });
+
+  it("does not land in the bottom-right corner", () => {
+    // Stated as its own case because that corner is what both clamps produce together,
+    // and it is the shape of the reported bug rather than an arbitrary wrong answer.
+    const at = badgeAt([FIRST_LINE, SLIVER], PAGE);
+
+    expect(at).not.toEqual({ left: PAGE.width - BADGE_SIZE, top: PAGE.height - BADGE_SIZE });
+  });
+
+  it("still uses the last real line when there are several", () => {
+    const second = { x: 0.1, y: 0.4, width: 0.5, height: 0.03 };
+    const at = badgeAt([FIRST_LINE, second, SLIVER], PAGE);
+
+    expect(at?.top).toBeCloseTo(0.4 * 800, 5);
+  });
+
+  it("gives nothing to place when a highlight is nothing but slivers", () => {
+    expect(badgeAt([SLIVER], PAGE)).toBeNull();
+  });
+});

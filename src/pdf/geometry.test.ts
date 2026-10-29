@@ -3,11 +3,11 @@ import { describe, expect, it } from "vitest";
 import {
   bounding,
   denormalise,
-  lineRects,
   normalise,
   type NormalizedRect,
   type PixelRect,
 } from "./geometry";
+import { expectRect } from "./expectRect";
 
 /** An A4 page as rendered at some zoom, placed somewhere on screen. */
 function pageAt(scale: number, left = 120, top = 40): PixelRect {
@@ -17,21 +17,6 @@ function pageAt(scale: number, left = 120, top = 40): PixelRect {
 /** The four zoom levels the milestone names. */
 const ZOOMS = [0.5, 1, 1.75, 3];
 
-/**
- * Compares two rectangles component by component, to ten decimal places.
- *
- * Exact equality is the wrong tool here: these numbers come out of divisions and
- * subtractions, so `0.4 - 0.1` is `0.30000000000000004` and a correct result fails a
- * `toEqual`. Ten places is far finer than any page dimension and far coarser than the
- * noise.
- */
-function expectRect(actual: NormalizedRect | null, expected: NormalizedRect): void {
-  expect(actual).not.toBeNull();
-  expect(actual?.x).toBeCloseTo(expected.x, 10);
-  expect(actual?.y).toBeCloseTo(expected.y, 10);
-  expect(actual?.width).toBeCloseTo(expected.width, 10);
-  expect(actual?.height).toBeCloseTo(expected.height, 10);
-}
 
 describe("normalising one rectangle", () => {
   it("places a rectangle as fractions of the page, not pixels", () => {
@@ -151,121 +136,6 @@ describe("normalising one rectangle", () => {
   });
 });
 
-describe("collapsing a selection into lines", () => {
-  const page: PixelRect = { left: 0, top: 0, width: 1000, height: 1000 };
-
-  it("joins the fragments of one line into one rectangle", () => {
-    // A sentence crossing three spans arrives as three rects. Drawn separately they show
-    // seams; Rust's TextHighlight wants one rectangle per line.
-    const rects = lineRects(
-      [
-        { left: 100, top: 200, width: 150, height: 20 },
-        { left: 250, top: 200, width: 100, height: 20 },
-        { left: 350, top: 200, width: 50, height: 20 },
-      ],
-      page,
-    );
-
-    expect(rects).toHaveLength(1);
-    expectRect(rects[0] ?? null, { x: 0.1, y: 0.2, width: 0.3, height: 0.02 });
-  });
-
-  it("keeps separate lines separate", () => {
-    const rects = lineRects(
-      [
-        { left: 100, top: 200, width: 200, height: 20 },
-        { left: 100, top: 230, width: 150, height: 20 },
-      ],
-      page,
-    );
-
-    expect(rects).toHaveLength(2);
-    expect(rects[0]?.y).toBeCloseTo(0.2, 10);
-    expect(rects[1]?.y).toBeCloseTo(0.23, 10);
-  });
-
-  it("treats a mixed-size line as one line", () => {
-    // A superscript or an inline formula sits higher and is shorter than the text around
-    // it. Grouping by matching tops would split the line and draw a notch in the
-    // highlight, so the grouping is by vertical overlap instead.
-    const rects = lineRects(
-      [
-        { left: 100, top: 200, width: 100, height: 20 },
-        { left: 200, top: 196, width: 12, height: 11 },
-        { left: 212, top: 200, width: 80, height: 20 },
-      ],
-      page,
-    );
-
-    expect(rects).toHaveLength(1);
-    expect(rects[0]?.height).toBeCloseTo(0.024, 10);
-  });
-
-  it("merges a nested span's duplicate rectangle instead of double-darkening it", () => {
-    const rects = lineRects(
-      [
-        { left: 100, top: 200, width: 300, height: 20 },
-        { left: 150, top: 200, width: 100, height: 20 },
-      ],
-      page,
-    );
-
-    expect(rects).toHaveLength(1);
-    expectRect(rects[0] ?? null, { x: 0.1, y: 0.2, width: 0.3, height: 0.02 });
-  });
-
-  it("reads top to bottom however the selection was dragged", () => {
-    // A backwards drag reports its rects in the other order. The stored rectangles should
-    // not record which way the mouse moved.
-    const forwards = lineRects(
-      [
-        { left: 100, top: 100, width: 200, height: 20 },
-        { left: 100, top: 140, width: 200, height: 20 },
-      ],
-      page,
-    );
-    const backwards = lineRects(
-      [
-        { left: 100, top: 140, width: 200, height: 20 },
-        { left: 100, top: 100, width: 200, height: 20 },
-      ],
-      page,
-    );
-
-    expect(backwards).toEqual(forwards);
-  });
-
-  it("ignores the empty rectangles a line break reports", () => {
-    const rects = lineRects(
-      [
-        { left: 100, top: 200, width: 200, height: 20 },
-        { left: 300, top: 200, width: 0, height: 20 },
-        { left: 100, top: 240, width: 0, height: 0 },
-      ],
-      page,
-    );
-
-    expect(rects).toHaveLength(1);
-  });
-
-  it("returns nothing for a selection of nothing", () => {
-    expect(lineRects([], page)).toEqual([]);
-  });
-
-  it("leaves the browser's own rect list alone", () => {
-    // `getClientRects()` hands back a live list; sorting it in place would be a side
-    // effect on the DOM's own data.
-    const given: PixelRect[] = [
-      { left: 100, top: 300, width: 10, height: 10 },
-      { left: 100, top: 100, width: 10, height: 10 },
-    ];
-
-    lineRects(given, page);
-
-    expect(given[0]?.top).toBe(300);
-  });
-});
-
 describe("the bounding rectangle", () => {
   it("covers every rectangle given", () => {
     expectRect(
@@ -289,3 +159,4 @@ describe("the bounding rectangle", () => {
     expect(bounding([])).toBeNull();
   });
 });
+

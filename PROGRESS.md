@@ -454,6 +454,49 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-10-29 · The badge that sat in the corner of the page**
+Reported with a screenshot: a highlight on the first line of a slide drew in the right
+place, but its glyph was in the bottom-right corner of the page — far from the highlight,
+small, and easy to miss entirely, so the highlight read as unremovable.
+
+The bottom-right corner is not an arbitrary wrong answer: it is what both of `badgeAt`'s
+clamps produce *together*, which says the rectangle it was placing from had `x + width ≈ 1`
+and `y ≈ 1`. The pdf.js text layer ends with an element pinned across the foot of the page,
+and the browser reports it a hair above zero high rather than exactly zero — so it passed
+`lineRects`' `height > 0` test, normalised to `x: 0, width: 1, y: ~1, height: ~0`, sorted
+last by `top`, and became the rectangle the badge was placed from. Invisible as a fill,
+which is why only the glyph looked wrong.
+
+Fixed at both ends, because one of these is already on disk. `lineRects` now requires
+`MIN_LINE_HEIGHT` (one CSS pixel) rather than any positive height, so nothing new carries
+the sliver; and `badgeAt` places from the last rectangle *with a line's worth of height*,
+so the highlight already stored stops showing the bug without a migration (§1.8 — a file
+written by an older build is a contract).
+
+**Two thresholds now, deliberately.** `SMALLEST_SIDE` (1e-5, page fractions, on the way
+out) asks whether a rectangle can be *stored* and exists to keep floating-point noise out
+of a file. `MIN_LINE_HEIGHT` (1px, on the way in) asks whether a rectangle is a *line of
+text* and exists to keep the layout's furniture out of a highlight. The sliver cleared the
+first at two parts in ten thousand of a page, which is exactly why the second is needed.
+Both say so in a comment pointing at the other.
+
+*The first version of the `lineRects` test passed with the fix reverted.* Its fixture put
+the foot exactly on the page bottom, where both vertical edges clamp to 1, so it normalised
+to zero height and `SMALLEST_SIDE` removed it before the new filter was ever reached — the
+test proved nothing and would have gone on proving nothing. Caught only by reverting the
+fix to watch it fail, which is why that step is worth the minute it costs. The fixture now
+sits a hair above the bottom, where the sliver really is.
+
+*Also:* `geometry.test.ts` passed 300 lines, and split along a seam the suite already had
+— normalising *one* rectangle stayed, collapsing a *selection* into lines moved to
+`geometry.lines.test.ts`. `expectRect` moved to `expectRect.ts` rather than being copied,
+since it encodes a decision about tolerance and two copies is two places to change it. It
+also turned out to do by hand what the new test had hand-rolled.
+
+**Still inferred, not observed.** The sliver is a diagnosis from the symptom and the code,
+not something read off disk; confirming it means opening the stored `annotations.json` in
+`~/NexusVault`, which is outside the repo and needs asking first (§2).
+
 **2026-10-29 · The menu that outlived the page under it**
 Reported: switching from scroll mode to page mode left a Remove button floating over a
 different page, and the arrows did the same.

@@ -149,6 +149,28 @@ function merged(a: PixelRect, b: PixelRect): PixelRect {
  * so they are sorted first and the output is top-to-bottom regardless of which way the
  * selection was dragged.
  */
+/**
+ * The shortest a rectangle can be and still be a line of text, in CSS pixels.
+ *
+ * Zero was not enough. The pdf.js text layer ends with an element pinned across the foot
+ * of the page, and the browser reports it a hair above zero high rather than exactly zero,
+ * so it survived a `> 0` test. Normalised it is `x: 0, width: 1, y: ~1, height: ~0`:
+ * invisible as a fill, last once sorted by `top`, and therefore the rectangle the badge
+ * was placed from -- which is why a highlight on the first line of a slide put its glyph
+ * in the bottom-right corner of the page (reported 2026-10-29).
+ *
+ * One pixel, not more. A line of text is several pixels tall even at the smallest zoom the
+ * viewer offers, while nothing a person can read is shorter than this.
+ *
+ * Not the same rule as [`SMALLEST_SIDE`], which stays. That one asks whether a rectangle
+ * can be *stored* -- it works in page fractions, on the way out, and exists to keep
+ * floating-point noise out of a file. This one asks whether a rectangle is a *line of
+ * text* -- it works in CSS pixels, on the way in, and exists to keep the layout's own
+ * furniture out of a highlight. The sliver that caused the bug passed the first easily at
+ * two parts in ten thousand of a page, which is why the second is needed as well.
+ */
+export const MIN_LINE_HEIGHT = 1;
+
 export function lineRects(
   boxes: readonly PixelRect[],
   page: PixelRect,
@@ -157,7 +179,7 @@ export function lineRects(
   // this build targets Safari 15. The copy is also what keeps the caller's array -- the
   // browser's own rect list -- untouched.
   const usable = [...boxes]
-    .filter((box) => finite(box) && box.width > 0 && box.height > 0)
+    .filter((box) => finite(box) && box.width > 0 && box.height >= MIN_LINE_HEIGHT)
     .sort((a, b) => a.top - b.top || a.left - b.left);
 
   const lines: PixelRect[] = [];

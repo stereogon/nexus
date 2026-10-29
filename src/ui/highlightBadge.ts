@@ -13,6 +13,7 @@
  * the page edge instead of disappearing.
  */
 import type { NormalizedRect } from "../ipc/annotations";
+import { MIN_LINE_HEIGHT } from "../pdf/geometry";
 
 /** The badge's size in page pixels. Matches `--highlight-badge` in `highlights.css`. */
 export const BADGE_SIZE = 14;
@@ -26,17 +27,38 @@ export interface BadgeAt {
 /**
  * Places the badge just past the end of the last line, kept on the page.
  *
- * `null` for no rectangles, which Rust refuses to store anyway — returned rather than
- * assumed, so this stays total and the caller does not have to index into an empty list.
+ * `null` when nothing is left to place it on — no rectangles, which Rust refuses to store
+ * anyway, or none with a line's worth of height. Returned rather than assumed, so this
+ * stays total and the caller does not have to index into an empty list.
  */
 export function badgeAt(
   rects: readonly NormalizedRect[],
   page: { readonly width: number; readonly height: number },
   size: number = BADGE_SIZE,
 ): BadgeAt | null {
-  const last = rects.at(-1);
+  if (page.width <= 0 || page.height <= 0) {
+    return null;
+  }
 
-  if (last === undefined || page.width <= 0 || page.height <= 0) {
+  // The last rectangle tall enough to be a line, rather than simply the last. Highlights
+  // stored before 2026-10-29 carry a sliver of the pdf.js text layer's foot as their final
+  // rectangle, and placing the badge from it puts the glyph in the page's bottom-right
+  // corner. `lineRects` no longer produces one, but a file already on disk is a contract
+  // (§1.8) and re-reading it must not go on showing the bug.
+  //
+  // Judged in page pixels against `MIN_LINE_HEIGHT`, the same threshold and the same unit
+  // `lineRects` uses, so the two cannot drift into disagreeing about what a line is. A
+  // plain loop rather than `findLast`, which is ES2023 and arrived in Safari 16; this
+  // build targets Safari 15, as the note beside `toSorted` in `geometry` records.
+  let last: NormalizedRect | undefined;
+
+  for (const rect of rects) {
+    if (rect.width * page.width > 0 && rect.height * page.height >= MIN_LINE_HEIGHT) {
+      last = rect;
+    }
+  }
+
+  if (last === undefined) {
     return null;
   }
 
