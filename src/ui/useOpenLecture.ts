@@ -11,10 +11,17 @@ import { useCallback, useState } from "react";
 import { openDocument, type OpenedDocument } from "../ipc/document";
 import { asCommandError, type CommandError, type LectureRow } from "../ipc/vault";
 
-/** A lecture on screen, with the title to show above it. */
+/** A lecture on screen: the screened document, and the row it came from. */
 export interface OpenLecture {
   readonly document: OpenedDocument;
-  readonly title: string;
+  /**
+   * The row itself, not just its title.
+   *
+   * The shell needs the directory to mark the right sidebar row and the facets to build
+   * the breadcrumb. Looking those back up by title would be wrong as soon as two lectures
+   * share one, which nothing prevents — two courses both having a "Week 1" is ordinary.
+   */
+  readonly lecture: LectureRow;
 }
 
 export interface Opening {
@@ -41,7 +48,7 @@ export function useOpenLecture(): Opening {
       try {
         setLecture({
           document: await openDocument(vault, row.directory),
-          title: row.title,
+          lecture: row,
         });
       } catch (thrown: unknown) {
         // Reported, not swallowed: `ERR_DOCUMENT_NOT_READY` and `ERR_NOT_A_PDF` each have

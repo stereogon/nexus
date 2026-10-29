@@ -44,6 +44,21 @@
   --text: #1b1a18;
   --text-secondary: #5e5a53;
   --text-meta: #6e6a62;
+  /* Fainter than `text-meta`: row numbers, the search glyph, the vault path. */
+  --text-faint: #8a857c;
+  /* A sidebar row's label, a touch lighter than `text` so a selected row stands out. */
+  --row-text: #2e2c29;
+  /* A text field's own fill, which is not `surface` in dark. */
+  --field: #ffffff;
+  /* The track a segmented control sits in, and the raised state of its chosen segment. */
+  --track: #eae7e1;
+  --segment-on: #ffffff;
+  /* A keyboard shortcut badge. */
+  --kbd: #efece6;
+  --kbd-border: #e2dfd8;
+  /* The accent at a tenth, for a selected row's bed. An explicit value per theme rather
+     than a `color-mix`, as with `accent-wash` above. */
+  --accent-soft: rgba(190, 26, 114, 0.1);
 
   /* The four highlight semantics. Each also carries a letter glyph (K/D/E/Q), so the set
      never relies on hue alone. */
@@ -81,6 +96,14 @@
     --border: #2c2c34;
     --border-strong: #3a3a44;
     --text: #eceae7;
+    --text-faint: #8f8b84;
+    --row-text: #d6d3ce;
+    --field: #1f1f25;
+    --track: #1f1f25;
+    --segment-on: #2e2e38;
+    --kbd: #26262e;
+    --kbd-border: #333340;
+    --accent-soft: rgba(255, 114, 198, 0.1);
     --text-secondary: #a8a49d;
     --text-meta: #8f8b84;
   }
@@ -684,4 +707,336 @@ button.quiet.on {
 
 .textLayer::selection {
   background: rgba(158, 71, 123, 0.3);
+}
+
+/* ---------------------------------------------------------------------------------
+   The workspace shell: title bar, sidebar, panes.
+
+   Values are the canvas's Workspace Light and Workspace Dark artboards, read off them
+   rather than chosen here: 40px title bar, 264px sidebar, 30px rows at 13px, headings at
+   11px uppercase with 0.3px tracking, 13px indent per level, 7px row radius.
+   --------------------------------------------------------------------------------- */
+
+.titlebar {
+  flex: 0 0 auto;
+  height: 40px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 14px;
+  background: var(--chrome);
+  border-bottom: 1px solid var(--border);
+}
+
+/* The window's own controls sit here, so this much width is left alone. The window uses
+   `titleBarStyle: Transparent`, which draws them over our chrome. */
+.titlebar-controls {
+  flex: 0 0 auto;
+  width: 54px;
+}
+
+.wordmark {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-brand);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  color: var(--text);
+}
+
+.crumbs {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.crumbs-path {
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.crumbs-here {
+  color: var(--text);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* An icon-only control in the title bar. 28px tall inside a 40px bar, per the artboards. */
+button.chrome-icon {
+  width: 44px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  color: var(--text-secondary);
+}
+
+button.chrome-icon:hover:not(:disabled) {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+.panes {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: stretch;
+}
+
+.sidebar {
+  flex: 0 0 264px;
+  min-width: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  background: var(--chrome);
+  border-right: 1px solid var(--border);
+}
+
+.sidebar-search {
+  flex: 0 0 auto;
+  padding: 12px 12px 8px;
+  position: relative;
+}
+
+.sidebar-search input {
+  width: 100%;
+  box-sizing: border-box;
+  height: 32px;
+  padding: 0 34px 0 30px;
+  background: var(--field);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+
+.sidebar-search svg {
+  position: absolute;
+  left: 22px;
+  top: 21px;
+  color: var(--text-faint);
+}
+
+.kbd {
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  padding: 1px 5px;
+  background: var(--kbd);
+  border: 1px solid var(--kbd-border);
+  border-radius: 4px;
+  color: var(--text-meta);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.sidebar-group-by {
+  flex: 0 0 auto;
+  padding: 4px 12px 10px;
+}
+
+/* Also the heading style for a group of lectures: 11px, uppercase, 0.3px tracking. */
+.overline {
+  margin: 0 0 6px;
+  color: var(--text-meta);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.segmented {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  background: var(--track);
+  border-radius: 9px;
+}
+
+.segmented button {
+  flex: 1 1 auto;
+  height: 24px;
+  padding: 0 2px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+}
+
+.segmented button[aria-pressed="true"] {
+  background: var(--segment-on);
+  color: var(--accent);
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgb(27 26 24 / 10%);
+}
+
+.sidebar-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 2px 8px 8px;
+}
+
+.sidebar-list .overline {
+  margin: 14px 0 5px;
+  padding: 0 8px;
+}
+
+.sidebar-list .overline:first-child {
+  margin-top: 6px;
+}
+
+/* The row is a container rather than one button, because it holds a second control and a
+   button inside a button is not valid HTML. */
+.lecture-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border-radius: 7px;
+}
+
+.lecture-row:hover {
+  background: var(--surface);
+}
+
+.lecture-row button.open {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 30px;
+  padding: 0 8px;
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  color: var(--row-text);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 400;
+  text-align: left;
+}
+
+.lecture-row[data-open="true"] {
+  background: var(--accent-soft);
+}
+
+.lecture-row[data-open="true"] button.open {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.row-num {
+  flex: 0 0 auto;
+  width: 16px;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.lecture-row[data-open="true"] .row-num {
+  color: var(--accent);
+}
+
+.row-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-meta {
+  flex: 0 0 auto;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+/* A lecture mid-conversion says so in a pill, per the artboards. */
+.row-meta[data-busy="true"] {
+  padding: 1px 6px;
+  background: var(--accent-soft);
+  border-radius: 20px;
+  color: var(--accent);
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 500;
+}
+
+/* Revealed on hover, and always present for a keyboard: a control that appears only on
+   hover cannot be reached by Tab. */
+button.row-edit {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin-right: 4px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-faint);
+  opacity: 0;
+}
+
+.lecture-row:hover button.row-edit,
+button.row-edit:focus-visible {
+  opacity: 1;
+}
+
+.sidebar-foot {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 12px;
+  border-top: 1px solid var(--border);
+  color: var(--text-meta);
+  font-size: 11px;
+}
+
+.sidebar-foot span {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  direction: rtl;
+}
+
+.sidebar-empty {
+  padding: 12px 10px;
+  color: var(--text-meta);
+  font-size: 12px;
+}
+
+/* Visually hidden, but read aloud and focusable: for a label whose field already carries
+   a placeholder and an icon. */
+.vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }

@@ -414,6 +414,74 @@ step under test. `check-line-limits.sh` exited 1 naming the file; the full gate 
 seven steps `ok`, one `FAIL`, and exited 1. The probe was then removed and the tree
 re-checked clean.
 
+**2026-10-29 · The window finally looks like the canvas**
+The app looked like a to-do list of PDFs — a column of cards — and the canvas specifies a
+workspace. This replaces the shell with the one on the *Workspace Light* and *Workspace
+Dark* artboards: a 40px title bar with the mark, a breadcrumb and two chrome controls, over
+a 264px sidebar and the document pane.
+
+**Read off the artboards, not chosen here.** 264px sidebar, 40px bar, 30px rows at 13px,
+headings at 11px uppercase with 0.3px tracking, 13px indent per level, 7px row radius, the
+search field at 32px with its glyph and a ⌘P badge, the segmented control in a 9px-radius
+track. The dark values turned out to match the tokens already extracted into `theme.css`
+exactly (`#16161A` chrome, `#2C2C34` border, `#ECEAE7` text), which is a good sign the
+earlier extraction was faithful. Eight tokens were missing and are now in: `text-faint`,
+`row-text`, `field`, `track`, `segment-on`, `kbd`, `kbd-border`, `accent-soft`.
+
+**The groupings changed, because the canvas's are different.** The first pass offered
+Nothing / Course / Module / Week; the canvas's segmented control reads **Folder / Week /
+Module / Tag**. §3 makes the canvas authoritative, so those are the four, and "group by
+nothing" is gone — the canvas has no such option and a flat list of three hundred lectures
+was never the useful default.
+
+**`sidebarRows.ts` decides what the scroller holds; the component only draws it.** 20 tests,
+no DOM. The behaviour worth naming: Folder nests a heading per directory level and emits
+headings only where a lecture's path diverges from the previous one's, so a run of lectures
+in one folder sits under one heading and a later lecture returning to an earlier folder
+re-opens it. Groups sort with `numeric: true`, because plain string order puts Week 10
+before Week 9, which reads as broken to anyone with ten weeks of lectures. Tag grouping
+lists a lecture under **every** tag it carries — hiding it from all but the first would make
+a tag an unreliable way to find anything — and gives each of those rows a distinct key, or
+React reuses one element for both. Within a group, order is `sequence`, which §3 makes
+authoritative.
+
+**Three files are now dead and have not been deleted.** `LectureList.tsx`,
+`GroupPicker.tsx` and `grouping.test.ts` reference only each other; nothing live imports
+them. Deleting a file not created in the session is §2's ask-first, so they are still on
+disk, named here and in the reply rather than removed quietly. Before they go, the two
+guarantees `grouping.test.ts` held that the new tests did not were added to
+`sidebarRows.test.ts`: that no lecture is dropped or duplicated under a single-valued
+facet, and that a group's order is `sequence` — the latter a deliberate change from
+`grouped`, which kept the order the vault walk returned.
+
+### Not on the canvas, and needing an artboard
+Each is marked in the code where it appears:
+- **The per-row edit control.** The canvas's row is a single button with number, title and
+  metadata, and offers no way to change a title or its facets. That has to stay reachable,
+  and the row is where it belongs. It is a 26px icon button revealed on hover **and on
+  keyboard focus**, because a control that appears only on hover cannot be reached by Tab.
+  The row had to become a container holding two buttons rather than one button, since a
+  button inside a button is not valid HTML.
+- **The two problem lists.** Folders the walk skipped and lectures that could not be read
+  have no place on the canvas. They are at the foot of the sidebar's scroller under the
+  canvas's own heading style, because a vault of three hundred lectures with one corrupt
+  manifest must still say so (§1.1).
+- **The empty pane.** Every Workspace artboard shows a lecture open. `EmptyPane` is
+  deliberately plain and carries the two controls with nowhere else to go — "Add a lecture",
+  since the canvas offers only drag-and-drop and ⌘O, and "Open another vault".
+- **The diagnostics button** is drawn and disabled rather than omitted: it is on the canvas,
+  it belongs to Milestone 5, and a control that appears later moves everything beside it.
+
+### Also worth recording
+- `theme.css` is past a thousand lines. The line limit in §4 covers `.rs`, `.ts` and `.tsx`
+  only, so the tool does not flag it, but the file now holds tokens, both themes, and every
+  component's styles. Splitting it into tokens and per-area sheets is a real improvement and
+  is not done.
+- `useOpenLecture` now carries the whole `LectureRow` rather than the title. The shell needs
+  the directory to mark the right sidebar row and the facets for the breadcrumb, and looking
+  those up by title would be wrong the moment two lectures share one — two courses each
+  having a "Week 1" is ordinary, and nothing prevents it.
+
 **2026-10-29 · Selection into coordinates that can be stored**
 `src/pdf/geometry.ts`: what the cursor did, turned into §3's normalised `[0.0, 1.0]`
 rectangles. Pure arithmetic, 19 tests, no DOM.

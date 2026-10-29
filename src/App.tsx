@@ -1,5 +1,9 @@
 /**
- * The application shell: choose a vault, add lectures, file them, see them grouped.
+ * The workspace shell: the title bar, the sidebar, and the pane beside it.
+ *
+ * The layout is the canvas's Workspace artboards — a 40px title bar over a 264px sidebar
+ * and the document pane. Before a vault is open there is no workspace to draw, so that is
+ * a separate screen (`Welcome`) rather than a state of this one.
  *
  * # Why the state is one union and not four booleans
  *
@@ -27,15 +31,19 @@ import {
   type VaultSummary,
 } from "./ipc/vault";
 import { DropOverlay } from "./ui/DropOverlay";
-import { GroupPicker } from "./ui/GroupPicker";
+import { EmptyPane } from "./ui/EmptyPane";
+import { Failure } from "./ui/Failure";
 import { importEach, noteFor } from "./ui/dropped";
 import { LectureEditor } from "./ui/LectureEditor";
-import { LectureList, type GroupBy } from "./ui/LectureList";
 import { PdfViewer } from "./ui/PdfViewer";
+import { Sidebar } from "./ui/Sidebar";
+import { sidebarRows, type GroupBy } from "./ui/sidebarRows";
+import { TitleBar } from "./ui/TitleBar";
 import { useDropZone } from "./ui/useDropZone";
 import { useMetaShortcut } from "./ui/useMetaShortcut";
 import { useOpenLecture } from "./ui/useOpenLecture";
 import { useRememberedVault } from "./ui/useRememberedVault";
+import { Welcome } from "./ui/Welcome";
 
 type VaultState =
   | { readonly kind: "idle" }
@@ -46,19 +54,12 @@ type VaultState =
     }
   | { readonly kind: "failed"; readonly error: CommandError };
 
-function Failure({ error }: { readonly error: CommandError }) {
-  return (
-    <div className="card error">
-      <div className="code">{error.code}</div>
-      <div>{error.remediation}</div>
-    </div>
-  );
-}
-
 export function App() {
   const [state, setState] = useState<VaultState>({ kind: "idle" });
   const [busy, setBusy] = useState(false);
-  const [groupBy, setGroupBy] = useState<GroupBy>("none");
+  const [groupBy, setGroupBy] = useState<GroupBy>("folder");
+  const [query, setQuery] = useState("");
+  const [sidebarShown, setSidebarShown] = useState(true);
   const [editing, setEditing] = useState<LectureRow | null>(null);
   const remembered = useRememberedVault();
   const reading = useOpenLecture();
@@ -198,60 +199,70 @@ export function App() {
     );
   }
 
-  // The viewer replaces the shell rather than sitting inside it. The canvas's workspace is
-  // the document and the notes beside it, not a document inside a vault browser -- and the
-  // notes pane is Milestone 4, so for now the document has the window.
-  if (reading.lecture !== null) {
+  if (state.kind !== "open") {
     return (
       <div className="app">
         <div className="titlebar" />
-        <PdfViewer
-          document={reading.lecture.document}
-          onClose={reading.close}
-          title={reading.lecture.title}
+        <Welcome
+          busy={busy}
+          failures={[
+            ...(state.kind === "failed" ? [state.error] : []),
+            ...(remembered.lost === null ? [] : [remembered.lost]),
+          ]}
+          onChoose={choose}
         />
       </div>
     );
   }
 
+  const summary = state.summary;
+  const open = reading.lecture;
+
   return (
     <div className="app">
-      <div className="titlebar" />
-      <main className="content">
-        <h1>Nexus</h1>
-        <p className="subtitle">
-          Study your lectures beside your notes, entirely offline.
-        </p>
+      <TitleBar
+        lecture={editing ?? open?.lecture ?? null}
+        onToggleSidebar={() => {
+          setSidebarShown(!sidebarShown);
+        }}
+        sidebarShown={sidebarShown}
+      />
 
-        <div className="actions">
-          <button disabled={busy} onClick={choose} type="button">
-            {state.kind === "open" ? "Open another vault" : "Open a vault"}
-          </button>
-          {state.kind === "open" && (
-            <>
-              <button
-                className="secondary"
-                disabled={busy}
-                onClick={add}
-                type="button"
-              >
-                Add a lecture
-              </button>
-              <GroupPicker onChange={setGroupBy} value={groupBy} />
-            </>
-          )}
-        </div>
-
-        {state.kind === "idle" && remembered.lost !== null && (
-          <Failure error={remembered.lost} />
+      <div className="panes">
+        {sidebarShown && (
+          <Sidebar
+            busy={busy || reading.opening}
+            groupBy={groupBy}
+            onEdit={setEditing}
+            onGroupBy={setGroupBy}
+            onOpen={(lecture) => {
+              reading.open(summary.root, lecture);
+            }}
+            onQuery={setQuery}
+            openDirectory={open?.lecture.directory ?? null}
+            query={query}
+            root={summary.root}
+            rows={sidebarRows(summary.lectures, groupBy, query)}
+            skipped={summary.skipped}
+            unloadable={summary.unloadable}
+          />
         )}
-        {reading.failure !== null && <Failure error={reading.failure} />}
-        {state.kind === "failed" && <Failure error={state.error} />}
-        {zone.failure !== null && <Failure error={zone.failure} />}
-        {state.kind === "open" && (
-          <>
+
+        {open !== null ? (
+          <PdfViewer
+            document={open.document}
+            onClose={reading.close}
+            title={open.lecture.title}
+          />
+        ) : (
+          <main className="pane">
             {state.note !== null && <p className="note">{state.note}</p>}
-            {editing !== null && (
+            {reading.failure !== null && <Failure error={reading.failure} />}
+            {zone.failure !== null && <Failure error={zone.failure} />}
+
+            {editing === null ? (
+              <EmptyPane busy={busy} onAdd={add} onChooseVault={choose} />
+            ) : (
               <LectureEditor
                 busy={busy}
                 lecture={editing}
@@ -261,21 +272,11 @@ export function App() {
                 onSave={save}
               />
             )}
-            <LectureList
-              busy={busy || reading.opening}
-              groupBy={groupBy}
-              onEdit={setEditing}
-              onOpen={(lecture) => {
-                reading.open(state.summary.root, lecture);
-              }}
-              summary={state.summary}
-            />
-          </>
+          </main>
         )}
-      </main>
-      {zone.dragging && state.kind === "open" && (
-        <DropOverlay formats={zone.formats} />
-      )}
+      </div>
+
+      {zone.dragging && <DropOverlay formats={zone.formats} />}
     </div>
   );
 }
