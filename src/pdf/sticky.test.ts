@@ -3,7 +3,7 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { movedBy, resizedBy, STICKY_MIN, STICKY_SIZE, stickyBeside } from "./sticky";
+import { legible, movedBy, resizedBy, STICKY_LEGIBLE, STICKY_MIN, STICKY_SIZE, stickyBeside } from "./sticky";
 
 const onPage = (r: { x: number; y: number; width: number; height: number }) =>
   r.x >= 0 && r.y >= 0 && r.x + r.width <= 1 + 1e-9 && r.y + r.height <= 1 + 1e-9;
@@ -72,5 +72,46 @@ describe("the room left after a highlight", () => {
     const roomy = stickyBeside(highlight, STICKY_SIZE, 0.06);
 
     expect(roomy.x).toBeCloseTo(0.46, 10);
+  });
+});
+
+describe("drawing a note legibly", () => {
+  // A wide, short slide at a small zoom: the default note came to about 130 × 45 pixels.
+  const SMALL = { width: 560, height: 315 };
+  const LARGE = { width: 2000, height: 1125 };
+
+  it("is never smaller on screen than its buttons and a few lines need", () => {
+    const drawn = legible({ x: 0.3, y: 0.2, ...STICKY_SIZE }, SMALL);
+
+    expect(drawn.width * SMALL.width).toBeCloseTo(STICKY_LEGIBLE.width);
+    expect(drawn.height * SMALL.height).toBeCloseTo(STICKY_LEGIBLE.height);
+  });
+
+  it("leaves a note that is already large enough as it is", () => {
+    const region = { x: 0.3, y: 0.2, ...STICKY_SIZE };
+
+    expect(legible(region, LARGE)).toEqual(region);
+  });
+
+  it("moves in from the edge as far as its larger size needs, staying on the page", () => {
+    const drawn = legible({ x: 0.9, y: 0.9, ...STICKY_SIZE }, SMALL);
+
+    expect(drawn.x + drawn.width).toBeCloseTo(1);
+    expect(drawn.y + drawn.height).toBeCloseTo(1);
+  });
+
+  it("fills a page too small for it rather than overflowing it", () => {
+    expect(legible({ x: 0.5, y: 0.5, ...STICKY_SIZE }, { width: 150, height: 80 })).toEqual({
+      x: 0,
+      y: 0,
+      width: 1,
+      height: 1,
+    });
+  });
+
+  it("draws as stored before the page has a size", () => {
+    const region = { x: 0.3, y: 0.2, ...STICKY_SIZE };
+
+    expect(legible(region, { width: 0, height: 0 })).toEqual(region);
   });
 });

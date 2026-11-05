@@ -45,6 +45,8 @@
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  /* The real floor is `legible` in `pdf/sticky.ts`, which also keeps the card on its page;
+     this only stops a zero-sized page from collapsing it before layout. */
   min-width: 120px;
   border: 1px solid #e2dfd8;
   border-top: 3px solid var(--accent-ink);
@@ -88,7 +90,18 @@
   cursor: pointer;
 }
 
-.sticky-action:hover {
+.sticky-action:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* The one action that finishes something, so it reads as the way out of a draft. */
+.sticky-save {
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.sticky-action:hover:not(:disabled) {
   background: #efece6;
   color: var(--accent-ink);
 }

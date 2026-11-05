@@ -67,3 +67,35 @@ export function resizedBy(region: NormalizedRect, dw: number, dh: number): Norma
     height: clamp(region.height + dh, STICKY_MIN.height, 1 - region.y),
   };
 }
+
+/** The smallest a card is drawn, in CSS pixels: room for its buttons and three lines. */
+export const STICKY_LEGIBLE = { width: 200, height: 112 } as const;
+
+/**
+ * The note as it is drawn on a page `page` pixels in size: at least `STICKY_LEGIBLE`, and
+ * moved in from the edges as far as that takes to keep it wholly on the page.
+ *
+ * Added 2026-11-05. A note is stored as a fraction of its page, and on a wide, short slide
+ * at a small zoom the default fraction came to about 130 × 45 pixels — the header and
+ * barely a line — so its buttons and words were cut off. The floor is applied here rather
+ * than as a CSS `min-width`, which was tried first and failed twice: a card drawn larger
+ * than its region resized from the smaller stored size, so dragging the corner did nothing
+ * visible at first; and nothing moved it in from the page's edge, so its ✕ was cut off at
+ * the right margin. Drags and resizes start from this rectangle, so what is stored after a
+ * gesture is what was on screen.
+ */
+export function legible(region: NormalizedRect, page: { readonly width: number; readonly height: number }): NormalizedRect {
+  if (page.width <= 0 || page.height <= 0) {
+    return region;
+  }
+
+  const width = Math.min(1, Math.max(region.width, STICKY_LEGIBLE.width / page.width));
+  const height = Math.min(1, Math.max(region.height, STICKY_LEGIBLE.height / page.height));
+
+  return {
+    x: clamp(region.x, 0, 1 - width),
+    y: clamp(region.y, 0, 1 - height),
+    width,
+    height,
+  };
+}

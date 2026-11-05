@@ -177,3 +177,43 @@ test("a note can be started from a fresh selection, which is kept as a highlight
   await expect(page.locator(".highlight")).toHaveCount(2);
   await expect(icons(page)).toHaveAccessibleName("Sticky note: From a selection");
 });
+
+test("a new note can be kept with its Save button, not only with Enter", async ({ page }) => {
+  await page.getByRole("button", { name: /^Key concept:/ }).click();
+  await page.getByRole("group", MENU).getByRole("button", { name: "Sticky note" }).click();
+
+  const save = card(page).getByRole("button", { name: "Save" });
+  await expect(save).toBeDisabled();
+
+  await page.getByRole("textbox", { name: "Sticky note text" }).fill("Ask about the leader lease");
+  await save.click();
+
+  await expect(card(page)).toHaveCount(0);
+  await expect(icons(page)).toHaveAccessibleName("Sticky note: Ask about the leader lease");
+});
+
+test("on a small page the card still shows its actions and its words", async ({ page }) => {
+  // Reported 2026-11-05: the card is sized as a fraction of the page, and a short slide in a
+  // narrow column left it too small for its buttons. The notes made wide narrows the page.
+  const divider = await page.getByRole("separator", { name: "Notes width" }).boundingBox();
+
+  if (divider === null) {
+    throw new Error("The divider is not laid out.");
+  }
+
+  await page.mouse.move(divider.x + 2, divider.y + 300);
+  await page.mouse.down();
+  await page.mouse.move(0, divider.y + 300, { steps: 5 });
+  await page.mouse.up();
+
+  await writeNote(page, "Ask about the leader lease, and why it needs synchronised clocks");
+  await icons(page).click();
+
+  for (const name of ["Cite", "Delete", "Fold the sticky note"]) {
+    await expect(card(page).getByRole("button", { name })).toBeInViewport({ ratio: 1 });
+  }
+
+  const box = await card(page).boundingBox();
+  expect(box?.width ?? 0).toBeGreaterThanOrEqual(200);
+  expect(box?.height ?? 0).toBeGreaterThanOrEqual(112);
+});

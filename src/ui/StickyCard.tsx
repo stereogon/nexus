@@ -5,13 +5,15 @@
  * to read a drag. A drag or resize previews locally and is stored once, when the pointer
  * is released — one write per gesture, not one per pixel.
  *
- * A draft (`text === null`) opens straight into editing. Enter finishes and Escape
- * abandons: a sticky's text is one paragraph, so Enter has nothing else to mean.
+ * A draft (`text === null`) opens straight into editing. Save or Enter keeps it, and ✕ or
+ * Escape abandons it: a sticky's text is one paragraph, so Enter has nothing else to mean.
+ * The Save button was added on 2026-11-05: until then Enter was the only way, and the hint
+ * saying so was cut off on a small card, so a new note had no visible way to be kept.
  */
 import { useState, type PointerEvent } from "react";
 
 import type { NormalizedRect } from "../ipc/annotations";
-import { movedBy, resizedBy } from "../pdf/sticky";
+import { legible, movedBy, resizedBy } from "../pdf/sticky";
 
 type Gesture = { readonly kind: "move" | "resize"; readonly x: number; readonly y: number; readonly from: NormalizedRect };
 
@@ -42,7 +44,8 @@ export function StickyCard({
   const [value, setValue] = useState(text ?? "");
   const [preview, setPreview] = useState<NormalizedRect | null>(null);
   const [gesture, setGesture] = useState<Gesture | null>(null);
-  const shown = preview ?? region;
+  // Never smaller on screen than its buttons and a few lines need; see `legible`.
+  const shown = legible(preview ?? region, page);
 
   const begin = (kind: Gesture["kind"]) => (event: PointerEvent<HTMLElement>) => {
     if (onRegion === null) {
@@ -51,7 +54,7 @@ export function StickyCard({
 
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
-    setGesture({ kind, x: event.clientX, y: event.clientY, from: region });
+    setGesture({ kind, x: event.clientX, y: event.clientY, from: legible(region, page) });
   };
 
   const follow = (event: PointerEvent<HTMLElement>) => {
@@ -72,6 +75,17 @@ export function StickyCard({
 
     setGesture(null);
     setPreview(null);
+  };
+
+  /** Keeps what was typed: a draft is stored, an existing note reworded. */
+  const save = () => {
+    if (text === null) {
+      if (value.trim() !== "") {
+        onSave(value.trim());
+      }
+    } else {
+      finish();
+    }
   };
 
   const finish = () => {
@@ -114,6 +128,22 @@ export function StickyCard({
           role="button"
           tabIndex={-1}
         />
+        {editing && (
+          <button
+            className="sticky-action sticky-save"
+            disabled={value.trim() === ""}
+            // Keeps focus in the text, whose blur would otherwise finish the edit first and
+            // take this button away before the click lands.
+            onMouseDown={(event) => {
+              event.preventDefault();
+            }}
+            onClick={save}
+            title="Keep this note (Enter)"
+            type="button"
+          >
+            Save
+          </button>
+        )}
         {onLink !== null && (
           <button className="sticky-action" onClick={onLink} title="Link to notes" type="button">
             Cite
@@ -145,12 +175,7 @@ export function StickyCard({
           onKeyDown={(event) => {
             if (event.key === "Enter") {
               event.preventDefault();
-
-              if (text === null) {
-                onSave(value.trim());
-              } else {
-                finish();
-              }
+              save();
             } else if (event.key === "Escape") {
               event.preventDefault();
 
@@ -162,7 +187,7 @@ export function StickyCard({
               }
             }
           }}
-          placeholder="Write a note — Enter to keep it, Esc to drop it"
+          placeholder="Write a note…"
           value={value}
         />
       ) : (

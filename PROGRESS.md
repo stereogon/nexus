@@ -463,6 +463,24 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-05 · Sticky notes too small to show their buttons, and no Save button**
+Reported: "the sticky note save button and delete button are now not visible". A note is
+stored as a fraction of its page (24% × 16% by default), and nothing set a floor on how
+small it was drawn. On a wide, short slide at a small zoom — the notes pane widened or the
+window small — that came to about 130 × 45 pixels: the header and barely a line, so the
+actions and words were cut off. And there was never a Save button: Enter was the only way to
+keep a note, and the placeholder saying so was itself cut off.
+
+Now `legible` in `pdf/sticky.ts` draws a card at least 200 × 112 pixels and moves it in from
+the page's edges as far as that needs; drags and resizes start from that rectangle, so what
+is stored after a gesture is what was on screen. A first attempt with CSS `min-width` and
+`min-height` failed two journeys and was replaced: resizing from the corner did nothing
+visible at first (it grew the smaller stored size), and a card at the right margin
+overflowed the page, cutting off its ✕. A note being written or reworded has a **Save**
+button, disabled while empty, beside ✕; Enter still keeps it. 5 unit tests; two journeys —
+Save keeps a draft, and on a narrowed page all three actions are fully in view — the second
+proved by drawing the stored size again.
+
 **2026-11-05 · First release build, ad-hoc signed, and setup instructions**
 Asked for: build the app once, document setup for someone else, and explain `.dmg`
 shipping. `npm run app:build` produced `Nexus.app` (22.7 MiB) and
