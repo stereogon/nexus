@@ -113,6 +113,16 @@ export interface NewHighlight {
   readonly rects: readonly NormalizedRect[];
 }
 
+/** A box drawn around part of a page, which the window is asking to store. */
+export interface NewArea {
+  /** The page it sits on, counting from 1. */
+  readonly page: number;
+  /** What the highlight marks. */
+  readonly semantic: HighlightSemantic;
+  /** The region covered, normalised against the unscaled page. */
+  readonly region: NormalizedRect;
+}
+
 /**
  * Every annotation on a lecture.
  *
@@ -151,6 +161,23 @@ export async function addHighlight(
     directory,
     highlight,
   });
+
+  return AnnotationSchema.parse(payload);
+}
+
+/**
+ * Stores a box drawn around a diagram, an equation or a scanned region, returning it as
+ * saved.
+ *
+ * @throws {CommandError} if the lecture cannot be read, if the page or the region is
+ * unusable, or if the write fails — in which case the previous file is left as it was.
+ */
+export async function addAreaHighlight(
+  vault: string,
+  directory: string,
+  area: NewArea,
+): Promise<Annotation> {
+  const payload: unknown = await invoke("add_area_highlight", { vault, directory, area });
 
   return AnnotationSchema.parse(payload);
 }

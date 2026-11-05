@@ -28,6 +28,7 @@ import { HighlightMenu } from "./HighlightMenu";
 import { PdfPage } from "./PdfPage";
 import { PdfToolbar } from "./PdfToolbar";
 import { onPage, useAnnotations } from "./useAnnotations";
+import { outlineOn, useAreaDraw } from "./useAreaDraw";
 import { useHighlightMenu } from "./useHighlightMenu";
 import { stepFrom, ZOOM_LIMITS, type Zoom } from "./zoom";
 import type { ViewMode } from "./viewMode";
@@ -54,6 +55,7 @@ export function PdfViewer({
   const highlights = useAnnotations(vault, directory);
   const menu = useHighlightMenu(highlights);
   const dismissMenu = menu.dismiss;
+  const area = useAreaDraw(menu.draw);
   const { state, page } = usePdfDocument(documentUrl(document));
   const scroller = useRef<HTMLDivElement | null>(null);
   const [zoom, setZoom] = useState<Zoom>({ kind: "fit" });
@@ -270,7 +272,9 @@ export function PdfViewer({
                   height={box.height}
                   index={index}
                   key={index}
+                  onAreaStart={area.begin}
                   onPick={menu.pick}
+                  outline={outlineOn(index, area.drawing, menu.drawn)}
                   scale={scale}
                   source={page}
                   // In page mode the one mounted page sits at the top of its own stack,

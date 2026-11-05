@@ -15,6 +15,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import {
+  addAreaHighlight,
   addHighlight,
   loadAnnotations,
   removeAnnotation,
@@ -22,6 +23,7 @@ import {
   type Annotation,
   type HighlightSemantic,
   type NewHighlight,
+  type NormalizedRect,
 } from "../ipc/annotations";
 import { asCommandError, type CommandError } from "../ipc/vault";
 import type { HighlightCandidate } from "../pdf/selection";
@@ -81,6 +83,8 @@ export interface Annotations {
     candidate: HighlightCandidate,
     semantic: HighlightSemantic,
   ) => void;
+  /** Stores a box drawn on a page, counting pages from zero. */
+  readonly addArea: (pageIndex: number, region: NormalizedRect, semantic: HighlightSemantic) => void;
   /** Removes one highlight. */
   readonly remove: (id: string) => void;
   /** Marks one highlight as something else, keeping its id. */
@@ -146,6 +150,27 @@ export function useAnnotations(vault: string, directory: string): Annotations {
     [vault, directory],
   );
 
+  const addArea = useCallback(
+    (pageIndex: number, region: NormalizedRect, semantic: HighlightSemantic) => {
+      void (async () => {
+        try {
+          // The same zero-to-one page conversion `asNewHighlight` names and tests.
+          const made = await addAreaHighlight(vault, directory, {
+            page: pageIndex + 1,
+            semantic,
+            region,
+          });
+
+          setAll((held) => [...held, made]);
+          setFailure(null);
+        } catch (thrown: unknown) {
+          setFailure(asCommandError(thrown));
+        }
+      })();
+    },
+    [vault, directory],
+  );
+
   const remove = useCallback(
     (id: string) => {
       void (async () => {
@@ -187,5 +212,5 @@ export function useAnnotations(vault: string, directory: string): Annotations {
     setFailure(null);
   }, []);
 
-  return { all, failure, add, remove, retag, clearFailure };
+  return { all, failure, add, addArea, remove, retag, clearFailure };
 }

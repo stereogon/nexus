@@ -34,6 +34,14 @@ const AddHighlight = InLecture.extend({
   }),
 });
 
+const AddArea = InLecture.extend({
+  area: z.object({
+    page: z.number().int().positive(),
+    semantic: HighlightSemanticSchema,
+    region: NormalizedRectSchema,
+  }),
+});
+
 const RemoveAnnotation = InLecture.extend({ id: z.string() });
 
 const RetagAnnotation = InLecture.extend({ id: z.string(), semantic: HighlightSemanticSchema });
@@ -115,6 +123,25 @@ export function backend(fixture: Fixture): (command: string, args?: InvokeArgs) 
           kind: "textHighlight",
           id: `e2e-${String(issued)}`,
           ...highlight,
+          createdAt: now,
+          updatedAt: now,
+        };
+
+        held(directory).push(added);
+
+        return added;
+      }
+
+      case "add_area_highlight": {
+        const { directory, area } = AddArea.parse(args);
+        const now = new Date(Date.UTC(2026, 10, 5, 9, 0, issued)).toISOString();
+
+        issued += 1;
+
+        const added: Annotation = {
+          kind: "areaHighlight",
+          id: `e2e-${String(issued)}`,
+          ...area,
           createdAt: now,
           updatedAt: now,
         };

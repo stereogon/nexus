@@ -23,33 +23,16 @@
 
 use std::path::Path;
 
-use lecture_core::{
-    Annotation, AnnotationId, Clock, Excerpt, HighlightSemantic, IdSource, NormalizedRect,
-    PageNumber, RelativePath,
-};
-use lecture_fs::{AnnotationStore, AtomicFsStorage, SystemClock, SystemIds, VaultRoot};
-use serde::Deserialize;
+use lecture_core::{Annotation, AnnotationId, Clock, HighlightSemantic, RelativePath};
+use lecture_fs::{AnnotationStore, AtomicFsStorage, SystemClock, VaultRoot};
 
 use crate::vault::CommandError;
 
-/// A highlight the window is asking to store.
-///
-/// `rects` arrive already normalised against the unscaled page, which is §3's rule and
-/// the reason a highlight lands in the same place at any zoom and on any screen. They are
-/// deserialised as [`NormalizedRect`], so a rectangle outside `[0, 1]` is refused at the
-/// boundary rather than written and discovered later.
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct NewHighlight {
-    /// The page it sits on, counting from 1.
-    pub page: u32,
-    /// What the highlight marks.
-    pub semantic: HighlightSemantic,
-    /// The text covered, so a citation can show it without reopening the PDF.
-    pub quote: String,
-    /// One rectangle per line of selected text.
-    pub rects: Vec<NormalizedRect>,
-}
+pub mod create;
+
+pub use create::{
+    NewArea, NewHighlight, add_area_highlight, add_highlight, write_area, write_highlight,
+};
 
 /// Every annotation on a lecture, in the order they are stored.
 ///
@@ -72,30 +55,6 @@ pub async fn load_annotations(
             remediation: "Reading the highlights stopped before it finished. Nothing was \
                           changed; try opening the lecture again.",
         })?
-}
-
-/// Stores a highlight over selected text, returning the annotation as saved.
-///
-/// # Errors
-///
-/// Returns [`CommandError`] if the vault or the lecture cannot be read, if the page number
-/// is zero, if the quote or a rectangle is unusable, or if the write fails — in which case
-/// the previous file is left exactly as it was.
-#[tauri::command]
-pub async fn add_highlight(
-    vault: String,
-    directory: String,
-    highlight: NewHighlight,
-) -> Result<Annotation, CommandError> {
-    tauri::async_runtime::spawn_blocking(move || {
-        write_highlight(&vault, &directory, highlight, &SystemIds, &SystemClock)
-    })
-    .await
-    .map_err(|_| CommandError {
-        code: "ERR_HIGHLIGHT_INTERRUPTED",
-        remediation: "Saving the highlight stopped before it finished. The lecture's other \
-                      highlights are unchanged; make it again.",
-    })?
 }
 
 /// Removes one annotation, returning what was removed.
@@ -157,7 +116,7 @@ pub async fn retag_annotation(
 }
 
 /// Opens the store for one vault.
-fn store(vault: &str) -> Result<AnnotationStore, CommandError> {
+pub(crate) fn store(vault: &str) -> Result<AnnotationStore, CommandError> {
     Ok(AnnotationStore::new(AtomicFsStorage::new(VaultRoot::open(
         Path::new(vault),
     )?)))
@@ -172,43 +131,6 @@ pub fn read_annotations(vault: &str, directory: &str) -> Result<Vec<Annotation>,
     let bundle = RelativePath::parse(directory)?;
 
     Ok(store(vault)?.load(&bundle)?.all().to_vec())
-}
-
-/// The blocking half of [`add_highlight`], which is also the testable one.
-///
-/// Takes the ports rather than reaching for them, so a test can assert the exact id and
-/// timestamp that were stored.
-///
-/// # Errors
-///
-/// See [`add_highlight`].
-pub fn write_highlight(
-    vault: &str,
-    directory: &str,
-    highlight: NewHighlight,
-    ids: &impl IdSource,
-    clock: &impl Clock,
-) -> Result<Annotation, CommandError> {
-    let bundle = RelativePath::parse(directory)?;
-    let annotations = store(vault)?;
-
-    let made = Annotation::text_highlight(
-        ids.fresh()?,
-        PageNumber::new(highlight.page)?,
-        highlight.semantic,
-        Excerpt::parse(&highlight.quote)?,
-        highlight.rects,
-        clock.now()?,
-    )?;
-
-    // Loaded here rather than before the annotation is built, so a highlight that cannot
-    // be constructed never touches the file at all.
-    let mut set = annotations.load(&bundle)?;
-
-    set.insert(made.clone())?;
-    annotations.save(&bundle, &set)?;
-
-    Ok(made)
 }
 
 /// The blocking half of [`remove_annotation`], which is also the testable one.

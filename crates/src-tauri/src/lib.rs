@@ -16,7 +16,9 @@ pub mod reorganize;
 pub mod theme;
 pub mod vault;
 
-pub use annotations::{add_highlight, load_annotations, remove_annotation, retag_annotation};
+pub use annotations::{
+    add_area_highlight, add_highlight, load_annotations, remove_annotation, retag_annotation,
+};
 pub use document::open_document;
 pub use edit::edit_lecture;
 pub use import::{import_document, importable_formats};
@@ -45,6 +47,7 @@ pub fn run() -> Result<(), tauri::Error> {
             open_document,
             load_annotations,
             add_highlight,
+            add_area_highlight,
             remove_annotation,
             retag_annotation,
             remember_vault,

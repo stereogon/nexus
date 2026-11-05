@@ -27,6 +27,7 @@ function annotations(): Annotations {
     all: [HIGHLIGHT],
     failure: null,
     add: vi.fn(),
+    addArea: vi.fn(),
     remove: vi.fn(),
     retag: vi.fn(),
     clearFailure: vi.fn(),
@@ -174,5 +175,86 @@ describe("with nothing picked and nothing selected", () => {
     const { result } = renderHook(() => useHighlightMenu(annotations()));
 
     expect(result.current.open).toBeNull();
+  });
+});
+
+describe("a box drawn with Option held", () => {
+  const REGION = { x: 0.1, y: 0.2, width: 0.4, height: 0.3 };
+
+  it("opens a menu of meanings, with nothing pressed and nothing to remove", () => {
+    const { result } = renderHook(() => useHighlightMenu(annotations()));
+
+    act(() => {
+      result.current.draw(3, REGION, AT);
+    });
+
+    expect(result.current.open?.at).toEqual(AT);
+    expect(result.current.open?.current).toBeNull();
+    expect(result.current.open?.onRemove).toBeNull();
+  });
+
+  it("stores the box on its page with the meaning chosen, and closes", () => {
+    const held = annotations();
+    const { result } = renderHook(() => useHighlightMenu(held));
+
+    act(() => {
+      result.current.draw(3, REGION, AT);
+    });
+    act(() => {
+      result.current.open?.onChoose?.("definition");
+    });
+
+    expect(held.addArea).toHaveBeenCalledWith(3, REGION, "definition");
+    expect(result.current.open).toBeNull();
+    expect(result.current.drawn).toBeNull();
+  });
+
+  it("is kept for the viewer to outline until a meaning is chosen", () => {
+    const { result } = renderHook(() => useHighlightMenu(annotations()));
+
+    act(() => {
+      result.current.draw(3, REGION, AT);
+    });
+
+    expect(result.current.drawn).toEqual({ pageIndex: 3, region: REGION, at: AT });
+  });
+
+  it("is forgotten when dismissed, as when the page moves under it", () => {
+    const { result } = renderHook(() => useHighlightMenu(annotations()));
+
+    act(() => {
+      result.current.draw(3, REGION, AT);
+    });
+    act(() => {
+      result.current.dismiss();
+    });
+
+    expect(result.current.open).toBeNull();
+    expect(result.current.drawn).toBeNull();
+  });
+
+  it("gives way to a badge that is clicked while it waits", () => {
+    // Clicking a badge is the more recent deliberate act.
+    const { result } = renderHook(() => useHighlightMenu(annotations()));
+
+    act(() => {
+      result.current.draw(3, REGION, AT);
+    });
+    act(() => {
+      result.current.pick(HIGHLIGHT, { left: 500, top: 600, above: 580 });
+    });
+
+    expect(result.current.open?.current).toBe("key");
+  });
+
+  it("keeps the same draw function across renders", () => {
+    // The drag hook depends on it, so a new one each render would rebuild the handler on
+    // every mouse move.
+    const { result, rerender } = renderHook(() => useHighlightMenu(annotations()));
+    const first = result.current.draw;
+
+    rerender();
+
+    expect(result.current.draw).toBe(first);
   });
 });

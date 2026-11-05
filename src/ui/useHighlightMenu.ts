@@ -15,7 +15,7 @@
  */
 import { useCallback, useState } from "react";
 
-import type { Annotation, HighlightSemantic } from "../ipc/annotations";
+import type { Annotation, HighlightSemantic, NormalizedRect } from "../ipc/annotations";
 import type { MenuAt } from "./menuPlacement";
 import type { Annotations } from "./useAnnotations";
 import { useSelection } from "./useSelection";
@@ -43,9 +43,19 @@ function semanticOf(annotation: Annotation): HighlightSemantic | null {
   return annotation.kind === "textBox" ? null : annotation.semantic;
 }
 
+/** A box drawn with Option held, waiting for a meaning to be chosen. */
+export interface DrawnArea {
+  readonly pageIndex: number;
+  readonly region: NormalizedRect;
+  readonly at: MenuAt;
+}
+
 export function useHighlightMenu(highlights: Annotations): {
   readonly open: OpenMenu | null;
   readonly pick: (annotation: Annotation, at: MenuAt) => void;
+  readonly draw: (pageIndex: number, region: NormalizedRect, at: MenuAt) => void;
+  /** The drawn box the open menu is for, so the viewer can keep it outlined. */
+  readonly drawn: DrawnArea | null;
   readonly dismiss: () => void;
 } {
   const { selected, clear } = useSelection();
@@ -54,8 +64,15 @@ export function useHighlightMenu(highlights: Annotations): {
     readonly at: MenuAt;
   } | null>(null);
 
+  const [drawn, setDrawn] = useState<DrawnArea | null>(null);
+
   const pick = useCallback((annotation: Annotation, at: MenuAt) => {
     setPicked({ annotation, at });
+  }, []);
+
+  // Stable, because the drag hook holds it in its own callback's dependencies.
+  const draw = useCallback((pageIndex: number, region: NormalizedRect, at: MenuAt) => {
+    setDrawn({ pageIndex, region, at });
   }, []);
 
   // Stable across renders, which is load-bearing rather than tidy: the viewer dismisses
@@ -65,6 +82,7 @@ export function useHighlightMenu(highlights: Annotations): {
   // it is what keeps this one stable too.
   const dismiss = useCallback(() => {
     setPicked(null);
+    setDrawn(null);
     clear();
   }, [clear]);
 
@@ -88,6 +106,28 @@ export function useHighlightMenu(highlights: Annotations): {
         },
       },
       pick,
+      draw,
+      drawn: null,
+      dismiss,
+    };
+  }
+
+  // A drawn box comes after a picked badge and before a selection: drawing one is as
+  // deliberate as clicking a badge, while a selection may simply be left over.
+  if (drawn !== null) {
+    return {
+      open: {
+        at: drawn.at,
+        current: null,
+        onChoose: (semantic: HighlightSemantic) => {
+          highlights.addArea(drawn.pageIndex, drawn.region, semantic);
+          setDrawn(null);
+        },
+        onRemove: null,
+      },
+      pick,
+      draw,
+      drawn,
       dismiss,
     };
   }
@@ -95,7 +135,7 @@ export function useHighlightMenu(highlights: Annotations): {
   const marking = selected;
 
   if (marking === null) {
-    return { open: null, pick, dismiss };
+    return { open: null, pick, draw, drawn: null, dismiss };
   }
 
   return {
@@ -109,6 +149,8 @@ export function useHighlightMenu(highlights: Annotations): {
       onRemove: null,
     },
     pick,
+    draw,
+    drawn: null,
     dismiss,
   };
 }

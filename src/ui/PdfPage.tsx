@@ -8,9 +8,9 @@
  * that is the bug: a stale render finishing after a new one has started paints the wrong
  * page over the right one.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 
-import type { Annotation } from "../ipc/annotations";
+import type { Annotation, NormalizedRect } from "../ipc/annotations";
 import type { PageSource } from "../pdf/useDocument";
 import { HighlightLayer } from "./HighlightLayer";
 import type { MenuAt } from "./menuPlacement";
@@ -52,6 +52,8 @@ export function PdfPage({
   width,
   annotations,
   onPick,
+  outline,
+  onAreaStart,
 }: {
   readonly index: number;
   readonly scale: number;
@@ -61,6 +63,10 @@ export function PdfPage({
   readonly width: number;
   readonly annotations: readonly Annotation[];
   readonly onPick: (annotation: Annotation, at: MenuAt) => void;
+  /** A box being drawn on this page, or waiting for a meaning, or `null`. */
+  readonly outline: NormalizedRect | null;
+  /** Starts an Option-drag; does nothing for an ordinary press. */
+  readonly onAreaStart: (event: MouseEvent<HTMLElement>, index: number) => void;
 }) {
   const canvas = useRef<HTMLCanvasElement | null>(null);
   const [undrawn, setUndrawn] = useState(false);
@@ -131,6 +137,9 @@ export function PdfPage({
       // and climbing from it is the only thing that works for a text node inside the
       // layer pdf.js builds.
       data-page={index}
+      onMouseDown={(event) => {
+        onAreaStart(event, index);
+      }}
       style={{ top, height, width }}
     >
       {/* The canvas is hidden from assistive technology on purpose: it is a picture of
@@ -150,6 +159,18 @@ export function PdfPage({
         onPick={onPick}
         width={width}
       />
+      {outline !== null && (
+        <div
+          aria-hidden="true"
+          className="area-outline"
+          style={{
+            left: outline.x * width,
+            top: outline.y * height,
+            width: outline.width * width,
+            height: outline.height * height,
+          }}
+        />
+      )}
       {undrawn && (
         <p className="pdf-undrawn">
           This page could not be drawn. The rest of the document is unaffected.

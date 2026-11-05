@@ -456,6 +456,43 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-05 · Area highlights: a box drawn with Option held**
+For the parts of a slide with no text to select — diagrams, equations, scanned pages.
+`claude-spec.md` §2.3 named the gesture, which settled the one design question: **hold
+Option and drag**. A modifier rather than a tool to switch on and off, so an ordinary
+drag stays text selection and nobody has to remember which mode they left the viewer in.
+
+Releasing opens the same meaning menu as a selection; choosing stores an
+`areaHighlight` through the new `add_area_highlight`, and from then on it is drawn, badged,
+re-marked and removed exactly as a text highlight is — those paths were already generic
+over both kinds, and a Rust test proves the commands behind them are too. The box stays
+outlined (dashed, `accent-ink`, since it is drawn on the page) while its meaning is chosen,
+so the reader can see what they are about to mark; Escape, a scroll or a page change
+abandons it like any other menu.
+
+The rules are pure, in `pdf/area.ts`: the box between two points in either direction, a
+minimum of 8 px a side below which a drag is a stray Option-click, and normalising through
+the same `geometry.normalise` a text selection uses, so the two cannot disagree about
+"the page". A box dragged past the page's edge keeps the part that is on it — dragging
+slightly past a diagram in a corner is ordinary. In the menu a drawn box comes after a
+clicked badge and before a selection: drawing is as deliberate as clicking, while a
+selection may simply be left over.
+
+`event.preventDefault()` on an Option-press is what stops the same drag also starting a
+text selection under the box; the journey that drags across a heading with Option held
+fails without it. Every area journey was seen to fail for its bug — the drag switched off,
+the minimum size removed — and the suite is stable at 75 of 75 across three repeats.
+
+*Seams taken.* Making annotations moved to `src-tauri/src/annotations/create.rs`, apart
+from reading and changing them: it is the only path that mints an id, so the only one
+needing `IdSource`, and area highlights took the module past 300 lines. Public paths are
+unchanged.
+
+*Not done, deliberately:* captions (a box has no text to quote, and asking for one at the
+moment of drawing would put a form between the reader and the slide), moving or resizing
+a box, and a crosshair cursor while Option is held — CSS cannot see a modifier key, and
+tracking one globally for a cursor was more machinery than the gesture needed.
+
 **2026-11-05 · Re-marking a highlight without breaking its links**
 Choosing a different meaning from a highlight's badge — key to exam, say — now changes it
 in place. Until today the menu offered Remove alone, on purpose: the only way to change a

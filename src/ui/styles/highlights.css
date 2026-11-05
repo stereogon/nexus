@@ -39,6 +39,18 @@
   background: var(--highlight-question);
 }
 
+/* The box an Option-drag is drawing, and then the one waiting for a meaning. On the
+   document surface, so `accent-ink` -- sized for the white page in both themes -- rather
+   than the theme accent (§3). Above the highlights, transparent to the pointer. */
+.area-outline {
+  position: absolute;
+  z-index: 3;
+  box-sizing: border-box;
+  border: 2px dashed var(--accent-ink);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
 /* The letter that lets the four be told apart without relying on hue (§3). The one part
    of the layer that takes a pointer, so a highlight can be changed or removed without the
    fill stealing selection from the text. */
