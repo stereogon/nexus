@@ -20,5 +20,7 @@
 @import "./textlayer.css";
 @import "./highlights.css";
 @import "./stickies.css";
+@import "./menus.css";
 @import "./import.css";
 @import "./notes.css";
+@import "./markdown.css";

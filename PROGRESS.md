@@ -461,6 +461,47 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-05 · Notion-style formatting in the notes, and code blocks that look like code**
+Asked for: "minimal font editing options… like we have in Notion", and code blocks that
+were "not very visually appealing".
+
+**The format bar.** Selecting text in the notes now shows one bar: bold, italic,
+strikethrough, code, link; then heading 1–3, bulleted, numbered and to-do lists, quote;
+then the four highlight colours. Each shows pressed when the selection already has it and
+takes it off when pressed again. Notion's shortcuts too — ⌘B, ⌘I, ⌘⇧S, ⌘E, ⌘K, ⌘⌥1–3
+headings, ⌘⌥4–6 lists; ⌘⇧H was already Notion's highlight key. Underneath it is still the
+Markdown anyone would type. Italic is written `_x_`, never `*x*`, so it cannot be confused
+with bold's `**` when combined. Inline formats are *inserted around* the words rather than
+replacing them, so the selection stays on the words and bold-then-italic needs no second
+selection; the journey that combines them fails when the selection is not kept.
+
+**Not offered, because Markdown cannot say it:** underline (raw HTML only, which the notes
+do not render) and font family or size (the notes keep one reading face, §3).
+
+⌘B is free today, but the spec gives it to the sidebar later. The app's shortcut listener
+now ignores a key the focused editor already handled, so when the sidebar's ⌘B is wired the
+notes keep bold.
+
+The bar shares its placement and Escape handling with the document's highlight menu through
+`useFloating`, rather than a copy. The rules are pure in `notes/format.ts` (13 tests).
+
+**Code blocks**, seen in a screenshot first: the ` ``` ` fences showed as text, nothing was
+coloured, and it was a flat grey box. Now, while the cursor is elsewhere, the fences hide,
+the language is a quiet label in the corner, and the block is one rounded panel; with the
+cursor inside, the fences come back, dimmed, within it. Code in JavaScript, TypeScript, CSS,
+HTML and JSON is coloured — their grammars were already installed with `lang-markdown` and
+are now declared, loaded the first time a block in that language appears. Other languages
+are drawn as a panel, uncoloured: a grammar each would be a dependency to ask for. The code
+colours are new tokens in both themes, not on the canvas. A second screenshot found the
+inline-code chip drawn behind the text inside a plain block — the monospace tag is shared —
+so the chip now comes from the syntax tree's `InlineCode` alone.
+
+**A correction found on the way:** `scripts/check-line-limits.sh` has said since 2026-10-29
+that stylesheets are checked, and the `*.css` never reached its `find`. Two stylesheets had
+reached 303 lines unnoticed. The check now covers them, and `highlights.css` and `notes.css`
+were split at seams they already had — marks on the page versus floating menus
+(`menus.css`); the notes pane versus rendered Markdown (`markdown.css`).
+
 **2026-11-05 · Sticky notes on the slides**
 The user's choices: **free-standing** rather than belonging to a highlight, and **folded
 to an icon until clicked**. Free-standing meant the existing `textBox` kind — the spec's
@@ -5031,6 +5072,9 @@ packages resolved, every one with a stated licence.
 | `katex` | 0.19.1 | MIT | *(added 2026-11-05, maths in notes; its fonts are OFL-1.1 and bundled as local files)* |
 | `mermaid` | 12.3.0 | MIT | *(added 2026-11-05, diagrams; loaded on demand. Pulls in d3, DOMPurify (MPL-2.0 OR Apache-2.0), `khroma` (MIT by its licence file; no field in its manifest) and `elkjs`, which is **EPL-2.0 OR GPL-3.0-or-later** -- taken under EPL-2.0, which permits use in a larger work; elkjs is not modified)* |
 | `chart.js` | 4.6.1 | MIT | *(added 2026-11-05, ```chart blocks; loaded on demand)* |
+| `@codemirror/lang-javascript` | 6.2.5 | MIT | *(made direct 2026-11-05: already installed with `lang-markdown`, now imported to colour code blocks)* |
+| `@codemirror/lang-css` | 6.3.1 | MIT | *(made direct 2026-11-05, likewise)* |
+| `@codemirror/lang-html` | 6.4.12 | MIT | *(made direct 2026-11-05, likewise)* |
 | `@types/react` | 19.3.0 | MIT |
 | `@types/react-dom` | 19.3.0 | MIT |
 | `@vitejs/plugin-react` | 6.1.2 | MIT |

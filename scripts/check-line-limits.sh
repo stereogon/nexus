@@ -15,6 +15,10 @@
 # Stylesheets count too, added 2026-10-29. They were not checked, and that is exactly how
 # `theme.css` reached 1204 lines without anything complaining -- the file the limit existed
 # to prevent was the one file the limit did not look at.
+#
+# *Corrected 2026-11-05:* the sentence above was written, but `*.css` never reached the
+# `find` below, so for a week stylesheets were still not checked while this file said they
+# were. Found when two of them were noticed at 303 lines.
 
 set -euo pipefail
 
@@ -33,7 +37,7 @@ while IFS= read -r file; do
 done < <(
     find crates src e2e \
         -type d \( -name target -o -name node_modules \) -prune -o \
-        -type f \( -name '*.rs' -o -name '*.ts' -o -name '*.tsx' \) -print 2>/dev/null
+        -type f \( -name '*.rs' -o -name '*.ts' -o -name '*.tsx' -o -name '*.css' \) -print 2>/dev/null
 )
 
 if [ -n "$over_limit" ]; then

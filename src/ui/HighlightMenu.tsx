@@ -17,11 +17,10 @@
  * way to know, and the alternative, an estimated width in a constant, is wrong the first
  * time the menu gains a control.
  */
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-
 import type { HighlightSemantic } from "../ipc/annotations";
-import { placeMenu, type MenuAt } from "./menuPlacement";
+import type { MenuAt } from "./menuPlacement";
 import { SEMANTIC_GLYPH, SEMANTIC_LABEL, SEMANTICS } from "./semantics";
+import { useFloating } from "./useFloating";
 
 export function HighlightMenu({
   at,
@@ -53,45 +52,7 @@ export function HighlightMenu({
   readonly onSticky?: (() => void) | null;
   readonly onDismiss: () => void;
 }) {
-  const box = useRef<HTMLDivElement | null>(null);
-  const { left, top, above } = at;
-  const [placed, setPlaced] = useState({ left, top });
-
-  // Before paint, not after: `useEffect` would show the menu off the edge for one frame
-  // and then snap it back, which reads as a flicker rather than as a menu opening.
-  useLayoutEffect(() => {
-    const element = box.current;
-
-    if (element === null) {
-      return;
-    }
-
-    const measured = element.getBoundingClientRect();
-
-    setPlaced(
-      placeMenu(
-        { left, top, above },
-        { width: measured.width, height: measured.height },
-        { width: window.innerWidth, height: window.innerHeight },
-      ),
-    );
-    // Depends on the three numbers rather than on `at`, which is rebuilt every render and
-    // would make this effect run forever.
-  }, [left, top, above]);
-
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        onDismiss();
-      }
-    };
-
-    document.addEventListener("keydown", onKey);
-
-    return () => {
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [onDismiss]);
+  const { box, placed } = useFloating(at, onDismiss);
 
   return (
     <div

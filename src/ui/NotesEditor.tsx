@@ -17,12 +17,12 @@ import { EditorState } from "@codemirror/state";
 import { EditorView, keymap, placeholder } from "@codemirror/view";
 import { useEffect, useImperativeHandle, useRef, useState, type Ref } from "react";
 
-import type { HighlightSemantic } from "../ipc/annotations";
-import { barFor, markSelection } from "../notes/markSelection";
-import { HighlightMenu } from "./HighlightMenu";
+import { barFor, formatBlock, formatInline, formatLink, markSelection } from "../notes/markSelection";
+import { NotesFormatBar, type FormatState } from "./NotesFormatBar";
 import type { MenuAt } from "./menuPlacement";
 
 import { citationOffsets, citeLinks, nextOccurrence } from "../notes/citeLinks";
+import { codeLanguages } from "../notes/codeLanguages";
 import { flashLine, lineFlash } from "../notes/flash";
 import { citationAt } from "../notes/insert";
 import { livePreview } from "../notes/preview/field";
@@ -68,7 +68,7 @@ export function NotesEditor({
   const host = useRef<HTMLDivElement | null>(null);
   const view = useRef<EditorView | null>(null);
   // The four-colour bar over a selection, and the mark the selection is inside, if any.
-  const [bar, setBar] = useState<{ readonly at: MenuAt; readonly current: HighlightSemantic | null } | null>(null);
+  const [bar, setBar] = useState<{ readonly at: MenuAt; readonly state: FormatState } | null>(null);
 
   // The latest callbacks, read by the view's listeners. Rebuilding the view to pick up a
   // new callback would throw away the cursor and the undo history.
@@ -101,14 +101,26 @@ export function NotesEditor({
         extensions: [
           history(),
           keymap.of([
-            // ⌘⇧H: mark the selection as a key concept, without the bar.
+            // Notion's shortcuts, so hands that know them need not learn others. ⌘⇧H, a key
+            // concept highlight, is Notion's highlight shortcut too.
             { key: "Mod-Shift-h", run: (target) => markSelection(target, "key") },
+            { key: "Mod-b", run: (target) => formatInline(target, "bold") },
+            { key: "Mod-i", run: (target) => formatInline(target, "italic") },
+            { key: "Mod-Shift-s", run: (target) => formatInline(target, "strike") },
+            { key: "Mod-e", run: (target) => formatInline(target, "code") },
+            { key: "Mod-k", run: formatLink },
+            { key: "Mod-Alt-1", run: (target) => formatBlock(target, "h1") },
+            { key: "Mod-Alt-2", run: (target) => formatBlock(target, "h2") },
+            { key: "Mod-Alt-3", run: (target) => formatBlock(target, "h3") },
+            { key: "Mod-Alt-4", run: (target) => formatBlock(target, "task") },
+            { key: "Mod-Alt-5", run: (target) => formatBlock(target, "bullet") },
+            { key: "Mod-Alt-6", run: (target) => formatBlock(target, "numbered") },
             ...defaultKeymap,
             ...historyKeymap,
           ]),
           // GitHub-flavoured: tables, strikethrough and task lists, which plain CommonMark
           // does not have. Without it a table was not even recognised (2026-11-05).
-          markdown({ base: markdownLanguage }),
+          markdown({ base: markdownLanguage, codeLanguages }),
           EditorView.lineWrapping,
           notesAppearance,
           lineFlash,
@@ -230,27 +242,32 @@ export function NotesEditor({
     <>
       <div className="notes-editor" ref={host} />
       {bar !== null && (
-        <HighlightMenu
+        <NotesFormatBar
           at={bar.at}
-          current={bar.current}
-          onChoose={(semantic) => {
+          onBlock={(kind) => {
             if (view.current !== null) {
-              markSelection(view.current, semantic);
+              formatBlock(view.current, kind);
             }
           }}
           onDismiss={() => {
             setBar(null);
           }}
-          onLink={null}
-          onRemove={
-            bar.current === null
-              ? null
-              : () => {
-                  if (view.current !== null) {
-                    markSelection(view.current, null);
-                  }
-                }
-          }
+          onHighlight={(semantic) => {
+            if (view.current !== null) {
+              markSelection(view.current, semantic);
+            }
+          }}
+          onInline={(kind) => {
+            if (view.current !== null) {
+              formatInline(view.current, kind);
+            }
+          }}
+          onLink={() => {
+            if (view.current !== null) {
+              formatLink(view.current);
+            }
+          }}
+          state={bar.state}
         />
       )}
     </>

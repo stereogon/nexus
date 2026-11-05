@@ -49,14 +49,48 @@ const editorTheme = EditorView.theme({
     paddingLeft: "14px",
     color: "var(--text-secondary)",
   },
+  // A fenced code block reads as one panel: the lines share a background and side borders,
+  // and the first and last — the fences, hidden while the cursor is elsewhere — round it off.
   ".md-code-line": {
     fontFamily: "var(--font-mono)",
-    fontSize: "0.86em",
-    lineHeight: "1.6",
-    backgroundColor: "var(--track)",
-    padding: "0 14px",
+    fontSize: "0.84em",
+    lineHeight: "1.65",
+    backgroundColor: "var(--code-bg)",
+    borderLeft: "1px solid var(--code-border)",
+    borderRight: "1px solid var(--code-border)",
+    padding: "0 18px",
+  },
+  ".md-code-first": {
+    borderTop: "1px solid var(--code-border)",
+    borderTopLeftRadius: "10px",
+    borderTopRightRadius: "10px",
+    paddingTop: "6px",
+    marginTop: "6px",
+    color: "var(--text-faint)",
+  },
+  ".md-code-last": {
+    borderBottom: "1px solid var(--code-border)",
+    borderBottomLeftRadius: "10px",
+    borderBottomRightRadius: "10px",
+    paddingBottom: "6px",
+    marginBottom: "6px",
+    color: "var(--text-faint)",
+  },
+  ".md-code-lang": {
+    float: "right",
+    fontFamily: "var(--font-ui)",
+    fontSize: "11px",
+    letterSpacing: "0.04em",
+    textTransform: "uppercase",
+    color: "var(--text-faint)",
   },
   ".md-table-source": { fontFamily: "var(--font-mono)", fontSize: "0.86em" },
+  ".md-inline-code": {
+    backgroundColor: "var(--code-bg)",
+    border: "1px solid var(--code-border)",
+    borderRadius: "5px",
+    padding: "1px 4px",
+  },
 
   // The line a jump from the document landed on, lit for a moment (§2.4). Two names that
   // alternate (`flash.ts`), because an animation restarts only when its name changes.
@@ -83,9 +117,21 @@ const markdownStyle = HighlightStyle.define([
   { tag: tags.strikethrough, textDecoration: "line-through" },
   { tag: tags.link, color: "var(--accent)" },
   { tag: tags.url, color: "var(--text-meta)", fontFamily: "var(--font-mono)", fontSize: "0.85em" },
-  { tag: tags.monospace, fontFamily: "var(--font-mono)", fontSize: "0.88em", backgroundColor: "var(--track)", borderRadius: "4px" },
+  // Mono type only: the chip behind inline code is `.md-inline-code`, from the syntax tree.
+  // On this tag it also landed on the text inside fenced blocks, which share it, and drew
+  // a chip within the code panel (seen in a screenshot, 2026-11-05).
+  { tag: tags.monospace, fontFamily: "var(--font-mono)", fontSize: "0.88em" },
   { tag: [tags.processingInstruction, tags.contentSeparator], color: "var(--text-faint)", fontFamily: "var(--font-mono)", fontWeight: "400", fontStyle: "normal", fontSize: "0.85em" },
   { tag: tags.list, color: "var(--text-secondary)" },
+
+  // Code, inside fenced blocks in a language the notes know (`codeLanguages.ts`).
+  { tag: [tags.keyword, tags.controlKeyword, tags.moduleKeyword, tags.operatorKeyword], color: "var(--code-keyword)" },
+  { tag: [tags.string, tags.special(tags.string), tags.regexp], color: "var(--code-string)" },
+  { tag: [tags.comment, tags.lineComment, tags.blockComment], color: "var(--code-comment)", fontStyle: "italic" },
+  { tag: [tags.number, tags.bool, tags.null, tags.atom], color: "var(--code-number)" },
+  { tag: [tags.function(tags.variableName), tags.function(tags.propertyName)], color: "var(--code-function)" },
+  { tag: [tags.typeName, tags.className, tags.tagName], color: "var(--code-type)" },
+  { tag: [tags.attributeName, tags.propertyName], color: "var(--code-function)" },
 ]);
 
 /** Everything about the notes' appearance, as one extension. */

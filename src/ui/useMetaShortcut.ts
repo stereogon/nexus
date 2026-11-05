@@ -33,6 +33,12 @@ export function useMetaShortcut(
         return;
       }
 
+      // Already handled by whatever has focus — the notes' ⌘B is bold, and the spec gives
+      // ⌘B to the sidebar too. The focused editor's meaning wins (2026-11-05).
+      if (event.defaultPrevented) {
+        return;
+      }
+
       if (event.key.toLowerCase() !== key.toLowerCase()) {
         return;
       }

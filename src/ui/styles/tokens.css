@@ -62,6 +62,18 @@
   --field: #ffffff;
   /* The track a segmented control sits in, and the raised state of its chosen segment. */
   --track: #eae7e1;
+
+  /* Code in the notes (2026-11-05). Not on the canvas, which shows no code; chosen from the
+     palette's own families -- the brand's ink for keywords, the semantic hues muted for
+     strings, functions and types -- at contrasts readable on --code-bg. */
+  --code-bg: #f6f4f0;
+  --code-border: #e7e3dc;
+  --code-keyword: #9e477b;
+  --code-string: #2a7a59;
+  --code-comment: #8a857c;
+  --code-number: #b4561f;
+  --code-function: #2667b0;
+  --code-type: #7a5a14;
   --segment-on: #ffffff;
   /* A keyboard shortcut badge. */
   --kbd: #efece6;
@@ -139,4 +151,13 @@
   --exam-wash: rgba(224, 82, 60, 0.2);
   --text-secondary: #a8a49d;
   --text-meta: #8f8b84;
+
+  --code-bg: #1d1d23;
+  --code-border: #2c2c34;
+  --code-keyword: #ff8fd3;
+  --code-string: #6fcf9f;
+  --code-comment: #8f8b84;
+  --code-number: #f0a46e;
+  --code-function: #7fb3f0;
+  --code-type: #e3c07a;
 }

@@ -75,6 +75,26 @@ class CheckboxWidget extends WidgetType {
   }
 }
 
+/** The language of a code block, as a quiet label in its top corner. */
+class LanguageWidget extends WidgetType {
+  constructor(readonly language: string) {
+    super();
+  }
+
+  override eq(other: LanguageWidget): boolean {
+    return other.language === this.language;
+  }
+
+  override toDOM(): HTMLElement {
+    const label = document.createElement("span");
+
+    label.className = "md-code-lang";
+    label.textContent = this.language;
+
+    return label;
+  }
+}
+
 class RuleWidget extends WidgetType {
   override eq(): boolean {
     return true;
@@ -132,6 +152,38 @@ export function markupDecorations(
   };
   let lists = 0;
 
+  /**
+   * A fenced code block: one panel, its fences hidden and its language shown as a label
+   * while the cursor is elsewhere. Reported 2026-11-05 — the ``` lines showed as text in
+   * a flat grey box, and nothing was coloured.
+   */
+  const codeBlock = (from: number, to: number) => {
+    const first = doc.lineAt(from);
+    const last = doc.lineAt(to);
+    const closed = last.number > first.number && /^\s*(`{3,}|~{3,})\s*$/.test(last.text);
+    const touched = [...active].some((line) => line >= first.number && line <= last.number);
+
+    for (let number = first.number; number <= last.number; number += 1) {
+      const edges = [number === first.number ? "md-code-first" : "", number === last.number ? "md-code-last" : ""];
+
+      out.push(Decoration.line({ class: ["md-code-line", ...edges].join(" ").trim() }).range(doc.line(number).from));
+    }
+
+    if (touched) {
+      return;
+    }
+
+    const language = /^\s*(?:`{3,}|~{3,})\s*([\w+#.-]*)/.exec(first.text)?.[1] ?? "";
+
+    out.push(
+      (language === "" ? hidden : Decoration.replace({ widget: new LanguageWidget(language) })).range(first.from, first.to),
+    );
+
+    if (closed) {
+      out.push(hidden.range(last.from, last.to));
+    }
+  };
+
   syntaxTree(state).iterate({
     enter(node) {
       if (claimed(node.from, node.to)) {
@@ -142,9 +194,10 @@ export function markupDecorations(
         case "Image":
           return false;
 
-        case "FencedCode":
-          lineClass(node.from, node.to, "md-code-line");
+        case "FencedCode": {
+          codeBlock(node.from, node.to);
           return false;
+        }
 
         case "Table": {
           const source = doc.sliceString(node.from, node.to);
@@ -160,6 +213,10 @@ export function markupDecorations(
 
           return false;
         }
+
+        case "InlineCode":
+          out.push(Decoration.mark({ class: "md-inline-code" }).range(node.from, node.to));
+          return true;
 
         case "Blockquote":
           lineClass(node.from, node.to, "md-quote");
