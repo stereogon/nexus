@@ -60,7 +60,7 @@ button.secondary {
   outline-offset: 1px;
 }
 
-/* The form only. Its surround belongs to `.editor-panel`, which is the only thing that
+/* The form only. Its surround belongs to `.side-panel`, which is the only thing that
    mounts it -- a card inside the panel would draw a border inside a border. */
 .editor {
   display: grid;

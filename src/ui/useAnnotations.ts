@@ -12,7 +12,7 @@
  * waiting. Rust mints the id and stamps the time, so an optimistic copy would be a second
  * version of one record, and the optimistic one would be the one with the wrong id in it.
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   addAreaHighlight,
@@ -30,6 +30,7 @@ import {
 } from "../ipc/annotations";
 import { asCommandError, type CommandError } from "../ipc/vault";
 import type { HighlightCandidate } from "../pdf/selection";
+import { movedId, NO_HISTORY, recorded, redone, run, toward, undone, type History, type Step } from "./annotationHistory";
 
 /**
  * Turns a candidate into the request Rust expects.
@@ -60,20 +61,26 @@ export function onPage(
 }
 
 /**
- * The list after a retag: the stored version in place of the old one, or the old one gone.
+ * The list after one annotation changed: the stored version in place of the old one,
+ * appended if it is new, or gone for `null`.
  *
- * `null` from the backend means the lecture no longer has that highlight, so the window
+ * `null` from the backend means the lecture no longer has that annotation, so the window
  * stops drawing it. Keeping it would leave a highlight on screen that the file does not
- * hold, and the next click on its badge would be answered "not there" again.
+ * hold, and the next click on its badge would be answered "not there" again. A replaced
+ * one keeps its place, so a recoloured highlight does not jump in the list.
  */
-export function afterRetag(
+export function withChange(
   held: readonly Annotation[],
   id: string,
   stored: Annotation | null,
 ): readonly Annotation[] {
-  return stored === null
-    ? held.filter((annotation) => annotation.id !== id)
-    : held.map((annotation) => (annotation.id === id ? stored : annotation));
+  if (stored === null) {
+    return held.filter((annotation) => annotation.id !== id);
+  }
+
+  return held.some((annotation) => annotation.id === id)
+    ? held.map((annotation) => (annotation.id === id ? stored : annotation))
+    : [...held, stored];
 }
 
 export interface Annotations {
@@ -104,6 +111,9 @@ export interface Annotations {
   readonly remove: (id: string) => void;
   /** Marks one highlight as something else, keeping its id. */
   readonly retag: (id: string, semantic: HighlightSemantic) => void;
+  /** Takes back the last change made here, or does again the last one taken back. */
+  readonly undo: () => void;
+  readonly redo: () => void;
   /** Forgets the last failure. */
   readonly clearFailure: () => void;
 }
@@ -111,9 +121,21 @@ export interface Annotations {
 export function useAnnotations(vault: string, directory: string): Annotations {
   const [all, setAll] = useState<readonly Annotation[]>([]);
   const [failure, setFailure] = useState<CommandError | null>(null);
+  // Read by the commands below, which need the annotation as it was before they ran.
+  const held = useRef<readonly Annotation[]>([]);
+  const history = useRef<History>(NO_HISTORY);
+  // One undo or redo at a time: two in flight on one annotation would race in the file.
+  const travelling = useRef(false);
+
+  useEffect(() => {
+    held.current = all;
+  }, [all]);
 
   useEffect(() => {
     const session = { cancelled: false };
+
+    // A history belongs to the lecture it was made in.
+    history.current = NO_HISTORY;
 
     // Read through a function, not directly, for the same reason `PdfPage` does it: the
     // flag is set by the cleanup below, which TypeScript cannot follow, and having
@@ -145,118 +167,113 @@ export function useAnnotations(vault: string, directory: string): Annotations {
     };
   }, [vault, directory]);
 
-  const add = useCallback(
-    async (candidate: HighlightCandidate, semantic: HighlightSemantic) => {
+  /**
+   * Runs one command for one annotation and, once it has succeeded, draws what the backend
+   * stored and records the step. Nothing is drawn first: showing a change before the write
+   * would show what the file does not hold if the write then failed. Resolves to what was
+   * stored, or `null` on failure, which is reported through `failure`.
+   */
+  const change = useCallback(
+    async (id: string | null, command: () => Promise<Annotation | null>, record: boolean) => {
+      const before = id === null ? null : (held.current.find((annotation) => annotation.id === id) ?? null);
+
       try {
-        const made = await addHighlight(vault, directory, asNewHighlight(candidate, semantic));
+        const after = await command();
+        const changed = after?.id ?? id;
 
-        setAll((held) => [...held, made]);
+        if (changed !== null) {
+          setAll((list) => withChange(list, changed, after));
+        }
+
+        // Compared by content: re-marking with the colour it has stores nothing new, and a
+        // step for it would be an undo press that does nothing.
+        if (record && JSON.stringify(before) !== JSON.stringify(after)) {
+          history.current = recorded(history.current, { before, after });
+        }
+
         setFailure(null);
-
-        return made;
+        return after;
       } catch (thrown: unknown) {
         setFailure(asCommandError(thrown));
-
         return null;
       }
     },
-    [vault, directory],
+    [],
+  );
+
+  const add = useCallback(
+    (candidate: HighlightCandidate, semantic: HighlightSemantic) =>
+      change(null, () => addHighlight(vault, directory, asNewHighlight(candidate, semantic)), true),
+    [change, vault, directory],
   );
 
   const addArea = useCallback(
-    async (pageIndex: number, region: NormalizedRect, semantic: HighlightSemantic) => {
-      try {
-        // The same zero-to-one page conversion `asNewHighlight` names and tests.
-        const made = await addAreaHighlight(vault, directory, {
-          page: pageIndex + 1,
-          semantic,
-          region,
-        });
-
-        setAll((held) => [...held, made]);
-        setFailure(null);
-
-        return made;
-      } catch (thrown: unknown) {
-        setFailure(asCommandError(thrown));
-
-        return null;
-      }
-    },
-    [vault, directory],
+    // The same zero-to-one page conversion `asNewHighlight` names and tests.
+    (pageIndex: number, region: NormalizedRect, semantic: HighlightSemantic) =>
+      change(null, () => addAreaHighlight(vault, directory, { page: pageIndex + 1, semantic, region }), true),
+    [change, vault, directory],
   );
 
   const addNote = useCallback(
-    async (pageIndex: number, region: NormalizedRect, text: string) => {
-      try {
-        const made = await addTextBox(vault, directory, { page: pageIndex + 1, region, text });
-
-        setAll((held) => [...held, made]);
-        setFailure(null);
-
-        return made;
-      } catch (thrown: unknown) {
-        setFailure(asCommandError(thrown));
-
-        return null;
-      }
-    },
-    [vault, directory],
+    (pageIndex: number, region: NormalizedRect, text: string) =>
+      change(null, () => addTextBox(vault, directory, { page: pageIndex + 1, region, text }), true),
+    [change, vault, directory],
   );
 
   const editNote = useCallback(
     (id: string, edit: TextBoxEdit) => {
-      void (async () => {
-        try {
-          const stored = await editTextBox(vault, directory, id, edit);
-
-          // The same rule as a re-mark: replaced on success, dropped if it is gone.
-          setAll((held) => afterRetag(held, id, stored));
-          setFailure(null);
-        } catch (thrown: unknown) {
-          setFailure(asCommandError(thrown));
-        }
-      })();
+      void change(id, () => editTextBox(vault, directory, id, edit), true);
     },
-    [vault, directory],
+    [change, vault, directory],
   );
 
   const remove = useCallback(
     (id: string) => {
-      void (async () => {
-        try {
-          await removeAnnotation(vault, directory, id);
-
-          // Dropped on success only. Removing it from the list first would show the
-          // highlight gone while the file still held it, and a failed write would leave
-          // the window disagreeing with the disk until the lecture was reopened.
-          setAll((held) => held.filter((annotation) => annotation.id !== id));
-          setFailure(null);
-        } catch (thrown: unknown) {
-          setFailure(asCommandError(thrown));
-        }
-      })();
+      void change(id, () => removeAnnotation(vault, directory, id).then(() => null), true);
     },
-    [vault, directory],
+    [change, vault, directory],
   );
 
   const retag = useCallback(
     (id: string, semantic: HighlightSemantic) => {
-      void (async () => {
-        try {
-          const stored = await retagAnnotation(vault, directory, id, semantic);
-
-          // Replaced on success only, for the reason `remove` waits: recolouring first
-          // would show a meaning the file does not hold if the write then failed.
-          setAll((held) => afterRetag(held, id, stored));
-          setFailure(null);
-        } catch (thrown: unknown) {
-          setFailure(asCommandError(thrown));
-        }
-      })();
+      void change(id, () => retagAnnotation(vault, directory, id, semantic), true);
     },
-    [vault, directory],
+    [change, vault, directory],
   );
+
+  /** Takes one step from the history and runs its move — not itself recorded. */
+  const travel = useCallback(
+    (take: typeof undone, target: (step: Step) => readonly [Annotation | null, Annotation | null]) => {
+      const taken = take(history.current);
+
+      if (travelling.current || taken === null) {
+        return;
+      }
+
+      history.current = taken.history;
+
+      const [from, to] = target(taken.step);
+      const move = toward(from, to);
+
+      if (move === null) {
+        return;
+      }
+
+      travelling.current = true;
+      void change(movedId(move), () => run(vault, directory, move), false).finally(() => {
+        travelling.current = false;
+      });
+    },
+    [change, vault, directory],
+  );
+
+  const undo = useCallback(() => {
+    travel(undone, (step) => [step.after, step.before]);
+  }, [travel]);
+
+  const redo = useCallback(() => {
+    travel(redone, (step) => [step.before, step.after]);
+  }, [travel]);
 
   const clearFailure = useCallback(() => {
     setFailure(null);
@@ -271,6 +288,8 @@ export function useAnnotations(vault: string, directory: string): Annotations {
     editTextBox: editNote,
     remove,
     retag,
+    undo,
+    redo,
     clearFailure,
   };
 }

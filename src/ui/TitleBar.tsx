@@ -111,12 +111,16 @@ export function TitleBar({
   theme,
   onToggleSidebar,
   onCycleTheme,
+  errorsShown,
+  onToggleErrors,
 }: {
   readonly lecture: LectureRow | null;
   readonly sidebarShown: boolean;
   readonly theme: Theme;
   readonly onToggleSidebar: () => void;
   readonly onCycleTheme: () => void;
+  readonly errorsShown: boolean;
+  readonly onToggleErrors: () => void;
 }) {
   const facets =
     lecture === null
@@ -165,14 +169,14 @@ export function TitleBar({
         <ThemeIcon theme={theme} />
       </button>
 
-      {/* Not yet wired: the diagnostics drawer is Milestone 5. Shown and disabled rather
-          than hidden, because the canvas puts it here and a control that appears later
-          moves everything beside it. */}
+      {/* Where the canvas puts the diagnostics control. It opens the error panel — the
+          errors shown since launch — which is the part of the spec's drawer built so far. */}
       <button
-        aria-label="Diagnostic logs"
+        aria-label="Errors"
+        aria-pressed={errorsShown}
         className="chrome-icon"
-        disabled
-        title="Diagnostic logs — Milestone 5"
+        onClick={onToggleErrors}
+        title="Errors (⌘0)"
         type="button"
       >
         <LogsIcon />

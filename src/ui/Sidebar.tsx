@@ -11,13 +11,8 @@
  */
 import type { LectureRow, ProblemRow } from "../ipc/vault";
 import { shortPath } from "./path";
-import {
-  GROUPINGS,
-  secondaryFacets,
-  type GroupBy,
-  type SidebarRow,
-  type ThenBy,
-} from "./sidebarRows";
+import { GROUPINGS, secondaryFacets, type GroupBy, type SidebarRow, type ThenBy } from "./sidebarRows";
+import { SEARCH_ID } from "./useSidebar";
 
 /** What each facet is called in the second row of controls. */
 const FACET_LABEL = { week: "Week", module: "Module", tag: "Tag" } as const;
@@ -187,12 +182,12 @@ export function Sidebar({
   return (
     <aside className="sidebar">
       <div className="sidebar-search">
-        <label className="vh" htmlFor="vault-search">
+        <label className="vh" htmlFor={SEARCH_ID}>
           Search vault
         </label>
         <SearchIcon />
         <input
-          id="vault-search"
+          id={SEARCH_ID}
           onChange={(event) => {
             onQuery(event.target.value);
           }}

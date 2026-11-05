@@ -79,12 +79,12 @@ export function EditorPanel({
   }, [lecture.directory]);
 
   return (
-    <aside aria-labelledby="editor-panel-heading" className="editor-panel" ref={panel}>
-      <header className="editor-panel-head">
+    <aside aria-labelledby="editor-panel-heading" className="side-panel" ref={panel}>
+      <header className="side-panel-head">
         <h2 id="editor-panel-heading">Edit lecture</h2>
         <button
           aria-label="Close the editor"
-          className="editor-panel-close"
+          className="side-panel-close"
           disabled={busy}
           onClick={onCancel}
           type="button"

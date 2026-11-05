@@ -33,6 +33,8 @@ export function annotations(): Annotations {
     editTextBox: vi.fn(),
     remove: vi.fn(),
     retag: vi.fn(),
+    undo: vi.fn(),
+    redo: vi.fn(),
     clearFailure: vi.fn(),
   };
 }

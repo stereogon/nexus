@@ -322,7 +322,7 @@ Organize the repository into strict, decoupled layers so bugs can be isolated to
    - Validate all disk JSON payloads at runtime with `Zod` schemas so corrupted or manually edited files never crash the UI.
 4. **Structured Local Logging & Diagnostics:**
    - Use `tracing` and `tracing-appender` in Rust to write structured JSON/text logs to a rotating local log file (`~/Library/Logs/LectureVault/app.log`).
-   - Add a built-in **"View Diagnostic Logs"** button in the UI (`Cmd+Shift+D`) that shows recent errors, conversion CLI stdout/stderr, and performance timings so any future bug can be diagnosed in seconds.
+   - Add a built-in **"View Diagnostic Logs"** button in the UI (`Cmd+Shift+D`) that shows recent errors, conversion CLI stdout/stderr, and performance timings so any future bug can be diagnosed in seconds. *(Amended 2026-11-05: the key is `Cmd+0`, at the user's request, not `Cmd+Shift+D`. What is built so far is the error panel — the errors shown since launch; the log on disk, converter output and timings are not in it yet. Reasoning in `PROGRESS.md`.)*
 5. **File Size & Complexity Cap:**
    - Keep individual source files under **300 lines of code**. If a component or service exceeds 300 lines, refactor it into focused sub-modules.
 
@@ -386,7 +386,7 @@ Execute the build in the following 5 sequential milestones. After completing eac
   - Connect the bi-directional `cite://<id>` controller (PDF <-> Markdown scroll & pulse animation).
   - Run `vitest` component and citation parser tests.
 - **Milestone 5: macOS Polish, Diagnostics Drawer & Playwright E2E Suite**
-  - Add native-feeling macOS keyboard shortcuts (`Cmd+O`, `Cmd+L`, `Cmd+B`, `Cmd+P`, `Cmd+\`, `Cmd+Shift+D`), dark mode, and the Diagnostic Log viewer.
+  - Add native-feeling macOS keyboard shortcuts (`Cmd+O`, `Cmd+L`, `Cmd+B`, `Cmd+P`, `Cmd+\`, `Cmd+Shift+D` — amended 2026-11-05 to `Cmd+0`, see §4.2), dark mode, and the Diagnostic Log viewer.
   - Run the full Playwright E2E test suite, `cargo test`, `cargo clippy`, `npm run typecheck`, and `npm run test` to confirm zero warnings and 100% green tests.
 
 ---

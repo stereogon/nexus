@@ -8,7 +8,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Annotation } from "../ipc/annotations";
-import { afterRetag, asNewHighlight, onPage } from "./useAnnotations";
+import { withChange, asNewHighlight, onPage } from "./useAnnotations";
 
 const CANDIDATE = {
   pageIndex: 3,
@@ -66,7 +66,7 @@ describe("finding one page's highlights", () => {
   });
 });
 
-describe("the list after a retag", () => {
+describe("the list after a change", () => {
   const KEY: Annotation = {
     kind: "textHighlight",
     id: "hl-1",
@@ -82,17 +82,21 @@ describe("the list after a retag", () => {
   it("holds the stored version in place of the old one", () => {
     const stored: Annotation = { ...KEY, semantic: "exam", updatedAt: "2026-11-05T09:30:00Z" };
 
-    expect(afterRetag([KEY, OTHER], "hl-1", stored)).toEqual([stored, OTHER]);
+    expect(withChange([KEY, OTHER], "hl-1", stored)).toEqual([stored, OTHER]);
   });
 
   it("keeps the order, so a recoloured highlight does not jump in the list", () => {
     const stored: Annotation = { ...OTHER, semantic: "question" };
 
-    expect(afterRetag([KEY, OTHER], "hl-2", stored).map((a) => a.id)).toEqual(["hl-1", "hl-2"]);
+    expect(withChange([KEY, OTHER], "hl-2", stored).map((a) => a.id)).toEqual(["hl-1", "hl-2"]);
+  });
+
+  it("adds one it did not hold, as an undone removal brings back", () => {
+    expect(withChange([KEY], "hl-2", OTHER)).toEqual([KEY, OTHER]);
   });
 
   it("stops drawing a highlight the lecture no longer has", () => {
     // `null` from the backend: removed on another device between the click and the write.
-    expect(afterRetag([KEY, OTHER], "hl-1", null)).toEqual([OTHER]);
+    expect(withChange([KEY, OTHER], "hl-1", null)).toEqual([OTHER]);
   });
 });

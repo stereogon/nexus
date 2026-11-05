@@ -274,3 +274,15 @@ export async function removeAnnotation(
 
   return AnnotationSchema.nullable().parse(payload);
 }
+
+/**
+ * Puts an annotation back exactly as it was — same id, same timestamps — which is what
+ * undoing a removal needs, since `cite://<id>` in the notes points at the id. One already
+ * there is answered as held, without a write.
+ *
+ * @throws {CommandError} if the lecture cannot be read, the annotation is not a valid one,
+ * or the write fails.
+ */
+export async function restoreAnnotation(vault: string, directory: string, annotation: Annotation): Promise<Annotation> {
+  return AnnotationSchema.parse(await invoke("restore_annotation", { vault, directory, annotation }));
+}

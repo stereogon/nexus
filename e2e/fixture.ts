@@ -33,6 +33,8 @@ export interface Fixture {
   readonly annotations: Readonly<Record<string, readonly Annotation[]>>;
   /** Each lecture's `notes.md`, keyed by directory; absent means none yet. */
   readonly notes?: Readonly<Record<string, string>>;
+  /** Commands answered with a failure, for journeys about what the window does then. */
+  readonly failing?: readonly string[];
 }
 
 /** Slide-shaped, because most of what this app opens is a lecture deck. */

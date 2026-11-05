@@ -226,7 +226,7 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
 - [ ] Bundled offline `pdfjs-dist`, virtualised pages (visible + 2-page buffer)
 - [ ] Normalised coordinate math against `getViewport({scale: 1})`, rotation-aware
 - [ ] Text highlights, area highlights, draggable/resizable on-slide text boxes
-- [ ] Undo/redo
+- [x] Undo/redo of annotations, ⌘Z / ⌘⇧Z (2026-11-05)
 - [ ] Vitest: round-trip invariance across 0.5× / 1.0× / 1.75× / 3.0×
 
 ### [ ] Milestone 4 — Markdown editor and bi-directional citations
@@ -245,7 +245,8 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
 
 ### [ ] Milestone 5 — macOS polish, diagnostics, E2E
 - [ ] Shortcuts: `⌘O` `⌘L` `⌘B` `⌘P` `⌘\` `⌘⇧D` `⌘+` `⌘-` `⌘Z` `⌘⇧Z` `T`
-- [ ] Diagnostics drawer (errors, converter stdout/stderr, timings)
+- [~] Diagnostics drawer — the error panel (⌘0, errors shown since launch) done 2026-11-05;
+      the log on disk, converter stdout/stderr and timings not yet
 - [ ] Bundled woff2 fonts, CSP locked to `connect-src 'self' ipc: http://ipc.localhost`
 - [~] Playwright: harness, layout and highlight journeys in WebKit (2026-11-05). Journeys
       1–4 as §5.3 wrote them are amended -- the real window cannot be driven on macOS --
@@ -461,6 +462,54 @@ Fixed at the cause with `fsModuleCache: false`, measured at no cost (the suite r
 either way). Proved by adding a component with a class the stylesheets never mention and
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
+
+**2026-11-05 · ⌘P, ⌘Z / ⌘⇧Z, and ⌘0 for an error panel**
+Asked for: "command+p, command+z, and command+0 for the error panel".
+
+**⌘P** goes to the lecture search, showing the sidebar if it was hidden, with the old query
+selected so typing replaces it. The `⌘P` chip had been printed beside the search box since
+the sidebar was built and was bound to nothing. `useSidebar` now owns whether the sidebar
+is shown. Searching notes and highlighted quotes, which the spec also asks of ⌘P, is **not**
+done: the search still matches titles and facets only.
+
+**⌘Z / ⌘⇧Z** take back and redo what was marked on the document: a highlight or box made,
+removed or re-marked, and a sticky note made, moved, resized or reworded. Redo was added
+with undo though only ⌘Z was named: undo with no redo makes one stray press a permanent
+loss. The history is per lecture and per session — not saved, and opening another lecture
+starts it again. Each step is two snapshots of one annotation, and each move an absolute
+target ("remove it", "put it back as it was", "mark it key"), so repeating one is harmless;
+the rules are pure in `ui/annotationHistory.ts` (10 tests).
+
+Taking back a Remove needed a new command, `restore_annotation`: re-adding through
+`add_highlight` would mint a new id and every `cite://` link to it would read "removed".
+It puts the annotation back whole and validates it on the way in, as a file read is; one
+already there is answered without a write (4 contract tests). One undo or redo runs at a
+time, since two in flight on one annotation would race in the file.
+
+⌘Z stays with typing wherever text is typed — the notes, a sticky note, the page field, the
+search box. A first proof found the notes editor marks ⌘Z handled even with its history
+empty, so the notes journey passed with the check removed; the journey that fails without
+it is the one typing in the search box, and the comment that claimed otherwise was
+corrected. `useAnnotations` was reshaped around one `change` path so recording fits; its
+`afterRetag` became `withChange`, which also appends.
+
+**⌘0** opens an **error panel** beside the document (also the title bar's diagnostics
+button, which was drawn disabled). It lists every error the window has shown since it
+opened, newest first, with its time, code and remediation, so an error is still findable
+after its card has gone. Recorded where an error is drawn — `Failure` — in memory only; an
+entry holds a code and a fixed sentence, nothing typed or named. ⌘0 rather than the spec's
+⌘⇧D, at the user's request; the spec is amended beside the requirement. **Not in it yet:**
+the log on disk (past launches, failures that are only logged), converter output, timings —
+the rest of the spec's diagnostics drawer.
+
+On the way: `App.tsx` went to 304 lines with the panel's wiring, so the picker / ⌘O /
+drop-to-import flow moved into `useAddDocuments`; the side-panel frame the lecture editor
+used became `.side-panel` in `panels.css`, shared with the error panel. The title bar's test
+that the diagnostics button stayed disabled was replaced by tests of what it now does. The
+Playwright fixture gained `failing`, a list of commands to answer with a failure.
+
+Journeys in `e2e/undo.spec.ts` and `e2e/shortcuts.spec.ts`, each proved by breaking what it
+covers — the typing check, the same-id restore, the ⌘P binding, the recording in `Failure`.
 
 **2026-11-05 · A divider to set how wide the notes are**
 Asked for: "adjusting width of the notes window". The line between the document and the

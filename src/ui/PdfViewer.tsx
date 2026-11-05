@@ -33,6 +33,7 @@ import { outlineOn, useAreaDraw } from "./useAreaDraw";
 import { useElementSize } from "./useElementSize";
 import { useHighlightMenu } from "./useHighlightMenu";
 import { useStickies } from "./useStickies";
+import { useUndoKeys } from "./useUndoKeys";
 import { useJump, type Jump } from "./useJump";
 import { ZOOM_LIMITS } from "./zoom";
 import { useZoom } from "./useZoom";
@@ -68,6 +69,7 @@ export function PdfViewer({
   readonly notesLink: NotesLink;
 }) {
   const highlights = useAnnotations(vault, directory);
+  useUndoKeys(highlights.undo, highlights.redo);
   const stickies = useStickies(highlights, onLinkToNotes, (at) => (state.sizes[at]?.width ?? 0) * scale);
   const menu = useHighlightMenu(highlights, onLinkToNotes, stickies.startBeside);
   const dismissMenu = menu.dismiss;

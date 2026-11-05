@@ -5,7 +5,12 @@
  */
 import { z } from "zod";
 
-import { HighlightSemanticSchema, NormalizedRectSchema, type Annotation } from "../../src/ipc/annotations";
+import {
+  AnnotationSchema,
+  HighlightSemanticSchema,
+  NormalizedRectSchema,
+  type Annotation,
+} from "../../src/ipc/annotations";
 import type { Fixture } from "../fixture";
 import { CommandFailure, InLecture, type Handlers } from "./shared";
 
@@ -36,6 +41,8 @@ const EditTextBox = InLecture.extend({
   id: z.string(),
   edit: z.object({ region: NormalizedRectSchema.optional(), text: z.string().optional() }),
 });
+
+const RestoreAnnotation = InLecture.extend({ annotation: AnnotationSchema });
 
 const RetagAnnotation = InLecture.extend({ id: z.string(), semantic: HighlightSemanticSchema });
 
@@ -117,6 +124,19 @@ export function annotationHandlers(fixture: Fixture): Handlers {
       held(directory).push(added);
 
       return added;
+    },
+    // Put back whole, keeping its id; one already there is answered as held, no change.
+    restore_annotation: (args) => {
+      const { directory, annotation } = RestoreAnnotation.parse(args);
+      const list = held(directory);
+      const there = list.find((each) => each.id === annotation.id);
+
+      if (there !== undefined) {
+        return there;
+      }
+
+      list.push(annotation);
+      return annotation;
     },
     edit_text_box: (args) => {
       const { directory, id, edit } = EditTextBox.parse(args);

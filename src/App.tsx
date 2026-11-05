@@ -18,11 +18,10 @@
  */
 import { useCallback, useEffect, useState } from "react";
 
-import { pickDocument, pickVaultDirectory } from "./ipc/picker";
+import { pickVaultDirectory } from "./ipc/picker";
 import {
   asCommandError,
   editLecture,
-  importDocument,
   openVault,
   rememberVault,
   type CommandError,
@@ -34,17 +33,18 @@ import { DropOverlay } from "./ui/DropOverlay";
 import { EmptyPane } from "./ui/EmptyPane";
 import { Failure } from "./ui/Failure";
 import { Notice } from "./ui/Notice";
-import { importEach, noteFor } from "./ui/dropped";
 import { EditorPanel } from "./ui/EditorPanel";
+import { ErrorPanel } from "./ui/ErrorPanel";
 import { Reading } from "./ui/Reading";
 import { Sidebar } from "./ui/Sidebar";
 import { sidebarRows, type GroupBy, type ThenBy } from "./ui/sidebarRows";
 import { TitleBar } from "./ui/TitleBar";
-import { useDropZone } from "./ui/useDropZone";
-import { useMetaShortcut } from "./ui/useMetaShortcut";
+import { useAddDocuments } from "./ui/useAddDocuments";
+import { useErrorPanel } from "./ui/useErrorPanel";
 import { useNotice } from "./ui/useNotice";
 import { useOpenLecture } from "./ui/useOpenLecture";
 import { useRememberedVault } from "./ui/useRememberedVault";
+import { useSidebar } from "./ui/useSidebar";
 import { useTheme } from "./ui/useTheme";
 import { Welcome } from "./ui/Welcome";
 
@@ -59,12 +59,13 @@ export function App() {
   const [groupBy, setGroupBy] = useState<GroupBy>("folder");
   const [thenBy, setThenBy] = useState<ThenBy>("none");
   const [query, setQuery] = useState("");
-  const [sidebarShown, setSidebarShown] = useState(true);
   const [editing, setEditing] = useState<LectureRow | null>(null);
   const remembered = useRememberedVault();
   const reading = useOpenLecture();
   const appearance = useTheme();
   const notice = useNotice();
+  const sidebar = useSidebar(state.kind === "open");
+  const errorPanel = useErrorPanel(state.kind === "open");
 
   // Folded into `state` once it arrives, rather than rendering from two sources. The
   // functional update is what makes that safe: it fills an *idle* shell and leaves any
@@ -136,35 +137,6 @@ export function App() {
     })();
   }, [notice]);
 
-  const add = useCallback(() => {
-    if (state.kind !== "open") {
-      return;
-    }
-
-    const vault = state.summary.root;
-
-    against(vault, async () => {
-      const file = await pickDocument();
-
-      return file === null ? null : noteFor(await importDocument(vault, file));
-    });
-  }, [against, state]);
-
-  const dropped = useCallback(
-    (paths: readonly string[]) => {
-      if (state.kind !== "open") {
-        return;
-      }
-
-      const vault = state.summary.root;
-
-      against(vault, () =>
-        importEach(vault, paths, importDocument, asCommandError),
-      );
-    },
-    [against, state],
-  );
-
   const save = useCallback(
     (edit: LectureEdit) => {
       if (state.kind !== "open" || editing === null) {
@@ -193,10 +165,7 @@ export function App() {
     [against, editing, reading, state],
   );
 
-  const zone = useDropZone(dropped);
-
-  // The canvas's drop state promises ⌘O opens the browser, so it has to.
-  useMetaShortcut("o", state.kind === "open" && !busy, add);
+  const { add, zone } = useAddDocuments(state.kind === "open" ? state.summary.root : null, busy, against);
 
   // One file read, so this is imperceptible -- and painting the empty state first would
   // read as the app having forgotten the vault and then remembered it.
@@ -232,15 +201,15 @@ export function App() {
       <TitleBar
         lecture={open?.lecture ?? editing ?? null}
         onCycleTheme={appearance.cycle}
-        onToggleSidebar={() => {
-          setSidebarShown(!sidebarShown);
-        }}
-        sidebarShown={sidebarShown}
+        onToggleSidebar={sidebar.toggle}
+        sidebarShown={sidebar.shown}
+        errorsShown={errorPanel.open}
+        onToggleErrors={errorPanel.toggle}
         theme={appearance.theme}
       />
 
       <div className="panes">
-        {sidebarShown && (
+        {sidebar.shown && (
           <Sidebar
             busy={busy || reading.opening}
             groupBy={groupBy}
@@ -291,6 +260,7 @@ export function App() {
             onSave={save}
           />
         )}
+        {errorPanel.open && <ErrorPanel onClose={errorPanel.close} />}
       </div>
 
       {zone.dragging && <DropOverlay formats={zone.formats} />}

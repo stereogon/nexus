@@ -33,11 +33,13 @@ use serde::Deserialize;
 use crate::vault::CommandError;
 
 pub mod create;
+pub mod restore;
 
 pub use create::{
     NewArea, NewHighlight, NewTextBox, add_area_highlight, add_highlight, add_text_box, write_area,
     write_highlight, write_text_box,
 };
+pub use restore::{put_back, restore_annotation};
 
 /// Every annotation on a lecture, in the order they are stored.
 ///

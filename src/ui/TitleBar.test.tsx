@@ -32,6 +32,8 @@ function show(over: Partial<Parameters<typeof TitleBar>[0]> = {}) {
     theme: "system" as const,
     onToggleSidebar: vi.fn(),
     onCycleTheme: vi.fn(),
+    errorsShown: false,
+    onToggleErrors: vi.fn(),
     ...over,
   };
 
@@ -99,13 +101,18 @@ describe("the chrome controls", () => {
     expect(props.onCycleTheme).toHaveBeenCalled();
   });
 
-  it("leaves the diagnostics control visibly disabled rather than absent", () => {
-    // It is on the canvas and belongs to Milestone 5. A control that appears later moves
-    // everything beside it, so it is drawn and disabled.
-    show();
+  it("opens the error panel from where the canvas puts the diagnostics control", () => {
+    // Until 2026-11-05 this was drawn disabled, waiting for Milestone 5.
+    const props = show();
 
-    expect(
-      screen.getByRole("button", { name: "Diagnostic logs" }).hasAttribute("disabled"),
-    ).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Errors" }));
+
+    expect(props.onToggleErrors).toHaveBeenCalled();
+  });
+
+  it("shows the errors control pressed while the panel is open", () => {
+    show({ errorsShown: true });
+
+    expect(screen.getByRole("button", { name: "Errors" }).getAttribute("aria-pressed")).toBe("true");
   });
 });

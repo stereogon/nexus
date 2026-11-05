@@ -94,6 +94,10 @@ export function backend(fixture: Fixture): (command: string, args?: InvokeArgs) 
   const answers: Handlers = { ...vault, ...annotationHandlers(fixture), ...notesHandlers(fixture) };
 
   return (command, args) => {
+    if (fixture.failing?.includes(command) === true) {
+      throw new CommandFailure("ERR_E2E_FAILING", `The harness was told to fail "${command}".`);
+    }
+
     const answer = answers[command];
 
     if (answer === undefined) {

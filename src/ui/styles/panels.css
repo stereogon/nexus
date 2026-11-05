@@ -1,0 +1,96 @@
+/**
+ * Side panels: the frame the lecture editor and the error panel share, and what is inside
+ * the error panel.
+ */
+
+/* A panel beside whatever is open rather than instead of it: the lecture editor, and the
+   error panel. Moved from `import.css` and renamed from `.editor-panel` on 2026-11-05,
+   when the error panel became the second thing with this frame.
+
+   A flex sibling of the viewer, so opening it narrows the page and the viewer re-fits,
+   instead of covering the slide whose title you are reading the answers off. Fixed width
+   rather than a fraction: the form is five short fields, and a panel that grew with the
+   window would only stretch the inputs. */
+.side-panel {
+  flex: 0 0 320px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px 20px;
+  overflow-y: auto;
+  background: var(--surface);
+  border-left: 1px solid var(--border-strong);
+}
+
+.side-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.side-panel-head h2 {
+  margin: 0;
+  font-family: var(--font-brand);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.side-panel-close {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.side-panel-close:hover:not(:disabled) {
+  background: var(--track);
+  color: var(--text);
+}
+
+/* The error panel's list: newest first, each one the code and the sentence saying what to
+   do, the same two things `Failure` shows where the error happened. */
+.error-panel-note {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.error-panel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.error-panel-entry {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--semantic-exam);
+  border-radius: 6px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.error-panel-when {
+  color: var(--text-meta);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.error-panel-actions {
+  display: flex;
+  justify-content: flex-end;
+}
