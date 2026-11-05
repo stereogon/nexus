@@ -36,6 +36,8 @@ export function Reading({
   const notes = useRef<NotesHandle | null>(null);
   const [notesOpen, setNotesOpen] = useState(true);
   const [jump, setJump] = useState<Jump | null>(null);
+  const [cited, setCited] = useState<ReadonlySet<string>>(new Set());
+  const [reveal, setReveal] = useState<{ readonly id: string; readonly nonce: number } | null>(null);
 
   // Citations made before the editor exists — the notes still loading — wait here rather
   // than being dropped.
@@ -44,6 +46,7 @@ export function Reading({
   // A jump belongs to the lecture it was made in.
   useEffect(() => {
     setJump(null);
+    setReveal(null);
     waiting.current = [];
   }, [directory]);
 
@@ -72,6 +75,12 @@ export function Reading({
     setJump((previous) => ({ id, nonce: (previous?.nonce ?? 0) + 1 }));
   }, []);
 
+  // From a highlight to the notes: show them if hidden, and the line citing it.
+  const showInNotes = useCallback((id: string) => {
+    setNotesOpen(true);
+    setReveal((previous) => ({ id, nonce: (previous?.nonce ?? 0) + 1 }));
+  }, []);
+
   const toggleNotes = useCallback(() => {
     setNotesOpen((open) => !open);
   }, []);
@@ -84,6 +93,7 @@ export function Reading({
         directory={directory}
         document={document}
         jump={jump}
+        notesLink={{ cited, show: showInNotes }}
         notesOpen={notesOpen}
         onClose={onClose}
         onLinkToNotes={link}
@@ -96,10 +106,12 @@ export function Reading({
         handle={notes}
         hidden={!notesOpen}
         onCite={cite}
+        onCited={setCited}
         onHide={() => {
           setNotesOpen(false);
         }}
         onReady={ready}
+        reveal={reveal}
         vault={vault}
       />
     </div>

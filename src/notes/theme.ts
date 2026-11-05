@@ -57,6 +57,19 @@ const editorTheme = EditorView.theme({
     padding: "0 14px",
   },
   ".md-table-source": { fontFamily: "var(--font-mono)", fontSize: "0.86em" },
+
+  // The line a jump from the document landed on, lit for a moment (§2.4). Two names that
+  // alternate (`flash.ts`), because an animation restarts only when its name changes.
+  ".md-flash-a": { animation: "md-flash-a 1.6s ease-out 1" },
+  ".md-flash-b": { animation: "md-flash-b 1.6s ease-out 1" },
+  "@keyframes md-flash-a": {
+    "0%, 25%": { backgroundColor: "var(--accent-soft)" },
+    "100%": { backgroundColor: "transparent" },
+  },
+  "@keyframes md-flash-b": {
+    "0%, 25%": { backgroundColor: "var(--accent-soft)" },
+    "100%": { backgroundColor: "transparent" },
+  },
 });
 
 /** Markdown, styled. Markup characters are dimmed rather than hidden, so they stay editable. */

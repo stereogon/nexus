@@ -8,7 +8,7 @@
  * artboards once they are readable (2026-11-05). Recorded in `PROGRESS.md` as owing that
  * pass, rather than looking finished.
  */
-import { useCallback, useState, type Ref } from "react";
+import { useCallback, useEffect, useState, type Ref } from "react";
 
 import { saveImage } from "../ipc/assets";
 import { asCommandError, type CommandError } from "../ipc/vault";
@@ -43,6 +43,8 @@ export function NotesPane({
   onHide,
   onReady,
   hidden,
+  reveal,
+  onCited,
 }: {
   readonly vault: string;
   readonly directory: string;
@@ -53,8 +55,16 @@ export function NotesPane({
   readonly onReady: () => void;
   /** Hidden rather than unmounted, so the cursor and undo history survive. */
   readonly hidden: boolean;
+  /** A highlight to show the citation of. */
+  readonly reveal: { readonly id: string; readonly nonce: number } | null;
+  /** The cited highlights changed. */
+  readonly onCited: (ids: ReadonlySet<string>) => void;
 }) {
   const notes = useNotes(vault, directory);
+
+  useEffect(() => {
+    onCited(notes.cited);
+  }, [notes.cited, onCited]);
   const [pasteProblem, setPasteProblem] = useState<string | null>(null);
   const [pasteFailure, setPasteFailure] = useState<CommandError | null>(null);
 
@@ -126,6 +136,10 @@ export function NotesPane({
           onCite={onCite}
           imageUrl={(src) => assetUrl(vault, directory, src)}
           onPasteImage={pasteImage}
+          // Not withheld while hidden: showing the pane and making the request happen in one
+          // React commit, so the pane is visible by the time the editor acts on it. (Tested:
+          // the journey that reveals from a hidden pane passes without withholding.)
+          reveal={reveal}
           onReady={onReady}
           text={notes.loaded.text}
         />

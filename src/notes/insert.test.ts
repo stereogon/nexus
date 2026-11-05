@@ -69,3 +69,26 @@ describe("the ids cited in a note", () => {
     expect(citedIds("cite: not a link, nor is cite:/hl-1")).toEqual([]);
   });
 });
+
+describe("finding a highlight's citations in the notes", () => {
+  it("finds each, by whole id only", async () => {
+    const { citationOffsets } = await import("./citeLinks");
+    const text = "a cite://hl-1 b cite://hl-10 c cite://hl-1";
+
+    expect(citationOffsets(text, "hl-1")).toEqual([2, 31]);
+  });
+
+  it("walks through several citations in turn, then wraps", async () => {
+    const { nextOccurrence } = await import("./citeLinks");
+
+    expect(nextOccurrence([5, 40, 90], null)).toBe(5);
+    expect(nextOccurrence([5, 40, 90], 5)).toBe(40);
+    expect(nextOccurrence([5, 40, 90], 90)).toBe(5);
+  });
+
+  it("has nowhere to go for a highlight the notes do not cite", async () => {
+    const { nextOccurrence } = await import("./citeLinks");
+
+    expect(nextOccurrence([], null)).toBeNull();
+  });
+});

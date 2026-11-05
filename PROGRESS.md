@@ -237,9 +237,9 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
       keeps the editor mounted (2026-11-05, as a live preview over the Markdown)
 - [x] Clipboard image → `assets/<timestamp>-<hash>.png` (2026-11-05; paste only — dropping an
       image onto the notes is not wired, since a window-level drop already means "import")
-- [~] `cite://<id>`: Link to notes inserts at the cursor; a badge jumps the document to its
-      highlight with the pulse ring (2026-11-05). Not yet: the reverse direction, from a
-      highlight to the line citing it, and ⌘L.
+- [x] `cite://<id>` both directions (2026-11-05): Link to notes inserts at the cursor; a
+      badge jumps the document to its highlight with the pulse ring; a cited highlight's
+      indicator scrolls the notes to its citation and flashes the line. Not yet: ⌘L.
 - [ ] Vitest: citation parser, orphaned-link handling, malformed-block banners
 
 ### [ ] Milestone 5 — macOS polish, diagnostics, E2E
@@ -460,6 +460,32 @@ Fixed at the cause with `fsModuleCache: false`, measured at no cost (the suite r
 either way). Proved by adding a component with a class the stylesheets never mention and
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
+
+**2026-11-05 · From a highlight to the notes citing it**
+§2.4's reverse lookup. A highlight the notes cite gets a small **¶** button beside its
+badge; pressing it opens the notes if they are hidden, scrolls the citation line to the
+middle, and lights the line for a moment. Pressing again walks to the next citation of the
+same highlight, then wraps. A highlight nobody has cited has no button — the indicator is
+itself the answer to "is this in my notes?"
+
+**Which ids are cited** comes from the notes text, by the same pattern the editor's badges
+use, so it follows typing: cite a highlight and its button appears. The set is replaced
+only when the ids in it change, so an ordinary sentence does not re-render every page; a
+test holds it to the same object while typing changes nothing cited. Ids match whole —
+`cite://hl-1` is not found inside `cite://hl-10`.
+
+**The selection is left alone.** The jump scrolls and lights the line but does not put the
+cursor there: a cursor on a citation turns its card back into Markdown, which is not what
+"show me" means. The light is a line decoration whose class alternates, since an animation
+restarts only when its name changes; it lives in the CodeMirror theme beside the other line
+styles, and the journey reads the *computed* animation, not just the class.
+
+Two things learned by testing rather than assumed. The indicator flips before the badge
+when there is no room after it, for a highlight at the right margin. And a first version
+withheld the request while the notes were hidden, on the reasoning that a hidden editor
+cannot scroll; the journey passed with the withholding removed, because showing the pane
+and making the request happen in one React commit. The code that did not earn its place
+was taken out.
 
 **2026-11-05 · An image with a title, left as raw text**
 The user pasted markdownlivepreview.com's syntax guide and reported its image not

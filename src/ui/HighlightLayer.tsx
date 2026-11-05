@@ -23,6 +23,22 @@ import type { Pulse } from "./useJump";
 import { BADGE_SIZE, badgeAt } from "./highlightBadge";
 import { SEMANTIC_GLYPH, SEMANTIC_LABEL } from "./semantics";
 
+/** How the document reaches the notes: which highlights they cite, and how to show one. */
+export interface NotesLink {
+  readonly cited: ReadonlySet<string>;
+  readonly show: (id: string) => void;
+}
+
+/**
+ * Where the notes indicator goes: just after the badge, or just before it when there is no
+ * room on the page — a highlight running to the right margin puts its badge at the edge.
+ */
+export function besideBadge(badgeLeft: number, pageWidth: number): number {
+  const after = badgeLeft + BADGE_SIZE + 3;
+
+  return after + BADGE_SIZE <= pageWidth ? after : Math.max(0, badgeLeft - BADGE_SIZE - 3);
+}
+
 /** The area a highlight covers, or `null` for a kind this layer does not draw. */
 export function rectsOf(annotation: Annotation): readonly NormalizedRect[] | null {
   switch (annotation.kind) {
@@ -55,6 +71,7 @@ export function HighlightLayer({
   height,
   onPick,
   pulse = null,
+  notesLink = null,
 }: {
   readonly annotations: readonly Annotation[];
   readonly width: number;
@@ -62,6 +79,8 @@ export function HighlightLayer({
   readonly onPick: (annotation: Annotation, at: MenuAt) => void;
   /** The highlight to pulse after a jump from the notes. */
   readonly pulse?: Pulse | null;
+  /** Which highlights the notes cite, and how to show where. */
+  readonly notesLink?: NotesLink | null;
 }) {
   if (annotations.length === 0) {
     return null;
@@ -117,6 +136,21 @@ export function HighlightLayer({
                 type="button"
               >
                 {SEMANTIC_GLYPH[annotation.semantic]}
+              </button>
+            )}
+
+            {badge !== null && notesLink?.cited.has(annotation.id) === true && (
+              <button
+                aria-label="Show where this is cited in the notes"
+                className="highlight-notes"
+                onClick={() => {
+                  notesLink.show(annotation.id);
+                }}
+                style={{ left: besideBadge(badge.left, width), top: badge.top, width: BADGE_SIZE, height: BADGE_SIZE }}
+                title="Show in notes"
+                type="button"
+              >
+                ¶
               </button>
             )}
           </div>

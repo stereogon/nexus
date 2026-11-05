@@ -26,6 +26,29 @@ export function citedIds(text: string): string[] {
   return [...text.matchAll(CITE_PATTERN)].flatMap((match) => (match[1] === undefined ? [] : [match[1]]));
 }
 
+/**
+ * Where `cite://<id>` appears in `text`, as offsets, in order.
+ *
+ * Only whole ids: `cite://hl-1` is not an occurrence of `hl-1` inside `cite://hl-10`.
+ */
+export function citationOffsets(text: string, id: string): number[] {
+  return [...text.matchAll(CITE_PATTERN)].flatMap((match) => (match[1] === id ? [match.index] : []));
+}
+
+/**
+ * The occurrence to show next: the first after `after`, wrapping to the first.
+ *
+ * So pressing "show in notes" again on a highlight cited three times walks through all
+ * three rather than returning to the first each time.
+ */
+export function nextOccurrence(offsets: readonly number[], after: number | null): number | null {
+  if (offsets.length === 0) {
+    return null;
+  }
+
+  return offsets.find((offset) => after !== null && offset > after) ?? offsets[0] ?? null;
+}
+
 function decorate(view: EditorView): DecorationSet {
   const builder = new RangeSetBuilder<Decoration>();
 

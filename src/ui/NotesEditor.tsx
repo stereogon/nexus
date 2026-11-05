@@ -17,7 +17,8 @@ import { EditorState } from "@codemirror/state";
 import { EditorView, keymap, placeholder } from "@codemirror/view";
 import { useEffect, useImperativeHandle, useRef, type Ref } from "react";
 
-import { citeLinks } from "../notes/citeLinks";
+import { citationOffsets, citeLinks, nextOccurrence } from "../notes/citeLinks";
+import { flashLine, lineFlash } from "../notes/flash";
 import { citationAt } from "../notes/insert";
 import { livePreview } from "../notes/preview/field";
 import { notesAppearance } from "../notes/theme";
@@ -39,6 +40,7 @@ export function NotesEditor({
   onReady,
   imageUrl,
   onPasteImage,
+  reveal,
 }: {
   /** The text to start from, taken afresh only when `generation` changes. */
   readonly text: string;
@@ -52,6 +54,11 @@ export function NotesEditor({
   readonly imageUrl: (src: string) => string | null;
   /** Keeps a pasted image; resolves to the path to insert, or `null` if it was not kept. */
   readonly onPasteImage: (file: File) => Promise<string | null>;
+  /**
+   * A highlight to show the citation of, from its indicator in the document. A new object
+   * each time, so pressing the indicator again moves on to the next citation.
+   */
+  readonly reveal: { readonly id: string; readonly nonce: number } | null;
 }) {
   const host = useRef<HTMLDivElement | null>(null);
   const view = useRef<EditorView | null>(null);
@@ -92,6 +99,7 @@ export function NotesEditor({
           markdown({ base: markdownLanguage }),
           EditorView.lineWrapping,
           notesAppearance,
+          lineFlash,
           livePreview({
             onCite: (id) => {
               cited.current(id);
@@ -139,6 +147,29 @@ export function NotesEditor({
       view.current = null;
     };
   }, [generation]);
+
+  // Where each highlight's citation was last shown, so the next press moves on from it.
+  const shown = useRef(new Map<string, number>());
+
+  useEffect(() => {
+    const editor = view.current;
+
+    if (reveal === null || editor === null) {
+      return;
+    }
+
+    const offsets = citationOffsets(editor.state.doc.toString(), reveal.id);
+    const at = nextOccurrence(offsets, shown.current.get(reveal.id) ?? null);
+
+    if (at === null) {
+      return;
+    }
+
+    shown.current.set(reveal.id, at);
+    // Scrolled to and flashed, but the selection is left alone: a cursor on the line would
+    // turn a rendered citation back into its Markdown, which is not what "show me" means.
+    editor.dispatch({ effects: [EditorView.scrollIntoView(at, { y: "center" }), flashLine.of(at)] });
+  }, [reveal]);
 
   useImperativeHandle(
     handle,

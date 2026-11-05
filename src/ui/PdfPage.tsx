@@ -12,7 +12,7 @@ import { useEffect, useRef, useState, type MouseEvent } from "react";
 
 import type { Annotation, NormalizedRect } from "../ipc/annotations";
 import type { PageSource } from "../pdf/useDocument";
-import { HighlightLayer } from "./HighlightLayer";
+import { HighlightLayer, type NotesLink } from "./HighlightLayer";
 import type { MenuAt } from "./menuPlacement";
 import type { Pulse } from "./useJump";
 import { PdfTextLayer } from "./PdfTextLayer";
@@ -56,6 +56,7 @@ export function PdfPage({
   outline,
   onAreaStart,
   pulse,
+  notesLink,
 }: {
   readonly index: number;
   readonly scale: number;
@@ -71,6 +72,7 @@ export function PdfPage({
   readonly onAreaStart: (event: MouseEvent<HTMLElement>, index: number) => void;
   /** A highlight on this page to pulse, after a jump from the notes. */
   readonly pulse: Pulse | null;
+  readonly notesLink: NotesLink;
 }) {
   const canvas = useRef<HTMLCanvasElement | null>(null);
   const [undrawn, setUndrawn] = useState(false);
@@ -161,6 +163,7 @@ export function PdfPage({
         annotations={annotations}
         height={height}
         onPick={onPick}
+        notesLink={notesLink}
         pulse={pulse}
         width={width}
       />

@@ -26,6 +26,7 @@ import { DocumentNotice } from "./DocumentNotice";
 import { Failure } from "./Failure";
 import { HighlightMenu } from "./HighlightMenu";
 import { PdfPage } from "./PdfPage";
+import type { NotesLink } from "./HighlightLayer";
 import { PdfToolbar } from "./PdfToolbar";
 import { onPage, useAnnotations } from "./useAnnotations";
 import { outlineOn, useAreaDraw } from "./useAreaDraw";
@@ -49,6 +50,7 @@ export function PdfViewer({
   jump,
   notesOpen,
   onNotes,
+  notesLink,
 }: {
   readonly document: OpenedDocument;
   readonly title: string;
@@ -61,6 +63,8 @@ export function PdfViewer({
   readonly jump: Jump | null;
   readonly notesOpen: boolean;
   readonly onNotes: () => void;
+  /** Which highlights the notes cite, and how to show where (§2.4's reverse lookup). */
+  readonly notesLink: NotesLink;
 }) {
   const highlights = useAnnotations(vault, directory);
   const menu = useHighlightMenu(highlights, onLinkToNotes);
@@ -265,6 +269,7 @@ export function PdfViewer({
                   onAreaStart={area.begin}
                   onPick={menu.pick}
                   outline={outlineOn(index, area.drawing, menu.drawn)}
+                  notesLink={notesLink}
                   pulse={jumped.pulse?.pageIndex === index ? jumped.pulse : null}
                   scale={scale}
                   source={page}

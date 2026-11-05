@@ -25,6 +25,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { loadNotes, saveNotes, type Notes } from "../ipc/notes";
+import { citedIds } from "../notes/citeLinks";
 import { asCommandError, type CommandError } from "../ipc/vault";
 
 /** How long typing has to pause before a save. */
@@ -41,6 +42,8 @@ export interface NotesState {
   /** What the file holds after a conflict, until the person chooses. */
   readonly onDisk: Notes | null;
   readonly failure: CommandError | null;
+  /** The highlights the notes cite, so the document can show which lead somewhere. */
+  readonly cited: ReadonlySet<string>;
   /** The editor's text changed. */
   readonly change: (text: string) => void;
   /** Save the editor's text over the version on disk, having seen it. */
@@ -55,6 +58,17 @@ export function useNotes(vault: string, directory: string): NotesState {
   const [status, setStatus] = useState<SaveStatus>("loading");
   const [onDisk, setOnDisk] = useState<Notes | null>(null);
   const [failure, setFailure] = useState<CommandError | null>(null);
+  const [cited, setCited] = useState<ReadonlySet<string>>(new Set());
+
+  // Replaced only when the set of ids actually changes, so typing an ordinary sentence
+  // does not re-render every page of the document.
+  const noteCitations = useCallback((text: string) => {
+    const next = new Set(citedIds(text));
+
+    setCited((current) =>
+      current.size === next.size && [...next].every((id) => current.has(id)) ? current : next,
+    );
+  }, []);
 
   // Held in refs, not state: the save loop reads the latest of each without re-rendering,
   // and a timer callback must not see the values from the render that scheduled it.
@@ -144,6 +158,7 @@ export function useNotes(vault: string, directory: string): NotesState {
         if (live()) {
           text.current = notes.text;
           version.current = notes.version;
+          noteCitations(notes.text);
           setLoaded(notes);
           setGeneration((count) => count + 1);
           setFailure(null);
@@ -170,12 +185,13 @@ export function useNotes(vault: string, directory: string): NotesState {
         void latestSave.current();
       }
     };
-  }, [vault, directory]);
+  }, [vault, directory, noteCitations]);
 
   const change = useCallback(
     (next: string) => {
       text.current = next;
       dirty.current = true;
+      noteCitations(next);
 
       if (blocked.current) {
         return;
@@ -192,7 +208,7 @@ export function useNotes(vault: string, directory: string): NotesState {
         void save();
       }, SAVE_AFTER_MS);
     },
-    [save],
+    [save, noteCitations],
   );
 
   const keepMine = useCallback(() => {
@@ -214,11 +230,12 @@ export function useNotes(vault: string, directory: string): NotesState {
     dirty.current = false;
     text.current = onDisk.text;
     version.current = onDisk.version;
+    noteCitations(onDisk.text);
     setLoaded(onDisk);
     setGeneration((count) => count + 1);
     setOnDisk(null);
     setStatus("saved");
-  }, [onDisk]);
+  }, [onDisk, noteCitations]);
 
-  return { loaded, generation, status, onDisk, failure, change, keepMine, takeTheirs };
+  return { loaded, generation, status, onDisk, failure, cited, change, keepMine, takeTheirs };
 }

@@ -235,3 +235,35 @@ describe("a failed save, then more typing", () => {
     expect(result.current.status).toBe("saved");
   });
 });
+
+describe("the highlights the notes cite", () => {
+  it("are known from the notes as loaded", async () => {
+    load.mockResolvedValueOnce({ text: "See cite://hl-1 and cite://hl-2.", version: "v1" });
+    const { result } = await opened();
+
+    expect([...result.current.cited]).toEqual(["hl-1", "hl-2"]);
+  });
+
+  it("follow the notes as they are typed", async () => {
+    const { result } = await opened();
+
+    act(() => {
+      result.current.change("Now citing cite://hl-9");
+    });
+
+    expect(result.current.cited.has("hl-9")).toBe(true);
+  });
+
+  it("stay the same set while typing changes nothing cited", async () => {
+    // So an ordinary sentence does not re-render every page of the document.
+    load.mockResolvedValueOnce({ text: "cite://hl-1", version: "v1" });
+    const { result } = await opened();
+    const before = result.current.cited;
+
+    act(() => {
+      result.current.change("cite://hl-1 and more words");
+    });
+
+    expect(result.current.cited).toBe(before);
+  });
+});

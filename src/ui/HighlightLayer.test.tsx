@@ -11,7 +11,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { Annotation } from "../ipc/annotations";
-import { HighlightLayer, rectsOf } from "./HighlightLayer";
+import { besideBadge, HighlightLayer, rectsOf } from "./HighlightLayer";
 import type { MenuAt } from "./useHighlightMenu";
 
 afterEach(cleanup);
@@ -194,5 +194,34 @@ describe("which area a kind covers", () => {
 
   it("is nothing for a text box, which this layer does not draw", () => {
     expect(rectsOf(textBox())).toBeNull();
+  });
+});
+
+describe("the way to the notes", () => {
+  it("is drawn only on highlights the notes cite", () => {
+    const show = vi.fn();
+    const [first, second] = [highlight({ id: "hl-a" }), highlight({ id: "hl-b", rects: [{ x: 0.1, y: 0.5, width: 0.3, height: 0.02 }] })];
+
+    render(
+      <HighlightLayer annotations={[first, second]} height={800} notesLink={{ cited: new Set(["hl-a"]), show }} onPick={vi.fn()} width={600} />,
+    );
+
+    expect(screen.getAllByRole("button", { name: "Show where this is cited in the notes" })).toHaveLength(1);
+  });
+
+  it("asks for the cited highlight's line when pressed", () => {
+    const show = vi.fn();
+
+    render(
+      <HighlightLayer annotations={[highlight({ id: "hl-a" })]} height={800} notesLink={{ cited: new Set(["hl-a"]), show }} onPick={vi.fn()} width={600} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Show where this is cited in the notes" }));
+
+    expect(show).toHaveBeenCalledWith("hl-a");
+  });
+
+  it("sits after the badge, or before it at the page's right edge", () => {
+    expect(besideBadge(100, 600)).toBeGreaterThan(100);
+    expect(besideBadge(590, 600)).toBeLessThan(590);
   });
 });
