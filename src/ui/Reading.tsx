@@ -20,6 +20,7 @@ import type { NotesHandle } from "./NotesEditor";
 import { NotesPane } from "./NotesPane";
 import { PdfViewer } from "./PdfViewer";
 import type { Jump } from "./useJump";
+import type { Arrival } from "./useArrival";
 import { useMetaShortcut } from "./useMetaShortcut";
 import { useNotesWidth } from "./useNotesWidth";
 
@@ -29,12 +30,15 @@ export function Reading({
   vault,
   directory,
   onClose,
+  arrival,
 }: {
   readonly document: OpenedDocument;
   readonly title: string;
   readonly vault: string;
   readonly directory: string;
   readonly onClose: () => void;
+  /** A place to go in this lecture, from a search result or the highlights library. */
+  readonly arrival: Arrival | null;
 }) {
   const notes = useRef<NotesHandle | null>(null);
   const area = useRef<HTMLDivElement | null>(null);
@@ -47,13 +51,52 @@ export function Reading({
   // Citations made before the editor exists — the notes still loading — wait here rather
   // than being dropped.
   const waiting = useRef<string[]>([]);
+  // Which lecture's notes the editor holds, as state so an arrival waiting for them runs
+  // once they settle; and the arrival already acted on, so it is not acted on twice.
+  const [notesReadyFor, setNotesReadyFor] = useState<string | null>(null);
+  const arrived = useRef<number | null>(null);
 
-  // A jump belongs to the lecture it was made in.
+  // A jump belongs to the lecture it was made in. Only on a real change of lecture: in
+  // development React runs effects twice on mount, and a second reset would wipe the jump
+  // an arrival had just made.
+  const lastDirectory = useRef(directory);
+
   useEffect(() => {
+    if (lastDirectory.current === directory) {
+      return;
+    }
+
+    lastDirectory.current = directory;
     setJump(null);
     setReveal(null);
     waiting.current = [];
   }, [directory]);
+
+  // After the reset above, so an arrival made with the lecture's opening survives it.
+  //
+  // A line waits for the editor to hold this lecture's notes, read as state rather than
+  // from the moment the editor says it is ready: in development React mounts the editor
+  // twice, and a line shown in the first, discarded view was lost (found by the journey).
+  useEffect(() => {
+    if (arrival === null || arrival.directory !== directory || arrived.current === arrival.nonce) {
+      return;
+    }
+
+    if (arrival.target.kind === "highlight") {
+      const id = arrival.target.id;
+
+      arrived.current = arrival.nonce;
+      setJump((previous) => ({ id, nonce: (previous?.nonce ?? 0) + 1 }));
+      return;
+    }
+
+    setNotesOpen(true);
+
+    if (notesReadyFor === directory) {
+      arrived.current = arrival.nonce;
+      notes.current?.showLine(arrival.target.line);
+    }
+  }, [arrival, directory, notesReadyFor]);
 
   const link = useCallback((annotation: Annotation) => {
     const block = citationBlock(annotation);
@@ -74,7 +117,9 @@ export function Reading({
     for (const block of queued) {
       notes.current?.insertCitation(block);
     }
-  }, []);
+
+    setNotesReadyFor(directory);
+  }, [directory]);
 
   const cite = useCallback((id: string) => {
     setJump((previous) => ({ id, nonce: (previous?.nonce ?? 0) + 1 }));

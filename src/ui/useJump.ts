@@ -49,6 +49,7 @@ export function useJump({
   viewportHeight,
   scroller,
   goToPage,
+  ready,
 }: {
   readonly jump: Jump | null;
   readonly annotations: readonly Annotation[];
@@ -57,6 +58,12 @@ export function useJump({
   readonly viewportHeight: number;
   readonly scroller: RefObject<HTMLDivElement | null>;
   readonly goToPage: (index: number) => void;
+  /**
+   * Whether the lecture's highlights and pages have loaded. A jump made before then — from
+   * a search result that opens the lecture — waits, rather than reporting the highlight
+   * missing because nothing has arrived yet.
+   */
+  readonly ready: boolean;
 }): { readonly pulse: Pulse | null; readonly missing: boolean } {
   const [pulse, setPulse] = useState<Pulse | null>(null);
   const [missing, setMissing] = useState(false);
@@ -69,8 +76,13 @@ export function useJump({
       return;
     }
 
+    if (!ready) {
+      return;
+    }
+
     const target = annotations.find((annotation) => annotation.id === jump.id);
-    const rects = target === undefined ? null : rectsOf(target);
+    // A sticky note has no highlight rectangles, but it has a place: search finds those too.
+    const rects = target === undefined ? null : target.kind === "textBox" ? [target.region] : rectsOf(target);
     const area = rects === null ? null : bounding(rects);
     const pageIndex = (target?.page ?? 0) - 1;
     const box = boxes[pageIndex];
@@ -95,9 +107,10 @@ export function useJump({
       top: landingOffset(box.top + area.y * box.height, viewportHeight),
       behavior: "smooth",
     });
-    // Only a new request moves the document. The other inputs change as it scrolls and
-    // re-fits, and re-running on them would drag the reader back to the highlight.
-  }, [jump]);
+    // Only a new request moves the document — or the lecture becoming ready for one that
+    // was waiting. The other inputs change as it scrolls and re-fits, and re-running on them
+    // would drag the reader back to the highlight.
+  }, [jump, ready]);
 
   return { pulse, missing };
 }

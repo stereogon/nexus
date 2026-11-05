@@ -34,13 +34,16 @@ import { EmptyPane } from "./ui/EmptyPane";
 import { Failure } from "./ui/Failure";
 import { Notice } from "./ui/Notice";
 import { EditorPanel } from "./ui/EditorPanel";
+import { HighlightsLibrary } from "./ui/HighlightsLibrary";
 import { ErrorPanel } from "./ui/ErrorPanel";
 import { Reading } from "./ui/Reading";
+import { SearchHits } from "./ui/SearchHits";
 import { Sidebar } from "./ui/Sidebar";
 import { sidebarRows, type GroupBy, type ThenBy } from "./ui/sidebarRows";
 import { TitleBar } from "./ui/TitleBar";
 import { useAddDocuments } from "./ui/useAddDocuments";
 import { useErrorPanel } from "./ui/useErrorPanel";
+import { useFinding } from "./ui/useFinding";
 import { useNotice } from "./ui/useNotice";
 import { useOpenLecture } from "./ui/useOpenLecture";
 import { useRememberedVault } from "./ui/useRememberedVault";
@@ -52,6 +55,13 @@ type VaultState =
   | { readonly kind: "idle" }
   | { readonly kind: "open"; readonly summary: VaultSummary }
   | { readonly kind: "failed"; readonly error: CommandError };
+
+const NO_LECTURES: readonly LectureRow[] = [];
+
+/** The open vault's lectures; one shared empty list otherwise, so it is stable across renders. */
+function lecturesOf(state: VaultState): readonly LectureRow[] {
+  return state.kind === "open" ? state.summary.lectures : NO_LECTURES;
+}
 
 export function App() {
   const [state, setState] = useState<VaultState>({ kind: "idle" });
@@ -66,6 +76,7 @@ export function App() {
   const notice = useNotice();
   const sidebar = useSidebar(state.kind === "open");
   const errorPanel = useErrorPanel(state.kind === "open");
+  const finding = useFinding(state.kind === "open" ? state.summary.root : null, lecturesOf(state), query, reading);
 
   // Folded into `state` once it arrives, rather than rendering from two sources. The
   // functional update is what makes that safe: it fills an *idle* shell and leaves any
@@ -205,6 +216,8 @@ export function App() {
         sidebarShown={sidebar.shown}
         errorsShown={errorPanel.open}
         onToggleErrors={errorPanel.toggle}
+        libraryShown={finding.library}
+        onToggleLibrary={finding.toggleLibrary}
         theme={appearance.theme}
       />
 
@@ -215,6 +228,13 @@ export function App() {
             groupBy={groupBy}
             onEdit={setEditing}
             onGroupBy={setGroupBy}
+            hits={
+              finding.search.failure !== null ? (
+                <Failure error={finding.search.failure} />
+              ) : finding.search.found === null ? null : (
+                <SearchHits found={finding.search.found} lectures={summary.lectures} onOpenAt={finding.goTo} />
+              )
+            }
             onOpen={(lecture) => {
               reading.open(summary.root, lecture);
             }}
@@ -230,8 +250,16 @@ export function App() {
           />
         )}
 
-        {open !== null ? (
+        {finding.library ? (
+          <HighlightsLibrary
+            lectures={summary.lectures}
+            onClose={finding.closeLibrary}
+            onOpenAt={finding.goTo}
+            vault={summary.root}
+          />
+        ) : open !== null ? (
           <Reading
+            arrival={finding.arrival}
             directory={open.lecture.directory}
             document={open.document}
             onClose={reading.close}

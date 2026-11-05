@@ -1,5 +1,5 @@
 /**
- * The two pure rules inside the annotations hook.
+ * The pure rules about a lecture's annotation list (`annotationList.ts`).
  *
  * Both are about the same thing: the window counts pages from zero and the file counts
  * from one. An off-by-one either way stores or shows highlights on the wrong page, which
@@ -8,7 +8,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Annotation } from "../ipc/annotations";
-import { withChange, asNewHighlight, onPage } from "./useAnnotations";
+import { asNewHighlight, onPage, withChange } from "./annotationList";
 
 const CANDIDATE = {
   pageIndex: 3,

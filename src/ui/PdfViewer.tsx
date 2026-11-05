@@ -28,7 +28,8 @@ import { HighlightMenu } from "./HighlightMenu";
 import { PdfPage } from "./PdfPage";
 import type { NotesLink } from "./HighlightLayer";
 import { PdfToolbar } from "./PdfToolbar";
-import { onPage, useAnnotations } from "./useAnnotations";
+import { onPage } from "./annotationList";
+import { useAnnotations } from "./useAnnotations";
 import { outlineOn, useAreaDraw } from "./useAreaDraw";
 import { useElementSize } from "./useElementSize";
 import { useHighlightMenu } from "./useHighlightMenu";
@@ -175,6 +176,7 @@ export function PdfViewer({
     viewportHeight: viewport.height,
     scroller,
     goToPage: setPageIndex,
+    ready: highlights.loaded && boxes.length > 0,
   });
 
   /** Switches layout, keeping the page the person was reading. */

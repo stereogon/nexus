@@ -17,6 +17,7 @@ pub mod layout;
 pub mod notes;
 pub mod picker;
 pub mod reorganize;
+pub mod search;
 pub mod theme;
 pub mod vault;
 
@@ -75,7 +76,9 @@ pub fn run() -> Result<(), tauri::Error> {
             importable_formats,
             edit_lecture,
             preview_reorganize,
-            apply_reorganize
+            apply_reorganize,
+            search::search_vault,
+            search::vault_highlights
         ])
         .run(tauri::generate_context!())
 }

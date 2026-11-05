@@ -1,0 +1,251 @@
+/**
+ * Finding things: search results inside lectures, under the sidebar's matching titles, and
+ * the highlights library in the document pane.
+ *
+ * Neither is on the canvas — both were asked for after the artboards were drawn — so they
+ * borrow what the window already has: the sidebar's overline and row type, the four
+ * meanings' colours with their letters (§3), and the brand accent for what is matched.
+ * Recorded in `PROGRESS.md` as owing a pass from the canvas.
+ */
+
+/* Search results in the sidebar. */
+.search-hits {
+  margin-top: 6px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.search-hit-lecture {
+  margin-bottom: 8px;
+}
+
+.search-hit-title {
+  margin: 6px 8px 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.search-hit {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 100%;
+  padding: 5px 8px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.search-hit:hover,
+.search-hit:focus-visible {
+  background: var(--track);
+  color: var(--text);
+}
+
+.search-hit-where {
+  color: var(--text-meta);
+  font-size: 11px;
+}
+
+.search-snippet {
+  overflow-wrap: anywhere;
+}
+
+/* The matched words: the accent's wash, so they read as found rather than as a fifth
+   highlight meaning. */
+.search-snippet mark {
+  border-radius: 2px;
+  background: var(--accent-soft);
+  color: inherit;
+}
+
+.search-hit-more {
+  margin: 0 8px 4px;
+  color: var(--text-meta);
+  font-size: 11px;
+}
+
+/* A meaning's letter on its colour, as on the page. */
+.search-hit-badge,
+.library-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 3px;
+  background: var(--track);
+  color: #ffffff;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+.search-hit-badge[data-semantic="key"],
+.library-glyph[data-kind="key"] {
+  background: var(--semantic-key);
+  color: var(--semantic-key-ink);
+}
+
+.search-hit-badge[data-semantic="definition"],
+.library-glyph[data-kind="definition"] {
+  background: var(--semantic-definition);
+}
+
+.search-hit-badge[data-semantic="exam"],
+.library-glyph[data-kind="exam"] {
+  background: var(--semantic-exam);
+}
+
+.search-hit-badge[data-semantic="question"],
+.library-glyph[data-kind="question"] {
+  background: var(--semantic-question);
+}
+
+.library-glyph[data-kind="sticky"] {
+  background: var(--accent-ink);
+}
+
+/* The library, in the document pane. Top-aligned and scrolling, unlike the centred empty
+   state that `.pane` is otherwise styled for. */
+.pane.library {
+  align-items: stretch;
+  justify-content: flex-start;
+  overflow-y: auto;
+  padding: 20px 28px 40px;
+}
+
+.library-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.library-head h2 {
+  margin: 0;
+  font-family: var(--font-brand);
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.library-count {
+  flex: 1;
+  color: var(--text-meta);
+  font-size: 12px;
+}
+
+.library-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.library-kinds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.library-kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.library-kind[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.library-facet select,
+.library-search input {
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+}
+
+.library-search {
+  flex: 1 1 160px;
+}
+
+.library-search input {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.library-lecture h3 {
+  margin: 8px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.library-facets {
+  margin: 0 0 6px;
+  color: var(--text-meta);
+  font-size: 11px;
+}
+
+.library-lecture ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.library-mark {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--text);
+  font-family: var(--font-prose);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.library-mark:hover,
+.library-mark:focus-visible {
+  background: var(--track);
+}
+
+.library-mark .library-glyph {
+  flex: none;
+  align-self: center;
+}
+
+.library-words {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+
+.library-page {
+  flex: none;
+  color: var(--text-meta);
+  font-family: var(--font-ui);
+  font-size: 11px;
+}

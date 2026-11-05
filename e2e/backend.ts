@@ -18,6 +18,7 @@ import { z } from "zod";
 import type { LectureRow } from "../src/ipc/vault";
 import { annotationHandlers } from "./answers/annotations";
 import { notesHandlers } from "./answers/notes";
+import { searchHandlers } from "./answers/search";
 import { CommandFailure, InLecture, type Handlers } from "./answers/shared";
 import type { Fixture } from "./fixture";
 
@@ -91,7 +92,7 @@ export function backend(fixture: Fixture): (command: string, args?: InvokeArgs) 
     },
   };
 
-  const answers: Handlers = { ...vault, ...annotationHandlers(fixture), ...notesHandlers(fixture) };
+  const answers: Handlers = { ...vault, ...annotationHandlers(fixture), ...notesHandlers(fixture), ...searchHandlers(fixture) };
 
   return (command, args) => {
     if (fixture.failing?.includes(command) === true) {

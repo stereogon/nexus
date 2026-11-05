@@ -53,6 +53,7 @@ function show(lectures: readonly LectureRow[], over: Partial<Parameters<typeof S
     onQuery: vi.fn(),
     onOpen: vi.fn(),
     onEdit: vi.fn(),
+    hits: null,
     ...over,
   };
 

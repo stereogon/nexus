@@ -33,6 +33,16 @@ function Mark() {
   );
 }
 
+/** A highlighter's stroke under two lines of text: the highlights library. */
+function HighlightsIcon() {
+  return (
+    <svg aria-hidden="true" height="15" viewBox="0 0 15 15" width="15">
+      <rect fill="currentColor" height="4" opacity="0.35" rx="1" width="11" x="2" y="3" />
+      <path d="M2.5 5h10M2.5 10.5h7" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.3" />
+    </svg>
+  );
+}
+
 function SidebarIcon() {
   return (
     <svg aria-hidden="true" height="15" viewBox="0 0 15 15" width="15">
@@ -113,6 +123,8 @@ export function TitleBar({
   onCycleTheme,
   errorsShown,
   onToggleErrors,
+  libraryShown,
+  onToggleLibrary,
 }: {
   readonly lecture: LectureRow | null;
   readonly sidebarShown: boolean;
@@ -121,6 +133,8 @@ export function TitleBar({
   readonly onCycleTheme: () => void;
   readonly errorsShown: boolean;
   readonly onToggleErrors: () => void;
+  readonly libraryShown: boolean;
+  readonly onToggleLibrary: () => void;
 }) {
   const facets =
     lecture === null
@@ -154,6 +168,18 @@ export function TitleBar({
         type="button"
       >
         <SidebarIcon />
+      </button>
+
+      {/* Not on the canvas yet: the library was asked for after the artboards were drawn. */}
+      <button
+        aria-label="Highlights library"
+        aria-pressed={libraryShown}
+        className="chrome-icon"
+        onClick={onToggleLibrary}
+        title="All highlights"
+        type="button"
+      >
+        <HighlightsIcon />
       </button>
 
       {/* Not on the canvas, which has light and dark artboards but no control to choose

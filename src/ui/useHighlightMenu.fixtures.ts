@@ -27,6 +27,7 @@ export function annotations(): Annotations {
   return {
     all: [HIGHLIGHT],
     failure: null,
+    loaded: true,
     add: vi.fn(() => Promise.resolve(null)),
     addArea: vi.fn(() => Promise.resolve(null)),
     addTextBox: vi.fn(() => Promise.resolve(null)),

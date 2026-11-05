@@ -30,6 +30,7 @@ mod relative_path;
 mod renumber;
 mod reorganize;
 mod schema;
+mod search;
 mod slug;
 mod source;
 mod text;
@@ -75,6 +76,7 @@ pub use reorganize::{
     BlockedLecture, Move, PlacedLecture, ReorganizeBlock, ReorganizePlan, plan_reorganize,
 };
 pub use schema::{SchemaProbe, SchemaRange};
+pub use search::{LineMatch, SNIPPET_CONTEXT, SearchQuery, Snippet};
 pub use slug::Slug;
 pub use source::Source;
 pub use theme::Theme;

@@ -34,6 +34,8 @@ function show(over: Partial<Parameters<typeof TitleBar>[0]> = {}) {
     onCycleTheme: vi.fn(),
     errorsShown: false,
     onToggleErrors: vi.fn(),
+    libraryShown: false,
+    onToggleLibrary: vi.fn(),
     ...over,
   };
 

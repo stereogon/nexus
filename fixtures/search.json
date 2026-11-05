@@ -1,0 +1,61 @@
+{
+  "highlights": {
+    "lectures": [
+      {
+        "annotations": [
+          {
+            "createdAt": "2026-11-05T09:00:00Z",
+            "id": "hl-1",
+            "kind": "textHighlight",
+            "page": 3,
+            "quote": "The Leader Completeness property",
+            "rects": [
+              {
+                "height": 0.03,
+                "width": 0.5,
+                "x": 0.1,
+                "y": 0.2
+              }
+            ],
+            "semantic": "exam",
+            "updatedAt": "2026-11-05T09:00:00Z"
+          }
+        ],
+        "directory": "cs454/raft"
+      }
+    ],
+    "unreadable": 1
+  },
+  "search": {
+    "lectures": [
+      {
+        "directory": "cs454/raft",
+        "marks": [
+          {
+            "id": "hl-1",
+            "page": 3,
+            "semantic": "exam",
+            "snippet": {
+              "after": " Completeness property",
+              "before": "The ",
+              "matched": "Leader"
+            }
+          }
+        ],
+        "noteLines": 1,
+        "notes": [
+          {
+            "line": 3,
+            "snippet": {
+              "after": " is elected.",
+              "before": "A ",
+              "matched": "leader"
+            }
+          }
+        ]
+      }
+    ],
+    "truncated": false,
+    "unreadable": 1
+  }
+}

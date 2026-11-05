@@ -463,6 +463,51 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-05 · Searching inside lectures, and a highlights library**
+Asked for: "filtering and searching for text, a store for storing the highlights"; the user
+chose vault-wide search and a vault-wide library (and ⌘F in the open PDF, built next).
+
+**Search (⌘P).** Typing two or more characters in the sidebar search now also searches every
+lecture's notes and the text of its highlights and sticky notes, below the lectures whose
+titles match. Each result shows its words in context with the match marked; clicking one
+opens the lecture at the line of notes (scrolled to) or the highlight (jumped to and
+pulsed). Matching is a pure `SearchQuery` in `lecture-core` (9 tests): case-insensitive and
+Unicode-aware, accents **not** folded (`e` does not find `é` — honest folding needs
+decomposition tables the crate does not carry). A snippet crosses IPC as three strings —
+before, matched, after — because offsets would disagree between Rust's counting and
+JavaScript's UTF-16. The command `search_vault` takes the directories the window already
+holds instead of walking the vault per keystroke; it lists up to 3 lines and 5 highlights per
+lecture, 100 results in all (`truncated` says so), and skips and counts a lecture whose files
+cannot be read rather than failing (9 contract tests, plus `fixtures/search.json`). The
+window waits 200 ms for typing to pause and drops any answer that arrives after a newer
+question.
+
+**Highlights library.** A title-bar button opens every highlight and sticky note in the vault
+in the document pane, grouped by lecture in sidebar order and in reading order within each.
+It filters by meaning (and sticky notes), by course, module and week — only values lectures
+with highlights have — and by words. Choosing one opens its lecture at it. `vault_highlights`
+reads each lecture's own file every time the library opens, so it cannot disagree with the
+lectures; no index was added. Pure rules in `highlightLibrary.ts` (7 tests). **Known:**
+opening the library unmounts the open lecture, so closing it reopens that lecture at the top.
+
+**Arriving at a place.** `useArrival` opens a lecture and hands `Reading` the place. A
+highlight waits for the lecture's highlights and pages (`useJump` gained `ready`); a notes
+line waits for the editor to hold this lecture's notes. Two bugs were found by the journeys,
+both from React's development double-mount — which `npm run app` runs under: a line shown
+in the editor's first, discarded view was lost, and a second run of the "new lecture" reset
+wiped the jump an arrival had just made. Readiness is now state, the reset runs only on a
+real change of lecture, and an arrival is acted on once. The "wait until ready" gate was at
+first unproved — without it the jump retried and ended correct — until the journey watched
+for the false "no longer has that highlight" message at any moment. A sticky note found by
+search is jumped to by its box.
+
+On the way: `useAnnotations` passed 300 lines, so its pure helpers moved to
+`annotationList.ts`; `Sidebar.tsx` reached the limit, so its row components moved to
+`SidebarLecture.tsx`; and `App.tsx` passed it, so search, library and arrival live in
+`useFinding`. Neither the results nor the library is on the canvas; styled to fit
+(`finding.css`), owing a pass. Seen in a screenshot, not changed: in the code font, the
+empty state's "⌘O" (letter O, import) reads almost exactly as "⌘0" (zero, errors).
+
 **2026-11-05 · Sticky notes too small to show their buttons, and no Save button**
 Reported: "the sticky note save button and delete button are now not visible". A note is
 stored as a fraction of its page (24% × 16% by default), and nothing set a floor on how
