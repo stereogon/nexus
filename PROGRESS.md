@@ -461,6 +461,29 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-05 · An image with a title, left as raw text**
+The user pasted markdownlivepreview.com's syntax guide and reported its image not
+rendering. Two causes, and only one was a bug.
+
+**The bug:** `![alt](/image/Markdown-mark.svg "This is a sample image.")` was never
+recognised as an image. CommonMark allows a title after the path — `"…"`, `'…'` or `(…)` —
+and the image pattern did not, so the line fell through to raw text: no picture and no
+explanation. The pattern now takes the title, and a path in `<…>` as one with spaces is
+written.
+
+**Not a bug, but now said properly:** that path is on markdownlivepreview.com's server and
+is on no one's disk, and Nexus shows only the lecture's own `assets/` folder. The sentence
+now names the path and the remedy — "“/image/Markdown-mark.svg” is not in it. Paste the
+picture into the notes to keep a copy in this lecture" — with a separate wording for a
+web address, which is never fetched.
+
+The guide is kept **verbatim** as a journey (`e2e/guide.spec.ts`), checked section by
+section: headings at three levels, emphasis by stars and underscores, both lists with
+nesting, the image explained, the link, the centred table column, the code block, the
+diagram, inline code, the formula and an area citation. The image journey fails with the
+old pattern restored. Two of its first failures were the journey's own: CodeMirror only
+puts lines near the visible area into the page, so the top sections had to be scrolled to.
+
 **2026-11-05 · All of the Markdown rendered in the one view**
 Reported, with a question: tables did not render, `>` only dimmed the text, images in
 Markdown did not show — "is there a way to do all this in the same view?" There is, and

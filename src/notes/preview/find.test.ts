@@ -107,6 +107,21 @@ describe("images", () => {
     ]);
   });
 
+  it("finds an image with a title after its path", () => {
+    // The CommonMark form `![alt](path "title")` was left as raw text (2026-11-05).
+    expect(findPreviews('![This is an alt text.](/image/Markdown-mark.svg "This is a sample image.")')).toMatchObject([
+      { kind: "image", alt: "This is an alt text.", src: "/image/Markdown-mark.svg" },
+    ]);
+  });
+
+  it("finds an image whose title is in single quotes or brackets", () => {
+    expect(findPreviews("![a](assets/a.png 'A') ![b](assets/b.png (B))").map((found) => found.kind)).toEqual(["image", "image"]);
+  });
+
+  it("finds an image whose path is in angle brackets, as a path with spaces is written", () => {
+    expect(findPreviews("![a](<assets/my figure.png>)")).toMatchObject([{ kind: "image", src: "assets/my figure.png" }]);
+  });
+
   it("finds several on one line, in order", () => {
     expect(findPreviews("![a](assets/a.png) and ![b](assets/b.png)").map((preview) => preview.kind)).toEqual(["image", "image"]);
   });

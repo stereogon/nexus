@@ -111,6 +111,23 @@ export class MathWidget extends WidgetType {
 }
 
 /**
+ * Why an image path is not shown, said for the kind of path it is.
+ *
+ * Every case ends with what to do: paste the picture, which keeps a copy in the lecture.
+ * A web address and a path elsewhere on disk are not loaded on purpose, so the sentence
+ * says that rather than leaving a blank where the picture would be.
+ */
+export function unshownImage(src: string): string {
+  const fix = "Paste the picture into the notes to keep a copy in this lecture.";
+
+  if (/^[a-z][a-z0-9+.-]*:/i.test(src)) {
+    return `Only images in this lecture's assets folder are shown, and “${src}” is on the web — Nexus never fetches anything. ${fix}`;
+  }
+
+  return `Only images in this lecture's assets folder are shown, and “${src}” is not in it. ${fix}`;
+}
+
+/**
  * An image from the lecture's own `assets/` folder.
  *
  * Only that folder. A path outside it, or a web address, is shown as a sentence rather
@@ -132,10 +149,7 @@ export class ImageWidget extends WidgetType {
 
   override toDOM(view: EditorView): HTMLElement {
     if (this.url === null) {
-      return problem(
-        `Only images in this lecture's assets folder are shown, and “${this.src}” is not one. Paste an image to add it.`,
-        true,
-      );
+      return problem(unshownImage(this.src), true);
     }
 
     const image = document.createElement("img");

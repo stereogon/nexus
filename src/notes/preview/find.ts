@@ -31,7 +31,12 @@ export type Preview =
 /** The citation line `lecture_core::citation_block` writes; see `notes/citation.ts`. */
 const CITATION = /^> 📌 \*\*\[Page (\d+)\]\(cite:\/\/([A-Za-z0-9_-]+)\)\*\*(?:: \*"(.*)"\*)?\s*$/u;
 const FENCE = /^(`{3,}|~{3,})\s*([\w-]*)/;
-const IMAGE = /!\[([^\]]*)\]\(([^)\s]+)\)/g;
+/**
+ * `![alt](path)`, with the optional title CommonMark allows after the path —
+ * `"…"`, `'…'` or `(…)` — and an optional `<…>` around a path with spaces. Missing the
+ * title was why `![alt](/image/x.svg "A title")` was left as raw text (2026-11-05).
+ */
+const IMAGE = /!\[([^\]]*)\]\(\s*(<[^>]*>|[^)\s]+)(?:\s+(?:"[^"]*"|'[^']*'|\([^)]*\)))?\s*\)/g;
 const INLINE_MATH = /(?<![\\$])\$(?=\S)((?:[^$\\\n]|\\.)+?)(?<=\S)\$(?![$\d])/g;
 
 /** The quote as written, with the escaping `citation_block` added taken off again. */
@@ -122,7 +127,7 @@ export function findPreviews(doc: string): Preview[] {
         from: from + match.index,
         to: from + match.index + match[0].length,
         alt: match[1] ?? "",
-        src: match[2] ?? "",
+        src: (match[2] ?? "").replace(/^<(.*)>$/, "$1"),
       });
     }
 
