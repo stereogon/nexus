@@ -31,6 +31,8 @@ export interface Fixture {
   /** Each lecture's pages, keyed by directory. A lecture with none cannot be opened. */
   readonly pages: Readonly<Record<string, readonly (readonly Line[])[]>>;
   readonly annotations: Readonly<Record<string, readonly Annotation[]>>;
+  /** Each lecture's `notes.md`, keyed by directory; absent means none yet. */
+  readonly notes?: Readonly<Record<string, string>>;
 }
 
 /** Slide-shaped, because most of what this app opens is a lecture deck. */

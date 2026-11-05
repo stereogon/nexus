@@ -19,6 +19,8 @@ import { useEffect, useImperativeHandle, useRef, type Ref } from "react";
 
 import { citeLinks } from "../notes/citeLinks";
 import { citationAt } from "../notes/insert";
+import { livePreview } from "../notes/preview/field";
+import { notesAppearance } from "../notes/theme";
 
 /** What the pane can ask of the editor. */
 export interface NotesHandle {
@@ -35,6 +37,7 @@ export function NotesEditor({
   onCite,
   handle,
   onReady,
+  imageUrl,
 }: {
   /** The text to start from, taken afresh only when `generation` changes. */
   readonly text: string;
@@ -44,6 +47,8 @@ export function NotesEditor({
   readonly handle: Ref<NotesHandle>;
   /** Called once the view exists, so citations made before it loaded can go in. */
   readonly onReady: () => void;
+  /** Where an image path in the notes loads from, or `null` if it is not one to load. */
+  readonly imageUrl: (src: string) => string | null;
 }) {
   const host = useRef<HTMLDivElement | null>(null);
   const view = useRef<EditorView | null>(null);
@@ -53,6 +58,8 @@ export function NotesEditor({
   const changed = useRef(onChange);
   const cited = useRef(onCite);
   const ready = useRef(onReady);
+  const images = useRef(imageUrl);
+  images.current = imageUrl;
   changed.current = onChange;
   cited.current = onCite;
   ready.current = onReady;
@@ -77,6 +84,13 @@ export function NotesEditor({
           keymap.of([...defaultKeymap, ...historyKeymap]),
           markdown(),
           EditorView.lineWrapping,
+          notesAppearance,
+          livePreview({
+            onCite: (id) => {
+              cited.current(id);
+            },
+            imageUrl: (src) => images.current(src),
+          }),
           placeholder("Notes for this lecture. Select text in the document and choose “Link to notes” to cite it here."),
           citeLinks((id) => {
             cited.current(id);

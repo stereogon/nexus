@@ -49,10 +49,15 @@ test("Link to notes cites a selection at the cursor, as a badge", async ({ page 
   await dragAcross(page, textOn(page, 1).filter({ hasText: "Body text on page 1" }));
   await page.getByRole("group", MENU).getByRole("button", { name: "Link to notes" }).click();
 
-  // Stored as a highlight, and cited by the id it was stored under.
+  // Stored as a highlight, and drawn as a citation card once the cursor has moved on.
   await expect(page.locator(".highlight")).toHaveCount(1);
-  await expect(editor(page)).toContainText('Page 1](cite://e2e-1)**: *"Body text on page 1"*');
-  await expect(notes(page).locator(".cm-cite")).toHaveCount(1);
+  await expect(notes(page).locator(".md-citation")).toContainText("Page 1");
+  await expect(notes(page).locator(".md-citation")).toContainText("“Body text on page 1”");
+
+  // Underneath, the Markdown is exactly the line `lecture_core::citation_block` writes,
+  // cited by the id the highlight was stored under.
+  await notes(page).locator(".md-citation-quote").click();
+  await expect(editor(page)).toContainText('> 📌 **[Page 1](cite://e2e-1)**: *"Body text on page 1"*');
 });
 
 test("a citation's badge takes the document to its highlight, and pulses it", async ({ page }) => {
@@ -60,13 +65,13 @@ test("a citation's badge takes the document to its highlight, and pulses it", as
   await settleOn(page, 7);
   await dragAcross(page, textOn(page, 7).filter({ hasText: "Body text on page 7" }));
   await page.getByRole("group", MENU).getByRole("button", { name: "Link to notes" }).click();
-  await expect(notes(page).locator(".cm-cite")).toHaveCount(1);
+  await expect(notes(page).locator(".md-citation")).toHaveCount(1);
 
   await pageField(page).fill("1");
   await settleOn(page, 1);
   await expect(page.getByLabel("Page 7", { exact: true })).not.toBeInViewport();
 
-  await notes(page).locator(".cm-cite").click();
+  await notes(page).getByRole("button", { name: "Page 7" }).click();
 
   await expect(page.getByLabel("Page 7", { exact: true })).toBeInViewport();
   await expect(page.locator(".highlight.pulse")).toHaveCount(1);
@@ -78,7 +83,7 @@ test("a citation of a highlight that was removed says so", async ({ page }) => {
   await page.getByRole("button", { name: /^Key concept:/ }).click();
   await page.getByRole("group", MENU).getByRole("button", { name: "Remove" }).click();
 
-  await notes(page).locator(".cm-cite").click();
+  await notes(page).getByRole("button", { name: "Page 1" }).click();
 
   await expect(page.getByText(/no longer has/)).toBeVisible();
 });
@@ -124,5 +129,5 @@ test("Link to notes with the notes hidden opens them and cites there", async ({ 
   await page.getByRole("group", MENU).getByRole("button", { name: "Link to notes" }).click();
 
   await expect(notes(page)).toBeVisible();
-  await expect(notes(page).locator(".cm-cite")).toHaveCount(1);
+  await expect(notes(page).locator(".md-citation")).toHaveCount(1);
 });

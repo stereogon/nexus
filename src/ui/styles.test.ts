@@ -201,17 +201,12 @@ function defined(): Set<string> {
 const APPLIED_BY_PDFJS = new Set(["markedContent"]);
 
 /**
- * Classes CodeMirror puts on the editor it builds, styled in `notes.css`. Named for the
- * same reason as pdf.js's: no component writes them, and a looser rule would also excuse
- * a real mistake.
+ * Classes CodeMirror puts on the editor it builds, if any rule here styles them. Empty
+ * since 2026-11-05: the editor is styled through CodeMirror's own theme mechanism
+ * (`src/notes/theme.ts`), because rules in a stylesheet lose to its runtime styles. Kept
+ * as the named place for an exception, should one ever be needed.
  */
-const APPLIED_BY_CODEMIRROR = new Set([
-  "cm-editor",
-  "cm-focused",
-  "cm-scroller",
-  "cm-content",
-  "cm-placeholder",
-]);
+const APPLIED_BY_CODEMIRROR = new Set<string>([]);
 
 /**
  * The stylesheets that hold shared primitives rather than one pane's layout.

@@ -84,7 +84,9 @@ export function backend(fixture: Fixture): (command: string, args?: InvokeArgs) 
 
   // Notes and their versions, with the real command's rule: a save based on anything but
   // the current version writes nothing and answers with what is there.
-  const notes = new Map<string, { text: string; version: string }>();
+  const notes = new Map<string, { text: string; version: string }>(
+    Object.entries(fixture.notes ?? {}).map(([directory, text]) => [directory, { text, version: "seeded" }]),
+  );
   let revisions = 0;
   const notesOf = (directory: string) => notes.get(directory) ?? { text: "", version: "empty" };
 

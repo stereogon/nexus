@@ -233,8 +233,8 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
 - [~] CodeMirror 6 notes pane beside the document, saving as you type with conflict
       handling, `cite://` badges (2026-11-05). Styled to fit the window, not yet from the
       canvas; no live preview of rendered Markdown yet, no draggable split.
-- [ ] Offline KaTeX, Mermaid, declarative `chart` blocks, each with an error boundary that
-      keeps the editor mounted
+- [x] Offline KaTeX, Mermaid, declarative `chart` blocks, each with an error boundary that
+      keeps the editor mounted (2026-11-05, as a live preview over the Markdown)
 - [ ] Clipboard image → `assets/<timestamp>-<hash>.png`
 - [~] `cite://<id>`: Link to notes inserts at the cursor; a badge jumps the document to its
       highlight with the pulse ring (2026-11-05). Not yet: the reverse direction, from a
@@ -459,6 +459,53 @@ Fixed at the cause with `fsModuleCache: false`, measured at no cost (the suite r
 either way). Proved by adding a component with a class the stylesheets never mention and
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
+
+**2026-11-05 · The notes, rendered — and the font that was never Literata**
+Two reports in one: "the font in the notes section is bad", and citations had no styling.
+
+**The font was a cascade bug.** The pane's stylesheet set `.cm-scroller` to Literata, but
+CodeMirror injects its base theme at runtime, *after* the app's stylesheets, and at equal
+specificity its monospace won — so the notes had been in monospace all along. The editor
+is now styled through CodeMirror's own theme (`src/notes/theme.ts`): Literata 16/1.7 at a
+68-character measure, Bricolage headings at three sizes, Plex Mono for code, markup
+characters dimmed rather than hidden so they stay editable, all from the tokens. The CSS
+rules that were losing are deleted rather than left as a second source. A journey reads
+the *computed* font and fails with the theme removed.
+
+**A live preview, not a second view.** The notes are still edited as Markdown; each
+construct is drawn in place of its source while the cursor is elsewhere, and shown as text
+the moment the cursor enters it, so nothing becomes uneditable by being pretty. `find.ts`
+locates them — pure and line-based like the Rust citation scanner, skipping fenced and
+inline code, with Pandoc's rule so "$5 and $6" stays prices — and a state field draws
+them (block replacements must come from state). Widgets compare by content, so an
+unchanged diagram is not redrawn when the text above it changes.
+
+- **Citations** are cards: a pill **Page N ↗** that takes the document there and pulses
+  the highlight, then the quote in italic serif, on an accent rule. Clicking the quote puts
+  the cursor in the line and shows its Markdown. The scanner is tested against Rust's own
+  `fixtures/citations.json`, so the renderer and the writer cannot disagree.
+- **Maths** via KaTeX, inline and display, its fonts bundled.
+- **Diagrams** via Mermaid (`securityLevel: "strict"`, which sanitises its SVG), loaded only
+  when a note first has one and cached by source.
+- **Charts** via Chart.js, also on demand, in the semantic palette. The block takes the
+  spec's `type`/`data`/`options`, with options narrowed to title, axis labels and stacking:
+  mapping arbitrary JSON into Chart.js's typed config would need a cast (§4), and a note
+  tied to a library's internals breaks on its next major version.
+- **Images** from the lecture's own `assets/` folder only; anything else is a sentence.
+
+Every renderer fails into a sentence where it would have been — "This formula could not be
+typeset: …", "This chart is not valid JSON: …", with the place it went wrong — and never
+into a thrown error: a journey types into the note after a broken formula to prove the
+editor stayed mounted (§1.4).
+
+Four earlier notes journeys looked for raw citation text and were moved to the card; one
+now clicks through to confirm the Markdown underneath is exactly Rust's line.
+
+*Bundle:* Mermaid and its `elkjs` layout engine are separate chunks loaded on demand;
+KaTeX and CodeMirror are in the main bundle (1.6 MB), since maths renders synchronously.
+Licences, including `elkjs`'s EPL-2.0-or-GPL choice, are in the table below. `npm audit`:
+no findings in shipped dependencies; nine moderate in development tooling (`minimatch`),
+not "fixed" with `--force`, which would make breaking upgrades.
 
 **2026-11-05 · Notes beside the document, wired before the canvas**
 The user's decision, recorded because it sets aside CLAUDE.md §3 for now: wire the notes
@@ -4784,6 +4831,10 @@ packages resolved, every one with a stated licence.
 | `@codemirror/commands` | 6.11.1 | MIT | *(added 2026-11-05)* |
 | `@codemirror/language` | 6.13.1 | MIT | *(added 2026-11-05)* |
 | `@codemirror/lang-markdown` | 6.5.2 | MIT | *(added 2026-11-05; pulls in `@codemirror/{autocomplete,lang-css,lang-html,lang-javascript,lint,streamparser}`, `@lezer/{common,css,highlight,html,javascript,lr,markdown}`, `style-mod`, `w3c-keyname` and `crelt` -- every one MIT, read from the installed manifests)* |
+| `@lezer/highlight` | 1.2.5 | MIT | *(made direct 2026-11-05; it was already CodeMirror's dependency, now imported for highlight tags)* |
+| `katex` | 0.19.1 | MIT | *(added 2026-11-05, maths in notes; its fonts are OFL-1.1 and bundled as local files)* |
+| `mermaid` | 12.3.0 | MIT | *(added 2026-11-05, diagrams; loaded on demand. Pulls in d3, DOMPurify (MPL-2.0 OR Apache-2.0), `khroma` (MIT by its licence file; no field in its manifest) and `elkjs`, which is **EPL-2.0 OR GPL-3.0-or-later** -- taken under EPL-2.0, which permits use in a larger work; elkjs is not modified)* |
+| `chart.js` | 4.6.1 | MIT | *(added 2026-11-05, ```chart blocks; loaded on demand)* |
 | `@types/react` | 19.3.0 | MIT |
 | `@types/react-dom` | 19.3.0 | MIT |
 | `@vitejs/plugin-react` | 6.1.2 | MIT |

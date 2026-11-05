@@ -10,6 +10,7 @@
  */
 import type { Ref } from "react";
 
+import { assetUrl } from "../notes/assets";
 import { Failure } from "./Failure";
 import { NotesEditor, type NotesHandle } from "./NotesEditor";
 import { useNotes, type SaveStatus } from "./useNotes";
@@ -87,6 +88,7 @@ export function NotesPane({
           handle={handle}
           onChange={notes.change}
           onCite={onCite}
+          imageUrl={(src) => assetUrl(vault, directory, src)}
           onReady={onReady}
           text={notes.loaded.text}
         />
