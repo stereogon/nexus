@@ -171,3 +171,10 @@
 .highlight-remove:hover {
   color: var(--semantic-exam);
 }
+
+/* With the box tool on, the whole page draws -- including over text, whose own cursor
+   would otherwise say "select" while a drag draws. */
+.viewer-bed.boxing .pdf-page,
+.viewer-bed.boxing .textLayer span {
+  cursor: crosshair;
+}

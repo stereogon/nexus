@@ -456,6 +456,18 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-05 · A box tool, for a touchpad**
+Reported: on a MacBook touchpad the box could not be drawn at all. Option-drag needs a
+physical click held down while the finger moves — or macOS's three-finger drag switched on
+in Accessibility — and most touchpad setups make neither natural.
+
+So the viewer's toolbar has a **Draw a box** toggle. While it is on, a plain drag draws a
+box, the cursor over the page (text included) is a crosshair, and it stays on for the next
+box until switched off; off, a drag selects text exactly as before. Option-drag keeps
+working either way. Not on the canvas, like the rest of that toolbar's controls; the icon
+is a dashed square drawn in `currentColor`. Two journeys, both failing when the drag
+ignores the tool.
+
 **2026-11-05 · Notes, the half underneath the editor**
 Milestone 4 begins with what does not need the design canvas, because the canvas cannot be
 opened from the account this session is now signed in to — it belongs to the earlier one —

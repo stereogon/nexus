@@ -38,6 +38,8 @@ export function PdfToolbar({
   onZoom,
   onFit,
   onMode,
+  boxing,
+  onBoxing,
 }: {
   readonly title: string;
   /** Zero-based, as everything inside the viewer is. */
@@ -52,6 +54,9 @@ export function PdfToolbar({
   readonly onZoom: (direction: 1 | -1) => void;
   readonly onFit: () => void;
   readonly onMode: (mode: ViewMode) => void;
+  /** Whether a plain drag draws a box rather than selecting text. */
+  readonly boxing: boolean;
+  readonly onBoxing: (on: boolean) => void;
 }) {
   const empty = pages === 0;
 
@@ -127,6 +132,34 @@ export function PdfToolbar({
           Fit width
         </button>
       </div>
+
+      {/* The box tool, for a touchpad. Option-drag needs a physical click held while the
+          finger moves, which most touchpad setups make awkward; with this on, a plain drag
+          draws the box. Added 2026-11-05 at the user's request; not on the canvas. */}
+      <button
+        aria-label="Draw a box"
+        aria-pressed={boxing}
+        className={boxing ? "quiet on" : "quiet"}
+        onClick={() => {
+          onBoxing(!boxing);
+        }}
+        title="Draw a box around a diagram or scan (or hold Option and drag)"
+        type="button"
+      >
+        <svg aria-hidden="true" height="14" viewBox="0 0 14 14" width="14">
+          <rect
+            fill="none"
+            height="11"
+            rx="1.5"
+            stroke="currentColor"
+            strokeDasharray="2.5 2"
+            strokeWidth="1.4"
+            width="11"
+            x="1.5"
+            y="1.5"
+          />
+        </svg>
+      </button>
 
       {/* Not on the canvas: see this file's note. */}
       <div aria-label="View mode" className="segmented" role="group">

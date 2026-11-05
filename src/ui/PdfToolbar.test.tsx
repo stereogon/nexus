@@ -27,6 +27,8 @@ function show(over: Partial<Parameters<typeof PdfToolbar>[0]> = {}) {
     onZoom: vi.fn(),
     onFit: vi.fn(),
     onMode: vi.fn(),
+    boxing: false,
+    onBoxing: vi.fn<(on: boolean) => void>(),
     ...over,
   };
 
@@ -175,5 +177,33 @@ describe("the layout switch", () => {
     fireEvent.click(screen.getByRole("button", { name: "Page" }));
 
     expect(props.onMode).toHaveBeenCalledWith("page");
+  });
+});
+
+describe("the box tool", () => {
+  // For a touchpad, where Option-drag needs a physical click held while the finger moves.
+  const tool = () => screen.getByRole("button", { name: "Draw a box" });
+
+  it("is off to begin with, and says so", () => {
+    show();
+
+    expect(tool().getAttribute("aria-pressed")).toBe("false");
+  });
+
+  it("turns on when pressed", () => {
+    const props = show();
+
+    fireEvent.click(tool());
+
+    expect(props.onBoxing).toHaveBeenCalledWith(true);
+  });
+
+  it("turns off when pressed again", () => {
+    const props = show({ boxing: true });
+
+    expect(tool().getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(tool());
+
+    expect(props.onBoxing).toHaveBeenCalledWith(false);
   });
 });

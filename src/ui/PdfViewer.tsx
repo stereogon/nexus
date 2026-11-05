@@ -55,7 +55,8 @@ export function PdfViewer({
   const highlights = useAnnotations(vault, directory);
   const menu = useHighlightMenu(highlights);
   const dismissMenu = menu.dismiss;
-  const area = useAreaDraw(menu.draw);
+  const [boxing, setBoxing] = useState(false);
+  const area = useAreaDraw(menu.draw, boxing);
   const { state, page } = usePdfDocument(documentUrl(document));
   const scroller = useRef<HTMLDivElement | null>(null);
   const [zoom, setZoom] = useState<Zoom>({ kind: "fit" });
@@ -217,7 +218,9 @@ export function PdfViewer({
   return (
     <section className="viewer">
       <PdfToolbar
+        boxing={boxing}
         fitting={zoom.kind === "fit"}
+        onBoxing={setBoxing}
         limits={ZOOM_LIMITS}
         mode={mode}
         onClose={onClose}
@@ -250,7 +253,7 @@ export function PdfViewer({
         />
       )}
 
-      <div className="viewer-bed" onScroll={onScroll} ref={scroller}>
+      <div className={boxing ? "viewer-bed boxing" : "viewer-bed"} onScroll={onScroll} ref={scroller}>
         {state.loading && <p className="note">Opening the document…</p>}
         {state.failure !== null && (
           <div className="card error">

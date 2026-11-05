@@ -172,3 +172,44 @@ test("an area survives closing and reopening the lecture", async ({ page }) => {
 
   await expect(page.locator('.highlight[data-semantic="definition"]')).toHaveCount(1);
 });
+
+test("with the box tool on, a plain drag draws a box -- for a touchpad", async ({ page }) => {
+  // Option-drag needs a physical click held while the finger moves, which most touchpad
+  // setups make awkward. Reported 2026-11-05.
+  await page.getByRole("button", { name: "Draw a box" }).click();
+
+  await dragOnFirstPage(page, EMPTY_CORNER.from, EMPTY_CORNER.to, false);
+  await page.getByRole("group", MENU).getByRole("button", { name: "Definition" }).click();
+
+  await expect(page.locator('.highlight[data-semantic="definition"]')).toHaveCount(1);
+});
+
+test("the box tool stays on for the next box, and off means text again", async ({ page }) => {
+  const tool = page.getByRole("button", { name: "Draw a box" });
+
+  await tool.click();
+  await dragOnFirstPage(page, { x: 0.55, y: 0.5 }, { x: 0.7, y: 0.7 }, false);
+  await page.getByRole("group", MENU).getByRole("button", { name: "Key concept" }).click();
+  await dragOnFirstPage(page, { x: 0.75, y: 0.5 }, { x: 0.9, y: 0.7 }, false);
+  await page.getByRole("group", MENU).getByRole("button", { name: "Question" }).click();
+  await expect(page.locator(".highlight")).toHaveCount(2);
+
+  await tool.click();
+  await expect(tool).toHaveAttribute("aria-pressed", "false");
+
+  const words = textOn(page, 1).filter({ hasText: "Page 1 heading" });
+  const box = await words.boundingBox();
+
+  if (box === null) {
+    throw new Error("The heading is not laid out.");
+  }
+
+  await page.mouse.move(box.x + 1, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width - 1, box.y + box.height / 2, { steps: 8 });
+  await page.mouse.up();
+
+  expect(await page.evaluate(() => document.getSelection()?.toString() ?? "")).toBe(
+    "Page 1 heading",
+  );
+});

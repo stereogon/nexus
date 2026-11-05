@@ -29,6 +29,8 @@ function menuFor(box: { left: number; top: number; height: number }): MenuAt {
 
 export function useAreaDraw(
   onDrawn: (pageIndex: number, region: NormalizedRect, at: MenuAt) => void,
+  /** The box tool is on, so a plain drag draws too — for a touchpad, where Option-drag is awkward. */
+  armed: boolean,
 ): {
   readonly drawing: Drawing | null;
   readonly begin: (event: MouseEvent<HTMLElement>, pageIndex: number) => void;
@@ -47,7 +49,7 @@ export function useAreaDraw(
 
   const begin = useCallback(
     (event: MouseEvent<HTMLElement>, pageIndex: number) => {
-      if (!event.altKey || event.button !== 0) {
+      if (!(event.altKey || armed) || event.button !== 0) {
         return;
       }
 
@@ -90,7 +92,7 @@ export function useAreaDraw(
         { signal: controller.signal },
       );
     },
-    [onDrawn],
+    [onDrawn, armed],
   );
 
   return { drawing, begin };
