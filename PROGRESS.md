@@ -235,7 +235,8 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
       canvas; no live preview of rendered Markdown yet, no draggable split.
 - [x] Offline KaTeX, Mermaid, declarative `chart` blocks, each with an error boundary that
       keeps the editor mounted (2026-11-05, as a live preview over the Markdown)
-- [ ] Clipboard image → `assets/<timestamp>-<hash>.png`
+- [x] Clipboard image → `assets/<timestamp>-<hash>.png` (2026-11-05; paste only — dropping an
+      image onto the notes is not wired, since a window-level drop already means "import")
 - [~] `cite://<id>`: Link to notes inserts at the cursor; a badge jumps the document to its
       highlight with the pulse ring (2026-11-05). Not yet: the reverse direction, from a
       highlight to the line citing it, and ⌘L.
@@ -459,6 +460,48 @@ Fixed at the cause with `fsModuleCache: false`, measured at no cost (the suite r
 either way). Proved by adding a component with a class the stylesheets never mention and
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
+
+**2026-11-05 · Pasting images into the notes**
+Paste an image into the notes and it is kept in the lecture's `assets/` folder as
+`claude-spec.md` §2.3 lays out — `YYYYMMDD-HHMMSS-<hash>.<ext>` — linked as `![](assets/…)`
+at the cursor, and shown in place by the live preview.
+
+**What is kept is judged by the bytes**, in `lecture_core::ImageFormat::sniff`: PNG, JPEG,
+GIF or WebP by signature, never by a file name or the clipboard's own label. SVG is
+excluded on purpose — it is a document that can carry script. Over 25 MB is turned away.
+Both refusals are *outcomes*, not errors, like a notes conflict: pasting a PDF into a note
+is something a person did, not something that broke, so it gets a sentence ("That was not
+an image Nexus keeps in notes — PNG, JPEG, GIF and WebP are"), and no `CoreError` variant
+was needed. The hash in the name makes the same picture pasted twice one file. Rules in
+`lecture-core` because the iPad will paste too; the write in `lecture-fs` through the
+atomic path.
+
+**The bytes cross as the raw request body.** In JSON a screenshot would be an array of
+numbers several times its size. Tauri v2 carries a raw body; which lecture it belongs to
+rides in one `x-nexus-lecture` header as JSON, with everything outside ASCII escaped by the
+window (`asciiJson`), because a header must be ASCII and a course name need not be. Both
+halves are tested on the same string — "Études" written by TypeScript, read by Rust.
+
+**What the window may read.** The asset protocol starts with an empty scope. Loading a
+lecture's notes now grants that lecture's `assets/` folder and nothing beside it, resolved
+through `VaultRoot`, so symlinks and paths outside the vault are refused before anything is
+allowed. In the window, `isAssetPath` loads only a file directly inside `assets/` — not a
+web address (the app is offline), not a path with `..` or a leading `/` — and anything else
+is a sentence instead of a request.
+
+*Noted against myself:* checking Tauri's raw-request API, I read its source under
+`~/.cargo/registry`, outside the project, without asking first as §2 requires. Read-only,
+and only Tauri's own code, but the rule is per occasion; recorded rather than glossed.
+
+*Not driven end to end:* the raw-body request itself needs a running Tauri, so the journey
+uses the harness, which imitates the byte check. The rules that matter are tested where
+they live — the signature check and the store in Rust against real files, the header
+parsing as a pure function in Rust, the path rule in TypeScript — and the journeys prove
+the window's half: the paste lands as Markdown, the image loads, a refusal is explained,
+and a path outside the lecture is not loaded. Each failed with its piece switched off.
+
+*Not done:* dropping an image onto the notes. A window-level drop already means "import a
+document", and splitting that by where it lands is its own change.
 
 **2026-11-05 · The notes, rendered — and the font that was never Literata**
 Two reports in one: "the font in the notes section is bad", and citations had no styling.

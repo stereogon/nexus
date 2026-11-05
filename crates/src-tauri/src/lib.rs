@@ -8,6 +8,7 @@
 //! one not required to compile for `aarch64-apple-ios`.
 
 pub mod annotations;
+pub mod assets;
 pub mod document;
 pub mod edit;
 pub mod import;
@@ -53,6 +54,7 @@ pub fn run() -> Result<(), tauri::Error> {
             retag_annotation,
             notes::load_notes,
             notes::save_notes,
+            assets::save_asset,
             remember_vault,
             last_theme,
             remember_theme,

@@ -18,6 +18,7 @@ mod staging;
 mod unique;
 
 pub mod annotation_store;
+pub mod asset_store;
 pub mod clock;
 pub mod device_state;
 pub mod document_scan;
@@ -38,6 +39,7 @@ pub mod vault;
 pub mod vault_root;
 
 pub use annotation_store::AnnotationStore;
+pub use asset_store::{AssetSave, AssetStore, Refusal, assets_dir};
 pub use clock::SystemClock;
 pub use device_state::{APP_SUPPORT_DIR_NAME, DeviceStateStore, VAULTS_DIR_NAME, state_base};
 pub use ids::SystemIds;

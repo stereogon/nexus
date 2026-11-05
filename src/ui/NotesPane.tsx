@@ -8,12 +8,22 @@
  * artboards once they are readable (2026-11-05). Recorded in `PROGRESS.md` as owing that
  * pass, rather than looking finished.
  */
-import type { Ref } from "react";
+import { useCallback, useState, type Ref } from "react";
+
+import { saveImage } from "../ipc/assets";
+import { asCommandError, type CommandError } from "../ipc/vault";
 
 import { assetUrl } from "../notes/assets";
 import { Failure } from "./Failure";
 import { NotesEditor, type NotesHandle } from "./NotesEditor";
 import { useNotes, type SaveStatus } from "./useNotes";
+
+/** Why a pasted image was not kept, in words the reader can act on. */
+const REFUSED = {
+  notAnImage:
+    "That was not an image Nexus keeps in notes — PNG, JPEG, GIF and WebP are. Nothing was added.",
+  tooLarge: "That image is larger than 25 MB, so it was not added. A screenshot or an exported slide will fit.",
+} as const;
 
 /** What the header says about the last save. Plain words: the reader is not a developer. */
 const STATUS_TEXT: Record<SaveStatus, string> = {
@@ -45,6 +55,30 @@ export function NotesPane({
   readonly hidden: boolean;
 }) {
   const notes = useNotes(vault, directory);
+  const [pasteProblem, setPasteProblem] = useState<string | null>(null);
+  const [pasteFailure, setPasteFailure] = useState<CommandError | null>(null);
+
+  const pasteImage = useCallback(
+    async (file: File): Promise<string | null> => {
+      setPasteProblem(null);
+      setPasteFailure(null);
+
+      try {
+        const saved = await saveImage(vault, directory, new Uint8Array(await file.arrayBuffer()));
+
+        if (saved.outcome === "saved") {
+          return saved.path;
+        }
+
+        setPasteProblem(REFUSED[saved.reason]);
+        return null;
+      } catch (thrown: unknown) {
+        setPasteFailure(asCommandError(thrown));
+        return null;
+      }
+    },
+    [vault, directory],
+  );
 
   return (
     <aside aria-label="Notes" className="notes-pane" hidden={hidden}>
@@ -81,6 +115,8 @@ export function NotesPane({
       )}
 
       {notes.failure !== null && <Failure error={notes.failure} />}
+      {pasteFailure !== null && <Failure error={pasteFailure} />}
+      {pasteProblem !== null && <p className="note notes-paste-problem">{pasteProblem}</p>}
 
       {notes.loaded !== null && (
         <NotesEditor
@@ -89,6 +125,7 @@ export function NotesPane({
           onChange={notes.change}
           onCite={onCite}
           imageUrl={(src) => assetUrl(vault, directory, src)}
+          onPasteImage={pasteImage}
           onReady={onReady}
           text={notes.loaded.text}
         />

@@ -218,3 +218,8 @@ span.md-problem {
   display: inline;
   padding: 1px 6px;
 }
+
+/* A pasted file that was not kept: said once, above the editor, in the pane's own type. */
+.notes-paste-problem {
+  margin: 10px 16px 0;
+}

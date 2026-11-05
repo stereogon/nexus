@@ -88,6 +88,8 @@ export function backend(fixture: Fixture): (command: string, args?: InvokeArgs) 
     Object.entries(fixture.notes ?? {}).map(([directory, text]) => [directory, { text, version: "seeded" }]),
   );
   let revisions = 0;
+  let notesOpenFor = "";
+  let pastes = 0;
   const notesOf = (directory: string) => notes.get(directory) ?? { text: "", version: "empty" };
 
   const held = (directory: string): Annotation[] => {
@@ -188,8 +190,24 @@ export function backend(fixture: Fixture): (command: string, args?: InvokeArgs) 
         return after;
       }
 
-      case "load_notes":
-        return notesOf(InLecture.parse(args).directory);
+      case "load_notes": {
+        notesOpenFor = InLecture.parse(args).directory;
+
+        return notesOf(notesOpenFor);
+      }
+
+      case "save_asset": {
+        const bytes = args instanceof Uint8Array ? args : new Uint8Array();
+        const png = [0x89, 0x50, 0x4e, 0x47].every((byte, at) => bytes[at] === byte);
+
+        if (!png || notesOpenFor === "") {
+          return { outcome: "refused", reason: "notAnImage" };
+        }
+
+        pastes += 1;
+
+        return { outcome: "saved", path: `assets/20261105-101530-pasted${String(pastes)}.png` };
+      }
 
       case "save_notes": {
         const { directory, text, basedOn } = SaveNotes.parse(args);

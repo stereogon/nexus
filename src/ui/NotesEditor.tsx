@@ -38,6 +38,7 @@ export function NotesEditor({
   handle,
   onReady,
   imageUrl,
+  onPasteImage,
 }: {
   /** The text to start from, taken afresh only when `generation` changes. */
   readonly text: string;
@@ -49,6 +50,8 @@ export function NotesEditor({
   readonly onReady: () => void;
   /** Where an image path in the notes loads from, or `null` if it is not one to load. */
   readonly imageUrl: (src: string) => string | null;
+  /** Keeps a pasted image; resolves to the path to insert, or `null` if it was not kept. */
+  readonly onPasteImage: (file: File) => Promise<string | null>;
 }) {
   const host = useRef<HTMLDivElement | null>(null);
   const view = useRef<EditorView | null>(null);
@@ -59,7 +62,9 @@ export function NotesEditor({
   const cited = useRef(onCite);
   const ready = useRef(onReady);
   const images = useRef(imageUrl);
+  const pasted = useRef(onPasteImage);
   images.current = imageUrl;
+  pasted.current = onPasteImage;
   changed.current = onChange;
   cited.current = onCite;
   ready.current = onReady;
@@ -94,6 +99,26 @@ export function NotesEditor({
           placeholder("Notes for this lecture. Select text in the document and choose “Link to notes” to cite it here."),
           citeLinks((id) => {
             cited.current(id);
+          }),
+          EditorView.domEventHandlers({
+            paste(event, view) {
+              const file = [...(event.clipboardData?.files ?? [])].find((item) => item.type.startsWith("image/"));
+
+              if (file === undefined) {
+                return false;
+              }
+
+              // Ours, not the browser's: the browser would paste nothing, or a file name.
+              event.preventDefault();
+
+              void pasted.current(file).then((path) => {
+                if (path !== null) {
+                  view.dispatch(view.state.replaceSelection(`![](${path})`));
+                }
+              });
+
+              return true;
+            },
           }),
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {

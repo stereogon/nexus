@@ -18,6 +18,7 @@ mod excerpt;
 mod facets;
 mod fingerprint;
 mod highlight_semantic;
+mod image;
 mod import;
 mod label;
 mod manifest;
@@ -54,6 +55,7 @@ pub use excerpt::Excerpt;
 pub use facets::Facets;
 pub use fingerprint::{Fingerprint, Fingerprinter, fingerprint, fingerprint_hex};
 pub use highlight_semantic::HighlightSemantic;
+pub use image::{ImageFormat, MAX_ASSET_BYTES, asset_file_name};
 pub use import::{DOCUMENT_FILE_NAME, ImportPlan, ORIGINAL_FILE_STEM};
 pub use label::Label;
 pub use manifest::{

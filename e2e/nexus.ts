@@ -14,7 +14,22 @@ export async function openNexus(page: Page, fixture: Fixture = standardFixture()
   // Answers the URLs `convertFileSrc` produces in the harness. The path is the lecture's
   // directory, because that is what the fake `open_document` hands back.
   await page.route("http://asset.localhost/**", async (route) => {
-    const directory = decodeURIComponent(new URL(route.request().url()).pathname.slice(1));
+    const path = decodeURIComponent(new URL(route.request().url()).pathname.slice(1));
+
+    // An image from a lecture's assets folder: answered with a small picture, so the
+    // journey can see one load. The app's rule is about which *paths* it asks for, which
+    // this does not need to mimic.
+    if (/\/assets\/[^/]+\.png$/.test(path)) {
+      await route.fulfill({
+        status: 200,
+        contentType: "image/svg+xml",
+        headers: { "Access-Control-Allow-Origin": "*" },
+        body: '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="80"><rect width="120" height="80" fill="#2E86DE"/></svg>',
+      });
+      return;
+    }
+
+    const directory = path;
     const pages = fixture.pages[directory];
 
     if (pages === undefined) {

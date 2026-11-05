@@ -9,7 +9,9 @@ use std::path::Path;
 
 use lecture_core::RelativePath;
 use lecture_fs::{AtomicFsStorage, Notes, NotesSave, NotesStore, VaultRoot};
+use tauri::AppHandle;
 
+use crate::assets::allow_assets;
 use crate::vault::CommandError;
 
 /// A lecture's notes and the version they were read at.
@@ -18,15 +20,27 @@ use crate::vault::CommandError;
 ///
 /// Returns [`CommandError`] if the vault or the lecture cannot be read, or if `notes.md`
 /// is not text — in which case it has been copied aside, and nothing has been changed.
+///
+/// Also lets the window show the images in this lecture's `assets/` folder; see
+/// `crate::assets` for why that folder and no other.
 #[tauri::command]
-pub async fn load_notes(vault: String, directory: String) -> Result<Notes, CommandError> {
-    tauri::async_runtime::spawn_blocking(move || read_notes(&vault, &directory))
+pub async fn load_notes(
+    app: AppHandle,
+    vault: String,
+    directory: String,
+) -> Result<Notes, CommandError> {
+    let (from, at) = (vault.clone(), directory.clone());
+    let notes = tauri::async_runtime::spawn_blocking(move || read_notes(&from, &at))
         .await
         .map_err(|_| CommandError {
             code: "ERR_NOTES_INTERRUPTED",
             remediation: "Reading the notes stopped before it finished. Nothing was changed; \
                           try opening the lecture again.",
-        })?
+        })??;
+
+    allow_assets(&app, &vault, &directory)?;
+
+    Ok(notes)
 }
 
 /// Saves a lecture's notes, if the file is still at the version they were based on.
