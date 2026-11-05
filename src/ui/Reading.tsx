@@ -7,18 +7,21 @@
  * Neither side knows the other; each is handed a function.
  *
  * The notes stay mounted while hidden, so hiding and showing them never costs the
- * cursor or the undo history. ⌘\ toggles them, as `claude-spec.md` §2.3 names.
+ * cursor or the undo history. ⌘\ toggles them, as `claude-spec.md` §2.3 names, and the
+ * divider between the two sets how wide they are.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { Annotation } from "../ipc/annotations";
 import type { OpenedDocument } from "../ipc/document";
 import { citationBlock } from "../notes/citation";
+import { NotesDivider } from "./NotesDivider";
 import type { NotesHandle } from "./NotesEditor";
 import { NotesPane } from "./NotesPane";
 import { PdfViewer } from "./PdfViewer";
 import type { Jump } from "./useJump";
 import { useMetaShortcut } from "./useMetaShortcut";
+import { useNotesWidth } from "./useNotesWidth";
 
 export function Reading({
   document,
@@ -34,6 +37,8 @@ export function Reading({
   readonly onClose: () => void;
 }) {
   const notes = useRef<NotesHandle | null>(null);
+  const area = useRef<HTMLDivElement | null>(null);
+  const sizing = useNotesWidth(area);
   const [notesOpen, setNotesOpen] = useState(true);
   const [jump, setJump] = useState<Jump | null>(null);
   const [cited, setCited] = useState<ReadonlySet<string>>(new Set());
@@ -88,7 +93,7 @@ export function Reading({
   useMetaShortcut("\\", true, toggleNotes);
 
   return (
-    <div className="reading">
+    <div className="reading" ref={area}>
       <PdfViewer
         directory={directory}
         document={document}
@@ -101,6 +106,7 @@ export function Reading({
         title={title}
         vault={vault}
       />
+      {notesOpen && <NotesDivider sizing={sizing} />}
       <NotesPane
         directory={directory}
         handle={notes}
@@ -113,6 +119,7 @@ export function Reading({
         onReady={ready}
         reveal={reveal}
         vault={vault}
+        width={sizing.width}
       />
     </div>
   );

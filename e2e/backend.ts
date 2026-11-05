@@ -42,6 +42,8 @@ function facet(value: string): string | null {
 
 export function backend(fixture: Fixture): (command: string, args?: InvokeArgs) => unknown {
   let lectures: LectureRow[] = [...fixture.lectures];
+  // Per-device, so kept for the page's life like the real file is kept between launches.
+  let notesWidth: number | null = null;
 
   const vault: Handlers = {
     last_vault: () => fixture.vault,
@@ -51,6 +53,12 @@ export function backend(fixture: Fixture): (command: string, args?: InvokeArgs) 
     // it an empty body, answering `undefined` — caught by reading the result.)
     remember_vault: () => null,
     remember_theme: () => null,
+    last_notes_width: () => notesWidth,
+    remember_notes_width: (args) => {
+      notesWidth = z.object({ width: z.number().int() }).parse(args).width;
+
+      return null;
+    },
     importable_formats: () => ["pdf"],
     open_vault: () => ({ root: fixture.vault, lectures, skipped: [], unloadable: [] }),
     open_document: (args) => {

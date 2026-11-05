@@ -45,6 +45,7 @@ export function NotesPane({
   hidden,
   reveal,
   onCited,
+  width,
 }: {
   readonly vault: string;
   readonly directory: string;
@@ -59,6 +60,8 @@ export function NotesPane({
   readonly reveal: { readonly id: string; readonly nonce: number } | null;
   /** The cited highlights changed. */
   readonly onCited: (ids: ReadonlySet<string>) => void;
+  /** The width chosen with the divider, or `null` for the stylesheet's default. */
+  readonly width: number | null;
 }) {
   const notes = useNotes(vault, directory);
 
@@ -91,7 +94,15 @@ export function NotesPane({
   );
 
   return (
-    <aside aria-label="Notes" className="notes-pane" hidden={hidden}>
+    <aside
+      aria-label="Notes"
+      className="notes-pane"
+      // A chosen width replaces the default share and its cap; `useNotesWidth` has already
+      // held it to what the window can give.
+      data-sized={width === null ? undefined : ""}
+      hidden={hidden}
+      style={width === null ? undefined : { flexBasis: width }}
+    >
       <header className="notes-bar">
         <span className="notes-title">Notes</span>
         <span aria-live="polite" className={`notes-status ${notes.status}`}>

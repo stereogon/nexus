@@ -29,6 +29,7 @@ pub mod last_vault;
 pub mod logging;
 mod manifest_store;
 pub mod notes_store;
+pub mod notes_width;
 mod renumber_store;
 mod reorganize_store;
 mod versioned;

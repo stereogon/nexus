@@ -12,6 +12,7 @@ pub mod assets;
 pub mod document;
 pub mod edit;
 pub mod import;
+pub mod layout;
 pub mod notes;
 pub mod picker;
 pub mod reorganize;
@@ -25,6 +26,7 @@ pub use annotations::{
 pub use document::open_document;
 pub use edit::edit_lecture;
 pub use import::{import_document, importable_formats};
+pub use layout::{last_notes_width, remember_notes_width};
 pub use picker::{pick_document, pick_vault_directory};
 pub use reorganize::{apply_reorganize, preview_reorganize};
 pub use theme::{last_theme, remember_theme};
@@ -61,6 +63,8 @@ pub fn run() -> Result<(), tauri::Error> {
             remember_vault,
             last_theme,
             remember_theme,
+            last_notes_width,
+            remember_notes_width,
             last_vault,
             pick_vault_directory,
             pick_document,

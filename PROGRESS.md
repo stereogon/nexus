@@ -232,7 +232,8 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
 ### [ ] Milestone 4 — Markdown editor and bi-directional citations
 - [~] CodeMirror 6 notes pane beside the document, saving as you type with conflict
       handling, `cite://` badges (2026-11-05). Styled to fit the window, not yet from the
-      canvas; no live preview of rendered Markdown yet, no draggable split.
+      canvas. Live preview of rendered Markdown (2026-11-05); draggable split, its width kept per
+      device (2026-11-05).
 - [x] Offline KaTeX, Mermaid, declarative `chart` blocks, each with an error boundary that
       keeps the editor mounted (2026-11-05, as a live preview over the Markdown)
 - [x] Clipboard image → `assets/<timestamp>-<hash>.png` (2026-11-05; paste only — dropping an
@@ -460,6 +461,42 @@ Fixed at the cause with `fsModuleCache: false`, measured at no cost (the suite r
 either way). Proved by adding a component with a class the stylesheets never mention and
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
+
+**2026-11-05 · A divider to set how wide the notes are**
+Asked for: "adjusting width of the notes window". The line between the document and the
+notes is now a divider: drag it, or focus it and press ← / → (Shift for a larger step). It
+is an ARIA `separator` with its value and range, so it is announced as something that moves.
+
+**Where the width is kept.** Per-device state (§3), so `~/Library/Application
+Support/Nexus/notes-width.txt`, one number, beside `theme.txt` and by the same pattern —
+`lecture_fs::notes_width` with `last_notes_width` / `remember_notes_width`, both infallible
+for the theme's reasons. Not in the vault: a laptop screen and an external monitor want
+different widths, and syncing one to the other would be a conflict nobody chose. Not in
+browser storage either, for the reason `ipc/theme.ts` gives. One width for every lecture,
+not one per lecture: nothing asked for that, and it would be a file per vault for a guess.
+
+**Held to the window every render**, not when chosen (`ui/notesWidth.ts`, 6 tests): the
+notes never go below 300px and the document always keeps 360px, so a width picked on a big
+monitor cannot squeeze the document to nothing on the laptop. The stored value is clamped to
+240–4000 on write, and a hand-edited value outside that range, or not a number, means the
+default width. **Unlike the theme, a bad value is not logged**: the result is visible at
+once — the notes open at their default — and logging it would need a `CoreError` variant for
+a preference nobody is told about (and `core_error.rs` is at 299 lines).
+
+Recorded on release or key press, not per pointer move. The page re-fits live while dragging,
+the same work a window resize already does; not measured on a large real deck.
+
+**Not done:** double-click to go back to the default (there is no "forget" command, and a
+reset that came back on the next launch would be wrong). **Seen in the screenshot, not
+changed:** at a narrow document width the viewer toolbar wraps ("← / Vault", "Fit / width").
+That was already true with the sidebar open on a small window; the divider only makes it
+easier to reach. It wants the canvas's toolbar, not a guess.
+
+Journeys in `e2e/divider.spec.ts` (drag, kept across reopening, limits both ways, keys,
+hidden with the notes); the reopening and limits journeys were each proved by breaking
+recording and the document's minimum. They compare within a pixel, because a chosen width is
+whole pixels and the default share it starts from usually is not — the first run failed by
+0.6px on exactly that. 6 Rust tests in `lecture-fs/tests/notes_width.rs`.
 
 **2026-11-05 · Notion-style formatting in the notes, and code blocks that look like code**
 Asked for: "minimal font editing options… like we have in Notion", and code blocks that
