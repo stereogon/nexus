@@ -463,6 +463,16 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-05 · A README and a contributing guide**
+Asked for: "a professional readme and contributor guideline". `README.md` says what Nexus is,
+what works today and what does not yet (taken from this file, not from the spec's wish
+list), the shortcuts, the on-disk layout, the architecture, and how to run and check it.
+`CONTRIBUTING.md` restates `CLAUDE.md`'s values and rules for a human reader: the layer each
+change belongs in, the language bans, proving a test can fail, the gate as the definition
+of done, commit messages that say what was verified, dated spec amendments, licences, and
+keeping study material out of bug reports. **No licence was chosen** — that is the owner's
+decision, and the README says all rights are reserved until one is.
+
 **2026-11-05 · Dropping an image onto the notes**
 Reported: "drag and drop image in the notes panel is not working". It had never been built
 — recorded as a gap when paste was — because Tauri delivers one file drag for the whole
