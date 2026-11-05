@@ -38,7 +38,9 @@ export default tseslint.config(
   // Type-aware linting needs a file to be part of the TypeScript project, so it is
   // scoped to the sources rather than applied to this config file as well.
   {
-    files: ["src/**/*.ts", "src/**/*.tsx"],
+    // The Playwright harness too: it runs inside the app's page, and test code is held
+    // to the same rules as the code it tests (CLAUDE.md §1.11).
+    files: ["src/**/*.ts", "src/**/*.tsx", "e2e/**/*.ts"],
     extends: [tseslint.configs.strictTypeChecked],
     languageOptions: {
       parserOptions: {

@@ -352,6 +352,14 @@ Write deterministic tests inside `crates/lecture-core` using `tempfile::TempDir`
 
 ### 5.3 End-to-End Behavioral Tests (`Playwright`)
 Configure Playwright to run against the app UI (using a clean temporary vault fixture) to verify full user workflows:
+
+> *Amended 2026-11-05.* "Against the app UI" cannot be met on macOS as written: Tauri's
+> WebDriver bridge supports Linux and Windows only, and nothing can attach to a WKWebView,
+> so Playwright cannot drive the Nexus window or observe its files. The suite instead runs
+> the same React tree and stylesheets in **WebKit** (the engine WKWebView is), with the
+> IPC answered from a fixture (`e2e/harness.ts`). Each journey's on-screen half is checked
+> there; its on-disk half — `manifest.json`, `notes.md`, `annotations.json` — is checked by
+> the Rust integration tests against real temporary vaults. Reasoning in `PROGRESS.md`.
 1. **Journey 1 — Import & View:** Import a multi-page sample PDF -> verify pages render -> verify `manifest.json`, `notes.md`, and `annotations.json` are created on disk.
 2. **Journey 2 — Highlight & Deep Link:** Select text on Page 2 -> click "Link to Notes" -> verify highlight renders in SVG overlay -> verify `cite://<id>` badge appears in the Markdown editor -> scroll PDF back to Page 1 -> click `cite://<id>` badge in Markdown -> verify PDF scrolls back to Page 2 and pulses the highlight.
 3. **Journey 3 — On-Slide Text Box Annotation:** Activate Text Box tool -> click on slide at `(x, y)` -> type `"Important exam formula"` -> reload workspace -> verify text box persists at exact normalized position.

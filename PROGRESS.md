@@ -241,7 +241,9 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
 - [ ] Shortcuts: `⌘O` `⌘L` `⌘B` `⌘P` `⌘\` `⌘⇧D` `⌘+` `⌘-` `⌘Z` `⌘⇧Z` `T`
 - [ ] Diagnostics drawer (errors, converter stdout/stderr, timings)
 - [ ] Bundled woff2 fonts, CSP locked to `connect-src 'self' ipc: http://ipc.localhost`
-- [ ] Playwright journeys 1–4
+- [~] Playwright: harness, layout and highlight journeys in WebKit (2026-11-05). Journeys
+      1–4 as §5.3 wrote them are amended -- the real window cannot be driven on macOS --
+      and 2–4 wait on the features they exercise (notes, `cite://`, text boxes).
 - [ ] Full suite green, zero warnings
 
 ---
@@ -453,6 +455,72 @@ Fixed at the cause with `fsModuleCache: false`, measured at no cost (the suite r
 either way). Proved by adding a component with a class the stylesheets never mention and
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
+
+**2026-11-05 · A Playwright suite, and what it found on its first day**
+Pulled forward from Milestone 5 on the user's go-ahead, because every bug reported in the
+previous week was layout — the menu off the edge, the badge in the corner, the editor
+nobody could see, the page field, the window scrolling — and the unit suite cannot see a
+layout at all: jsdom has no engine. Two of those were diagnosed wrongly from the code
+before one was found by looking.
+
+**The spec could not be followed as written, and is amended beside §5.3.** It asked for
+Playwright against the app itself, checking files on disk. On macOS nothing can attach to
+the Nexus window: Tauri's WebDriver bridge (`tauri-driver`) supports Linux and Windows
+only, because an embedded WKWebView exposes no WebDriver interface. So the suite runs the
+*same React tree and stylesheets* in WebKit -- the engine WKWebView is -- from
+`e2e/harness.html`, with Tauri's IPC answered by `e2e/backend.ts` from a fixture. What
+reaches disk stays tested where it already was, in Rust against real temporary vaults.
+The backend is deliberately not a second domain: it validates arguments with Zod and keeps
+state for the length of a page, and nothing more. The fixture PDF is generated from
+`e2e/fixture.ts` rather than checked in, so what a test depends on is readable in a diff.
+
+**16 journeys, every one seen to fail for the bug it names.** Reintroducing
+`min-height: 100vh` failed the four scroll-mode journeys and left page mode passing --
+the user's report, reproduced exactly. Bypassing the menu clamp, removing the dismissal
+effect, and floating the editor panel over the document each failed their journeys. Run
+three times over with no retries: 48 of 48. `retries: 0` is deliberate (§4: a retry papers
+over a race). The one wait that looks like a timing allowance, `settleOn`, is a condition
+-- a page at the top of the bed and unchanged across two animation frames -- measured from
+a real failure: a one-page move glides for about 300 ms, and a selection made mid-glide
+has its menu closed by the scroll events still arriving, which is correct behaviour.
+
+**Two journeys were vacuous at first, and were caught only by the proving step.** The
+right-margin word sat at x = 630, leaving room for the menu, so the journey passed with
+the clamp switched off; it now ends against the page edge. And the badge journey passes
+with the sliver filter removed — which is the next point.
+
+**The suite found a real bug on its first day.** Dragging past the end of a line — the
+commonest way to select one — collapsed the selection to nothing, so no highlight menu
+appeared. Only a drag that stopped inside the last letter worked. The text layer is built
+with pdf.js's bare `TextLayer`, which leaves selection to the browser, and WebKit
+collapses a selection whose pointer leaves every span. Fixed by porting pdf.js 6.4's own
+technique from `TextLayerBuilder` (`src/pdf/textLayerSelection.ts`): a trailing
+`.endOfContent` element, stretched across the layer while a drag is on, and moved beside
+the selection's moving end — the step pdf.js runs only for engines that need it, which
+WebKit does. Named as a port so it can be compared with the original.
+
+*Known gap, measured rather than guessed:* an overshooting drag now selects, but usually
+loses the last one to three letters ("Page 1 headin"). The same happens with the moving
+step disabled, so it is not the port's logic; it is how WebKit maps a point beyond a
+horizontally-scaled span back into its text. Prefixed versus unprefixed `user-select` was
+tested and is not it. A targeted fix would snap the selection's end to the end of the span
+the pointer has passed; left for its own look rather than bolted on.
+
+**A correction to 2026-10-29's badge entry.** It blamed the corner badge on a sliver from
+pdf.js's `.endOfContent`. This app rendered no such element until today, so that cannot
+have been the cause. The `MIN_LINE_HEIGHT` filter is harmless and stays — it is a sound
+rule, and now that `.endOfContent` exists it is the kind of input it guards against — but
+the badge journey passes with it removed, before and after the port, by every drag tried.
+**The cause of the reported corner badge is unknown** and was not reproduced. The
+`min-height` bug that shipped alongside it is a candidate, unproven.
+
+*Wiring.* `e2e/` is in `tsconfig`, under the same type-aware lint rules as `src/` (test
+code is held to the same standard, §1.11), and inside the 300-line check. Vitest excludes
+it, since its default pattern also matches `*.spec.ts`. `gate.sh` runs the suite, and
+skips it loudly with the install command when WebKit is absent — the LibreOffice rule for
+a binary that lives outside the repository. **CI is that case today**: running it there
+needs one `npx playwright install webkit` step in `ci.yml`, not added because the user
+asked for the Actions to be left alone.
 
 **2026-10-29 · One declaration, two bugs**
 Reported, and it named the cause: *"the scroll mode actually is scrolling the entire app
@@ -4497,6 +4565,7 @@ packages resolved, every one with a stated licence.
 | `@tauri-apps/cli` | 2.12.4 | Apache-2.0 OR MIT |
 | `@testing-library/react` | 16.3.3 | MIT | *(added 2026-10-29)* |
 | `jsdom` | 30.1.3 | MIT | *(added 2026-10-29)* |
+| `@playwright/test` | 1.64.1 | Apache-2.0 | *(added 2026-11-05; pulls in `playwright` and `playwright-core`, both Apache-2.0)* |
 | `@types/react` | 19.3.0 | MIT |
 | `@types/react-dom` | 19.3.0 | MIT |
 | `@vitejs/plugin-react` | 6.1.2 | MIT |
@@ -4505,6 +4574,12 @@ packages resolved, every one with a stated licence.
 | `typescript-eslint` | 8.72.1 | MIT |
 | `vite` | 8.3.5 | MIT |
 | `vitest` | 5.0.5 | MIT |
+
+**Playwright's WebKit build** (added 2026-11-05) is a development tool, not part of
+anything built or shipped. `npx playwright install webkit` downloads it into
+`~/Library/Caches/ms-playwright/` -- outside the repository, which is Playwright's default
+and was the download approved -- and nothing in `dist/` or the app bundle references it.
+WebKit itself is BSD/LGPL; since it is never redistributed, it carries no obligation here.
 
 **Bundled typefaces** (not npm packages; fetched by `scripts/fetch-fonts.py` and committed
 as woff2 under `src/ui/fonts/`). All four permit bundling and redistribution:

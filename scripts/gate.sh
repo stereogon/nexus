@@ -124,6 +124,22 @@ else
         "LibreOffice is not installed; brew install --cask libreoffice"
 fi
 
+# The Playwright suite, which CLAUDE.md §5 adds to the definition of done from Milestone 5.
+#
+# Skipped -- loudly, with the command that fixes it -- when the WebKit build Playwright
+# drives is not installed. That is the LibreOffice rule applied to a browser: the binary
+# lives in a cache outside the repository, `npm ci` does not fetch it, and it is the one
+# thing on a fresh machine (or in CI, today) that stops the step running at all. A skip
+# shows in the summary; it is never what happens to a suite that ran and failed.
+if [ -d node_modules/@playwright/test ] && \
+    node -e "require('fs').accessSync(require('@playwright/test').webkit.executablePath())" \
+        2>/dev/null; then
+    run_step "playwright (WebKit)" npx playwright test
+else
+    skip_step "playwright (WebKit)" \
+        "WebKit for Playwright is not installed; npx playwright install webkit"
+fi
+
 run_step "line limits (§4)" ./scripts/check-line-limits.sh
 
 echo ""

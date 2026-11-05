@@ -9,6 +9,9 @@
 # Tests count. They are source, they are read far more often than they are written, and
 # the files that have needed splitting here have as often been tests as not.
 #
+# The Playwright suite in `e2e/` counts too, from the day it was added (2026-11-05),
+# rather than after it has grown a file that needs splitting.
+#
 # Stylesheets count too, added 2026-10-29. They were not checked, and that is exactly how
 # `theme.css` reached 1204 lines without anything complaining -- the file the limit existed
 # to prevent was the one file the limit did not look at.
@@ -28,7 +31,7 @@ while IFS= read -r file; do
         over_limit+="  ${lines}	${file}"$'\n'
     fi
 done < <(
-    find crates src \
+    find crates src e2e \
         -type d \( -name target -o -name node_modules \) -prune -o \
         -type f \( -name '*.rs' -o -name '*.ts' -o -name '*.tsx' \) -print 2>/dev/null
 )

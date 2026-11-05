@@ -1,5 +1,5 @@
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
 import { pdfjsAssets } from "./vite/pdfjs-assets";
 
@@ -26,6 +26,10 @@ export default defineConfig({
   clearScreen: false,
 
   test: {
+    // The Playwright specs are `*.spec.ts`, which Vitest's default pattern also matches.
+    // They need a browser and a dev server, so they run under `npx playwright test`.
+    exclude: [...configDefaults.exclude, "e2e/**"],
+
     // Vitest stubs CSS imports by default, which makes a `?raw` stylesheet import an empty
     // string and `styles.test.ts` -- the test that checks every class name a component
     // uses is actually defined -- silently vacuous. It needs the real text.

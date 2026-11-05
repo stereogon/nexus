@@ -22,5 +22,5 @@
     "noEmit": true,
     "skipLibCheck": true
   },
-  "include": ["src", "fixtures"]
+  "include": ["src", "fixtures", "e2e", "playwright.config.ts"]
 }

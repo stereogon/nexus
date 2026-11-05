@@ -19,6 +19,7 @@
  */
 import { useEffect, useRef } from "react";
 
+import { keepSelectionWhole } from "../pdf/textLayerSelection";
 import type { PageSource } from "../pdf/useDocument";
 
 export function PdfTextLayer({
@@ -33,9 +34,14 @@ export function PdfTextLayer({
   const container = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const session: { cancelled: boolean; stop: (() => void) | null } = {
+    const session: {
+      cancelled: boolean;
+      stop: (() => void) | null;
+      release: (() => void) | null;
+    } = {
       cancelled: false,
       stop: null,
+      release: null,
     };
 
     // Read through a function for the same reason as in `PdfPage`: TypeScript narrows the
@@ -60,6 +66,12 @@ export function PdfTextLayer({
         session.stop = layer.cancel;
 
         await layer.promise;
+
+        // After the spans, never before: the trailing element it adds has to come last
+        // for a drag past the end of the text to land on it.
+        if (live()) {
+          session.release = keepSelectionWhole(target);
+        }
       } catch {
         // A cancelled layout rejects, which is the ordinary case: zooming and scrolling
         // both abandon one. Nothing is shown for a failure here because the page itself is
@@ -71,6 +83,7 @@ export function PdfTextLayer({
     return () => {
       session.cancelled = true;
       session.stop?.();
+      session.release?.();
 
       // pdf.js's `cancel` stops the work but leaves what it has already appended. Clearing
       // the element is what keeps a re-render from stacking a second set of spans over the

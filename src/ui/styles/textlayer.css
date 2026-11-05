@@ -133,3 +133,23 @@
   flex: 0 0 auto;
   padding: 0 10px;
 }
+
+/* pdf.js's own selection aid, ported in `src/pdf/textLayerSelection.ts`. Empty and zero
+   high at rest; while a drag is in progress the layer is `.selecting` and this stretches
+   across it, behind the spans, so a drag past the end of a line lands on something
+   instead of collapsing the selection. Last in the file on purpose: the
+   `.textLayer > :not(.markedContent)` rule above has the same specificity and would
+   otherwise lift it above the text. */
+.textLayer .endOfContent {
+  display: block;
+  position: absolute;
+  inset: 100% 0 0;
+  z-index: 0;
+  cursor: default;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.textLayer.selecting .endOfContent {
+  top: 0;
+}
