@@ -456,6 +456,50 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-05 · Re-marking a highlight without breaking its links**
+Choosing a different meaning from a highlight's badge — key to exam, say — now changes it
+in place. Until today the menu offered Remove alone, on purpose: the only way to change a
+meaning was remove-and-add, which minted a new id, and the id is what `cite://<id>` in the
+notes points at.
+
+`retag_annotation` loads, changes and saves in one command, like its neighbours. Three
+rules, each with a test against a real temporary vault:
+
+- **An id that is not a highlight answers `None`, not an error** — one removed on another
+  device, or a text box, which has no meaning to change. The rule `remove_annotation`
+  already follows, and it meant no new `CoreError` variant: `core_error.rs` is at 299
+  lines, and the alternative was a remediation sentence written for some other failure,
+  which is the mistake the "folder name" excerpt error taught. The window drops a
+  highlight answered `None`, so it stops drawing one the file no longer holds.
+- **The meaning it already has rewrites nothing.** An ordinary misclick should not hand
+  every sync client a conflict about nothing.
+- **`updatedAt` is never earlier than `createdAt`.** Two devices, one a minute slow, is an
+  ordinary case; without the clamp, the slow device would write an annotation that
+  `validate` refuses to load.
+
+"Rewrites nothing" is checked by **inode** in the new tests rather than by modification
+time: every save is a temp-file-and-rename, so a rewrite always makes a new inode, whatever
+the filesystem's clock resolution. A paired test proves a real retag *does* change it, so
+the "nothing" checks cannot pass because nothing ever writes.
+
+In the window the menu offers all four meanings beside Remove, with the current one
+pressed — `aria-pressed` only when there is a current meaning, since four "not pressed"
+swatches on a fresh selection would announce a choice never offered. Like a remove, the
+list changes only when the write succeeds (`afterRetag`, pure and tested).
+
+*Seams taken.* `Annotation::retagged` moved to `domain/annotation_change.rs`: the first
+operation that changes an existing annotation, whose rule — the id never moves — the rest
+of the type does not have. Text-box edits and captions belong there next. The retag tests
+are in their own files at both layers (`lecture-core` and `src-tauri`, each `tests/retag.rs`).
+
+Two existing tests pinned "existing highlights cannot be re-marked". Replaced, not
+loosened: the restriction was the thing removed, and the replacements assert the new
+behaviour plus the one place it still holds, a text box.
+
+Proven end to end: the Playwright journey re-marks key to exam, checks one highlight in the
+same place with the new colour and letter, and checks it after reopening. It fails with the
+old Remove-only menu restored.
+
 **2026-11-05 · A Playwright suite, and what it found on its first day**
 Pulled forward from Milestone 5 on the user's go-ahead, because every bug reported in the
 previous week was layout — the menu off the edge, the badge in the corner, the editor
@@ -839,7 +883,8 @@ is there exactly when the highlight is widest, rather than falling off at that m
 nothing else. Changing its semantic would mean remove-and-add, which mints a new id — and
 the id is what `cite://` in the notes points at. Until there is a command that edits in
 place, the menu does not pretend to offer it. A test names that reason, so the gap is not
-mistaken for an oversight.
+mistaken for an oversight. *(Closed 2026-11-05: `retag_annotation` edits in place and
+keeps the id. See that day's entry.)*
 
 **Washes are explicit rgba, with no dark variant.** `color-mix` arrived in Safari 16.2 and
 this build targets 15, which the file's existing `accent-wash` had already settled. No dark
@@ -866,7 +911,7 @@ for the browser suite.
 
 Not done, and not pretended: area highlights and text boxes can be stored and the layer
 draws an area highlight, but nothing creates either; and re-tagging needs the update
-command described above.
+command described above *(done 2026-11-05)*.
 
 **2026-10-29 · A selection becomes something storable**
 Third substep of the highlight feature, and deliberately small: `geometry.ts` already did

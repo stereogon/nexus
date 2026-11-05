@@ -25,17 +25,22 @@ import { SEMANTIC_GLYPH, SEMANTIC_LABEL, SEMANTICS } from "./semantics";
 
 export function HighlightMenu({
   at,
+  current,
   onChoose,
   onRemove,
   onDismiss,
 }: {
   readonly at: MenuAt;
   /**
-   * Offered for a new selection. `null` for a highlight that already exists, because
-   * re-tagging one needs a command that keeps its id: removing and adding would mint a
-   * new one, and the id is what `cite://` in the notes points at. Until that command
-   * exists, an existing highlight can be removed and made again rather than silently
-   * breaking a citation.
+   * What a picked highlight is marked as now, shown pressed. `null` for a fresh
+   * selection, whose four swatches are plain actions rather than a choice already made.
+   */
+  readonly current: HighlightSemantic | null;
+  /**
+   * Marks a selection, or re-marks an existing highlight keeping its id — the id is what
+   * `cite://` in the notes points at. `null` only for something with no semantic.
+   * *(Until 2026-11-05 this was `null` for every existing highlight, since the only way
+   * to re-mark one was to remove it and make another, which broke its links.)*
    */
   readonly onChoose: ((semantic: HighlightSemantic) => void) | null;
   /** Offered only for a highlight that already exists. */
@@ -94,6 +99,10 @@ export function HighlightMenu({
         SEMANTICS.map((semantic) => (
           <button
             aria-label={SEMANTIC_LABEL[semantic]}
+            // A pressed state only when there is a current meaning to show. On a fresh
+            // selection `aria-pressed="false"` on all four would announce a choice that
+            // has not been offered yet.
+            aria-pressed={current === null ? undefined : semantic === current}
             className="highlight-pick"
             data-semantic={semantic}
             key={semantic}

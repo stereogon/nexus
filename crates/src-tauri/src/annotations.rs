@@ -123,6 +123,39 @@ pub async fn remove_annotation(
         })?
 }
 
+/// Marks a highlight as something else — key, definition, exam or question — keeping its
+/// id, and returns it as stored.
+///
+/// The id is kept because it is what `cite://<id>` in the notes points at. Before this
+/// command, changing a highlight's meaning meant removing it and making a new one, which
+/// would have broken every link to it.
+///
+/// Returns `None` when the lecture has no highlight with that id — removed on another
+/// device, say — which is not an error for the same reason a remove of something absent
+/// is not: there is nothing the person did wrong, and nothing was changed.
+///
+/// # Errors
+///
+/// Returns [`CommandError`] if the vault or the lecture cannot be read, if the id is not a
+/// usable one, or if the write fails — in which case the previous file is left as it was.
+#[tauri::command]
+pub async fn retag_annotation(
+    vault: String,
+    directory: String,
+    id: String,
+    semantic: HighlightSemantic,
+) -> Result<Option<Annotation>, CommandError> {
+    tauri::async_runtime::spawn_blocking(move || {
+        rewrite_semantic(&vault, &directory, &id, semantic, &SystemClock)
+    })
+    .await
+    .map_err(|_| CommandError {
+        code: "ERR_HIGHLIGHT_INTERRUPTED",
+        remediation: "Changing the highlight stopped before it finished. It still has its \
+                      old colour, and the lecture's other highlights are unchanged; try again.",
+    })?
+}
+
 /// Opens the store for one vault.
 fn store(vault: &str) -> Result<AnnotationStore, CommandError> {
     Ok(AnnotationStore::new(AtomicFsStorage::new(VaultRoot::open(
@@ -202,4 +235,40 @@ pub fn erase_annotation(
     }
 
     Ok(removed)
+}
+
+/// The blocking half of [`retag_annotation`], which is also the testable one.
+///
+/// # Errors
+///
+/// See [`retag_annotation`].
+pub fn rewrite_semantic(
+    vault: &str,
+    directory: &str,
+    id: &str,
+    semantic: HighlightSemantic,
+    clock: &impl Clock,
+) -> Result<Option<Annotation>, CommandError> {
+    let bundle = RelativePath::parse(directory)?;
+    let id = AnnotationId::parse(id)?;
+    let annotations = store(vault)?;
+    let mut set = annotations.load(&bundle)?;
+
+    // Already marked that way: answered without a write, for the reason a remove of
+    // something absent is. Choosing the colour a highlight already has is an ordinary
+    // misclick, and turning it into a file change would hand every sync client a
+    // conflict about nothing.
+    if let Some(held) = set.get(&id)
+        && held.semantic() == Some(semantic)
+    {
+        return Ok(Some(held.clone()));
+    }
+
+    let changed = set.retag(&id, semantic, &clock.now()?);
+
+    if changed.is_some() {
+        annotations.save(&bundle, &set)?;
+    }
+
+    Ok(changed)
 }

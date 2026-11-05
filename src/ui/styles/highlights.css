@@ -131,6 +131,14 @@
   background: var(--semantic-question);
 }
 
+/* The meaning a picked highlight already has. A ring in the text colour rather than the
+   accent, so it reads as "this one" and not as the hover state beside it. */
+.highlight-pick[aria-pressed="true"] {
+  box-shadow:
+    0 0 0 2px var(--surface),
+    0 0 0 4px var(--text);
+}
+
 .highlight-pick:hover,
 .highlight-pick:focus-visible {
   outline: 2px solid var(--accent);

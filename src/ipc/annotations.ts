@@ -156,6 +156,32 @@ export async function addHighlight(
 }
 
 /**
+ * Marks a highlight as something else, keeping its id, and returns it as stored.
+ *
+ * The id is kept because `cite://<id>` in the notes points at it. `null` means the lecture
+ * has no highlight with that id any more — removed on another device, say — and is not an
+ * error: nothing the person did was wrong, and nothing was changed.
+ *
+ * @throws {CommandError} if the lecture cannot be read, if the id is not a usable one, or
+ * if the write fails — in which case the highlight keeps its old meaning.
+ */
+export async function retagAnnotation(
+  vault: string,
+  directory: string,
+  id: string,
+  semantic: HighlightSemantic,
+): Promise<Annotation | null> {
+  const payload: unknown = await invoke("retag_annotation", {
+    vault,
+    directory,
+    id,
+    semantic,
+  });
+
+  return AnnotationSchema.nullable().parse(payload);
+}
+
+/**
  * Removes one annotation, returning what was removed, or `null` if it was already gone.
  *
  * Removing something absent is not an error: the outcome asked for is that it is absent.

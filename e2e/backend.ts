@@ -36,6 +36,8 @@ const AddHighlight = InLecture.extend({
 
 const RemoveAnnotation = InLecture.extend({ id: z.string() });
 
+const RetagAnnotation = InLecture.extend({ id: z.string(), semantic: HighlightSemanticSchema });
+
 const EditLecture = InLecture.extend({
   edit: z.object({
     title: z.string(),
@@ -128,6 +130,25 @@ export function backend(fixture: Fixture): (command: string, args?: InvokeArgs) 
         const at = list.findIndex((annotation) => annotation.id === id);
 
         return at === -1 ? null : (list.splice(at, 1)[0] ?? null);
+      }
+
+      case "retag_annotation": {
+        const { directory, id, semantic } = RetagAnnotation.parse(args);
+        const list = held(directory);
+        const at = list.findIndex((annotation) => annotation.id === id);
+        const before = list[at];
+
+        // No highlight with that id -- a text box included -- answers `null`, as the real
+        // command does.
+        if (before === undefined || before.kind === "textBox") {
+          return null;
+        }
+
+        const after: Annotation = { ...before, semantic };
+
+        list.splice(at, 1, after);
+
+        return after;
       }
 
       case "edit_lecture": {

@@ -28,6 +28,7 @@ function annotations(): Annotations {
     failure: null,
     add: vi.fn(),
     remove: vi.fn(),
+    retag: vi.fn(),
     clearFailure: vi.fn(),
   };
 }
@@ -68,8 +69,9 @@ describe("a highlight whose badge was clicked", () => {
     expect(result.current.open?.at).toEqual(AT);
   });
 
-  it("offers removing it and not re-tagging it", () => {
-    // Re-tagging would mint a new id, and the id is what `cite://` points at.
+  it("offers re-marking it as well as removing it", () => {
+    // Until 2026-11-05 it offered Remove alone, because re-marking meant remove-and-add,
+    // which minted a new id and broke every `cite://` link. `retag` keeps the id.
     const { result } = renderHook(() => useHighlightMenu(annotations()));
 
     act(() => {
@@ -77,7 +79,52 @@ describe("a highlight whose badge was clicked", () => {
     });
 
     expect(result.current.open?.onRemove).not.toBeNull();
+    expect(result.current.open?.onChoose).not.toBeNull();
+  });
+
+  it("says what the picked highlight is marked as now", () => {
+    const { result } = renderHook(() => useHighlightMenu(annotations()));
+
+    act(() => {
+      result.current.pick(HIGHLIGHT, AT);
+    });
+
+    expect(result.current.open?.current).toBe("key");
+  });
+
+  it("re-marks the one that was picked, by id, and closes", () => {
+    const held = annotations();
+    const { result } = renderHook(() => useHighlightMenu(held));
+
+    act(() => {
+      result.current.pick(HIGHLIGHT, AT);
+    });
+    act(() => {
+      result.current.open?.onChoose?.("exam");
+    });
+
+    expect(held.retag).toHaveBeenCalledWith("hl-7", "exam");
+    expect(result.current.open).toBeNull();
+  });
+
+  it("offers no meanings for a text box, which cannot hold one", () => {
+    const { result } = renderHook(() => useHighlightMenu(annotations()));
+    const box: Annotation = {
+      kind: "textBox",
+      id: "tb-1",
+      page: 2,
+      region: { x: 0.2, y: 0.2, width: 0.3, height: 0.1 },
+      text: "Important exam formula",
+      createdAt: "2026-10-27T16:00:00Z",
+      updatedAt: "2026-10-27T16:00:00Z",
+    };
+
+    act(() => {
+      result.current.pick(box, AT);
+    });
+
     expect(result.current.open?.onChoose).toBeNull();
+    expect(result.current.open?.current).toBeNull();
   });
 
   it("removes the one that was picked", () => {

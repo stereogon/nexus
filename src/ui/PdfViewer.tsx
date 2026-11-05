@@ -241,6 +241,7 @@ export function PdfViewer({
       {menu.open !== null && (
         <HighlightMenu
           at={menu.open.at}
+          current={menu.open.current}
           onChoose={menu.open.onChoose}
           onDismiss={menu.dismiss}
           onRemove={menu.open.onRemove}

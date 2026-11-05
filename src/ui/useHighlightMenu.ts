@@ -25,10 +25,22 @@ export type { MenuAt };
 /** An open menu, and what its controls do. */
 export interface OpenMenu {
   readonly at: MenuAt;
-  /** `null` for an existing highlight, which cannot be re-tagged without losing its id. */
+  /**
+   * Marks the selection, or re-marks the picked highlight. `null` only for a text box,
+   * which has no semantic. *(Until 2026-11-05 this was `null` for every existing
+   * highlight: re-tagging meant removing and re-making it, which minted a new id and broke
+   * every `cite://` link to it. `retag_annotation` keeps the id.)*
+   */
   readonly onChoose: ((semantic: HighlightSemantic) => void) | null;
+  /** What the picked highlight is marked as now, or `null` for a fresh selection. */
+  readonly current: HighlightSemantic | null;
   /** `null` for a selection, which is not yet anything to remove. */
   readonly onRemove: (() => void) | null;
+}
+
+/** What an annotation is marked as, or `null` for a text box, which is not marked. */
+function semanticOf(annotation: Annotation): HighlightSemantic | null {
+  return annotation.kind === "textBox" ? null : annotation.semantic;
 }
 
 export function useHighlightMenu(highlights: Annotations): {
@@ -57,10 +69,19 @@ export function useHighlightMenu(highlights: Annotations): {
   }, [clear]);
 
   if (picked !== null) {
+    const current = semanticOf(picked.annotation);
+
     return {
       open: {
         at: picked.at,
-        onChoose: null,
+        current,
+        onChoose:
+          current === null
+            ? null
+            : (semantic: HighlightSemantic) => {
+                highlights.retag(picked.annotation.id, semantic);
+                setPicked(null);
+              },
         onRemove: () => {
           highlights.remove(picked.annotation.id);
           setPicked(null);
@@ -80,6 +101,7 @@ export function useHighlightMenu(highlights: Annotations): {
   return {
     open: {
       at: marking.at,
+      current: null,
       onChoose: (semantic: HighlightSemantic) => {
         highlights.add(marking.candidate, semantic);
         clear();

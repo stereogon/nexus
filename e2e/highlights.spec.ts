@@ -93,6 +93,36 @@ test("a highlight can be removed from its badge", async ({ page }) => {
   await expect(page.locator(".highlight")).toHaveCount(0);
 });
 
+test("a highlight can be re-marked from its badge without becoming a new one", async ({
+  page,
+}) => {
+  // Before 2026-11-05 the only way was remove-and-redo, which minted a new id and broke
+  // every `cite://` link to it.
+  await highlightHeading(page);
+  const before = await page.locator(".highlight").first().boundingBox();
+
+  await page.getByRole("button", { name: /^Key concept:/ }).click();
+
+  const menu = page.getByRole("group", MENU);
+
+  await expect(menu.getByRole("button", { name: "Key concept" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await menu.getByRole("button", { name: "Exam / important" }).click();
+
+  // One highlight, in the same place, now marked as an exam point -- colour and letter.
+  await expect(page.locator(".highlight")).toHaveCount(1);
+  await expect(page.locator(".highlight").first()).toHaveAttribute("data-semantic", "exam");
+  await expect(page.getByRole("button", { name: /^Exam \/ important:/ })).toHaveText("E");
+  expect(await page.locator(".highlight").first().boundingBox()).toEqual(before);
+
+  // And still that way after the lecture is closed and opened again.
+  await page.getByRole("button", { name: "← Vault" }).click();
+  await openLecture(page, READING.title);
+  await expect(page.locator(".highlight").first()).toHaveAttribute("data-semantic", "exam");
+});
+
 test("the menu stays inside the window for text at the right margin", async ({ page }) => {
   // Reported 2026-10-29: a highlight near the right edge opened its menu off the screen.
   await pageField(page).fill("2");

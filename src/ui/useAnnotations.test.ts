@@ -8,7 +8,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Annotation } from "../ipc/annotations";
-import { asNewHighlight, onPage } from "./useAnnotations";
+import { afterRetag, asNewHighlight, onPage } from "./useAnnotations";
 
 const CANDIDATE = {
   pageIndex: 3,
@@ -63,5 +63,36 @@ describe("finding one page's highlights", () => {
   it("finds none on a page with none, rather than falling back to any", () => {
     expect(onPage(all, 2)).toEqual([]);
     expect(onPage([], 0)).toEqual([]);
+  });
+});
+
+describe("the list after a retag", () => {
+  const KEY: Annotation = {
+    kind: "textHighlight",
+    id: "hl-1",
+    page: 1,
+    semantic: "key",
+    quote: "Raft achieves consensus.",
+    rects: [{ x: 0.1, y: 0.2, width: 0.3, height: 0.02 }],
+    createdAt: "2026-10-27T16:00:00Z",
+    updatedAt: "2026-10-27T16:00:00Z",
+  };
+  const OTHER: Annotation = { ...KEY, id: "hl-2" };
+
+  it("holds the stored version in place of the old one", () => {
+    const stored: Annotation = { ...KEY, semantic: "exam", updatedAt: "2026-11-05T09:30:00Z" };
+
+    expect(afterRetag([KEY, OTHER], "hl-1", stored)).toEqual([stored, OTHER]);
+  });
+
+  it("keeps the order, so a recoloured highlight does not jump in the list", () => {
+    const stored: Annotation = { ...OTHER, semantic: "question" };
+
+    expect(afterRetag([KEY, OTHER], "hl-2", stored).map((a) => a.id)).toEqual(["hl-1", "hl-2"]);
+  });
+
+  it("stops drawing a highlight the lecture no longer has", () => {
+    // `null` from the backend: removed on another device between the click and the write.
+    expect(afterRetag([KEY, OTHER], "hl-1", null)).toEqual([OTHER]);
   });
 });

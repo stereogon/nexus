@@ -5,6 +5,7 @@
 //! through the same validation rather than deriving past it.
 
 mod annotation;
+mod annotation_change;
 mod annotation_id;
 mod annotation_set;
 mod bundle;

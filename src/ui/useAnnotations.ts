@@ -18,6 +18,7 @@ import {
   addHighlight,
   loadAnnotations,
   removeAnnotation,
+  retagAnnotation,
   type Annotation,
   type HighlightSemantic,
   type NewHighlight,
@@ -53,6 +54,23 @@ export function onPage(
   return annotations.filter((annotation) => annotation.page === pageIndex + 1);
 }
 
+/**
+ * The list after a retag: the stored version in place of the old one, or the old one gone.
+ *
+ * `null` from the backend means the lecture no longer has that highlight, so the window
+ * stops drawing it. Keeping it would leave a highlight on screen that the file does not
+ * hold, and the next click on its badge would be answered "not there" again.
+ */
+export function afterRetag(
+  held: readonly Annotation[],
+  id: string,
+  stored: Annotation | null,
+): readonly Annotation[] {
+  return stored === null
+    ? held.filter((annotation) => annotation.id !== id)
+    : held.map((annotation) => (annotation.id === id ? stored : annotation));
+}
+
 export interface Annotations {
   /** Every annotation on the lecture. */
   readonly all: readonly Annotation[];
@@ -65,6 +83,8 @@ export interface Annotations {
   ) => void;
   /** Removes one highlight. */
   readonly remove: (id: string) => void;
+  /** Marks one highlight as something else, keeping its id. */
+  readonly retag: (id: string, semantic: HighlightSemantic) => void;
   /** Forgets the last failure. */
   readonly clearFailure: () => void;
 }
@@ -145,9 +165,27 @@ export function useAnnotations(vault: string, directory: string): Annotations {
     [vault, directory],
   );
 
+  const retag = useCallback(
+    (id: string, semantic: HighlightSemantic) => {
+      void (async () => {
+        try {
+          const stored = await retagAnnotation(vault, directory, id, semantic);
+
+          // Replaced on success only, for the reason `remove` waits: recolouring first
+          // would show a meaning the file does not hold if the write then failed.
+          setAll((held) => afterRetag(held, id, stored));
+          setFailure(null);
+        } catch (thrown: unknown) {
+          setFailure(asCommandError(thrown));
+        }
+      })();
+    },
+    [vault, directory],
+  );
+
   const clearFailure = useCallback(() => {
     setFailure(null);
   }, []);
 
-  return { all, failure, add, remove, clearFailure };
+  return { all, failure, add, remove, retag, clearFailure };
 }

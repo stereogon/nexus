@@ -26,7 +26,9 @@ use std::collections::BTreeSet;
 
 use serde::{Deserialize, Serialize};
 
-use crate::domain::{Annotation, AnnotationId, PageNumber, SchemaRange};
+use crate::domain::{
+    Annotation, AnnotationId, HighlightSemantic, PageNumber, SchemaRange, Timestamp,
+};
 use crate::error::CoreError;
 
 /// The schema version this build reads and writes for `annotations.json`.
@@ -127,6 +129,26 @@ impl AnnotationSet {
         // `Vec::remove` rather than `swap_remove`: order is re-established below anyway,
         // but keeping it stable means a removal does not reshuffle the file.
         Some(self.annotations.remove(position))
+    }
+
+    /// Marks the highlight with this id as something else, returning it as now stored.
+    ///
+    /// `None` when there is no *highlight* with that id: one removed elsewhere, or a text
+    /// box, which has no semantic. The same rule as [`remove`](Self::remove) — nothing was
+    /// changed, and the caller can tell — rather than an error, since neither case is
+    /// something the person did wrong.
+    pub fn retag(
+        &mut self,
+        id: &AnnotationId,
+        semantic: HighlightSemantic,
+        at: &Timestamp,
+    ) -> Option<Annotation> {
+        let held = self.annotations.iter_mut().find(|a| a.id() == id)?;
+        let changed = held.retagged(semantic, at)?;
+
+        *held = changed.clone();
+
+        Some(changed)
     }
 
     /// The annotation with this id.
