@@ -456,6 +456,52 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-05 · Notes, the half underneath the editor**
+Milestone 4 begins with what does not need the design canvas, because the canvas cannot be
+opened from the account this session is now signed in to — it belongs to the earlier one —
+and the notes pane's design was never copied into this file. The user is sharing it; no
+notes UI is written until its artboards have been read (CLAUDE.md §3).
+
+CodeMirror 6 was installed with the user's approval, as this file's Milestone 4 list had
+already named. It edits the Markdown text itself, so `notes.md` on disk is exactly what was
+typed — no lossy round trip through a document model — and it keeps undo history and can
+draw `cite://` links as badges inside the text. Licences are in the table below.
+
+**Saving `notes.md` cannot overwrite someone else's typing.** It is the file in a bundle
+that holds prose, in a synced folder, and another device or another editor can change it
+while it is open. So `NotesStore` (in `lecture-fs`) returns a **version** with every load —
+a fingerprint of the bytes — and a save carries the version it was based on. If the file
+no longer matches, nothing is written and the save answers `conflict`, carrying what the
+file holds now and its version, so the window can keep the person's text and save it
+deliberately once they have seen the other — without a second read that could race again.
+A conflict is an outcome, not an error, which also meant no new `CoreError` variant.
+
+Two edges, decided on purpose. A missing file and an empty one **share a version**: both
+mean "no notes yet", and keeping them apart would make the first save look contested the
+moment an import or another device created an empty file. And a `notes.md` that is not
+UTF-8 is **refused and copied aside**, through the existing "stored file unreadable" error
+and its backup, never decoded with replacement characters — the next save would write those
+back and the original bytes would be gone. Seven tests against a real temporary vault,
+including two windows saving from the same read, a sync client writing the file directly,
+and the non-text file staying byte-for-byte untouched.
+
+**The citation line has one definition.** `lecture_core::citation_block` writes §2.4's
+shape — `> 📌 **[Page 4](cite://hl-…)**: *"…"*` — in `lecture-core`, because the iPad will
+read and write these lines too. "Page" rather than "Slide/Page": a bundle does not record
+whether its PDF was a deck. An area with no caption is the link alone. The quote's `\`,
+`*`, `_`, backticks, brackets and `<` are backslash-escaped, so lecture text about code or
+maths cannot end the emphasis early or open a link of its own. A test proves the existing
+`CitationIndex` scanner finds an inserted line again, with the right id on the right line.
+
+The window needs the same line without a round trip, so `src/notes/citation.ts` is a twin,
+held to the Rust version by `fixtures/citations.json`: five cases, including the two where
+formatters drift (nothing to quote; a quote full of Markdown). Dropping `<` from the
+TypeScript escape set fails it. The IPC shapes have their own contract pair,
+`fixtures/notes.json`, written by running the real commands.
+
+*Next, once the canvas is readable:* the notes pane itself, Link to Notes from the highlight
+menu, and `cite://` badges that jump the document to their highlight with the pulse ring.
+
 **2026-11-05 · Area highlights: a box drawn with Option held**
 For the parts of a slide with no text to select — diagrams, equations, scanned pages.
 `claude-spec.md` §2.3 named the gesture, which settled the one design question: **hold
@@ -4648,6 +4694,11 @@ packages resolved, every one with a stated licence.
 | `@testing-library/react` | 16.3.3 | MIT | *(added 2026-10-29)* |
 | `jsdom` | 30.1.3 | MIT | *(added 2026-10-29)* |
 | `@playwright/test` | 1.64.1 | Apache-2.0 | *(added 2026-11-05; pulls in `playwright` and `playwright-core`, both Apache-2.0)* |
+| `@codemirror/state` | 6.7.6 | MIT | *(added 2026-11-05, the notes editor)* |
+| `@codemirror/view` | 6.43.15 | MIT | *(added 2026-11-05)* |
+| `@codemirror/commands` | 6.11.1 | MIT | *(added 2026-11-05)* |
+| `@codemirror/language` | 6.13.1 | MIT | *(added 2026-11-05)* |
+| `@codemirror/lang-markdown` | 6.5.2 | MIT | *(added 2026-11-05; pulls in `@codemirror/{autocomplete,lang-css,lang-html,lang-javascript,lint,streamparser}`, `@lezer/{common,css,highlight,html,javascript,lr,markdown}`, `style-mod`, `w3c-keyname` and `crelt` -- every one MIT, read from the installed manifests)* |
 | `@types/react` | 19.3.0 | MIT |
 | `@types/react-dom` | 19.3.0 | MIT |
 | `@vitejs/plugin-react` | 6.1.2 | MIT |

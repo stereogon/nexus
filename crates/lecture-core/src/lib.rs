@@ -31,8 +31,9 @@ pub use domain::{
     ReorganizeBlock, ReorganizePlan, RiskScan, RiskSeverity, SOURCE_DIR_NAME, SchemaProbe,
     SchemaRange, SkipReason, SkippedDirectory, Slug, Source, Theme, Timestamp, Unnameable,
     VIEW_STATE_FILE_NAME, VIEW_STATE_SCHEMA, VIEW_STATE_SCHEMA_VERSION, VaultIndex, VaultScan,
-    ViewState, Zoom, cache_dir_segment, citation_link, fingerprint, fingerprint_hex, plan_renumber,
-    plan_reorganize, position_width, positioned_name, scan_vault, stem_of, temporary_name,
+    ViewState, Zoom, cache_dir_segment, citation_block, citation_link, fingerprint,
+    fingerprint_hex, plan_renumber, plan_reorganize, position_width, positioned_name, scan_vault,
+    stem_of, temporary_name,
 };
 pub use error::{BackupOutcome, CoreError};
 pub use ports::{

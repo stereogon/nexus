@@ -11,6 +11,7 @@ pub mod annotations;
 pub mod document;
 pub mod edit;
 pub mod import;
+pub mod notes;
 pub mod picker;
 pub mod reorganize;
 pub mod theme;
@@ -50,6 +51,8 @@ pub fn run() -> Result<(), tauri::Error> {
             add_area_highlight,
             remove_annotation,
             retag_annotation,
+            notes::load_notes,
+            notes::save_notes,
             remember_vault,
             last_theme,
             remember_theme,

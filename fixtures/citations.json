@@ -1,0 +1,100 @@
+[
+  {
+    "annotation": {
+      "kind": "textHighlight",
+      "id": "hl-9f8a7b6c",
+      "page": 4,
+      "semantic": "key",
+      "quote": "Raft achieves consensus via an elected leader.",
+      "rects": [
+        {
+          "x": 0.142,
+          "y": 0.285,
+          "width": 0.612,
+          "height": 0.032
+        },
+        {
+          "x": 0.098,
+          "y": 0.321,
+          "width": 0.244,
+          "height": 0.032
+        }
+      ],
+      "createdAt": "2026-10-27T16:00:00Z",
+      "updatedAt": "2026-10-27T16:00:00Z"
+    },
+    "block": "> 📌 **[Page 4](cite://hl-9f8a7b6c)**: *\"Raft achieves consensus via an elected leader.\"*"
+  },
+  {
+    "annotation": {
+      "kind": "areaHighlight",
+      "id": "ar-1a2b3c4d",
+      "page": 7,
+      "semantic": "definition",
+      "region": {
+        "x": 0.2,
+        "y": 0.3,
+        "width": 0.4,
+        "height": 0.25
+      },
+      "caption": "The leader election state machine",
+      "createdAt": "2026-10-27T16:00:00Z",
+      "updatedAt": "2026-10-27T16:00:00Z"
+    },
+    "block": "> 📌 **[Page 7](cite://ar-1a2b3c4d)**: *\"The leader election state machine\"*"
+  },
+  {
+    "annotation": {
+      "kind": "textBox",
+      "id": "tb-5e6f7a8b",
+      "page": 7,
+      "region": {
+        "x": 0.55,
+        "y": 0.12,
+        "width": 0.3,
+        "height": 0.08
+      },
+      "text": "Ask about the 2-phase commit comparison",
+      "createdAt": "2026-10-28T09:30:00Z",
+      "updatedAt": "2026-10-28T09:30:00Z"
+    },
+    "block": "> 📌 **[Page 7](cite://tb-5e6f7a8b)**: *\"Ask about the 2-phase commit comparison\"*"
+  },
+  {
+    "annotation": {
+      "kind": "areaHighlight",
+      "id": "ar-9z8y7x6w",
+      "page": 9,
+      "semantic": "exam",
+      "region": {
+        "x": 0.05,
+        "y": 0.1,
+        "width": 0.9,
+        "height": 0.6
+      },
+      "createdAt": "2026-10-27T16:00:00Z",
+      "updatedAt": "2026-10-27T16:00:00Z"
+    },
+    "block": "> 📌 **[Page 9](cite://ar-9z8y7x6w)**"
+  },
+  {
+    "annotation": {
+      "kind": "textHighlight",
+      "id": "hl-0e1d2c3b",
+      "page": 12,
+      "semantic": "question",
+      "quote": "Why is x*y < z_1 in `fold` [see 3] and C:\\tmp?",
+      "rects": [
+        {
+          "x": 0.1,
+          "y": 0.5,
+          "width": 0.7,
+          "height": 0.03
+        }
+      ],
+      "createdAt": "2026-10-27T16:00:00Z",
+      "updatedAt": "2026-10-27T16:00:00Z"
+    },
+    "block": "> 📌 **[Page 12](cite://hl-0e1d2c3b)**: *\"Why is x\\*y \\< z\\_1 in \\`fold\\` \\[see 3\\] and C:\\\\tmp?\"*"
+  }
+]

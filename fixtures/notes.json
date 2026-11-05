@@ -1,0 +1,21 @@
+{
+  "conflict": {
+    "onDisk": {
+      "text": "# Week 2\n",
+      "version": "64076b8fdb4ced8a"
+    },
+    "outcome": "conflict"
+  },
+  "empty": {
+    "text": "",
+    "version": "cbf29ce484222325"
+  },
+  "loaded": {
+    "text": "# Week 2\n",
+    "version": "64076b8fdb4ced8a"
+  },
+  "saved": {
+    "outcome": "saved",
+    "version": "64076b8fdb4ced8a"
+  }
+}

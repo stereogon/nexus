@@ -20,7 +20,10 @@
 //! If in-line positioning is ever needed, it is a decision to make with the encoding
 //! question faced directly, not something to inherit by accident.
 
+mod block;
 mod scanner;
+
+pub use block::citation_block;
 
 use std::collections::BTreeSet;
 use std::num::NonZeroU32;

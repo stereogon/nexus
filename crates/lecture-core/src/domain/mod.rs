@@ -45,7 +45,7 @@ pub use annotation_set::{
     ANNOTATIONS_FILE_NAME, ANNOTATIONS_SCHEMA, ANNOTATIONS_SCHEMA_VERSION, AnnotationSet,
 };
 pub use bundle::{ASSETS_DIR_NAME, BundleRef, LectureBundle, NOTES_FILE_NAME, SOURCE_DIR_NAME};
-pub use citation::{CITATION_SCHEME, Citation, CitationIndex, citation_link};
+pub use citation::{CITATION_SCHEME, Citation, CitationIndex, citation_block, citation_link};
 pub use conversion::{Conversion, ConversionState};
 pub use conversion_request::ConversionRequest;
 pub use document_format::DocumentFormat;

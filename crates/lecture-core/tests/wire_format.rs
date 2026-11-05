@@ -198,3 +198,48 @@ fn the_fixtures_round_trip_through_the_domain_types() {
     let annotations: AnnotationSet = serde_json::from_slice(&annotation_bytes).unwrap();
     assert_eq!(annotations, canonical_annotations());
 }
+
+/// One annotation and the citation line "Link to Notes" writes for it.
+#[derive(serde::Serialize)]
+struct CitationCase {
+    annotation: Annotation,
+    block: String,
+}
+
+/// The citation line, as a contract with the window: it builds the same text without a
+/// round trip to Rust, and `src/notes/citation.test.ts` checks it against this file.
+#[test]
+fn citation_lines_match_the_committed_wire_format() {
+    // The canonical set, plus the two cases where two formatters are likeliest to drift:
+    // nothing to quote, and a quote full of characters Markdown would act on.
+    let uncaptioned = Annotation::area_highlight(
+        AnnotationId::parse("ar-9z8y7x6w").unwrap(),
+        PageNumber::new(9).unwrap(),
+        HighlightSemantic::Exam,
+        NormalizedRect::new(0.05, 0.1, 0.9, 0.6).unwrap(),
+        None,
+        at(CREATED),
+    );
+    let awkward = Annotation::text_highlight(
+        AnnotationId::parse("hl-0e1d2c3b").unwrap(),
+        PageNumber::new(12).unwrap(),
+        HighlightSemantic::Question,
+        Excerpt::parse(r"Why is x*y < z_1 in `fold` [see 3] and C:\tmp?").unwrap(),
+        vec![NormalizedRect::new(0.1, 0.5, 0.7, 0.03).unwrap()],
+        at(CREATED),
+    )
+    .unwrap();
+    let canonical = canonical_annotations();
+
+    let cases: Vec<CitationCase> = canonical
+        .all()
+        .iter()
+        .chain([&uncaptioned, &awkward])
+        .map(|annotation| CitationCase {
+            annotation: annotation.clone(),
+            block: lecture_core::citation_block(annotation),
+        })
+        .collect();
+
+    assert_matches_fixture("citations.json", &to_file_bytes(&cases));
+}
