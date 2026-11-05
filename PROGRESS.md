@@ -469,8 +469,8 @@ Reported: "drag and drop image in the notes panel is not working". It had never 
 window, and every drop meant "import this as a lecture". An image dropped on the notes
 became an import of a PNG.
 
-Now the drag's position decides. Tauri reports it with every phase, in physical pixels
-from the webview's top-left; `dispatchDrag` turns it into CSS pixels and `useDropZone` asks
+Now the drag's position decides. Tauri reports it with every phase, from the webview's
+top-left, and `useDropZone` asks
 `notesDropAt` whether that point is over the notes pane, which registers itself while on
 screen. Over the notes, the import overlay stands aside and the pane shows a dashed outline;
 a drop there keeps each file through a new command, `save_dropped_image`, and links the
@@ -486,11 +486,19 @@ without loading it (4 contract tests, the large case on a sparse file). The pers
 copied, not moved. A document dropped on the notes by mistake is told where to drop it to
 import it.
 
-**Not verified in the real window:** the journeys emit Tauri's drag events in the harness,
-so the coordinate conversion is tested against Tauri's documented payload, not against
-WKWebView. If a drop lands at the wrong place in the notes, or the outline appears over the
-wrong pane, that conversion is the first suspect. Dragging an image from a web page (rather
-than a file from Finder) is not covered either: that is not a file drag.
+**Correction, the same day — the first version never worked in the real window.** The user
+saw only the import overlay, never the outline. The position was divided by
+`devicePixelRatio` because Tauri's type says `PhysicalPosition`. Read with the user's
+permission, the source says otherwise: wry 0.57.1 (`wkwebview/drag_drop.rs`) takes
+`draggingLocation`, which is in points, flips it against the webview's frame, and
+tauri-runtime-wry 2.12.3 wraps the numbers as `PhysicalPosition` without scaling. Points are
+CSS pixels at 100% zoom, so on a Retina screen every drag was put at half its distance from
+the left, over the document. The journeys had passed because the harness scaled its points
+by the same mistaken belief — they tested the code's assumption, not Tauri's behaviour. Both
+now use the position as sent; with the division put back all three journeys fail (the suite
+runs at a device pixel ratio of 2). Lesson worth keeping: a harness that imitates a native
+event must copy the native source, not the window's model of it. Dragging an image out of a
+web page, rather than a file from Finder, is still not covered: that is not a file drag.
 
 **2026-11-05 · ⌘P, ⌘Z / ⌘⇧Z, and ⌘0 for an error panel**
 Asked for: "command+p, command+z, and command+0 for the error panel".

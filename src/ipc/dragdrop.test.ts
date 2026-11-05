@@ -36,7 +36,7 @@ describe("dispatching a drag event", () => {
   it("shows the overlay when files come over the window", () => {
     const handlers = spies();
 
-    dispatchDrag({ type: "enter", paths: ["/a/raft.pdf"], position: { x: 1, y: 2 } }, handlers, 1);
+    dispatchDrag({ type: "enter", paths: ["/a/raft.pdf"], position: { x: 1, y: 2 } }, handlers);
 
     expect(handlers.calls()).toStrictEqual({ enter: 1, over: 0, leave: 0, drop: 0 });
   });
@@ -47,7 +47,6 @@ describe("dispatching a drag event", () => {
     dispatchDrag(
       { type: "drop", paths: ["/a/raft.pdf", "/a/paxos.pptx"], position: { x: 0, y: 0 } },
       handlers,
-      1,
     );
 
     expect(handlers.onDrop).toHaveBeenCalledWith(["/a/raft.pdf", "/a/paxos.pptx"], { x: 0, y: 0 });
@@ -57,24 +56,25 @@ describe("dispatching a drag event", () => {
     // Ignored until 2026-11-05, when nothing on screen depended on where the pointer was.
     const handlers = spies();
 
-    dispatchDrag({ type: "over", position: { x: 4, y: 9 } }, handlers, 1);
+    dispatchDrag({ type: "over", position: { x: 4, y: 9 } }, handlers);
 
     expect(handlers.onOver).toHaveBeenCalledWith({ x: 4, y: 9 });
   });
 
-  it("turns Tauri's physical pixels into the page's CSS pixels", () => {
-    // On a Retina screen a point 300 CSS pixels in is reported as 600.
+  it("uses the position as Tauri gives it, which on macOS is already CSS pixels", () => {
+    // Labelled physical, but wry reports points and Tauri does not scale them. Dividing by
+    // the device pixel ratio put every drag on a Retina screen over the document.
     const handlers = spies();
 
-    dispatchDrag({ type: "drop", paths: ["/a/shot.png"], position: { x: 600, y: 240 } }, handlers, 2);
+    dispatchDrag({ type: "drop", paths: ["/a/shot.png"], position: { x: 1200, y: 240 } }, handlers);
 
-    expect(handlers.onDrop).toHaveBeenCalledWith(["/a/shot.png"], { x: 300, y: 120 });
+    expect(handlers.onDrop).toHaveBeenCalledWith(["/a/shot.png"], { x: 1200, y: 240 });
   });
 
   it("hides the overlay when the drag leaves", () => {
     const handlers = spies();
 
-    dispatchDrag({ type: "leave" }, handlers, 1);
+    dispatchDrag({ type: "leave" }, handlers);
 
     expect(handlers.calls()).toStrictEqual({ enter: 0, over: 0, leave: 1, drop: 0 });
   });
@@ -98,7 +98,7 @@ describe("dispatching a drag event", () => {
     ]) {
       const handlers = spies();
 
-      dispatchDrag(payload, handlers, 1);
+      dispatchDrag(payload, handlers);
 
       expect(handlers.calls(), `payload: ${JSON.stringify(payload)}`).toStrictEqual({
         enter: 0,
@@ -114,7 +114,7 @@ describe("dispatching a drag event", () => {
     // must not be reported as one.
     const handlers = spies();
 
-    dispatchDrag({ type: "drop", paths: [], position: { x: 0, y: 0 } }, handlers, 1);
+    dispatchDrag({ type: "drop", paths: [], position: { x: 0, y: 0 } }, handlers);
 
     expect(handlers.onDrop).toHaveBeenCalledWith([], { x: 0, y: 0 });
     expect(handlers.calls()).toStrictEqual({ enter: 0, over: 0, leave: 0, drop: 1 });

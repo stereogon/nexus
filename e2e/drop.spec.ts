@@ -25,7 +25,15 @@ async function middleOf(page: Page, selector: string): Promise<{ x: number; y: n
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
 }
 
-/** Sends one phase of a native file drag, at a point given in CSS pixels. */
+/**
+ * Sends one phase of a native file drag, at a point in CSS pixels.
+ *
+ * The first version scaled the point by `devicePixelRatio`, mirroring the window's wrong
+ * belief that Tauri reports physical pixels — so the journeys passed while the real app
+ * never routed a drop to the notes. The payload now copies what wry 0.57 actually sends.
+ * The suite runs as "Desktop Safari", at a device pixel ratio of 2, so reintroducing the
+ * division halves every point here too and the journeys fail.
+ */
 async function drag(
   page: Page,
   phase: "enter" | "over" | "drop" | "leave",
@@ -34,10 +42,8 @@ async function drag(
 ): Promise<void> {
   await page.evaluate(
     async ({ phase, at, paths }) => {
-      // Tauri reports physical pixels.
-      const position = { x: at.x * window.devicePixelRatio, y: at.y * window.devicePixelRatio };
-
-      await window.__NEXUS_E2E_EMIT__?.(`tauri://drag-${phase}`, { paths, position });
+      // As wry reports it on macOS: points, which are CSS pixels, from the top-left.
+      await window.__NEXUS_E2E_EMIT__?.(`tauri://drag-${phase}`, { paths, position: at });
     },
     { phase, at, paths },
   );

@@ -20,9 +20,17 @@ import { getCurrentWebview } from "@tauri-apps/api/webview";
 import * as z from "zod";
 
 /**
- * Where the pointer is, as Tauri reports it: in **physical** pixels from the webview's
- * top-left. Read since 2026-11-05, when a drop over the notes started meaning something
- * different from a drop anywhere else.
+ * Where the pointer is, read since 2026-11-05, when a drop over the notes started meaning
+ * something different from a drop anywhere else.
+ *
+ * **Already in CSS pixels on macOS, despite Tauri's `PhysicalPosition` label.** wry 0.57
+ * takes `NSDraggingInfo.draggingLocation` — in points — flips it to a top-left origin
+ * against the webview's frame, and tauri-runtime-wry 2.12 wraps those numbers as a
+ * `PhysicalPosition` without multiplying by the backing scale (both read 2026-11-05). A
+ * point is a CSS pixel in a webview at 100% zoom, so the numbers are used as they come. The
+ * first version divided by `devicePixelRatio`, trusting the label; on a Retina screen that
+ * put every drag at half its distance from the left — over the document — and the notes
+ * never saw one.
  */
 const PositionSchema = z.object({ x: z.number(), y: z.number() });
 
@@ -36,7 +44,7 @@ const DragDropPayloadSchema = z.discriminatedUnion("type", [
 
 export type DragDropPayload = z.infer<typeof DragDropPayloadSchema>;
 
-/** A point in the window, in CSS pixels. */
+/** A point in the window, in CSS pixels from the top-left. */
 export interface DragPoint {
   readonly x: number;
   readonly y: number;
@@ -54,15 +62,11 @@ export interface DragHandlers {
  * Decides what a single drag event means, separated from the subscription so it can be
  * tested without a webview.
  *
- * `scale` is the device pixel ratio: Tauri reports physical pixels, and the page lays out
- * in CSS pixels, so a Retina screen's positions are halved here before anything compares
- * them with a box on the page.
- *
  * An unrecognised payload counts as the drag having left. The alternative is an overlay
  * stuck across the window with no gesture left that dismisses it — the person would have to
  * restart the app to get their vault back.
  */
-export function dispatchDrag(payload: unknown, handlers: DragHandlers, scale: number): void {
+export function dispatchDrag(payload: unknown, handlers: DragHandlers): void {
   const parsed = DragDropPayloadSchema.safeParse(payload);
 
   if (!parsed.success) {
@@ -72,7 +76,8 @@ export function dispatchDrag(payload: unknown, handlers: DragHandlers, scale: nu
   }
 
   const data = parsed.data;
-  const at = (position: DragPoint): DragPoint => ({ x: position.x / scale, y: position.y / scale });
+  // Copied rather than passed on: what arrives is Tauri's `PhysicalPosition` instance.
+  const at = (position: DragPoint): DragPoint => ({ x: position.x, y: position.y });
 
   switch (data.type) {
     case "enter":
@@ -103,6 +108,6 @@ export async function onFilesDragged(
   handlers: DragHandlers,
 ): Promise<UnlistenFn> {
   return getCurrentWebview().onDragDropEvent((event) => {
-    dispatchDrag(event.payload, handlers, window.devicePixelRatio);
+    dispatchDrag(event.payload, handlers);
   });
 }
