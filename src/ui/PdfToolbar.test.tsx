@@ -29,6 +29,8 @@ function show(over: Partial<Parameters<typeof PdfToolbar>[0]> = {}) {
     onMode: vi.fn(),
     boxing: false,
     onBoxing: vi.fn<(on: boolean) => void>(),
+    notesOpen: true,
+    onNotes: vi.fn(),
     ...over,
   };
 

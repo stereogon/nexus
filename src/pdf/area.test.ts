@@ -73,3 +73,17 @@ describe("the outline shown on a page", () => {
     expect(outlineOn(0, { pageIndex: 1, region: REGION }, WAITING)).toBeNull();
   });
 });
+
+describe("where a jump lands", () => {
+  it("puts the highlight a third of the way down rather than against the top", async () => {
+    const { landingOffset } = await import("../ui/useJump");
+
+    expect(landingOffset(1200, 600)).toBe(1000);
+  });
+
+  it("never scrolls above the start of the document", async () => {
+    const { landingOffset } = await import("../ui/useJump");
+
+    expect(landingOffset(50, 600)).toBe(0);
+  });
+});

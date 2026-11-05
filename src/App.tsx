@@ -36,7 +36,7 @@ import { Failure } from "./ui/Failure";
 import { Notice } from "./ui/Notice";
 import { importEach, noteFor } from "./ui/dropped";
 import { EditorPanel } from "./ui/EditorPanel";
-import { PdfViewer } from "./ui/PdfViewer";
+import { Reading } from "./ui/Reading";
 import { Sidebar } from "./ui/Sidebar";
 import { sidebarRows, type GroupBy, type ThenBy } from "./ui/sidebarRows";
 import { TitleBar } from "./ui/TitleBar";
@@ -262,7 +262,7 @@ export function App() {
         )}
 
         {open !== null ? (
-          <PdfViewer
+          <Reading
             directory={open.lecture.directory}
             document={open.document}
             onClose={reading.close}

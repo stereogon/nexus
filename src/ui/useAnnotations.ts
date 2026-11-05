@@ -78,13 +78,21 @@ export interface Annotations {
   readonly all: readonly Annotation[];
   /** What went wrong last, or `null`. */
   readonly failure: CommandError | null;
-  /** Stores a highlight over what was selected. */
+  /**
+   * Stores a highlight over what was selected. Resolves to it as stored — so "Link to
+   * notes" can cite the id the backend gave it — or to `null` if the save failed, which is
+   * reported through `failure`.
+   */
   readonly add: (
     candidate: HighlightCandidate,
     semantic: HighlightSemantic,
-  ) => void;
-  /** Stores a box drawn on a page, counting pages from zero. */
-  readonly addArea: (pageIndex: number, region: NormalizedRect, semantic: HighlightSemantic) => void;
+  ) => Promise<Annotation | null>;
+  /** Stores a box drawn on a page, counting pages from zero. Resolves as `add` does. */
+  readonly addArea: (
+    pageIndex: number,
+    region: NormalizedRect,
+    semantic: HighlightSemantic,
+  ) => Promise<Annotation | null>;
   /** Removes one highlight. */
   readonly remove: (id: string) => void;
   /** Marks one highlight as something else, keeping its id. */
@@ -131,42 +139,42 @@ export function useAnnotations(vault: string, directory: string): Annotations {
   }, [vault, directory]);
 
   const add = useCallback(
-    (candidate: HighlightCandidate, semantic: HighlightSemantic) => {
-      void (async () => {
-        try {
-          const made = await addHighlight(
-            vault,
-            directory,
-            asNewHighlight(candidate, semantic),
-          );
+    async (candidate: HighlightCandidate, semantic: HighlightSemantic) => {
+      try {
+        const made = await addHighlight(vault, directory, asNewHighlight(candidate, semantic));
 
-          setAll((held) => [...held, made]);
-          setFailure(null);
-        } catch (thrown: unknown) {
-          setFailure(asCommandError(thrown));
-        }
-      })();
+        setAll((held) => [...held, made]);
+        setFailure(null);
+
+        return made;
+      } catch (thrown: unknown) {
+        setFailure(asCommandError(thrown));
+
+        return null;
+      }
     },
     [vault, directory],
   );
 
   const addArea = useCallback(
-    (pageIndex: number, region: NormalizedRect, semantic: HighlightSemantic) => {
-      void (async () => {
-        try {
-          // The same zero-to-one page conversion `asNewHighlight` names and tests.
-          const made = await addAreaHighlight(vault, directory, {
-            page: pageIndex + 1,
-            semantic,
-            region,
-          });
+    async (pageIndex: number, region: NormalizedRect, semantic: HighlightSemantic) => {
+      try {
+        // The same zero-to-one page conversion `asNewHighlight` names and tests.
+        const made = await addAreaHighlight(vault, directory, {
+          page: pageIndex + 1,
+          semantic,
+          region,
+        });
 
-          setAll((held) => [...held, made]);
-          setFailure(null);
-        } catch (thrown: unknown) {
-          setFailure(asCommandError(thrown));
-        }
-      })();
+        setAll((held) => [...held, made]);
+        setFailure(null);
+
+        return made;
+      } catch (thrown: unknown) {
+        setFailure(asCommandError(thrown));
+
+        return null;
+      }
     },
     [vault, directory],
   );

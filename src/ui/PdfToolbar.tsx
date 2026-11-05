@@ -40,6 +40,8 @@ export function PdfToolbar({
   onMode,
   boxing,
   onBoxing,
+  notesOpen,
+  onNotes,
 }: {
   readonly title: string;
   /** Zero-based, as everything inside the viewer is. */
@@ -57,6 +59,9 @@ export function PdfToolbar({
   /** Whether a plain drag draws a box rather than selecting text. */
   readonly boxing: boolean;
   readonly onBoxing: (on: boolean) => void;
+  /** Whether the notes are showing beside the document. */
+  readonly notesOpen: boolean;
+  readonly onNotes: () => void;
 }) {
   const empty = pages === 0;
 
@@ -182,6 +187,15 @@ export function PdfToolbar({
           Page
         </button>
       </div>
+      <button
+        aria-pressed={notesOpen}
+        className={notesOpen ? "quiet on" : "quiet"}
+        onClick={onNotes}
+        title="Show or hide the notes (⌘\\)"
+        type="button"
+      >
+        Notes
+      </button>
     </div>
   );
 }

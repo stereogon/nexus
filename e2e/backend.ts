@@ -44,6 +44,8 @@ const AddArea = InLecture.extend({
 
 const RemoveAnnotation = InLecture.extend({ id: z.string() });
 
+const SaveNotes = InLecture.extend({ text: z.string(), basedOn: z.string() });
+
 const RetagAnnotation = InLecture.extend({ id: z.string(), semantic: HighlightSemanticSchema });
 
 const EditLecture = InLecture.extend({
@@ -79,6 +81,12 @@ export function backend(fixture: Fixture): (command: string, args?: InvokeArgs) 
     Object.entries(fixture.annotations).map(([directory, list]) => [directory, [...list]]),
   );
   let issued = 0;
+
+  // Notes and their versions, with the real command's rule: a save based on anything but
+  // the current version writes nothing and answers with what is there.
+  const notes = new Map<string, { text: string; version: string }>();
+  let revisions = 0;
+  const notesOf = (directory: string) => notes.get(directory) ?? { text: "", version: "empty" };
 
   const held = (directory: string): Annotation[] => {
     const list = annotations.get(directory) ?? [];
@@ -176,6 +184,25 @@ export function backend(fixture: Fixture): (command: string, args?: InvokeArgs) 
         list.splice(at, 1, after);
 
         return after;
+      }
+
+      case "load_notes":
+        return notesOf(InLecture.parse(args).directory);
+
+      case "save_notes": {
+        const { directory, text, basedOn } = SaveNotes.parse(args);
+        const current = notesOf(directory);
+
+        if (current.version !== basedOn) {
+          return { outcome: "conflict", onDisk: current };
+        }
+
+        revisions += 1;
+        const version = `r${String(revisions)}`;
+
+        notes.set(directory, { text, version });
+
+        return { outcome: "saved", version };
       }
 
       case "edit_lecture": {

@@ -12,10 +12,10 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import type { Annotation } from "../ipc/annotations";
 import { documentUrl, type OpenedDocument } from "../ipc/document";
 import {
   currentIndex,
-  fitWidth,
   renderWindow,
   scrollTarget,
   stack,
@@ -29,15 +29,15 @@ import { PdfPage } from "./PdfPage";
 import { PdfToolbar } from "./PdfToolbar";
 import { onPage, useAnnotations } from "./useAnnotations";
 import { outlineOn, useAreaDraw } from "./useAreaDraw";
+import { useElementSize } from "./useElementSize";
 import { useHighlightMenu } from "./useHighlightMenu";
-import { stepFrom, ZOOM_LIMITS, type Zoom } from "./zoom";
+import { useJump, type Jump } from "./useJump";
+import { ZOOM_LIMITS } from "./zoom";
+import { useZoom } from "./useZoom";
 import type { ViewMode } from "./viewMode";
 
 /** The gap between pages, matching the artboard's page separation. */
 const PAGE_GAP = 16;
-
-/** Room for the bed to breathe either side of a page at fit-width. */
-const BED_PADDING = 48;
 
 export function PdfViewer({
   document,
@@ -45,63 +45,40 @@ export function PdfViewer({
   vault,
   directory,
   onClose,
+  onLinkToNotes,
+  jump,
+  notesOpen,
+  onNotes,
 }: {
   readonly document: OpenedDocument;
   readonly title: string;
   readonly vault: string;
   readonly directory: string;
   readonly onClose: () => void;
+  /** Puts a citation of this annotation into the notes beside the document. */
+  readonly onLinkToNotes: (annotation: Annotation) => void;
+  /** A cited highlight to take the document to, from a click in the notes. */
+  readonly jump: Jump | null;
+  readonly notesOpen: boolean;
+  readonly onNotes: () => void;
 }) {
   const highlights = useAnnotations(vault, directory);
-  const menu = useHighlightMenu(highlights);
+  const menu = useHighlightMenu(highlights, onLinkToNotes);
   const dismissMenu = menu.dismiss;
   const [boxing, setBoxing] = useState(false);
   const area = useAreaDraw(menu.draw, boxing);
   const { state, page } = usePdfDocument(documentUrl(document));
   const scroller = useRef<HTMLDivElement | null>(null);
-  const [zoom, setZoom] = useState<Zoom>({ kind: "fit" });
   const [mode, setMode] = useState<ViewMode>("scroll");
   // Only consulted in page mode. In scroll mode the page being read is derived from the
   // scroll offset instead, so there is one source of truth per mode rather than two that
   // can disagree.
   const [pageIndex, setPageIndex] = useState(0);
   const [scrollTop, setScrollTop] = useState(0);
-  const [viewport, setViewport] = useState({ width: 0, height: 0 });
+  const viewport = useElementSize(scroller);
 
-  // Measured rather than assumed, because fit-width is a function of the pane's width and
-  // the pane is a split the person can drag.
-  useEffect(() => {
-    const element = scroller.current;
-
-    if (element === null) {
-      return undefined;
-    }
-
-    const observer = new ResizeObserver(([entry]) => {
-      if (entry !== undefined) {
-        setViewport({
-          width: entry.contentRect.width,
-          height: entry.contentRect.height,
-        });
-      }
-    });
-
-    observer.observe(element);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
-
-  const first = state.sizes[0];
-  const scale =
-    zoom.kind === "at"
-      ? zoom.scale
-      : fitWidth(
-          first?.width ?? 0,
-          Math.max(0, viewport.width - BED_PADDING),
-          ZOOM_LIMITS,
-        );
+  const zoom = useZoom(state.sizes[0]?.width ?? 0, viewport.width);
+  const scale = zoom.scale;
 
   const boxes = stack(
     state.sizes.map((size) => size.height * scale),
@@ -151,13 +128,6 @@ export function PdfViewer({
     dismissMenu();
   }, [showing, mode, scale, dismissMenu]);
 
-  const changeZoom = useCallback(
-    (direction: 1 | -1) => {
-      setZoom({ kind: "at", scale: stepFrom(scale, direction) });
-    },
-    [scale],
-  );
-
   /**
    * Goes to a page, in whichever way the current mode means.
    *
@@ -189,6 +159,16 @@ export function PdfViewer({
     [boxes, lastPage, mode, showing],
   );
 
+  const jumped = useJump({
+    jump,
+    annotations: highlights.all,
+    boxes,
+    mode,
+    viewportHeight: viewport.height,
+    scroller,
+    goToPage: setPageIndex,
+  });
+
   /** Switches layout, keeping the page the person was reading. */
   const changeMode = useCallback(
     (next: ViewMode) => {
@@ -219,17 +199,17 @@ export function PdfViewer({
     <section className="viewer">
       <PdfToolbar
         boxing={boxing}
-        fitting={zoom.kind === "fit"}
+        fitting={zoom.fitting}
+        notesOpen={notesOpen}
         onBoxing={setBoxing}
+        onNotes={onNotes}
         limits={ZOOM_LIMITS}
         mode={mode}
         onClose={onClose}
-        onFit={() => {
-          setZoom({ kind: "fit" });
-        }}
+        onFit={zoom.fit}
         onGoTo={goTo}
         onMode={changeMode}
-        onZoom={changeZoom}
+        onZoom={zoom.step}
         pages={state.sizes.length}
         scale={scale}
         showing={showing}
@@ -242,6 +222,12 @@ export function PdfViewer({
       />
 
       {highlights.failure !== null && <Failure error={highlights.failure} />}
+      {jumped.missing && (
+        <p className="note">
+          That citation points at a highlight this lecture no longer has — it was removed after
+          it was cited. The citation in your notes is unchanged.
+        </p>
+      )}
 
       {menu.open !== null && (
         <HighlightMenu
@@ -249,6 +235,7 @@ export function PdfViewer({
           current={menu.open.current}
           onChoose={menu.open.onChoose}
           onDismiss={menu.dismiss}
+          onLink={menu.open.onLink}
           onRemove={menu.open.onRemove}
         />
       )}
@@ -278,6 +265,7 @@ export function PdfViewer({
                   onAreaStart={area.begin}
                   onPick={menu.pick}
                   outline={outlineOn(index, area.drawing, menu.drawn)}
+                  pulse={jumped.pulse?.pageIndex === index ? jumped.pulse : null}
                   scale={scale}
                   source={page}
                   // In page mode the one mounted page sits at the top of its own stack,

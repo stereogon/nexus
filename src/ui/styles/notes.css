@@ -1,0 +1,132 @@
+/**
+ * The notes beside the document.
+ *
+ * Not from the canvas yet. The canvas could not be opened from the account in use when the
+ * pane was wired (2026-11-05), and the user chose to wire it now and restyle it from the
+ * artboards later. Until then it borrows what the window already has: the viewer bar's
+ * chrome for its header, Literata for prose (CLAUDE.md §3), the warm stone neutrals, and
+ * the brand accent for citations, which are app chrome rather than marks on the page.
+ */
+
+/* The document and the notes side by side; the document takes what the notes leave. */
+.reading {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+}
+
+.notes-pane {
+  flex: 0 0 40%;
+  min-width: 300px;
+  max-width: 680px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+}
+
+/* The `hidden` attribute loses to `display: flex` above unless it is said again. */
+.notes-pane[hidden] {
+  display: none;
+}
+
+/* The viewer bar's chrome, so the two headers read as one strip. */
+.notes-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: var(--chrome);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+
+.notes-title {
+  font-weight: 500;
+}
+
+.notes-status {
+  margin-left: auto;
+  color: var(--text-meta);
+  font-size: 12px;
+}
+
+.notes-status.conflict,
+.notes-status.failed {
+  color: var(--semantic-exam);
+}
+
+.notes-editor {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
+
+/* CodeMirror's own elements. */
+.notes-editor .cm-editor {
+  flex: 1 1 auto;
+  height: 100%;
+}
+
+.notes-editor .cm-editor.cm-focused {
+  outline: none;
+}
+
+.notes-editor .cm-scroller {
+  font-family: var(--font-prose);
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--text);
+}
+
+.notes-editor .cm-content {
+  padding: 20px 24px 40vh;
+  caret-color: var(--text);
+}
+
+.notes-editor .cm-placeholder {
+  color: var(--text-faint);
+}
+
+/* A `cite://` link, drawn as a badge over the text that is still there underneath. */
+.cm-cite {
+  padding: 0 3px;
+  border-radius: 4px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+  cursor: pointer;
+}
+
+.notes-conflict {
+  margin: 12px 16px 0;
+  padding: 12px 14px;
+  border: 1px solid var(--semantic-exam);
+  border-radius: var(--radius);
+  background: var(--exam-wash);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--text);
+}
+
+.notes-conflict p {
+  margin: 0 0 8px;
+}
+
+.notes-conflict pre {
+  max-height: 160px;
+  margin: 6px 0 0;
+  overflow: auto;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+
+.notes-conflict-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}

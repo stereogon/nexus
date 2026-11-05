@@ -36,7 +36,22 @@ export interface OpenMenu {
   readonly current: HighlightSemantic | null;
   /** `null` for a selection, which is not yet anything to remove. */
   readonly onRemove: (() => void) | null;
+  /**
+   * Cites it in the notes at the cursor (`claude-spec.md` §2.4), storing it first if it
+   * is a fresh selection or box. Always offered.
+   */
+  readonly onLink: () => void;
 }
+
+/**
+ * The meaning "Link to notes" gives something not yet marked.
+ *
+ * Linking a fresh selection has to store it, and a stored highlight has a meaning. Key
+ * concept is the spec's first colour and the commonest reason to cite something; it can be
+ * changed from the badge afterwards without breaking the citation, since a re-mark keeps
+ * the id.
+ */
+const LINKED_AS: HighlightSemantic = "key";
 
 /** What an annotation is marked as, or `null` for a text box, which is not marked. */
 function semanticOf(annotation: Annotation): HighlightSemantic | null {
@@ -50,7 +65,11 @@ export interface DrawnArea {
   readonly at: MenuAt;
 }
 
-export function useHighlightMenu(highlights: Annotations): {
+export function useHighlightMenu(
+  highlights: Annotations,
+  /** Puts a citation of this annotation into the notes. */
+  link: (annotation: Annotation) => void,
+): {
   readonly open: OpenMenu | null;
   readonly pick: (annotation: Annotation, at: MenuAt) => void;
   readonly draw: (pageIndex: number, region: NormalizedRect, at: MenuAt) => void;
@@ -104,6 +123,10 @@ export function useHighlightMenu(highlights: Annotations): {
           highlights.remove(picked.annotation.id);
           setPicked(null);
         },
+        onLink: () => {
+          link(picked.annotation);
+          setPicked(null);
+        },
       },
       pick,
       draw,
@@ -120,10 +143,18 @@ export function useHighlightMenu(highlights: Annotations): {
         at: drawn.at,
         current: null,
         onChoose: (semantic: HighlightSemantic) => {
-          highlights.addArea(drawn.pageIndex, drawn.region, semantic);
+          void highlights.addArea(drawn.pageIndex, drawn.region, semantic);
           setDrawn(null);
         },
         onRemove: null,
+        onLink: () => {
+          void highlights.addArea(drawn.pageIndex, drawn.region, LINKED_AS).then((made) => {
+            if (made !== null) {
+              link(made);
+            }
+          });
+          setDrawn(null);
+        },
       },
       pick,
       draw,
@@ -143,10 +174,18 @@ export function useHighlightMenu(highlights: Annotations): {
       at: marking.at,
       current: null,
       onChoose: (semantic: HighlightSemantic) => {
-        highlights.add(marking.candidate, semantic);
+        void highlights.add(marking.candidate, semantic);
         clear();
       },
       onRemove: null,
+      onLink: () => {
+        void highlights.add(marking.candidate, LINKED_AS).then((made) => {
+          if (made !== null) {
+            link(made);
+          }
+        });
+        clear();
+      },
     },
     pick,
     draw,

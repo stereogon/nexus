@@ -28,6 +28,7 @@ export function HighlightMenu({
   current,
   onChoose,
   onRemove,
+  onLink,
   onDismiss,
 }: {
   readonly at: MenuAt;
@@ -45,6 +46,8 @@ export function HighlightMenu({
   readonly onChoose: ((semantic: HighlightSemantic) => void) | null;
   /** Offered only for a highlight that already exists. */
   readonly onRemove: (() => void) | null;
+  /** Cites it in the notes beside the document. */
+  readonly onLink: () => void;
   readonly onDismiss: () => void;
 }) {
   const box = useRef<HTMLDivElement | null>(null);
@@ -115,6 +118,11 @@ export function HighlightMenu({
             {SEMANTIC_GLYPH[semantic]}
           </button>
         ))}
+
+      {/* The spec's quick-action bar puts this beside the swatches (§2.4). */}
+      <button className="highlight-link" onClick={onLink} title="Link to notes (⌘L)" type="button">
+        Link to notes
+      </button>
 
       {onRemove !== null && (
         <button className="highlight-remove" onClick={onRemove} type="button">

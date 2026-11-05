@@ -15,10 +15,11 @@ const AT = { left: 120, top: 340, above: 320 };
 describe("marking a new selection", () => {
   it("offers every semantic, each with its letter", () => {
     render(
-      <HighlightMenu at={AT} current={null} onChoose={vi.fn()} onDismiss={vi.fn()} onRemove={null} />,
+      <HighlightMenu onLink={vi.fn()} at={AT} current={null} onChoose={vi.fn()} onDismiss={vi.fn()} onRemove={null} />,
     );
 
-    expect(screen.getAllByRole("button")).toHaveLength(SEMANTICS.length);
+    // The four meanings, plus Link to notes, which every menu offers.
+    expect(screen.getAllByRole("button")).toHaveLength(SEMANTICS.length + 1);
     expect(screen.getByRole("button", { name: "Key concept" }).textContent).toBe("K");
     expect(screen.getByRole("button", { name: "Exam / important" }).textContent).toBe("E");
   });
@@ -27,7 +28,7 @@ describe("marking a new selection", () => {
     const onChoose = vi.fn();
 
     render(
-      <HighlightMenu at={AT} current={null} onChoose={onChoose} onDismiss={vi.fn()} onRemove={null} />,
+      <HighlightMenu onLink={vi.fn()} at={AT} current={null} onChoose={onChoose} onDismiss={vi.fn()} onRemove={null} />,
     );
     fireEvent.click(screen.getByRole("button", { name: "Question" }));
 
@@ -36,7 +37,7 @@ describe("marking a new selection", () => {
 
   it("offers no way to remove something that does not exist yet", () => {
     render(
-      <HighlightMenu at={AT} current={null} onChoose={vi.fn()} onDismiss={vi.fn()} onRemove={null} />,
+      <HighlightMenu onLink={vi.fn()} at={AT} current={null} onChoose={vi.fn()} onDismiss={vi.fn()} onRemove={null} />,
     );
 
     expect(screen.queryByRole("button", { name: "Remove" })).toBeNull();
@@ -44,7 +45,7 @@ describe("marking a new selection", () => {
 
   it("sits where it was told, in viewport coordinates", () => {
     const { container } = render(
-      <HighlightMenu at={AT} current={null} onChoose={vi.fn()} onDismiss={vi.fn()} onRemove={null} />,
+      <HighlightMenu onLink={vi.fn()} at={AT} current={null} onChoose={vi.fn()} onDismiss={vi.fn()} onRemove={null} />,
     );
     const style = container.querySelector(".highlight-menu")?.getAttribute("style");
 
@@ -58,7 +59,7 @@ describe("an existing highlight", () => {
     const onRemove = vi.fn();
 
     render(
-      <HighlightMenu at={AT} current={null} onChoose={null} onDismiss={vi.fn()} onRemove={onRemove} />,
+      <HighlightMenu onLink={vi.fn()} at={AT} current={null} onChoose={null} onDismiss={vi.fn()} onRemove={onRemove} />,
     );
     fireEvent.click(screen.getByRole("button", { name: "Remove" }));
 
@@ -71,6 +72,7 @@ describe("an existing highlight", () => {
     // `retag_annotation` keeps the id, so all four meanings are offered now.
     render(
       <HighlightMenu
+        onLink={vi.fn()}
         at={AT}
         current="key"
         onChoose={vi.fn()}
@@ -79,13 +81,14 @@ describe("an existing highlight", () => {
       />,
     );
 
-    expect(screen.getAllByRole("button")).toHaveLength(SEMANTICS.length + 1);
+    expect(screen.getAllByRole("button")).toHaveLength(SEMANTICS.length + 2);
     expect(screen.getByRole("button", { name: "Remove" })).not.toBeNull();
   });
 
   it("shows the meaning it already has as pressed, and only that one", () => {
     render(
       <HighlightMenu
+        onLink={vi.fn()}
         at={AT}
         current="exam"
         onChoose={vi.fn()}
@@ -108,6 +111,7 @@ describe("an existing highlight", () => {
 
     render(
       <HighlightMenu
+        onLink={vi.fn()}
         at={AT}
         current="key"
         onChoose={onChoose}
@@ -120,14 +124,17 @@ describe("an existing highlight", () => {
     expect(onChoose).toHaveBeenCalledWith("question");
   });
 
-  it("offers only Remove for something with no meaning to change", () => {
+  it("offers no meanings for something with no meaning to change", () => {
     // A text box. Nothing creates one yet, but the menu must not offer four colours for a
     // thing that cannot hold one.
     render(
-      <HighlightMenu at={AT} current={null} onChoose={null} onDismiss={vi.fn()} onRemove={vi.fn()} />,
+      <HighlightMenu onLink={vi.fn()} at={AT} current={null} onChoose={null} onDismiss={vi.fn()} onRemove={vi.fn()} />,
     );
 
-    expect(screen.getAllByRole("button")).toHaveLength(1);
+    expect(screen.getAllByRole("button").map((button) => button.textContent)).toEqual([
+      "Link to notes",
+      "Remove",
+    ]);
   });
 });
 
@@ -136,7 +143,7 @@ describe("a fresh selection", () => {
     // `aria-pressed="false"` on all four would announce a selected state that was never
     // on offer.
     render(
-      <HighlightMenu at={AT} current={null} onChoose={vi.fn()} onDismiss={vi.fn()} onRemove={null} />,
+      <HighlightMenu onLink={vi.fn()} at={AT} current={null} onChoose={vi.fn()} onDismiss={vi.fn()} onRemove={null} />,
     );
 
     for (const button of screen.getAllByRole("button")) {
@@ -150,7 +157,7 @@ describe("getting rid of it", () => {
     const onDismiss = vi.fn();
 
     render(
-      <HighlightMenu at={AT} current={null} onChoose={vi.fn()} onDismiss={onDismiss} onRemove={null} />,
+      <HighlightMenu onLink={vi.fn()} at={AT} current={null} onChoose={vi.fn()} onDismiss={onDismiss} onRemove={null} />,
     );
     fireEvent.keyDown(document, { key: "Escape" });
 
@@ -161,7 +168,7 @@ describe("getting rid of it", () => {
     const onDismiss = vi.fn();
 
     render(
-      <HighlightMenu at={AT} current={null} onChoose={vi.fn()} onDismiss={onDismiss} onRemove={null} />,
+      <HighlightMenu onLink={vi.fn()} at={AT} current={null} onChoose={vi.fn()} onDismiss={onDismiss} onRemove={null} />,
     );
     fireEvent.keyDown(document, { key: "k" });
 
@@ -172,7 +179,7 @@ describe("getting rid of it", () => {
     // A menu that kept its key listener after unmounting would answer for the next one.
     const onDismiss = vi.fn();
     const { unmount } = render(
-      <HighlightMenu at={AT} current={null} onChoose={vi.fn()} onDismiss={onDismiss} onRemove={null} />,
+      <HighlightMenu onLink={vi.fn()} at={AT} current={null} onChoose={vi.fn()} onDismiss={onDismiss} onRemove={null} />,
     );
 
     unmount();
@@ -183,9 +190,22 @@ describe("getting rid of it", () => {
 
   it("is labelled as a group, so it is announced as one thing", () => {
     render(
-      <HighlightMenu at={AT} current={null} onChoose={vi.fn()} onDismiss={vi.fn()} onRemove={null} />,
+      <HighlightMenu onLink={vi.fn()} at={AT} current={null} onChoose={vi.fn()} onDismiss={vi.fn()} onRemove={null} />,
     );
 
     expect(screen.getByRole("group", { name: "Highlight as" })).toBeDefined();
+  });
+});
+
+describe("Link to notes", () => {
+  it("is offered on a fresh selection and cites it when pressed", () => {
+    const onLink = vi.fn();
+
+    render(
+      <HighlightMenu onLink={onLink} at={AT} current={null} onChoose={vi.fn()} onDismiss={vi.fn()} onRemove={null} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Link to notes" }));
+
+    expect(onLink).toHaveBeenCalledOnce();
   });
 });

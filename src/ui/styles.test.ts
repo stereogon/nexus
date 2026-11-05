@@ -201,6 +201,19 @@ function defined(): Set<string> {
 const APPLIED_BY_PDFJS = new Set(["markedContent"]);
 
 /**
+ * Classes CodeMirror puts on the editor it builds, styled in `notes.css`. Named for the
+ * same reason as pdf.js's: no component writes them, and a looser rule would also excuse
+ * a real mistake.
+ */
+const APPLIED_BY_CODEMIRROR = new Set([
+  "cm-editor",
+  "cm-focused",
+  "cm-scroller",
+  "cm-content",
+  "cm-placeholder",
+]);
+
+/**
  * The stylesheets that hold shared primitives rather than one pane's layout.
  *
  * `index.css` imports these before any pane, which is what lets a pane tighten a shared
@@ -254,7 +267,9 @@ describe("the stylesheets and the components agree", () => {
     // earlier, still styled, still shipped.
     const seen = mentioned();
     const dead = [...defined()]
-      .filter((name) => !seen.has(name) && !APPLIED_BY_PDFJS.has(name))
+      .filter(
+        (name) => !seen.has(name) && !APPLIED_BY_PDFJS.has(name) && !APPLIED_BY_CODEMIRROR.has(name),
+      )
       .sort();
 
     expect(dead).toEqual([]);

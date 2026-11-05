@@ -102,6 +102,12 @@ export function pageField(page: Page): Locator {
  * sliver among them — and a script-built range would skip exactly that.
  */
 export async function dragAcross(page: Page, span: Locator, overshoot = 0): Promise<void> {
+  // The text layer is rebuilt whenever the page re-fits -- the notes opening or closing
+  // beside it, say -- and for that moment the span does not exist. Wait for the
+  // condition the drag needs rather than reaching for a span mid-rebuild (found on
+  // 2026-11-05 when a journey that hides the notes first failed one run in five).
+  await expect(span).toBeVisible();
+
   const box = await span.boundingBox();
 
   if (box === null) {

@@ -19,6 +19,7 @@
  */
 import type { Annotation, NormalizedRect } from "../ipc/annotations";
 import type { MenuAt } from "./menuPlacement";
+import type { Pulse } from "./useJump";
 import { BADGE_SIZE, badgeAt } from "./highlightBadge";
 import { SEMANTIC_GLYPH, SEMANTIC_LABEL } from "./semantics";
 
@@ -53,11 +54,14 @@ export function HighlightLayer({
   width,
   height,
   onPick,
+  pulse = null,
 }: {
   readonly annotations: readonly Annotation[];
   readonly width: number;
   readonly height: number;
   readonly onPick: (annotation: Annotation, at: MenuAt) => void;
+  /** The highlight to pulse after a jump from the notes. */
+  readonly pulse?: Pulse | null;
 }) {
   if (annotations.length === 0) {
     return null;
@@ -78,9 +82,11 @@ export function HighlightLayer({
           <div key={annotation.id}>
             {rects.map((rect, at) => (
               <div
-                className="highlight"
+                // Keyed by the jump's nonce while pulsing, so a second click on the same
+                // citation restarts the animation instead of finding it already finished.
+                className={pulse?.id === annotation.id ? "highlight pulse" : "highlight"}
                 data-semantic={annotation.semantic}
-                key={`${annotation.id}:${String(at)}`}
+                key={`${annotation.id}:${String(at)}:${pulse?.id === annotation.id ? String(pulse.nonce) : ""}`}
                 style={{
                   left: rect.x * width,
                   top: rect.y * height,

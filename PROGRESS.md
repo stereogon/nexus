@@ -230,11 +230,15 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
 - [ ] Vitest: round-trip invariance across 0.5× / 1.0× / 1.75× / 3.0×
 
 ### [ ] Milestone 4 — Markdown editor and bi-directional citations
-- [ ] CodeMirror 6 split pane, hybrid live preview
+- [~] CodeMirror 6 notes pane beside the document, saving as you type with conflict
+      handling, `cite://` badges (2026-11-05). Styled to fit the window, not yet from the
+      canvas; no live preview of rendered Markdown yet, no draggable split.
 - [ ] Offline KaTeX, Mermaid, declarative `chart` blocks, each with an error boundary that
       keeps the editor mounted
 - [ ] Clipboard image → `assets/<timestamp>-<hash>.png`
-- [ ] `cite://<id>` controller both directions, with pulse ring
+- [~] `cite://<id>`: Link to notes inserts at the cursor; a badge jumps the document to its
+      highlight with the pulse ring (2026-11-05). Not yet: the reverse direction, from a
+      highlight to the line citing it, and ⌘L.
 - [ ] Vitest: citation parser, orphaned-link handling, malformed-block banners
 
 ### [ ] Milestone 5 — macOS polish, diagnostics, E2E
@@ -455,6 +459,75 @@ Fixed at the cause with `fsModuleCache: false`, measured at no cost (the suite r
 either way). Proved by adding a component with a class the stylesheets never mention and
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
+
+**2026-11-05 · Notes beside the document, wired before the canvas**
+The user's decision, recorded because it sets aside CLAUDE.md §3 for now: wire the notes
+pane and the citation links today, styled to fit what the window already looks like, and
+restyle from the canvas once it can be opened from this account. So the pane borrows the
+viewer bar's chrome for its header, Literata for prose, the warm stone neutrals, and the
+brand accent for `cite://` badges (app chrome, not marks on the page). **It owes a pass
+against the Workspace artboards**, and nothing about its look should be read as decided.
+
+**The shape.** A lecture open is now `Reading`: the document and the notes side by side,
+the one component that holds both, because the two links cross there. Link to notes starts
+in the document and ends at the cursor; a badge starts in the notes and ends at a page.
+Neither side knows the other. The notes take 40% (300–680 px) and the document re-fits into
+the rest — the viewer already measured its own width, which now lives in `useElementSize`.
+The pane is **hidden rather than unmounted**, so hiding and showing it (the Notes button,
+or ⌘\ as §2.3 names) never costs the cursor or the undo history; a journey proves it by
+typing into the middle of a line after a hide and show.
+
+**Saving.** `useNotes` saves a short pause after typing stops — every keystroke would be a
+write per character into a synced folder, and a Save button would make forgetting to press
+it a way to lose an evening. One save is in flight at a time and the next is based on the
+version the last returned, so a person's second save never conflicts with their first.
+Unsaved text is saved when the lecture closes. On a conflict the editor keeps the person's
+text, saving stops, and a banner lets them see the other version before choosing "Keep
+mine" or "Use the other version".
+
+*Two bugs in it, both caught by its own tests before anything ran:* a failed save retried
+**at once**, which a full disk would have turned into a loop hammering it — it now waits
+for the next keystroke; and a debounce timer set during an in-flight save fired after that
+save had carried the text and **wrote the same bytes again** — `save` now does nothing when
+nothing is unsaved.
+
+**The editor** is CodeMirror 6, built once per load and owning its text from then on.
+React never pushes the text back in on a keystroke, which is the usual way to lose a cursor
+and an undo stack. It is rebuilt only when the notes are replaced underneath: another
+lecture, or "Use the other version".
+
+**Link to notes** is in every highlight menu, as §2.4's quick-action bar has it. On a fresh
+selection or box it stores the highlight first — a citation needs the id the backend gives
+it — as a key concept, which can be re-marked afterwards without breaking the citation. The
+line goes in at the cursor as a block of its own (`notes/insert.ts`): a blank line before
+it unless one is there, and a blank line after it, because in Markdown a line typed
+straight after a blockquote is read as part of it. A citation made while the notes are
+still loading waits rather than being dropped.
+
+**A badge** is a CodeMirror decoration over text that is still there, using the Rust
+scanner's id characters, so the editor never badges what the citation index would not
+see. Clicking one takes the document to the highlight, a third of the way down the view,
+and pulses a ring for 1.5 s (a CSS animation that ends by itself). A click does not
+swallow the event, so the cursor still lands in the link and it stays editable. A citation
+of a highlight that was since removed says so instead of doing nothing.
+
+*Two seams, for the 300-line limit:* zoom moved to `useZoom` beside `zoom.ts`, and the
+size measurement to `useElementSize`. The `useHighlightMenu` tests split into the menu's
+identity and badge cases, and the drawn-box and Link cases, with a shared fixture so the
+fake `Annotations` cannot fall behind the interface twice.
+
+*On stability.* The first repeated runs failed widely — 15 of 72 — with pages still
+"Opening the document…" after five seconds, four of them failing at the same instant. After
+`node_modules/.vite` was cleared the same command passed 72 of 72, and the full suite 105
+of 105 at both 7 and 4 workers. The likeliest cause is Vite's dependency pre-bundle, built
+before CodeMirror was installed, re-optimising and reloading pages mid-run; that is
+**inferred, not proven**, and affects only the dev server, never the built app. One real
+race was found and fixed in the suite itself: a journey that hides the notes reached for a
+text span while the page was re-fitting and the text layer was being rebuilt.
+`dragAcross` now waits for the span to exist.
+
+*Not done:* rendered Markdown (KaTeX, Mermaid, charts), pasted images, a draggable split,
+⌘L, and the reverse link from a highlight to the line citing it.
 
 **2026-11-05 · A box tool, for a touchpad**
 Reported: on a MacBook touchpad the box could not be drawn at all. Option-drag needs a
