@@ -52,6 +52,22 @@ pub struct NewArea {
     pub region: NormalizedRect,
 }
 
+/// A sticky note the window is asking to put on a page.
+///
+/// Free-standing — the user's choice on 2026-11-05 — so it is the existing text-box kind:
+/// created beside a highlight, independent of it afterwards. The text is an [`Excerpt`],
+/// one paragraph; see `PROGRESS.md` for why line breaks are not kept.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NewTextBox {
+    /// The page it sits on, counting from 1.
+    pub page: u32,
+    /// Where it sits and how big it is, normalised against the unscaled page.
+    pub region: NormalizedRect,
+    /// What was written.
+    pub text: String,
+}
+
 /// Stores a highlight over selected text, returning the annotation as saved.
 ///
 /// # Errors
@@ -159,6 +175,61 @@ pub fn write_area(
         area.semantic,
         area.region,
         None,
+        clock.now()?,
+    );
+
+    let mut set = annotations.load(&bundle)?;
+
+    set.insert(made.clone())?;
+    annotations.save(&bundle, &set)?;
+
+    Ok(made)
+}
+
+/// Puts a sticky note on a page, returning it as saved.
+///
+/// # Errors
+///
+/// Returns [`CommandError`] if the vault or the lecture cannot be read, if the page number
+/// is zero, if the text has nothing visible in it, or if the write fails.
+#[tauri::command]
+pub async fn add_text_box(
+    vault: String,
+    directory: String,
+    note: NewTextBox,
+) -> Result<Annotation, CommandError> {
+    tauri::async_runtime::spawn_blocking(move || {
+        write_text_box(&vault, &directory, &note, &SystemIds, &SystemClock)
+    })
+    .await
+    .map_err(|_| CommandError {
+        code: "ERR_HIGHLIGHT_INTERRUPTED",
+        remediation: "Saving the sticky note stopped before it finished. The lecture's other \
+                      notes are unchanged; write it again.",
+    })?
+}
+
+/// The blocking half of [`add_text_box`], which is also the testable one.
+///
+/// # Errors
+///
+/// See [`add_text_box`].
+pub fn write_text_box(
+    vault: &str,
+    directory: &str,
+    note: &NewTextBox,
+    ids: &impl IdSource,
+    clock: &impl Clock,
+) -> Result<Annotation, CommandError> {
+    let bundle = RelativePath::parse(directory)?;
+    let annotations = store(vault)?;
+
+    // Built before the file is loaded, so a note with no words never touches it.
+    let made = Annotation::text_box(
+        ids.fresh()?,
+        PageNumber::new(note.page)?,
+        note.region,
+        Excerpt::parse(&note.text)?,
         clock.now()?,
     );
 

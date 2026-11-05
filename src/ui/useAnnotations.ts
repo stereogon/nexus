@@ -17,6 +17,8 @@ import { useCallback, useEffect, useState } from "react";
 import {
   addAreaHighlight,
   addHighlight,
+  addTextBox,
+  editTextBox,
   loadAnnotations,
   removeAnnotation,
   retagAnnotation,
@@ -24,6 +26,7 @@ import {
   type HighlightSemantic,
   type NewHighlight,
   type NormalizedRect,
+  type TextBoxEdit,
 } from "../ipc/annotations";
 import { asCommandError, type CommandError } from "../ipc/vault";
 import type { HighlightCandidate } from "../pdf/selection";
@@ -93,6 +96,10 @@ export interface Annotations {
     region: NormalizedRect,
     semantic: HighlightSemantic,
   ) => Promise<Annotation | null>;
+  /** Puts a sticky note on a page, counting pages from zero. Resolves as `add` does. */
+  readonly addTextBox: (pageIndex: number, region: NormalizedRect, text: string) => Promise<Annotation | null>;
+  /** Moves, resizes or rewords a sticky note. */
+  readonly editTextBox: (id: string, edit: TextBoxEdit) => void;
   /** Removes one highlight. */
   readonly remove: (id: string) => void;
   /** Marks one highlight as something else, keeping its id. */
@@ -179,6 +186,41 @@ export function useAnnotations(vault: string, directory: string): Annotations {
     [vault, directory],
   );
 
+  const addNote = useCallback(
+    async (pageIndex: number, region: NormalizedRect, text: string) => {
+      try {
+        const made = await addTextBox(vault, directory, { page: pageIndex + 1, region, text });
+
+        setAll((held) => [...held, made]);
+        setFailure(null);
+
+        return made;
+      } catch (thrown: unknown) {
+        setFailure(asCommandError(thrown));
+
+        return null;
+      }
+    },
+    [vault, directory],
+  );
+
+  const editNote = useCallback(
+    (id: string, edit: TextBoxEdit) => {
+      void (async () => {
+        try {
+          const stored = await editTextBox(vault, directory, id, edit);
+
+          // The same rule as a re-mark: replaced on success, dropped if it is gone.
+          setAll((held) => afterRetag(held, id, stored));
+          setFailure(null);
+        } catch (thrown: unknown) {
+          setFailure(asCommandError(thrown));
+        }
+      })();
+    },
+    [vault, directory],
+  );
+
   const remove = useCallback(
     (id: string) => {
       void (async () => {
@@ -220,5 +262,15 @@ export function useAnnotations(vault: string, directory: string): Annotations {
     setFailure(null);
   }, []);
 
-  return { all, failure, add, addArea, remove, retag, clearFailure };
+  return {
+    all,
+    failure,
+    add,
+    addArea,
+    addTextBox: addNote,
+    editTextBox: editNote,
+    remove,
+    retag,
+    clearFailure,
+  };
 }

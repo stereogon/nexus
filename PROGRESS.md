@@ -461,6 +461,47 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-05 · Sticky notes on the slides**
+The user's choices: **free-standing** rather than belonging to a highlight, and **folded
+to an icon until clicked**. Free-standing meant the existing `textBox` kind — the spec's
+"+ On-Slide Note" — so `annotations.json` keeps its shape and no schema version changed.
+
+Every highlight menu has **Sticky note**. From a highlight's badge it starts a note beside
+it; from a fresh selection or box it stores the highlight first (as Link to notes does) and
+starts one beside where it landed. A note is a *draft* until it has words: Enter keeps it,
+Escape drops it, and nothing is stored for one abandoned, so an empty card can never sit on
+a slide. Once kept it folds to a small note icon; click to open a card that can be dragged
+by its header, resized from its corner, reworded by double-click, cited in the notes, or
+deleted. One write per gesture — a drag previews locally and is stored on release. It stays
+when its highlight is removed, being its own thing.
+
+Two commands, by the established patterns: `add_text_box` beside the other ways of making
+an annotation (it mints an id), and `edit_text_box`, which moves, resizes or rewords in place
+keeping the id, answering `None` for an id that is not a note, like `retag_annotation`.
+Wording with nothing visible is refused before the file is loaded. Six tests against a real
+vault, including an edit of a deleted note rewriting nothing (by inode).
+
+Geometry is pure in `pdf/sticky.ts`, in page fractions (§3): beside a highlight to its
+right, else its left, else below; moves and resizes clamped to the page, never smaller than
+a note can be grabbed by.
+
+**Found by the journeys, not by reading:** the folded icon of a new note landed **on the
+highlight's badge** — the only way to that highlight's menu — because the gap was a fixed
+fraction of the page, less than the badge and its ¶ indicator at that zoom. The room is now
+measured in pixels at the page's drawn width. The journey that removes a highlight after
+giving it a note is what caught it.
+
+*Known limitation, recorded rather than hidden:* a note's text is an `Excerpt`, the same
+type as a highlight's quote, which is one paragraph — line breaks are joined. Keeping them
+would change what a text box stores, which the user chose not to do for this feature; so in
+a note, Enter means "done". If notes need several paragraphs, that is a deliberate schema
+change to make with the iPad in mind. Also not done: moving or resizing from the keyboard.
+
+*The harness* passed 300 lines and was split into handler tables (`e2e/answers/`), which
+read better than one long `switch`. The split was mechanical, and one thing it got wrong was
+caught by reading the result rather than trusted: `remember_vault` had fallen through to
+`remember_theme`'s `return null`, and came out with an empty body. Fixed before anything ran.
+
 **2026-11-05 · Highlighting in the notes, in the document's four meanings**
 The user chose four colours over Markdown's single-colour convention, accepting that other
 apps show the meaning as text. Stored as `==text==` for a key concept — so the default form

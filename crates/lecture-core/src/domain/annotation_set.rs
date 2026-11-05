@@ -27,7 +27,8 @@ use std::collections::BTreeSet;
 use serde::{Deserialize, Serialize};
 
 use crate::domain::{
-    Annotation, AnnotationId, HighlightSemantic, PageNumber, SchemaRange, Timestamp,
+    Annotation, AnnotationId, Excerpt, HighlightSemantic, NormalizedRect, PageNumber, SchemaRange,
+    Timestamp,
 };
 use crate::error::CoreError;
 
@@ -145,6 +146,26 @@ impl AnnotationSet {
     ) -> Option<Annotation> {
         let held = self.annotations.iter_mut().find(|a| a.id() == id)?;
         let changed = held.retagged(semantic, at)?;
+
+        *held = changed.clone();
+
+        Some(changed)
+    }
+
+    /// Moves, resizes or rewords the text box with this id, returning it as now stored.
+    ///
+    /// `None` when there is no *text box* with that id, by the same rule as
+    /// [`retag`](Self::retag): one removed elsewhere, or a highlight, which has no words or
+    /// region of its own to edit this way.
+    pub fn rebox(
+        &mut self,
+        id: &AnnotationId,
+        region: Option<NormalizedRect>,
+        text: Option<Excerpt>,
+        at: &Timestamp,
+    ) -> Option<Annotation> {
+        let held = self.annotations.iter_mut().find(|a| a.id() == id)?;
+        let changed = held.reboxed(region, text, at)?;
 
         *held = changed.clone();
 

@@ -23,15 +23,20 @@
 
 use std::path::Path;
 
-use lecture_core::{Annotation, AnnotationId, Clock, HighlightSemantic, RelativePath};
+use lecture_core::{
+    Annotation, AnnotationId, Clock, Excerpt, HighlightSemantic, NormalizedRect, RelativePath,
+};
 use lecture_fs::{AnnotationStore, AtomicFsStorage, SystemClock, VaultRoot};
+
+use serde::Deserialize;
 
 use crate::vault::CommandError;
 
 pub mod create;
 
 pub use create::{
-    NewArea, NewHighlight, add_area_highlight, add_highlight, write_area, write_highlight,
+    NewArea, NewHighlight, NewTextBox, add_area_highlight, add_highlight, add_text_box, write_area,
+    write_highlight, write_text_box,
 };
 
 /// Every annotation on a lecture, in the order they are stored.
@@ -115,6 +120,45 @@ pub async fn retag_annotation(
     })?
 }
 
+/// What a sticky note's edit changes: where it is, what it says, or both.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TextBoxEdit {
+    /// Moved or resized to here, if it was.
+    #[serde(default)]
+    pub region: Option<NormalizedRect>,
+    /// Reworded to this, if it was.
+    #[serde(default)]
+    pub text: Option<String>,
+}
+
+/// Moves, resizes or rewords a sticky note, keeping its id, and returns it as stored.
+///
+/// Returns `None` when the lecture has no sticky note with that id — removed elsewhere, or
+/// a highlight — by the rule `retag_annotation` follows.
+///
+/// # Errors
+///
+/// Returns [`CommandError`] if the lecture cannot be read, if the id is not a usable one,
+/// if new text has nothing visible in it, or if the write fails.
+#[tauri::command]
+pub async fn edit_text_box(
+    vault: String,
+    directory: String,
+    id: String,
+    edit: TextBoxEdit,
+) -> Result<Option<Annotation>, CommandError> {
+    tauri::async_runtime::spawn_blocking(move || {
+        rewrite_text_box(&vault, &directory, &id, &edit, &SystemClock)
+    })
+    .await
+    .map_err(|_| CommandError {
+        code: "ERR_HIGHLIGHT_INTERRUPTED",
+        remediation: "Changing the sticky note stopped before it finished. It is as it was; \
+                      try again.",
+    })?
+}
+
 /// Opens the store for one vault.
 pub(crate) fn store(vault: &str) -> Result<AnnotationStore, CommandError> {
     Ok(AnnotationStore::new(AtomicFsStorage::new(VaultRoot::open(
@@ -187,6 +231,35 @@ pub fn rewrite_semantic(
     }
 
     let changed = set.retag(&id, semantic, &clock.now()?);
+
+    if changed.is_some() {
+        annotations.save(&bundle, &set)?;
+    }
+
+    Ok(changed)
+}
+
+/// The blocking half of [`edit_text_box`], which is also the testable one.
+///
+/// # Errors
+///
+/// See [`edit_text_box`].
+pub fn rewrite_text_box(
+    vault: &str,
+    directory: &str,
+    id: &str,
+    edit: &TextBoxEdit,
+    clock: &impl Clock,
+) -> Result<Option<Annotation>, CommandError> {
+    let bundle = RelativePath::parse(directory)?;
+    let id = AnnotationId::parse(id)?;
+    // Parsed before anything is loaded, so wording with nothing visible never touches the
+    // file.
+    let text = edit.text.as_deref().map(Excerpt::parse).transpose()?;
+    let annotations = store(vault)?;
+    let mut set = annotations.load(&bundle)?;
+
+    let changed = set.rebox(&id, edit.region, text, &clock.now()?);
 
     if changed.is_some() {
         annotations.save(&bundle, &set)?;

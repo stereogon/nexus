@@ -19,7 +19,8 @@ pub mod theme;
 pub mod vault;
 
 pub use annotations::{
-    add_area_highlight, add_highlight, load_annotations, remove_annotation, retag_annotation,
+    add_area_highlight, add_highlight, add_text_box, edit_text_box, load_annotations,
+    remove_annotation, retag_annotation,
 };
 pub use document::open_document;
 pub use edit::edit_lecture;
@@ -50,6 +51,8 @@ pub fn run() -> Result<(), tauri::Error> {
             load_annotations,
             add_highlight,
             add_area_highlight,
+            add_text_box,
+            edit_text_box,
             remove_annotation,
             retag_annotation,
             notes::load_notes,

@@ -13,6 +13,8 @@ import { useEffect, useRef, useState, type MouseEvent } from "react";
 import type { Annotation, NormalizedRect } from "../ipc/annotations";
 import type { PageSource } from "../pdf/useDocument";
 import { HighlightLayer, type NotesLink } from "./HighlightLayer";
+import { StickyLayer } from "./StickyLayer";
+import type { Stickies } from "./useStickies";
 import type { MenuAt } from "./menuPlacement";
 import type { Pulse } from "./useJump";
 import { PdfTextLayer } from "./PdfTextLayer";
@@ -57,6 +59,7 @@ export function PdfPage({
   onAreaStart,
   pulse,
   notesLink,
+  stickies,
 }: {
   readonly index: number;
   readonly scale: number;
@@ -73,6 +76,7 @@ export function PdfPage({
   /** A highlight on this page to pulse, after a jump from the notes. */
   readonly pulse: Pulse | null;
   readonly notesLink: NotesLink;
+  readonly stickies: Stickies;
 }) {
   const canvas = useRef<HTMLCanvasElement | null>(null);
   const [undrawn, setUndrawn] = useState(false);
@@ -167,6 +171,7 @@ export function PdfPage({
         pulse={pulse}
         width={width}
       />
+      <StickyLayer annotations={annotations} height={height} pageIndex={index} stickies={stickies} width={width} />
       {outline !== null && (
         <div
           aria-hidden="true"

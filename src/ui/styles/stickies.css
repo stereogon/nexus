@@ -1,0 +1,125 @@
+/**
+ * Sticky notes on the slides (2026-11-05).
+ *
+ * On the document surface, which is light in both themes, so the colours are the page's
+ * (§3): paper white, `accent-ink` for the chrome. Deliberately not yellow — amber already
+ * means "key concept", and a note is not a fifth highlight. Not from the canvas, which has
+ * no sticky note; designed here on purpose and owing an artboard.
+ */
+
+.sticky-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+/* Folded: a small note glyph where the note sits. */
+.sticky-icon {
+  position: absolute;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--accent-ink);
+  border-radius: 5px;
+  background: #ffffff;
+  color: var(--accent-ink);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 18%);
+  cursor: pointer;
+}
+
+.sticky-icon:hover,
+.sticky-icon:focus-visible {
+  background: var(--accent-ink);
+  color: #ffffff;
+}
+
+/* Open: a card over the slide. */
+.sticky-card {
+  position: absolute;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  min-width: 120px;
+  border: 1px solid #e2dfd8;
+  border-top: 3px solid var(--accent-ink);
+  border-radius: 6px;
+  background: #fffdf8;
+  color: #1b1a18;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 18%);
+  font-family: var(--font-prose);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.sticky-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 4px 3px 6px;
+  border-bottom: 1px solid #efece6;
+}
+
+/* The handle to drag by: the empty part of the header. */
+.sticky-grip {
+  flex: 1;
+  align-self: stretch;
+  min-height: 16px;
+  cursor: grab;
+}
+
+.sticky-grip:active {
+  cursor: grabbing;
+}
+
+.sticky-action {
+  padding: 1px 6px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: #5e5a53;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.sticky-action:hover {
+  background: #efece6;
+  color: var(--accent-ink);
+}
+
+.sticky-words,
+.sticky-text {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 6px 8px;
+  overflow: auto;
+  overflow-wrap: anywhere;
+}
+
+.sticky-text {
+  resize: none;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+/* The corner to resize by. */
+.sticky-resize {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 12px;
+  height: 12px;
+  cursor: nwse-resize;
+  background: linear-gradient(135deg, transparent 50%, #d8d4cb 50%);
+  border-bottom-right-radius: 6px;
+}

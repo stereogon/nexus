@@ -41,6 +41,8 @@ export interface OpenMenu {
    * is a fresh selection or box. Always offered.
    */
   readonly onLink: () => void;
+  /** Starts a sticky note beside it, storing it first if it is fresh. `null` for a note. */
+  readonly onSticky: (() => void) | null;
 }
 
 /**
@@ -69,6 +71,8 @@ export function useHighlightMenu(
   highlights: Annotations,
   /** Puts a citation of this annotation into the notes. */
   link: (annotation: Annotation) => void,
+  /** Starts a sticky note beside this highlight. */
+  sticky: (highlight: Annotation) => void = () => undefined,
 ): {
   readonly open: OpenMenu | null;
   readonly pick: (annotation: Annotation, at: MenuAt) => void;
@@ -127,6 +131,13 @@ export function useHighlightMenu(
           link(picked.annotation);
           setPicked(null);
         },
+        onSticky:
+          current === null
+            ? null
+            : () => {
+                sticky(picked.annotation);
+                setPicked(null);
+              },
       },
       pick,
       draw,
@@ -151,6 +162,14 @@ export function useHighlightMenu(
           void highlights.addArea(drawn.pageIndex, drawn.region, LINKED_AS).then((made) => {
             if (made !== null) {
               link(made);
+            }
+          });
+          setDrawn(null);
+        },
+        onSticky: () => {
+          void highlights.addArea(drawn.pageIndex, drawn.region, LINKED_AS).then((made) => {
+            if (made !== null) {
+              sticky(made);
             }
           });
           setDrawn(null);
@@ -182,6 +201,14 @@ export function useHighlightMenu(
         void highlights.add(marking.candidate, LINKED_AS).then((made) => {
           if (made !== null) {
             link(made);
+          }
+        });
+        clear();
+      },
+      onSticky: () => {
+        void highlights.add(marking.candidate, LINKED_AS).then((made) => {
+          if (made !== null) {
+            sticky(made);
           }
         });
         clear();

@@ -32,6 +32,7 @@ import { onPage, useAnnotations } from "./useAnnotations";
 import { outlineOn, useAreaDraw } from "./useAreaDraw";
 import { useElementSize } from "./useElementSize";
 import { useHighlightMenu } from "./useHighlightMenu";
+import { useStickies } from "./useStickies";
 import { useJump, type Jump } from "./useJump";
 import { ZOOM_LIMITS } from "./zoom";
 import { useZoom } from "./useZoom";
@@ -67,7 +68,8 @@ export function PdfViewer({
   readonly notesLink: NotesLink;
 }) {
   const highlights = useAnnotations(vault, directory);
-  const menu = useHighlightMenu(highlights, onLinkToNotes);
+  const stickies = useStickies(highlights, onLinkToNotes, (at) => (state.sizes[at]?.width ?? 0) * scale);
+  const menu = useHighlightMenu(highlights, onLinkToNotes, stickies.startBeside);
   const dismissMenu = menu.dismiss;
   const [boxing, setBoxing] = useState(false);
   const area = useAreaDraw(menu.draw, boxing);
@@ -240,6 +242,7 @@ export function PdfViewer({
           onChoose={menu.open.onChoose}
           onDismiss={menu.dismiss}
           onLink={menu.open.onLink}
+          onSticky={menu.open.onSticky}
           onRemove={menu.open.onRemove}
         />
       )}
@@ -270,6 +273,7 @@ export function PdfViewer({
                   onPick={menu.pick}
                   outline={outlineOn(index, area.drawing, menu.drawn)}
                   notesLink={notesLink}
+                  stickies={stickies}
                   pulse={jumped.pulse?.pageIndex === index ? jumped.pulse : null}
                   scale={scale}
                   source={page}

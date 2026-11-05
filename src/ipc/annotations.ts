@@ -182,6 +182,51 @@ export async function addAreaHighlight(
   return AnnotationSchema.parse(payload);
 }
 
+/** A sticky note the window is asking to put on a page. */
+export interface NewTextBox {
+  /** The page it sits on, counting from 1. */
+  readonly page: number;
+  readonly region: NormalizedRect;
+  /** One paragraph: line breaks are joined, as for any excerpt. */
+  readonly text: string;
+}
+
+/** What a sticky note's edit changes. */
+export interface TextBoxEdit {
+  readonly region?: NormalizedRect;
+  readonly text?: string;
+}
+
+/**
+ * Puts a sticky note on a page, returning it as saved.
+ *
+ * @throws {CommandError} if the lecture cannot be read, if the text has nothing visible
+ * in it, or if the write fails.
+ */
+export async function addTextBox(vault: string, directory: string, note: NewTextBox): Promise<Annotation> {
+  const payload: unknown = await invoke("add_text_box", { vault, directory, note });
+
+  return AnnotationSchema.parse(payload);
+}
+
+/**
+ * Moves, resizes or rewords a sticky note, keeping its id. `null` means the lecture no
+ * longer has it.
+ *
+ * @throws {CommandError} if the lecture cannot be read, if new text has nothing visible
+ * in it, or if the write fails.
+ */
+export async function editTextBox(
+  vault: string,
+  directory: string,
+  id: string,
+  edit: TextBoxEdit,
+): Promise<Annotation | null> {
+  const payload: unknown = await invoke("edit_text_box", { vault, directory, id, edit });
+
+  return AnnotationSchema.nullable().parse(payload);
+}
+
 /**
  * Marks a highlight as something else, keeping its id, and returns it as stored.
  *

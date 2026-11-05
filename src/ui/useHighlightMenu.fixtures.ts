@@ -29,6 +29,8 @@ export function annotations(): Annotations {
     failure: null,
     add: vi.fn(() => Promise.resolve(null)),
     addArea: vi.fn(() => Promise.resolve(null)),
+    addTextBox: vi.fn(() => Promise.resolve(null)),
+    editTextBox: vi.fn(),
     remove: vi.fn(),
     retag: vi.fn(),
     clearFailure: vi.fn(),

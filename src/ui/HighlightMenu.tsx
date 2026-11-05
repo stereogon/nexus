@@ -29,6 +29,7 @@ export function HighlightMenu({
   onChoose,
   onRemove,
   onLink,
+  onSticky = null,
   onDismiss,
 }: {
   readonly at: MenuAt;
@@ -48,6 +49,8 @@ export function HighlightMenu({
   readonly onRemove: (() => void) | null;
   /** Cites it in the notes beside the document; `null` where that means nothing — in the notes. */
   readonly onLink: (() => void) | null;
+  /** Starts a sticky note beside it on the slide; absent in the notes. */
+  readonly onSticky?: (() => void) | null;
   readonly onDismiss: () => void;
 }) {
   const box = useRef<HTMLDivElement | null>(null);
@@ -126,6 +129,12 @@ export function HighlightMenu({
         ))}
 
       {/* The spec's quick-action bar puts this beside the swatches (§2.4). */}
+      {onSticky !== null && (
+        <button className="highlight-link" onClick={onSticky} title="A sticky note beside this on the slide" type="button">
+          Sticky note
+        </button>
+      )}
+
       {onLink !== null && (
         <button className="highlight-link" onClick={onLink} title="Link to notes (⌘L)" type="button">
           Link to notes
