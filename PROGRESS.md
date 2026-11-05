@@ -461,6 +461,45 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-05 · All of the Markdown rendered in the one view**
+Reported, with a question: tables did not render, `>` only dimmed the text, images in
+Markdown did not show — "is there a way to do all this in the same view?" There is, and
+it is now what the notes do: every line shows rendered except the one the cursor is on,
+which shows its Markdown. The approach Obsidian calls Live Preview, built the established
+CodeMirror way — decorations from the syntax tree.
+
+**Tables were not even parsed.** The editor ran plain CommonMark, which has no tables,
+strikethrough or task lists; those are GitHub-flavoured extensions. It now runs
+`markdownLanguage` (GFM). A journey fails with it switched back off.
+
+**`markup.ts` walks the syntax tree** — node names checked against the parser before any
+code was written — and on every line the cursor is not on: hides `#`, `**`, `*`, `~~`,
+backticks, a link's brackets and address; draws `>` as a bar, `-` as a bullet (•, ◦, ▪
+by depth), `[ ]` as a checkbox that toggles the text itself, `---` as a rule, and a table
+as a table. Ordered numbers stay visible and readable. Reveal is per *line*, not per
+character: the line jumps once when the cursor arrives rather than as it crosses each bold
+word, which is the predictable rule. A quote keeps its bar while being edited, so it still
+reads as one.
+
+It shares the preview field with citations, maths, diagrams and images, and is told which
+ranges those already draw so two decorations never fight over the same text; a preview
+inside a rendered table gives way to the table. Table cells are built as DOM nodes, so a
+cell's text can only ever be text — a test types an `<img onerror>` into one. Line styles
+(the quote bar, code lines) are in the CodeMirror theme rather than CSS, for the same
+cascade reason the font was.
+
+**Images.** Nothing changed in the rule, and the report deserved an answer rather than a
+change: only `assets/` in the lecture is shown, so a web address or a path elsewhere shows
+a sentence saying so. That is the offline promise working, not a rendering bug.
+
+**The suite now has its own port, 1431.** A run collided with the user's own `tauri dev`
+on 1420 — their process, started from their terminal, and left alone. Sharing the app's
+port meant the suite could not run while the app was open.
+
+*Not done:* external links do not open (no shell plugin; a click puts the cursor in them),
+reference-style images (`![alt][ref]`) and footnotes are not rendered, and inline maths
+inside a table cell shows as written.
+
 **2026-11-05 · Pasting images into the notes**
 Paste an image into the notes and it is kept in the lecture's `assets/` folder as
 `claude-spec.md` §2.3 lays out — `YYYYMMDD-HHMMSS-<hash>.<ext>` — linked as `![](assets/…)`

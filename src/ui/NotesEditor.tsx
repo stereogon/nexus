@@ -12,7 +12,7 @@
  * a different lecture, or "use theirs" after a conflict.
  */
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
-import { markdown } from "@codemirror/lang-markdown";
+import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { EditorState } from "@codemirror/state";
 import { EditorView, keymap, placeholder } from "@codemirror/view";
 import { useEffect, useImperativeHandle, useRef, type Ref } from "react";
@@ -87,7 +87,9 @@ export function NotesEditor({
         extensions: [
           history(),
           keymap.of([...defaultKeymap, ...historyKeymap]),
-          markdown(),
+          // GitHub-flavoured: tables, strikethrough and task lists, which plain CommonMark
+          // does not have. Without it a table was not even recognised (2026-11-05).
+          markdown({ base: markdownLanguage }),
           EditorView.lineWrapping,
           notesAppearance,
           livePreview({

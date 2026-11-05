@@ -1,0 +1,130 @@
+// @vitest-environment jsdom
+/**
+ * Ordinary Markdown, rendered in place: which markup is hidden, and what is drawn, on and
+ * off the cursor's line. Run against a real CodeMirror state with the GFM parser, so the
+ * node names are the parser's own.
+ */
+import { ensureSyntaxTree } from "@codemirror/language";
+import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
+import { EditorSelection, EditorState } from "@codemirror/state";
+import { describe, expect, it } from "vitest";
+
+import { markupDecorations } from "./markup";
+
+/** The note, with the cursor at the end of line `cursorLine` (1-based). */
+function render(doc: string, cursorLine: number, claimed: (from: number, to: number) => boolean = () => false) {
+  const draft = EditorState.create({ doc, extensions: [markdown({ base: markdownLanguage })] });
+  const state = draft.update({ selection: EditorSelection.cursor(draft.doc.line(cursorLine).to) }).state;
+
+  ensureSyntaxTree(state, state.doc.length, 5000);
+
+  const { decorations, tables } = markupDecorations(state, claimed);
+  const replaced = decorations
+    .filter((range) => range.from !== range.to)
+    .map((range) => doc.slice(range.from, range.to));
+  const lines = decorations
+    .filter((range) => range.from === range.to)
+    .map((range) => {
+      // `spec` is typed `any` by CodeMirror; narrowed from `unknown` rather than trusted.
+      const spec: unknown = range.value.spec;
+      const cls = typeof spec === "object" && spec !== null && "class" in spec ? String(spec.class) : "";
+
+      return { line: state.doc.lineAt(range.from).number, cls };
+    });
+
+  return { replaced, lines, tables };
+}
+
+const END = "\n\nThe end.";
+const last = (doc: string) => doc.split("\n").length;
+
+describe("off the cursor's line", () => {
+  it("hides a heading's marks and the space after them", () => {
+    const doc = `## Week 2${END}`;
+
+    expect(render(doc, last(doc)).replaced).toContain("## ");
+  });
+
+  it("hides emphasis marks, keeping the words", () => {
+    const doc = `Raft elects a **leader** and *followers*.${END}`;
+
+    expect(render(doc, last(doc)).replaced).toEqual(["**", "**", "*", "*"]);
+  });
+
+  it("draws a quote with a bar and hides its marker", () => {
+    // Reported: `>` only dimmed the text.
+    const doc = `> Consensus is hard.${END}`;
+    const { replaced, lines } = render(doc, last(doc));
+
+    expect(replaced).toContain("> ");
+    expect(lines).toContainEqual({ line: 1, cls: "md-quote" });
+  });
+
+  it("draws a bullet for an unordered item and leaves an ordered number alone", () => {
+    const doc = `- first\n1. second${END}`;
+
+    expect(render(doc, last(doc)).replaced).toEqual(["-"]);
+  });
+
+  it("draws a checkbox for a task", () => {
+    const doc = `- [ ] read the paper${END}`;
+
+    expect(render(doc, last(doc)).replaced).toContain("[ ]");
+  });
+
+  it("keeps a link's words and hides its address", () => {
+    const doc = `See [the paper](https://raft.github.io) now.${END}`;
+    const { replaced } = render(doc, last(doc));
+
+    expect(replaced).toContain("https://raft.github.io");
+    expect(replaced).not.toContain("the paper");
+  });
+
+  it("draws a table as a table", () => {
+    // Reported: a table was not recognised at all.
+    const doc = `| A | B |\n|---|--:|\n| 1 | 2 |${END}`;
+    const { tables } = render(doc, last(doc));
+
+    expect(tables).toHaveLength(1);
+    expect(doc.slice(tables[0]?.from, tables[0]?.to)).toBe("| A | B |\n|---|--:|\n| 1 | 2 |");
+  });
+
+  it("draws a rule for ---", () => {
+    const doc = `Above\n\n---\n\nBelow${END}`;
+
+    expect(render(doc, last(doc)).replaced).toContain("---");
+  });
+});
+
+describe("on the cursor's line", () => {
+  it("shows the Markdown as written, so it can be edited", () => {
+    const doc = "## Week **2**";
+
+    expect(render(doc, 1).replaced).toEqual([]);
+  });
+
+  it("shows a table's source when the cursor is anywhere in it", () => {
+    const doc = `| A | B |\n|---|---|\n| 1 | 2 |${END}`;
+    const { tables, lines } = render(doc, 3);
+
+    expect(tables).toEqual([]);
+    expect(lines.filter((line) => line.cls === "md-table-source")).toHaveLength(3);
+  });
+
+  it("still draws the quote's bar, so a quote being edited still reads as one", () => {
+    const doc = "> editing this";
+
+    expect(render(doc, 1).lines).toContainEqual({ line: 1, cls: "md-quote" });
+  });
+});
+
+describe("ranges the other previews draw", () => {
+  it("are left alone, so two decorations never fight over one range", () => {
+    const doc = `> 📌 **[Page 4](cite://hl-1)**: *"Raft"*${END}`;
+    const citation = { from: 0, to: doc.indexOf("\n") };
+    const { replaced, lines } = render(doc, last(doc), (from, to) => from >= citation.from && to <= citation.to);
+
+    expect(replaced).toEqual([]);
+    expect(lines).toEqual([]);
+  });
+});

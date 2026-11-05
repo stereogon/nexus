@@ -41,6 +41,22 @@ const editorTheme = EditorView.theme({
     backgroundColor: "var(--accent-soft)",
   },
   ".cm-cursor": { borderLeftColor: "var(--accent)", borderLeftWidth: "2px" },
+
+  // Line-level styles for the live preview, here rather than in a stylesheet: CodeMirror's
+  // own `.cm-line` padding is injected after the app's CSS and would win there.
+  ".md-quote": {
+    borderLeft: "3px solid var(--border-strong)",
+    paddingLeft: "14px",
+    color: "var(--text-secondary)",
+  },
+  ".md-code-line": {
+    fontFamily: "var(--font-mono)",
+    fontSize: "0.86em",
+    lineHeight: "1.6",
+    backgroundColor: "var(--track)",
+    padding: "0 14px",
+  },
+  ".md-table-source": { fontFamily: "var(--font-mono)", fontSize: "0.86em" },
 });
 
 /** Markdown, styled. Markup characters are dimmed rather than hidden, so they stay editable. */
@@ -54,10 +70,9 @@ const markdownStyle = HighlightStyle.define([
   { tag: tags.strikethrough, textDecoration: "line-through" },
   { tag: tags.link, color: "var(--accent)" },
   { tag: tags.url, color: "var(--text-meta)", fontFamily: "var(--font-mono)", fontSize: "0.85em" },
-  { tag: tags.quote, color: "var(--text-secondary)", fontStyle: "italic" },
   { tag: tags.monospace, fontFamily: "var(--font-mono)", fontSize: "0.88em", backgroundColor: "var(--track)", borderRadius: "4px" },
   { tag: [tags.processingInstruction, tags.contentSeparator], color: "var(--text-faint)", fontFamily: "var(--font-mono)", fontWeight: "400", fontStyle: "normal", fontSize: "0.85em" },
-  { tag: tags.list, color: "var(--text-faint)" },
+  { tag: tags.list, color: "var(--text-secondary)" },
 ]);
 
 /** Everything about the notes' appearance, as one extension. */

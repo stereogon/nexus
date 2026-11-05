@@ -7,6 +7,15 @@
  */
 import { defineConfig, devices } from "@playwright/test";
 
+/**
+ * The suite's own dev server port — not 1420, which belongs to `npm run app`.
+ *
+ * Found on 2026-11-05 when a run collided with the user's own `tauri dev`: sharing the
+ * app's port meant the suite could not run while the app was open, which is exactly when
+ * someone is most likely to want both.
+ */
+const PORT = 1431;
+
 export default defineConfig({
   testDir: "e2e",
   testMatch: "**/*.spec.ts",
@@ -18,7 +27,7 @@ export default defineConfig({
   reporter: "list",
 
   use: {
-    baseURL: "http://localhost:1420",
+    baseURL: `http://localhost:${String(PORT)}`,
     trace: "retain-on-failure",
   },
 
@@ -32,10 +41,10 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: "npm run dev",
-    url: "http://localhost:1420/e2e/harness.html",
-    // Never reuse. If `npm run app` already holds the port, the run should stop and say
-    // so, not quietly test whatever that server happens to be serving.
+    command: `npx vite --port ${String(PORT)} --strictPort`,
+    url: `http://localhost:${String(PORT)}/e2e/harness.html`,
+    // Never reuse: if something already holds this port, stop and say so rather than
+    // quietly testing whatever it happens to serve.
     reuseExistingServer: false,
   },
 });

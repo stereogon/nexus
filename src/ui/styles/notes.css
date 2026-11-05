@@ -223,3 +223,58 @@ span.md-problem {
 .notes-paste-problem {
   margin: 10px 16px 0;
 }
+
+/* ---- Ordinary Markdown, drawn by the live preview (`src/notes/preview/markup.ts`) ---- */
+
+.md-bullet {
+  display: inline-block;
+  width: 1.1em;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.md-checkbox {
+  margin: 0 0.35em 0 0;
+  vertical-align: -0.1em;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* `---`, drawn as a rule across the measure. */
+.md-rule {
+  display: inline-block;
+  width: 100%;
+  height: 1px;
+  vertical-align: middle;
+  background: var(--border-strong);
+}
+
+.md-table {
+  margin: 8px 0;
+  overflow-x: auto;
+}
+
+.md-table table {
+  border-collapse: collapse;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.md-table th,
+.md-table td {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.md-table th {
+  background: var(--track);
+  font-weight: 600;
+}
+
+.md-table code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}

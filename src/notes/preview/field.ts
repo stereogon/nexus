@@ -8,11 +8,13 @@
  * by content (`eq`), so an unchanged diagram is not redrawn because the text above it
  * changed.
  */
+import { syntaxTree } from "@codemirror/language";
 import { StateField, type EditorState, type Extension } from "@codemirror/state";
 import { Decoration, EditorView, type DecorationSet, type WidgetType } from "@codemirror/view";
 
 import { ChartWidget, MermaidWidget } from "./diagrams";
 import { findPreviews, type Preview } from "./find";
+import { markupDecorations } from "./markup";
 import { CitationWidget, ImageWidget, MathWidget } from "./widgets";
 
 export interface PreviewContext {
@@ -48,23 +50,43 @@ function widgetFor(preview: Preview, context: PreviewContext): WidgetType {
 }
 
 function decorations(state: EditorState, context: PreviewContext): DecorationSet {
-  const ranges = findPreviews(state.doc.toString())
-    .filter((preview) => !touched(state, preview.from, preview.to))
-    .map((preview) =>
-      Decoration.replace({ widget: widgetFor(preview, context), block: isBlock(preview) }).range(
-        preview.from,
-        preview.to,
-      ),
-    );
+  const previews = findPreviews(state.doc.toString()).filter(
+    (preview) => !touched(state, preview.from, preview.to),
+  );
+  const claimed = (from: number, to: number) =>
+    previews.some((preview) => preview.from <= from && to <= preview.to);
+  const markup = markupDecorations(state, claimed);
+  const tables = markup.tables;
 
-  return Decoration.set(ranges, true);
+  // A rendered table replaces its lines whole, so a formula or image inside one is drawn
+  // as part of the table's text rather than as a second replacement over the same range.
+  const outside = previews.filter(
+    (preview) => !tables.some((table) => table.from <= preview.from && preview.to <= table.to),
+  );
+
+  return Decoration.set(
+    [
+      ...outside.map((preview) =>
+        Decoration.replace({ widget: widgetFor(preview, context), block: isBlock(preview) }).range(
+          preview.from,
+          preview.to,
+        ),
+      ),
+      ...markup.decorations,
+    ],
+    true,
+  );
 }
 
 export function livePreview(context: PreviewContext): Extension {
   return StateField.define<DecorationSet>({
     create: (state) => decorations(state, context),
+    // Also when the parser catches up: it parses in the background, and the markup is read
+    // from its tree.
     update: (current, transaction) =>
-      transaction.docChanged || transaction.selection !== undefined
+      transaction.docChanged ||
+      transaction.selection !== undefined ||
+      syntaxTree(transaction.startState) !== syntaxTree(transaction.state)
         ? decorations(transaction.state, context)
         : current,
     provide: (field) => EditorView.decorations.from(field),
