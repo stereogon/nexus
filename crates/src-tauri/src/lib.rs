@@ -10,6 +10,7 @@
 pub mod annotations;
 pub mod assets;
 pub mod document;
+pub mod dropped_image;
 pub mod edit;
 pub mod import;
 pub mod layout;
@@ -61,6 +62,7 @@ pub fn run() -> Result<(), tauri::Error> {
             notes::load_notes,
             notes::save_notes,
             assets::save_asset,
+            dropped_image::save_dropped_image,
             remember_vault,
             last_theme,
             remember_theme,

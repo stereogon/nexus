@@ -14,15 +14,18 @@ function spies(): DragHandlers & {
   readonly calls: () => Record<string, number>;
 } {
   const onEnter = vi.fn();
+  const onOver = vi.fn();
   const onLeave = vi.fn();
   const onDrop = vi.fn();
 
   return {
     onEnter,
+    onOver,
     onLeave,
     onDrop,
     calls: () => ({
       enter: onEnter.mock.calls.length,
+      over: onOver.mock.calls.length,
       leave: onLeave.mock.calls.length,
       drop: onDrop.mock.calls.length,
     }),
@@ -33,12 +36,9 @@ describe("dispatching a drag event", () => {
   it("shows the overlay when files come over the window", () => {
     const handlers = spies();
 
-    dispatchDrag(
-      { type: "enter", paths: ["/a/raft.pdf"], position: { x: 1, y: 2 } },
-      handlers,
-    );
+    dispatchDrag({ type: "enter", paths: ["/a/raft.pdf"], position: { x: 1, y: 2 } }, handlers, 1);
 
-    expect(handlers.calls()).toStrictEqual({ enter: 1, leave: 0, drop: 0 });
+    expect(handlers.calls()).toStrictEqual({ enter: 1, over: 0, leave: 0, drop: 0 });
   });
 
   it("hands over the paths when they land", () => {
@@ -47,26 +47,36 @@ describe("dispatching a drag event", () => {
     dispatchDrag(
       { type: "drop", paths: ["/a/raft.pdf", "/a/paxos.pptx"], position: { x: 0, y: 0 } },
       handlers,
+      1,
     );
 
-    expect(handlers.onDrop).toHaveBeenCalledWith(["/a/raft.pdf", "/a/paxos.pptx"]);
+    expect(handlers.onDrop).toHaveBeenCalledWith(["/a/raft.pdf", "/a/paxos.pptx"], { x: 0, y: 0 });
   });
 
-  it("ignores movement, which fires on every pixel", () => {
-    // Handling `over` would re-render the window per mouse move for no visible difference.
+  it("reports movement, since over the notes a drop means something else", () => {
+    // Ignored until 2026-11-05, when nothing on screen depended on where the pointer was.
     const handlers = spies();
 
-    dispatchDrag({ type: "over", position: { x: 4, y: 9 } }, handlers);
+    dispatchDrag({ type: "over", position: { x: 4, y: 9 } }, handlers, 1);
 
-    expect(handlers.calls()).toStrictEqual({ enter: 0, leave: 0, drop: 0 });
+    expect(handlers.onOver).toHaveBeenCalledWith({ x: 4, y: 9 });
+  });
+
+  it("turns Tauri's physical pixels into the page's CSS pixels", () => {
+    // On a Retina screen a point 300 CSS pixels in is reported as 600.
+    const handlers = spies();
+
+    dispatchDrag({ type: "drop", paths: ["/a/shot.png"], position: { x: 600, y: 240 } }, handlers, 2);
+
+    expect(handlers.onDrop).toHaveBeenCalledWith(["/a/shot.png"], { x: 300, y: 120 });
   });
 
   it("hides the overlay when the drag leaves", () => {
     const handlers = spies();
 
-    dispatchDrag({ type: "leave" }, handlers);
+    dispatchDrag({ type: "leave" }, handlers, 1);
 
-    expect(handlers.calls()).toStrictEqual({ enter: 0, leave: 1, drop: 0 });
+    expect(handlers.calls()).toStrictEqual({ enter: 0, over: 0, leave: 1, drop: 0 });
   });
 
   it("treats a payload it cannot read as the drag having left", () => {
@@ -83,13 +93,16 @@ describe("dispatching a drag event", () => {
       { type: "drop", paths: "not-a-list" },
       { type: "drop", paths: [1, 2] },
       { type: "enter", paths: null },
+      { type: "drop", paths: ["/a/shot.png"] },
+      { type: "over", position: { x: "left" } },
     ]) {
       const handlers = spies();
 
-      dispatchDrag(payload, handlers);
+      dispatchDrag(payload, handlers, 1);
 
       expect(handlers.calls(), `payload: ${JSON.stringify(payload)}`).toStrictEqual({
         enter: 0,
+        over: 0,
         leave: 1,
         drop: 0,
       });
@@ -101,10 +114,10 @@ describe("dispatching a drag event", () => {
     // must not be reported as one.
     const handlers = spies();
 
-    dispatchDrag({ type: "drop", paths: [], position: { x: 0, y: 0 } }, handlers);
+    dispatchDrag({ type: "drop", paths: [], position: { x: 0, y: 0 } }, handlers, 1);
 
-    expect(handlers.onDrop).toHaveBeenCalledWith([]);
-    expect(handlers.calls()).toStrictEqual({ enter: 0, leave: 0, drop: 1 });
+    expect(handlers.onDrop).toHaveBeenCalledWith([], { x: 0, y: 0 });
+    expect(handlers.calls()).toStrictEqual({ enter: 0, over: 0, leave: 0, drop: 1 });
   });
 });
 

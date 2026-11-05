@@ -8,14 +8,15 @@
  * artboards once they are readable (2026-11-05). Recorded in `PROGRESS.md` as owing that
  * pass, rather than looking finished.
  */
-import { useCallback, useEffect, useState, type Ref } from "react";
+import { useCallback, useEffect, useRef, useState, type Ref } from "react";
 
-import { saveImage } from "../ipc/assets";
+import { saveDroppedImage, saveImage } from "../ipc/assets";
 import { asCommandError, type CommandError } from "../ipc/vault";
 
 import { assetUrl } from "../notes/assets";
 import { Failure } from "./Failure";
 import { NotesEditor, type NotesHandle } from "./NotesEditor";
+import { acceptNotesDrops } from "./notesDrop";
 import { useNotes, type SaveStatus } from "./useNotes";
 
 /** Why a pasted image was not kept, in words the reader can act on. */
@@ -24,6 +25,13 @@ const REFUSED = {
     "That was not an image Nexus keeps in notes — PNG, JPEG, GIF and WebP are. Nothing was added.",
   tooLarge: "That image is larger than 25 MB, so it was not added. A screenshot or an exported slide will fit.",
 } as const;
+
+/**
+ * A dropped file that is not an image is most likely a lecture meant for the vault, landed
+ * on the notes by a few pixels — so the sentence says where it should have gone.
+ */
+const DROP_NOT_AN_IMAGE =
+  "That is not an image Nexus keeps in notes — PNG, JPEG, GIF and WebP are — so nothing was added. To import a document as a lecture, drop it on the page or the sidebar.";
 
 /** What the header says about the last save. Plain words: the reader is not a developer. */
 const STATUS_TEXT: Record<SaveStatus, string> = {
@@ -70,6 +78,23 @@ export function NotesPane({
   }, [notes.cited, onCited]);
   const [pasteProblem, setPasteProblem] = useState<string | null>(null);
   const [pasteFailure, setPasteFailure] = useState<CommandError | null>(null);
+  const [dropping, setDropping] = useState(false);
+  const pane = useRef<HTMLElement | null>(null);
+  const editor = useRef<NotesHandle | null>(null);
+
+  // The editor's handle, kept here for drops as well as handed up to `Reading`.
+  const handles = useCallback(
+    (value: NotesHandle | null) => {
+      editor.current = value;
+
+      if (typeof handle === "function") {
+        handle(value);
+      } else if (handle !== null) {
+        handle.current = value;
+      }
+    },
+    [handle],
+  );
 
   const pasteImage = useCallback(
     async (file: File): Promise<string | null> => {
@@ -93,14 +118,54 @@ export function NotesPane({
     [vault, directory],
   );
 
+  // Files dropped on the notes are images for them, kept one by one in the order dropped;
+  // anything refused is said once and the rest are still linked.
+  useEffect(() => {
+    const element = pane.current;
+
+    if (element === null) {
+      return undefined;
+    }
+
+    return acceptNotesDrops({
+      element,
+      hover: setDropping,
+      drop: (paths, at) => {
+        setPasteProblem(null);
+        setPasteFailure(null);
+
+        void (async () => {
+          const kept: string[] = [];
+
+          try {
+            for (const path of paths) {
+              const saved = await saveDroppedImage(vault, directory, path);
+
+              if (saved.outcome === "saved") {
+                kept.push(saved.path);
+              } else {
+                setPasteProblem(saved.reason === "notAnImage" ? DROP_NOT_AN_IMAGE : REFUSED.tooLarge);
+              }
+            }
+          } catch (thrown: unknown) {
+            setPasteFailure(asCommandError(thrown));
+          }
+
+          editor.current?.insertImages(kept, at);
+        })();
+      },
+    });
+  }, [vault, directory]);
+
   return (
     <aside
       aria-label="Notes"
-      className="notes-pane"
+      className={dropping ? "notes-pane dropping" : "notes-pane"}
       // A chosen width replaces the default share and its cap; `useNotesWidth` has already
       // held it to what the window can give.
       data-sized={width === null ? undefined : ""}
       hidden={hidden}
+      ref={pane}
       style={width === null ? undefined : { flexBasis: width }}
     >
       <header className="notes-bar">
@@ -142,7 +207,7 @@ export function NotesPane({
       {notes.loaded !== null && (
         <NotesEditor
           generation={notes.generation}
-          handle={handle}
+          handle={handles}
           onChange={notes.change}
           onCite={onCite}
           imageUrl={(src) => assetUrl(vault, directory, src)}

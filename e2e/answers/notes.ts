@@ -18,6 +18,7 @@ export function notesHandlers(fixture: Fixture): Handlers {
   let revisions = 0;
   let notesOpenFor = "";
   let pastes = 0;
+  let drops = 0;
   const notesOf = (directory: string) => notes.get(directory) ?? { text: "", version: "empty" };
 
   return {
@@ -37,6 +38,18 @@ export function notesHandlers(fixture: Fixture): Handlers {
       pastes += 1;
 
       return { outcome: "saved", path: `assets/20261105-101530-pasted${String(pastes)}.png` };
+    },
+    // Judged by name here; the real command judges the bytes, which Rust tests cover.
+    save_dropped_image: (args) => {
+      const { path } = InLecture.extend({ path: z.string() }).parse(args);
+
+      if (!path.endsWith(".png")) {
+        return { outcome: "refused", reason: "notAnImage" };
+      }
+
+      drops += 1;
+
+      return { outcome: "saved", path: `assets/20261105-101530-dropped${String(drops)}.png` };
     },
     save_notes: (args) => {
       const { directory, text, basedOn } = SaveNotes.parse(args);

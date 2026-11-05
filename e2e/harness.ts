@@ -17,6 +17,7 @@
  * Everything here runs before `main.tsx` is imported, so the app never sees a moment
  * without its IPC.
  */
+import { emit } from "@tauri-apps/api/event";
 import { mockConvertFileSrc, mockIPC, mockWindows } from "@tauri-apps/api/mocks";
 
 import { backend } from "./backend";
@@ -39,5 +40,9 @@ mockConvertFileSrc("windows");
 // tab". The harness *is* the window for this purpose, so a backend failure has to read as
 // one — otherwise a broken command would surface as a message blaming the environment.
 Object.assign(globalThis, { isTauri: true });
+
+// A file dragged from Finder arrives as Tauri events, which only the native side sends. With
+// events mocked, emitting one here reaches the webview's listeners the same way.
+window.__NEXUS_E2E_EMIT__ = (event, payload) => emit(event, payload);
 
 await import("../src/main");

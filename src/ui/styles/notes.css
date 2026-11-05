@@ -128,3 +128,11 @@
   gap: 8px;
   margin-top: 10px;
 }
+
+/* A drag over the notes: a drop here links the image into them rather than importing it,
+   and the window-wide import overlay stands aside, so the notes say so themselves. */
+.notes-pane.dropping {
+  outline: 2px dashed var(--accent);
+  outline-offset: -6px;
+  background: var(--accent-wash);
+}

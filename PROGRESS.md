@@ -236,8 +236,8 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done and verified · `[!
       device (2026-11-05).
 - [x] Offline KaTeX, Mermaid, declarative `chart` blocks, each with an error boundary that
       keeps the editor mounted (2026-11-05, as a live preview over the Markdown)
-- [x] Clipboard image → `assets/<timestamp>-<hash>.png` (2026-11-05; paste only — dropping an
-      image onto the notes is not wired, since a window-level drop already means "import")
+- [x] Clipboard image → `assets/<timestamp>-<hash>.png` (2026-11-05), and an image file
+      dropped onto the notes (2026-11-05; a drop elsewhere still imports)
 - [x] `cite://<id>` both directions (2026-11-05): Link to notes inserts at the cursor; a
       badge jumps the document to its highlight with the pulse ring; a cited highlight's
       indicator scrolls the notes to its citation and flashes the line. Not yet: ⌘L.
@@ -462,6 +462,35 @@ Fixed at the cause with `fsModuleCache: false`, measured at no cost (the suite r
 either way). Proved by adding a component with a class the stylesheets never mention and
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
+
+**2026-11-05 · Dropping an image onto the notes**
+Reported: "drag and drop image in the notes panel is not working". It had never been built
+— recorded as a gap when paste was — because Tauri delivers one file drag for the whole
+window, and every drop meant "import this as a lecture". An image dropped on the notes
+became an import of a PNG.
+
+Now the drag's position decides. Tauri reports it with every phase, in physical pixels
+from the webview's top-left; `dispatchDrag` turns it into CSS pixels and `useDropZone` asks
+`notesDropAt` whether that point is over the notes pane, which registers itself while on
+screen. Over the notes, the import overlay stands aside and the pane shows a dashed outline;
+a drop there keeps each file through a new command, `save_dropped_image`, and links the
+kept ones where they landed, on lines of their own so the picture shows at once. Anywhere
+else a drop is an import, as before. `over` events are now handled — they were ignored
+because nothing depended on the pointer's position — and set state only when the target
+changes, so a drag does not re-render the window per pixel.
+
+`save_dropped_image` reads the file (a drop has paths, not bytes) and hands the bytes to the
+same store a paste uses, which judges them by their content. The size is checked from the
+file's metadata before reading, and the read is bounded, so a dropped video is refused
+without loading it (4 contract tests, the large case on a sparse file). The person's file is
+copied, not moved. A document dropped on the notes by mistake is told where to drop it to
+import it.
+
+**Not verified in the real window:** the journeys emit Tauri's drag events in the harness,
+so the coordinate conversion is tested against Tauri's documented payload, not against
+WKWebView. If a drop lands at the wrong place in the notes, or the outline appears over the
+wrong pane, that conversion is the first suspect. Dragging an image from a web page (rather
+than a file from Finder) is not covered either: that is not a file drag.
 
 **2026-11-05 · ⌘P, ⌘Z / ⌘⇧Z, and ⌘0 for an error panel**
 Asked for: "command+p, command+z, and command+0 for the error panel".

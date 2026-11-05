@@ -14,6 +14,8 @@ declare global {
   interface Window {
     /** Set by `addInitScript` before the app loads. Absent means the standard fixture. */
     __NEXUS_E2E__?: Fixture;
+    /** Set by the harness: fires a Tauri event, as the native side does for a file drag. */
+    __NEXUS_E2E_EMIT__?: (event: string, payload: unknown) => Promise<void>;
   }
 }
 

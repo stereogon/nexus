@@ -41,3 +41,14 @@ export async function saveImage(vault: string, directory: string, bytes: Uint8Ar
 
   return AssetSaveSchema.parse(payload);
 }
+
+/**
+ * Keeps an image dropped onto the notes, read from where it is: a drop arrives as a path,
+ * not bytes. The same answers as `saveImage`.
+ *
+ * @throws {CommandError} if the file cannot be read, the lecture cannot be found, or the
+ * write fails.
+ */
+export async function saveDroppedImage(vault: string, directory: string, path: string): Promise<AssetSave> {
+  return AssetSaveSchema.parse(await invoke("save_dropped_image", { vault, directory, path }));
+}

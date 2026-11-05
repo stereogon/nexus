@@ -8,12 +8,16 @@
  */
 import { useEffect, useRef, useState } from "react";
 
-import { onFilesDragged } from "../ipc/dragdrop";
+import { onFilesDragged, type DragPoint } from "../ipc/dragdrop";
 import { importableFormats } from "../ipc/formats";
 import { asCommandError, type CommandError } from "../ipc/vault";
+import { notesDropAt, type NotesDropTarget } from "./notesDrop";
 
 export interface DropZone {
-  /** Whether a drag is currently over the window. */
+  /**
+   * Whether a drag that would import is over the window. False over the notes, where a drop
+   * puts an image into them instead and the notes show that themselves.
+   */
   readonly dragging: boolean;
   /** The extensions to show as chips. Empty until they have been read. */
   readonly formats: readonly string[];
@@ -57,19 +61,45 @@ export function useDropZone(
       try {
         setFormats(await importableFormats());
 
+        // The notes, while a drag is over them, so they can be told when it leaves.
+        let hovered: NotesDropTarget | null = null;
+
+        const route = (at: DragPoint) => {
+          const over = notesDropAt(at);
+
+          if (hovered !== over) {
+            hovered?.hover(false);
+            over?.hover(true);
+            hovered = over;
+          }
+
+          // Unchanged on most moves, and React skips a render for an unchanged value.
+          setDragging(over === null);
+        };
+
+        const end = () => {
+          hovered?.hover(false);
+          hovered = null;
+          setDragging(false);
+        };
+
         const unlisten = await onFilesDragged({
-          onEnter: () => {
-            setDragging(true);
-          },
-          onLeave: () => {
-            setDragging(false);
-          },
-          onDrop: (paths) => {
-            // Cleared here as well as on `leave`, because a drop does not always produce
+          onEnter: route,
+          onOver: route,
+          onLeave: end,
+          onDrop: (paths, at) => {
+            // Ended here as well as on `leave`, because a drop does not always produce
             // one — and an overlay left over the window would hide the vault it just
             // imported into.
-            setDragging(false);
-            latest.current(paths);
+            end();
+
+            const notes = notesDropAt(at);
+
+            if (notes === null) {
+              latest.current(paths);
+            } else {
+              notes.drop(paths, at);
+            }
           },
         });
 

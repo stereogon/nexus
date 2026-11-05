@@ -20,41 +20,49 @@ import { getCurrentWebview } from "@tauri-apps/api/webview";
 import * as z from "zod";
 
 /**
- * The four phases of a drag, as Tauri reports them.
- *
- * `position` is deliberately not described: the overlay covers the whole window and does
- * not care where the cursor is, and a schema that reads fields nothing uses invites someone
- * to start using them.
+ * Where the pointer is, as Tauri reports it: in **physical** pixels from the webview's
+ * top-left. Read since 2026-11-05, when a drop over the notes started meaning something
+ * different from a drop anywhere else.
  */
+const PositionSchema = z.object({ x: z.number(), y: z.number() });
+
+/** The four phases of a drag, as Tauri reports them. */
 const DragDropPayloadSchema = z.discriminatedUnion("type", [
-  z.object({ type: z.literal("enter"), paths: z.array(z.string()) }),
-  z.object({ type: z.literal("over") }),
-  z.object({ type: z.literal("drop"), paths: z.array(z.string()) }),
+  z.object({ type: z.literal("enter"), paths: z.array(z.string()), position: PositionSchema }),
+  z.object({ type: z.literal("over"), position: PositionSchema }),
+  z.object({ type: z.literal("drop"), paths: z.array(z.string()), position: PositionSchema }),
   z.object({ type: z.literal("leave") }),
 ]);
 
 export type DragDropPayload = z.infer<typeof DragDropPayloadSchema>;
 
-/** What the window does as a drag arrives, leaves, or lands. */
+/** A point in the window, in CSS pixels. */
+export interface DragPoint {
+  readonly x: number;
+  readonly y: number;
+}
+
+/** What the window does as a drag arrives, moves, leaves, or lands. */
 export interface DragHandlers {
-  readonly onEnter: () => void;
+  readonly onEnter: (at: DragPoint) => void;
+  readonly onOver: (at: DragPoint) => void;
   readonly onLeave: () => void;
-  readonly onDrop: (paths: readonly string[]) => void;
+  readonly onDrop: (paths: readonly string[], at: DragPoint) => void;
 }
 
 /**
  * Decides what a single drag event means, separated from the subscription so it can be
  * tested without a webview.
  *
- * `over` is ignored: it fires on every pointer movement, and nothing on screen depends on
- * where the cursor is, so handling it would re-render the window per mouse move for no
- * visible difference.
+ * `scale` is the device pixel ratio: Tauri reports physical pixels, and the page lays out
+ * in CSS pixels, so a Retina screen's positions are halved here before anything compares
+ * them with a box on the page.
  *
  * An unrecognised payload counts as the drag having left. The alternative is an overlay
  * stuck across the window with no gesture left that dismisses it — the person would have to
  * restart the app to get their vault back.
  */
-export function dispatchDrag(payload: unknown, handlers: DragHandlers): void {
+export function dispatchDrag(payload: unknown, handlers: DragHandlers, scale: number): void {
   const parsed = DragDropPayloadSchema.safeParse(payload);
 
   if (!parsed.success) {
@@ -63,20 +71,25 @@ export function dispatchDrag(payload: unknown, handlers: DragHandlers): void {
     return;
   }
 
-  switch (parsed.data.type) {
+  const data = parsed.data;
+  const at = (position: DragPoint): DragPoint => ({ x: position.x / scale, y: position.y / scale });
+
+  switch (data.type) {
     case "enter":
-      handlers.onEnter();
+      handlers.onEnter(at(data.position));
+
+      return;
+    case "over":
+      handlers.onOver(at(data.position));
 
       return;
     case "drop":
-      handlers.onDrop(parsed.data.paths);
+      handlers.onDrop(data.paths, at(data.position));
 
       return;
     case "leave":
       handlers.onLeave();
 
-      return;
-    case "over":
       return;
   }
 }
@@ -90,6 +103,6 @@ export async function onFilesDragged(
   handlers: DragHandlers,
 ): Promise<UnlistenFn> {
   return getCurrentWebview().onDragDropEvent((event) => {
-    dispatchDrag(event.payload, handlers);
+    dispatchDrag(event.payload, handlers, window.devicePixelRatio);
   });
 }

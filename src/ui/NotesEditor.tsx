@@ -27,6 +27,7 @@ import { flashLine, lineFlash } from "../notes/flash";
 import { citationAt } from "../notes/insert";
 import { livePreview } from "../notes/preview/field";
 import { notesAppearance } from "../notes/theme";
+import type { Point } from "./notesDrop";
 
 /** What the pane can ask of the editor. */
 export interface NotesHandle {
@@ -34,6 +35,8 @@ export interface NotesHandle {
   readonly insertCitation: (block: string) => void;
   /** Scrolls to a line, counting from 1, and puts the cursor at its start. */
   readonly showLine: (line: number) => void;
+  /** Links images where they were dropped — `at` in window CSS pixels — or at the cursor. */
+  readonly insertImages: (paths: readonly string[], at: Point) => void;
 }
 
 export function NotesEditor({
@@ -217,6 +220,22 @@ export function NotesEditor({
           selection: { anchor: at + cursor },
           scrollIntoView: true,
         });
+        editor.focus();
+      },
+      insertImages: (paths: readonly string[], at: Point) => {
+        const editor = view.current;
+
+        if (editor === null || paths.length === 0) {
+          return;
+        }
+
+        const from = editor.posAtCoords(at) ?? editor.state.selection.main.head;
+        // On lines of their own, with the cursor below: an image is drawn only while the
+        // cursor is off its line, and a drop should show the picture, not its Markdown.
+        const breakBefore = from > editor.state.doc.lineAt(from).from ? "\n" : "";
+        const insert = `${breakBefore}${paths.map((path) => `![](${path})`).join("\n")}\n`;
+
+        editor.dispatch({ changes: { from, insert }, selection: { anchor: from + insert.length }, scrollIntoView: true });
         editor.focus();
       },
       showLine: (line: number) => {
