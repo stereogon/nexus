@@ -15,7 +15,12 @@ import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { EditorState } from "@codemirror/state";
 import { EditorView, keymap, placeholder } from "@codemirror/view";
-import { useEffect, useImperativeHandle, useRef, type Ref } from "react";
+import { useEffect, useImperativeHandle, useRef, useState, type Ref } from "react";
+
+import type { HighlightSemantic } from "../ipc/annotations";
+import { barFor, markSelection } from "../notes/markSelection";
+import { HighlightMenu } from "./HighlightMenu";
+import type { MenuAt } from "./menuPlacement";
 
 import { citationOffsets, citeLinks, nextOccurrence } from "../notes/citeLinks";
 import { flashLine, lineFlash } from "../notes/flash";
@@ -62,6 +67,8 @@ export function NotesEditor({
 }) {
   const host = useRef<HTMLDivElement | null>(null);
   const view = useRef<EditorView | null>(null);
+  // The four-colour bar over a selection, and the mark the selection is inside, if any.
+  const [bar, setBar] = useState<{ readonly at: MenuAt; readonly current: HighlightSemantic | null } | null>(null);
 
   // The latest callbacks, read by the view's listeners. Rebuilding the view to pick up a
   // new callback would throw away the cursor and the undo history.
@@ -93,7 +100,12 @@ export function NotesEditor({
         doc: starting.current,
         extensions: [
           history(),
-          keymap.of([...defaultKeymap, ...historyKeymap]),
+          keymap.of([
+            // ⌘⇧H: mark the selection as a key concept, without the bar.
+            { key: "Mod-Shift-h", run: (target) => markSelection(target, "key") },
+            ...defaultKeymap,
+            ...historyKeymap,
+          ]),
           // GitHub-flavoured: tables, strikethrough and task lists, which plain CommonMark
           // does not have. Without it a table was not even recognised (2026-11-05).
           markdown({ base: markdownLanguage }),
@@ -133,6 +145,10 @@ export function NotesEditor({
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
               changed.current(update.state.doc.toString());
+            }
+
+            if (update.selectionSet || update.focusChanged || update.docChanged) {
+              setBar(barFor(update.view));
             }
           }),
         ],
@@ -210,5 +226,33 @@ export function NotesEditor({
     [],
   );
 
-  return <div className="notes-editor" ref={host} />;
+  return (
+    <>
+      <div className="notes-editor" ref={host} />
+      {bar !== null && (
+        <HighlightMenu
+          at={bar.at}
+          current={bar.current}
+          onChoose={(semantic) => {
+            if (view.current !== null) {
+              markSelection(view.current, semantic);
+            }
+          }}
+          onDismiss={() => {
+            setBar(null);
+          }}
+          onLink={null}
+          onRemove={
+            bar.current === null
+              ? null
+              : () => {
+                  if (view.current !== null) {
+                    markSelection(view.current, null);
+                  }
+                }
+          }
+        />
+      )}
+    </>
+  );
 }

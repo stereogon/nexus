@@ -14,7 +14,8 @@ import { Decoration, EditorView, type DecorationSet, type WidgetType } from "@co
 
 import { ChartWidget, MermaidWidget } from "./diagrams";
 import { findPreviews, type Preview } from "./find";
-import { markupDecorations } from "./markup";
+import { activeLines, markupDecorations } from "./markup";
+import { noteMarkDecorations } from "./noteMarks";
 import { CitationWidget, ImageWidget, MathWidget } from "./widgets";
 
 export interface PreviewContext {
@@ -73,6 +74,7 @@ function decorations(state: EditorState, context: PreviewContext): DecorationSet
         ),
       ),
       ...markup.decorations,
+      ...noteMarkDecorations(state, activeLines(state), claimed),
     ],
     true,
   );

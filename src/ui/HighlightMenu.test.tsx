@@ -209,3 +209,21 @@ describe("Link to notes", () => {
     expect(onLink).toHaveBeenCalledOnce();
   });
 });
+
+describe("in the notes", () => {
+  it("offers no Link to notes, which would mean nothing there", () => {
+    render(<HighlightMenu onLink={null} at={AT} current={null} onChoose={vi.fn()} onDismiss={vi.fn()} onRemove={null} />);
+
+    expect(screen.queryByRole("button", { name: "Link to notes" })).toBeNull();
+    expect(screen.getAllByRole("button")).toHaveLength(SEMANTICS.length);
+  });
+
+  it("keeps focus where it was when a control is pressed", () => {
+    // In the notes, losing focus closes the bar before the click lands.
+    render(<HighlightMenu onLink={null} at={AT} current={null} onChoose={vi.fn()} onDismiss={vi.fn()} onRemove={null} />);
+
+    const pressed = fireEvent.mouseDown(screen.getByRole("button", { name: "Key concept" }));
+
+    expect(pressed).toBe(false);
+  });
+});

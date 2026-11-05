@@ -46,8 +46,8 @@ export function HighlightMenu({
   readonly onChoose: ((semantic: HighlightSemantic) => void) | null;
   /** Offered only for a highlight that already exists. */
   readonly onRemove: (() => void) | null;
-  /** Cites it in the notes beside the document. */
-  readonly onLink: () => void;
+  /** Cites it in the notes beside the document; `null` where that means nothing — in the notes. */
+  readonly onLink: (() => void) | null;
   readonly onDismiss: () => void;
 }) {
   const box = useRef<HTMLDivElement | null>(null);
@@ -94,6 +94,12 @@ export function HighlightMenu({
     <div
       aria-label="Highlight as"
       className="highlight-menu"
+      // Pressing a control must not take focus from what was selected: in the notes, losing
+      // focus closes this menu before the click lands; in the document it would drop the
+      // text selection the menu is for.
+      onMouseDown={(event) => {
+        event.preventDefault();
+      }}
       ref={box}
       role="group"
       style={{ left: placed.left, top: placed.top }}
@@ -120,9 +126,11 @@ export function HighlightMenu({
         ))}
 
       {/* The spec's quick-action bar puts this beside the swatches (§2.4). */}
-      <button className="highlight-link" onClick={onLink} title="Link to notes (⌘L)" type="button">
-        Link to notes
-      </button>
+      {onLink !== null && (
+        <button className="highlight-link" onClick={onLink} title="Link to notes (⌘L)" type="button">
+          Link to notes
+        </button>
+      )}
 
       {onRemove !== null && (
         <button className="highlight-remove" onClick={onRemove} type="button">

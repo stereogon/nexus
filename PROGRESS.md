@@ -461,6 +461,30 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-05 · Highlighting in the notes, in the document's four meanings**
+The user chose four colours over Markdown's single-colour convention, accepting that other
+apps show the meaning as text. Stored as `==text==` for a key concept — so the default form
+is the portable one — and `==text=={definition}`, `{exam}`, `{question}` for the rest.
+
+Select words in the notes and the same bar as the document's appears; choose a meaning.
+Inside an existing highlight the bar shows its meaning pressed and offers Remove, and a
+choice recolours rather than nesting one highlight in another. ⌘⇧H marks as a key concept.
+On lines the cursor is not on, `==` and `{…}` hide and the words keep the colour, in the
+same washes as the document, so a term marked "exam" looks alike in both places.
+
+The rules are pure in `notes/marks.ts`: a mark has no space just inside either end, so
+`a == b == c` in prose is an equation, not a highlight; a selection across lines is marked
+line by line and trimmed, because a mark cannot cross a line and `== text ==` is not one.
+Marks inside code are left as code, by the syntax tree.
+
+The bar is the document's `HighlightMenu`, with Link to notes made optional. It now
+cancels mousedown, so pressing a swatch does not take focus from the selection. **That
+guard was first proven only by reasoning:** the journey passed without it, because
+Playwright presses and releases in one instant, before React has re-rendered the editor's
+loss of focus. Pressed for 150 ms, as a person does, the journey fails without the guard
+and passes with it, and now presses that way. In the document the same guard quietly keeps
+the text selection when a swatch is pressed.
+
 **2026-11-05 · From a highlight to the notes citing it**
 §2.4's reverse lookup. A highlight the notes cite gets a small **¶** button beside its
 badge; pressing it opens the notes if they are hidden, scrolls the citation line to the

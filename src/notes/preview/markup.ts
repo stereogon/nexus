@@ -90,7 +90,7 @@ class RuleWidget extends WidgetType {
 }
 
 /** The lines any cursor or selection touches. */
-function activeLines(state: EditorState): Set<number> {
+export function activeLines(state: EditorState): Set<number> {
   const lines = new Set<number>();
 
   for (const range of state.selection.ranges) {

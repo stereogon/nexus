@@ -278,3 +278,26 @@ span.md-problem {
   font-family: var(--font-mono);
   font-size: 0.9em;
 }
+
+/* Words highlighted in the notes, in the same four meanings and washes as the document's
+   highlights (`tokens.css`), so a term marked "exam" looks the same in both places. */
+.md-mark {
+  padding: 1px 2px;
+  border-radius: 3px;
+}
+
+.md-mark[data-semantic="key"] {
+  background: var(--highlight-key);
+}
+
+.md-mark[data-semantic="definition"] {
+  background: var(--highlight-definition);
+}
+
+.md-mark[data-semantic="exam"] {
+  background: var(--highlight-exam);
+}
+
+.md-mark[data-semantic="question"] {
+  background: var(--highlight-question);
+}
