@@ -140,26 +140,78 @@ The stack is Tauri 2, Rust 1.97, React 19, TypeScript 6 (strict), Vite, CodeMirr
 pdf.js. Desktop-only capabilities are ports (traits) in `lecture-core` with adapters
 elsewhere. That keeps the domain portable to the planned iPadOS companion app.
 
-## Getting started
+## Install the app
 
-### Prerequisites
+Nexus builds to a standard macOS disk image (`.dmg`). There is no published download yet;
+build one yourself with `npm run app:build` (see below), or get one from whoever built it.
 
-- macOS (Apple silicon or Intel)
-- [Rust](https://rustup.rs). The toolchain (1.97.0, with the iOS target) is pinned in
-  `rust-toolchain.toml`, and rustup installs it on first use.
-- Node.js 22
-- Optional: [LibreOffice](https://www.libreoffice.org) to import PPT/PPTX/DOC/DOCX
-  (`brew install --cask libreoffice`).
-- Optional, for the end-to-end suite: `npx playwright install webkit`.
+1. Open `Nexus_0.1.0_aarch64.dmg` and drag **Nexus** into **Applications**.
+2. Open Nexus from Applications. The first time, macOS will refuse, saying it cannot check
+   the app for malicious software. Go to **System Settings → Privacy & Security**, scroll to
+   the message about Nexus, and choose **Open Anyway**. macOS remembers the choice.
+3. Choose **Open a vault** and pick a folder for your lectures. An empty folder is fine.
 
-### Run it
+The disk image is built for **Apple silicon** (M1 and later). On an Intel Mac, build from
+source instead.
+
+### Why macOS warns about it
+
+Apple trusts an app without asking when it is signed with a **Developer ID certificate** (part
+of the paid Apple Developer Program) and **notarized**, meaning Apple has scanned it. Nexus is
+built with a free *ad-hoc* signature instead. That keeps the app intact and identifiable, but
+does not tell Gatekeeper who made it, so macOS asks you to confirm once. Removing the
+prompt for everyone would need a Developer ID and notarization added to the build. See
+[Distributing](#distributing).
+
+## Set up locally (from source)
+
+You need a Mac. These steps take a fresh machine to a running development build.
+
+1. **Xcode Command Line Tools** (the compiler and macOS SDK):
+   ```sh
+   xcode-select --install
+   ```
+2. **Rust**, through rustup (<https://rustup.rs>):
+   ```sh
+   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+   ```
+   You do not choose a version. `rust-toolchain.toml` pins Rust 1.97.0 with the iOS target,
+   and rustup installs exactly that the first time you build.
+3. **Node.js 22**, from <https://nodejs.org> or with Homebrew (`brew install node@22`).
+4. **The code and its packages:**
+   ```sh
+   git clone https://github.com/stereogon/nexus.git
+   cd nexus
+   npm ci
+   ```
+5. **Run it:**
+   ```sh
+   npm run app
+   ```
+   The first build compiles the Rust side and takes a few minutes; later starts are quick.
+   A window opens. Choose **Open a vault** and pick a folder.
+
+**Use a throwaway vault while developing:** a new folder with a PDF or two in it. A
+development build writes real files.
+
+Optional extras:
+
+| For | Install |
+|---|---|
+| Importing PPT, PPTX, DOC and DOCX | `brew install --cask libreoffice` |
+| Running the end-to-end tests | `npx playwright install webkit` |
+
+### Build the app and disk image
 
 ```sh
-npm ci
-npm run app          # tauri dev: builds the Rust side and opens the window
+npm run app:build
 ```
 
-To build a release `.app`, run `npm run app:build`.
+When it finishes:
+- `target/release/bundle/macos/Nexus.app` is the app
+- `target/release/bundle/dmg/Nexus_0.1.0_aarch64.dmg` is the disk image to share
+
+The build is for the Mac it runs on (`aarch64` on Apple silicon).
 
 ### Check it
 
@@ -176,6 +228,20 @@ The gate is the project's definition of done, and CI runs the same script. It ru
 - the 300-line file limit
 
 Every step runs even if one fails, so you see everything that is broken at once.
+
+## Distributing
+
+There are three ways to get Nexus to someone else:
+
+| Way | What they need to do | Cost |
+|---|---|---|
+| **Source** | Follow [Set up locally](#set-up-locally-from-source) | None |
+| **The `.dmg`, as built today** | Install, then approve it once under Privacy & Security | None |
+| **A signed and notarized `.dmg`** | Install and open, with no warning | Apple Developer Program, US$99 a year |
+
+A `.dmg` belongs on a **GitHub Release**, not in the repository, because a binary in git
+history bloats every clone forever. The Mac App Store is not planned: it requires
+sandboxing, and Nexus needs to read the vault folder you choose and to run LibreOffice.
 
 ## Documentation
 

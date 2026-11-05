@@ -463,6 +463,32 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-05 · First release build, ad-hoc signed, and setup instructions**
+Asked for: build the app once, document setup for someone else, and explain `.dmg`
+shipping. `npm run app:build` produced `Nexus.app` (22.7 MiB) and
+`Nexus_0.1.0_aarch64.dmg` (13.9 MiB, `hdiutil verify` valid), Apple silicon only.
+
+**Signing.** The first build's bundle was only *linker*-signed: the executable carried an
+ad-hoc signature but the bundle's resources were not sealed. `codesign` reported "code has
+no resources but signature indicates they must be present", which a downloaded copy shows
+as "damaged". `bundle.macOS.signingIdentity: "-"` now has Tauri ad-hoc sign the whole
+bundle, and `codesign --verify --deep --strict` passes. Gatekeeper still rejects it
+(`spctl`), as it must without a Developer ID and notarization. The README says why and how
+to approve it once. Tauri's ad-hoc signing also turns on the hardened runtime.
+
+**Open, not resolved:** while smoke-testing the release build I launched it repeatedly,
+with a throwaway `HOME` so no real vault could be touched. Sometimes it quit within seconds
+with exit status 0 and nothing logged: when run directly, and once in four launches through
+`open`. The development build never did. Re-signing without the hardened runtime did not
+change the pattern, and an exit status of 0 means the event loop ended rather than a crash.
+Whether this is real or an artefact of rapid launch-and-kill from a script is **not
+known**. The user saw the windows opening and closing, which should have been announced
+before it started. The next check is one normal launch from Finder by the user.
+
+**Not done:** publishing the `.dmg` (a GitHub Release is the place, and publishing needs
+asking), Developer ID signing and notarization (needs a paid Apple Developer account), and an
+Intel or universal build (needs the `x86_64-apple-darwin` target installed).
+
 **2026-11-05 · A README and a contributing guide**
 Asked for: "a professional readme and contributor guideline". `README.md` says what Nexus is,
 what works today and what does not yet (taken from this file, not from the spec's wish

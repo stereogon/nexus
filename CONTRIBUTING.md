@@ -43,9 +43,9 @@ These are the values the project works by. [`CLAUDE.md`](./CLAUDE.md) states the
 
 ## Setting up
 
-1. Install the prerequisites listed in the [README](./README.md#prerequisites): Rust via
-   rustup (the toolchain is pinned in `rust-toolchain.toml`), Node.js 22, and optionally
-   LibreOffice and Playwright's WebKit.
+1. Follow [Set up locally](./README.md#set-up-locally-from-source) in the README: Xcode
+   Command Line Tools, Rust via rustup (the toolchain is pinned in `rust-toolchain.toml`),
+   Node.js 22, and optionally LibreOffice and Playwright's WebKit.
 2. Install dependencies and run the app:
    ```sh
    npm ci
