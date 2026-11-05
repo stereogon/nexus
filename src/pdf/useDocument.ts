@@ -52,6 +52,12 @@ export interface RenderablePage {
     container: HTMLElement,
     scale: number,
   ) => { readonly promise: Promise<void>; readonly cancel: () => void };
+  /**
+   * The page's text as one string: each text run's characters, joined with nothing between
+   * them. That is exactly what the text layer's spans hold, in order, so an offset found in
+   * this string is the same offset in the drawn layer — which is how find marks a match.
+   */
+  readonly text: () => Promise<string>;
 }
 
 const NOTHING: LoadedDocument = { loading: false, sizes: [], failure: null };
@@ -123,6 +129,12 @@ export function usePdfDocument(url: string | null): {
                   render.cancel();
                 },
               };
+            },
+
+            text: async () => {
+              const content = await loaded.getTextContent();
+
+              return content.items.map((item) => ("str" in item ? item.str : "")).join("");
             },
 
             drawText: (container: HTMLElement, scale: number) => {

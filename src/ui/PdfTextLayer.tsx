@@ -17,8 +17,9 @@
  * change, and a half-finished layer left attached would stack a second set of spans over
  * the first — which reads as doubled, unselectable text.
  */
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
+import { markBoxes, type MarkBox, type PageMatch } from "../pdf/find";
 import { keepSelectionWhole } from "../pdf/textLayerSelection";
 import type { PageSource } from "../pdf/useDocument";
 
@@ -26,12 +27,24 @@ export function PdfTextLayer({
   index,
   scale,
   source,
+  found,
+  reveal,
+  onRevealed,
 }: {
   readonly index: number;
   readonly scale: number;
   readonly source: PageSource;
+  /** Find-in-document's matches on this page; the same array until they change. */
+  readonly found: readonly PageMatch[];
+  /** Whether the current match is on this page and should be scrolled into view. */
+  readonly reveal: boolean;
+  readonly onRevealed: () => void;
 }) {
   const container = useRef<HTMLDivElement | null>(null);
+  // Counts finished layouts, so the marks are measured against the spans as drawn now.
+  const [drawn, setDrawn] = useState(0);
+  const [marks, setMarks] = useState<readonly MarkBox[]>([]);
+  const currentMark = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const session: {
@@ -71,6 +84,7 @@ export function PdfTextLayer({
         // for a drag past the end of the text to land on it.
         if (live()) {
           session.release = keepSelectionWhole(target);
+          setDrawn((count) => count + 1);
         }
       } catch {
         // A cancelled layout rejects, which is the ordinary case: zooming and scrolling
@@ -94,7 +108,39 @@ export function PdfTextLayer({
     };
   }, [index, scale, source]);
 
-  // Not `aria-hidden`: these spans are the page's actual text, and the canvas above is
-  // the one hidden from assistive technology.
-  return <div className="textLayer" ref={container} />;
+  // Measured by the browser from the spans themselves, so the marks follow pdf.js's own
+  // stretching of each run to its glyphs, at any zoom.
+  useEffect(() => {
+    const layer = container.current;
+
+    setMarks(layer === null || drawn === 0 || found.length === 0 ? [] : markBoxes(layer, found));
+  }, [drawn, found]);
+
+  useEffect(() => {
+    if (reveal && currentMark.current !== null) {
+      currentMark.current.scrollIntoView({ block: "center" });
+      onRevealed();
+    }
+  }, [marks, reveal, onRevealed]);
+
+  // The text layer is not `aria-hidden`: these spans are the page's actual text, and the
+  // canvas above is the one hidden from assistive technology. The marks are decoration —
+  // the find bar says which match is current.
+  return (
+    <>
+      <div className="textLayer" ref={container} />
+      {marks.length > 0 && (
+        <div aria-hidden="true" className="find-marks">
+          {marks.map((mark, at) => (
+            <div
+              className={mark.current ? "find-mark current" : "find-mark"}
+              key={`${String(at)}:${String(mark.left)}:${String(mark.top)}`}
+              ref={mark.current ? currentMark : undefined}
+              style={{ left: mark.left, top: mark.top, width: mark.width, height: mark.height }}
+            />
+          ))}
+        </div>
+      )}
+    </>
+  );
 }

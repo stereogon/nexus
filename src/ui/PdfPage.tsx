@@ -17,6 +17,7 @@ import { StickyLayer } from "./StickyLayer";
 import type { Stickies } from "./useStickies";
 import type { MenuAt } from "./menuPlacement";
 import type { Pulse } from "./useJump";
+import type { PageMatch } from "../pdf/find";
 import { PdfTextLayer } from "./PdfTextLayer";
 
 /**
@@ -60,6 +61,9 @@ export function PdfPage({
   pulse,
   notesLink,
   stickies,
+  found,
+  revealFound,
+  onFoundRevealed,
 }: {
   readonly index: number;
   readonly scale: number;
@@ -77,6 +81,11 @@ export function PdfPage({
   readonly pulse: Pulse | null;
   readonly notesLink: NotesLink;
   readonly stickies: Stickies;
+  /** Find-in-document's matches on this page. */
+  readonly found: readonly PageMatch[];
+  /** Whether to scroll the current match, on this page, into view. */
+  readonly revealFound: boolean;
+  readonly onFoundRevealed: () => void;
 }) {
   const canvas = useRef<HTMLCanvasElement | null>(null);
   const [undrawn, setUndrawn] = useState(false);
@@ -162,7 +171,14 @@ export function PdfPage({
         ref={canvas}
         style={{ width, height }}
       />
-      <PdfTextLayer index={index} scale={scale} source={source} />
+      <PdfTextLayer
+        found={found}
+        index={index}
+        onRevealed={onFoundRevealed}
+        reveal={revealFound}
+        scale={scale}
+        source={source}
+      />
       <HighlightLayer
         annotations={annotations}
         height={height}

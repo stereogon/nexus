@@ -463,6 +463,30 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-05 · Find in the open document (⌘F)**
+The third of the three asked for. ⌘F opens a strip under the viewer's toolbar; typing marks
+every match on the drawn pages and says "2 of 24". Enter and Shift-Enter (or the arrows)
+step through them, wrapping, going to each match's page and scrolling the match itself into
+view; a search starts at the page being read. Escape closes it and takes the marks off.
+
+Pages are drawn only near the screen, so their text layers cannot be searched: each page's
+text is read from the PDF (`RenderablePage.text`, the runs joined with nothing between —
+exactly what the text layer's spans hold), once per document. Offsets found in that string
+map onto the drawn layer's text nodes as a DOM range, and the browser measures the range,
+so a mark follows pdf.js's per-run stretching at any zoom. The current match is scrolled to
+once per change; scrolling back to its page later does not snap to it. Matching ignores
+case and keeps offsets right across characters that lowercase to two units and across
+emoji (13 tests, the range mapping in jsdom); it does **not** fold accents or join a word
+the PDF stores split across two runs, which pdf.js's own viewer normalises. A page whose
+text cannot be read ends the search with "Could not read this document's text", never
+"No matches".
+
+To make room, `PdfViewer`'s page layout and navigation moved unchanged into
+`usePageLayout` (the viewer journeys passed before anything was built on it). Six journeys
+in `e2e/find.spec.ts`, proved by not going to the match and by drawing no marks. Not on the
+canvas; owing a pass. ⌘F in the notes also opens the document's find — the notes have no
+find of their own yet.
+
 **2026-11-05 · Searching inside lectures, and a highlights library**
 Asked for: "filtering and searching for text, a store for storing the highlights"; the user
 chose vault-wide search and a vault-wide library (and ⌘F in the open PDF, built next).

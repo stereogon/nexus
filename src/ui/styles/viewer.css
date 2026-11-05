@@ -189,3 +189,56 @@
    build targets Safari 15, so the nested original would be shipped unparsed and every
    span would stack at the page's top-left corner.
    --------------------------------------------------------------------------------- */
+
+/* Find in the document (⌘F): a strip under the toolbar, in the toolbar's chrome, so it
+   reads as part of the viewer rather than a dialog over the page. Not on the canvas. */
+.find-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--chrome);
+  border-bottom: 1px solid var(--border);
+}
+
+.find-bar input {
+  width: min(280px, 50%);
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.find-count {
+  min-width: 7em;
+  color: var(--text-meta);
+  font-size: 12px;
+  text-align: right;
+}
+
+/* The matches, over the text layer and under nothing that takes a click. On the page,
+   which is light in both themes (§3), so the colours are fixed rather than themed: a
+   yellow wash for every match, and `accent-ink` round the current one. */
+.find-marks {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.find-mark {
+  position: absolute;
+  border-radius: 2px;
+  background: rgb(255 214 0 / 45%);
+  mix-blend-mode: multiply;
+}
+
+.find-mark.current {
+  background: rgb(255 150 0 / 55%);
+  outline: 2px solid var(--accent-ink);
+  outline-offset: 1px;
+}
