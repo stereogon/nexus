@@ -16,6 +16,8 @@ afterEach(cleanup);
 const LECTURE: LectureRow = {
   directory: "week-2/process-overview",
   title: "2. ProcessOverview",
+  number: null,
+  numberInTitle: null,
   sequence: "a0",
   course: "Software Systems Engineering",
   module: "Requirement Engineering",

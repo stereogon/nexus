@@ -46,6 +46,8 @@ function row(directory: string, title: string, week: string): LectureRow {
   return {
     directory,
     title,
+    number: null,
+    numberInTitle: null,
     sequence: "a0",
     course: "Software Systems Engineering",
     module: "Requirement Engineering",
@@ -83,7 +85,12 @@ function deck(): readonly (readonly Line[])[] {
   });
 }
 
-export const READING = row("week-2/process-overview", "2. ProcessOverview", "Week 2");
+// Imported before numbers were their own field: the number is still in the title, and
+// Rust offers to take it out (`numberInTitle`), which the editor journey uses.
+export const READING: LectureRow = {
+  ...row("week-2/process-overview", "2. ProcessOverview", "Week 2"),
+  numberInTitle: { number: "2", title: "ProcessOverview" },
+};
 export const OTHER = row("week-1/foundations", "1. Foundations", "Week 1");
 
 export function standardFixture(): Fixture {

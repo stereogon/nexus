@@ -75,7 +75,7 @@ fn refuses_to_be_changed_before_it_was_created() {
 fn serialises_the_shape_the_schema_describes() {
     let json = serde_json::to_string_pretty(&manifest()).unwrap();
 
-    assert!(json.contains(r#""schemaVersion": 2"#), "got: {json}");
+    assert!(json.contains(r#""schemaVersion": 3"#), "got: {json}");
     assert!(json.contains(r#""title": "Distributed Consensus""#));
     assert!(json.contains(r#""sequence": "a0""#));
     assert!(json.contains(r#""document": "source/document.pdf""#));

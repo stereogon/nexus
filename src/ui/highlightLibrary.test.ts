@@ -9,6 +9,8 @@ function lecture(directory: string, week: string, module = "Consensus"): Lecture
   return {
     directory,
     title: directory,
+    number: null,
+    numberInTitle: null,
     sequence: "a0",
     course: "CS 454",
     module,

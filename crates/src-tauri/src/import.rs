@@ -13,8 +13,8 @@ use std::path::Path;
 
 use lecture_convert::LibreOfficeConverter;
 use lecture_core::{
-    DocumentConverterPort, DocumentFormat, Facets, Label, LectureBundle, OrderKey, RelativePath,
-    Slug,
+    DocumentConverterPort, DocumentFormat, Facets, Label, LectureBundle, LectureNumber, OrderKey,
+    RelativePath, Slug, placed_by_number, split_number,
 };
 use lecture_fs::{
     AtomicFsStorage, ImportRequest, Importer, ManifestStore, SystemClock, VaultLoader, VaultRoot,
@@ -79,8 +79,12 @@ pub async fn import_document(vault: String, file: String) -> Result<LectureRow, 
 pub fn bring_in(vault: &str, file: &str) -> Result<LectureRow, CommandError> {
     let root = VaultRoot::open(Path::new(vault))?;
     let source = Path::new(file);
-    let title = title_of(source)?;
-    let bundle = RelativePath::root_level(Slug::from_title(title.as_str())?);
+    let stem = stem_of(source)?;
+    // The folder is named from the whole file name, number included, so `Week 1 Lecture 1`
+    // and `Week 1 Lecture 2` cannot collide over the title they share once it is taken out.
+    let bundle = RelativePath::root_level(Slug::from_title(stem)?);
+    let named = split_number(stem);
+    let title = Label::parse(&named.title)?;
 
     let loaded = VaultLoader::new(ManifestStore::new(
         AtomicFsStorage::new(root.clone()),
@@ -100,19 +104,27 @@ pub fn bring_in(vault: &str, file: &str) -> Result<LectureRow, CommandError> {
         });
     }
 
-    // Appended after the last lecture rather than inserted. `sequence` is authoritative, so
-    // this is the one decision that fixes where the lecture appears in the sidebar.
-    let last = loaded
-        .bundles
-        .iter()
-        .map(|held| held.manifest().sequence())
-        .max();
+    // `sequence` is authoritative, so this is the one decision that fixes where the lecture
+    // appears: placed by its number among the numbered lectures, or after the last lecture
+    // when its name had none.
+    let sequence = match &named.number {
+        Some(number) => placed_by_number(&order_of(&loaded.bundles), number)?,
+        None => OrderKey::between(
+            loaded
+                .bundles
+                .iter()
+                .map(|held| held.manifest().sequence())
+                .max(),
+            None,
+        )?,
+    };
 
     let request = ImportRequest {
         file: source,
         bundle: bundle.clone(),
         title,
-        sequence: OrderKey::between(last, None)?,
+        number: named.number,
+        sequence,
         facets: Facets::default(),
     };
 
@@ -130,19 +142,29 @@ pub fn bring_in(vault: &str, file: &str) -> Result<LectureRow, CommandError> {
     Ok(row(&LectureBundle::new(bundle, outcome.manifest)))
 }
 
-/// The lecture's title, taken from the file's own name.
+/// The file's own name, without its extension: where the title and number come from.
 ///
-/// A guess, and deliberately a plain one: the person can rename it, and inventing something
-/// cleverer would mean two places disagreeing about what the lecture is called.
-fn title_of(file: &Path) -> Result<Label, CommandError> {
-    let stem = file
-        .file_stem()
+/// A guess, and deliberately a plain one: the person can rename the lecture and change its
+/// number, and inventing something cleverer would mean two places disagreeing about it.
+fn stem_of(file: &Path) -> Result<&str, CommandError> {
+    file.file_stem()
         .and_then(|name| name.to_str())
         .ok_or(CommandError {
             code: "ERR_UNUSABLE_FILE_NAME",
             remediation: "That file's name cannot be used as a lecture title. Rename the \
                           file so it has a plain name, then add it again.",
-        })?;
+        })
+}
 
-    Ok(Label::parse(stem)?)
+/// Every lecture's place and number, for placing a numbered one among them.
+pub(crate) fn order_of(bundles: &[LectureBundle]) -> Vec<(OrderKey, Option<LectureNumber>)> {
+    bundles
+        .iter()
+        .map(|held| {
+            (
+                held.manifest().sequence().clone(),
+                held.manifest().number().cloned(),
+            )
+        })
+        .collect()
 }

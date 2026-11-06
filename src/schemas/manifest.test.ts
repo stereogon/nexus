@@ -22,11 +22,11 @@ function withChange(
 
 describe("the manifest schema", () => {
   it("refuses a file from another schema version", () => {
-    // Version 2 is now current, so the rejected cases are either side of it. The UI only
+    // Version 3 is now current, so the rejected cases are either side of it. The UI only
     // ever sees manifests that Rust has already brought to the current version, so
     // accepting an older one here would hide a bug in the layer that should have
     // upgraded it.
-    for (const schemaVersion of [1, 3, 0]) {
+    for (const schemaVersion of [2, 4, 0]) {
       const other = withChange(manifestFixture, { schemaVersion });
 
       expect(ManifestSchema.safeParse(other).success).toBe(false);

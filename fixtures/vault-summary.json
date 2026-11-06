@@ -6,6 +6,8 @@
       "directory": "cs454/01-raft",
       "documentReady": true,
       "module": "Consensus",
+      "number": null,
+      "numberInTitle": null,
       "sequence": "a0",
       "tags": [
         "consensus",
@@ -20,6 +22,8 @@
       "directory": "cs454/02-paxos",
       "documentReady": true,
       "module": null,
+      "number": null,
+      "numberInTitle": null,
       "sequence": "a1",
       "tags": [],
       "title": "Paxos Made Simple",

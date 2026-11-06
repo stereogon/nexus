@@ -25,7 +25,7 @@ import {
  * never reads a bundle off disk, so accepting an older one here would only hide a bug in
  * the layer that should have upgraded it.
  */
-export const MANIFEST_SCHEMA_VERSION = 2;
+export const MANIFEST_SCHEMA_VERSION = 3;
 
 /** Keys the facet map reserves for its named facets. */
 const RESERVED_FACET_KEYS = new Set(["course", "module", "week", "tags"]);
@@ -112,6 +112,8 @@ export const ManifestSchema = z
   .strictObject({
     schemaVersion: z.literal(MANIFEST_SCHEMA_VERSION),
     title: LabelSchema,
+    /** Its number in the course (version 3). Absent, not null, when it has none. */
+    number: z.string().min(1).max(12).optional(),
     /** The authoritative order. A `01-` folder prefix is only a projection of this. */
     sequence: OrderKeySchema,
     facets: FacetsSchema,

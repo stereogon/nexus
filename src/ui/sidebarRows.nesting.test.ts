@@ -6,6 +6,8 @@ import { secondaryFacets, sidebarRows, type SidebarRow } from "./sidebarRows";
 function lecture(over: Partial<LectureRow> & { directory: string }): LectureRow {
   return {
     title: "Raft Consensus",
+    number: null,
+    numberInTitle: null,
     sequence: "a0",
     course: null,
     module: null,
@@ -72,6 +74,8 @@ describe("grouping by a facet", () => {
         directory: `d${String(index)}`,
         title: `L${String(index)}`,
         module: index % 3 === 0 ? "Consensus" : null,
+        number: null,
+        numberInTitle: null,
         sequence: `a${String(index)}`,
       }),
     );

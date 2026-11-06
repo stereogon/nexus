@@ -14,6 +14,8 @@ function lecture(over: Partial<LectureRow> = {}): LectureRow {
   return {
     directory: "CS454/Week 03/01-raft",
     title: "Raft Consensus",
+    number: null,
+    numberInTitle: null,
     sequence: "a0",
     course: "CS454",
     module: null,

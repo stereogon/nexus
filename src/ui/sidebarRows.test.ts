@@ -6,6 +6,8 @@ import { groupingFrom, sidebarRows, type SidebarRow } from "./sidebarRows";
 function lecture(over: Partial<LectureRow> & { directory: string }): LectureRow {
   return {
     title: "Raft Consensus",
+    number: null,
+    numberInTitle: null,
     sequence: "a0",
     course: null,
     module: null,
@@ -95,15 +97,17 @@ describe("grouping by folder", () => {
 });
 
 describe("the row's own columns", () => {
-  it("shows the folder's number prefix", () => {
-    const rows = sidebarRows([lecture({ directory: "w3/01-raft" })], "folder", "none", "");
+  it("shows the lecture's number", () => {
+    const rows = sidebarRows([lecture({ directory: "w3/raft", number: "3a" })], "folder", "none", "");
     const row = rows.find((candidate) => candidate.kind === "lecture");
 
-    expect(row?.kind === "lecture" && row.num).toBe("01");
+    expect(row?.kind === "lecture" && row.num).toBe("3a");
   });
 
-  it("shows no number for a folder without a prefix", () => {
-    const rows = sidebarRows([lecture({ directory: "raft-paper" })], "folder", "none", "");
+  it("does not read a number off the folder's name", () => {
+    // What it did until 2026-11-05: the number came from the file name and could not be
+    // edited, so a renamed lecture kept showing the old one.
+    const rows = sidebarRows([lecture({ directory: "w3/01-raft", number: null })], "folder", "none", "");
     const row = rows.find((candidate) => candidate.kind === "lecture");
 
     expect(row?.kind === "lecture" && row.num).toBe("");

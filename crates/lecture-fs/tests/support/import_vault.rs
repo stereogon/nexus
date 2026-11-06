@@ -65,6 +65,7 @@ pub(crate) fn request(file: &Path) -> ImportRequest<'_> {
         file,
         bundle: RelativePath::parse("cs454/raft").unwrap(),
         title: Label::parse("Raft and consensus").unwrap(),
+        number: None,
         sequence: OrderKey::first(),
         facets: Facets::default(),
     }

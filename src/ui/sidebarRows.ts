@@ -60,7 +60,7 @@ export type SidebarRow =
       readonly key: string;
       readonly lecture: LectureRow;
       readonly depth: number;
-      /** The folder's number prefix, or empty when it has none. */
+      /** The lecture's number, or empty when it has none. */
       readonly num: string;
       /** The short note at the end of the row, or empty. */
       readonly meta: string;
@@ -109,21 +109,6 @@ function metaFor(lecture: LectureRow): string {
     case "ready":
       return "";
   }
-}
-
-/**
- * The number prefix on a lecture's own folder, if it has one.
- *
- * Read from the folder name rather than from `sequence`, because that prefix is what the
- * person sees in Finder and the canvas shows the same two digits. §3: `sequence` is
- * authoritative for *order*, and the prefix is a derived projection of it — so this is
- * displaying the projection, not deciding anything from it.
- */
-function numberPrefix(directory: string): string {
-  const own = directory.split("/").at(-1) ?? "";
-  const digits = /^(\d+)[-_ ]/u.exec(own);
-
-  return digits?.[1] ?? "";
 }
 
 /** The folders above a lecture, which become its nested headings. */
@@ -228,7 +213,10 @@ function lectureRow(lecture: LectureRow, depth: number, within: string): Sidebar
     key: `${within}/${lecture.directory}`,
     lecture,
     depth,
-    num: numberPrefix(lecture.directory),
+    // The lecture's own number. Until 2026-11-05 this read digits off the folder's name,
+    // which came from the file's name and could not be edited: renaming the lecture left
+    // the number behind, and the number had no say in the order.
+    num: lecture.number ?? "",
     meta: metaFor(lecture),
   };
 }

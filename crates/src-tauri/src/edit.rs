@@ -23,10 +23,13 @@
 
 use std::path::Path;
 
-use lecture_core::{Facets, Label, LectureBundle, Manifest, RelativePath};
-use lecture_fs::{AtomicFsStorage, ManifestStore, SystemClock, VaultRoot};
+use lecture_core::{
+    Facets, Label, LectureBundle, LectureNumber, Manifest, RelativePath, placed_by_number,
+};
+use lecture_fs::{AtomicFsStorage, ManifestStore, SystemClock, VaultLoader, VaultRoot};
 use serde::Deserialize;
 
+use crate::import::order_of;
 use crate::vault::{CommandError, LectureRow, row};
 
 /// A lecture's name and its four named facets, as the UI sends them.
@@ -44,6 +47,10 @@ use crate::vault::{CommandError, LectureRow, row};
 pub struct LectureEdit {
     /// What the person wants it called, or `None` to leave the title as it is.
     pub title: Option<String>,
+    /// Its number in the course: `None` leaves it, empty clears it. A new number moves the
+    /// lecture to its place among the numbered ones.
+    #[serde(default)]
+    pub number: Option<String>,
     /// The course this lecture belongs to.
     pub course: Option<String>,
     /// The module within that course.
@@ -97,16 +104,67 @@ pub fn apply_edit(
     );
 
     let manifest = manifests.load(&bundle)?;
-    // Both computed before the manifest is consumed, since each is built from what it
-    // already holds. One write covers both, so a rename cannot land without its facets.
+    // Computed before the manifest is consumed, since each is built from what it already
+    // holds. One write covers them all, so a rename cannot land without its facets.
     let facets = applied(edit, manifest.facets())?;
-    let replaced = retitled(edit, manifest)?.with_facets(facets);
+    let change = renumbered(edit)?;
+    // A new number moves the lecture to its place; clearing one leaves it where it is.
+    let moved = match &change {
+        NumberChange::Set(new) if manifest.number() != Some(new) => {
+            let others = VaultLoader::new(ManifestStore::new(
+                AtomicFsStorage::new(VaultRoot::open(Path::new(vault))?),
+                SystemClock,
+            ))
+            .load()?
+            .bundles
+            .into_iter()
+            .filter(|held| held.directory() != &bundle)
+            .collect::<Vec<_>>();
+
+            Some(placed_by_number(&order_of(&others), new)?)
+        }
+        _ => None,
+    };
+    let mut replaced = retitled(edit, manifest)?.with_facets(facets);
+
+    match change {
+        NumberChange::Keep => {}
+        NumberChange::Clear => replaced = replaced.with_number(None),
+        NumberChange::Set(number) => replaced = replaced.with_number(Some(number)),
+    }
+
+    if let Some(sequence) = moved {
+        replaced = replaced.resequenced(sequence);
+    }
 
     // `save` owns `updated_at`, and it writes through the atomic path, so an interrupted
     // edit leaves the previous manifest intact rather than a truncated one.
     let saved = manifests.save(&bundle, &replaced)?;
 
     Ok(row(&LectureBundle::new(bundle, saved)))
+}
+
+/// What an edit does to the lecture's number.
+enum NumberChange {
+    Keep,
+    Clear,
+    Set(LectureNumber),
+}
+
+/// The number the edit asks for.
+fn renumbered(edit: &LectureEdit) -> Result<NumberChange, CommandError> {
+    match edit.number.as_deref().map(str::trim) {
+        None => Ok(NumberChange::Keep),
+        Some("") => Ok(NumberChange::Clear),
+        Some(text) => LectureNumber::parse(text)
+            .map(NumberChange::Set)
+            .ok_or(CommandError {
+                code: "ERR_LECTURE_NUMBER_UNUSABLE",
+                remediation: "A lecture number is a short run of letters and digits, such as 3, \
+                          3a, 3.1 or IV. Nothing was changed; try one of those forms, or leave \
+                          it empty for no number.",
+            }),
+    }
 }
 
 /// The title the edit asks for, over the one the manifest holds.

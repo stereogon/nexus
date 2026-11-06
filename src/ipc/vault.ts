@@ -34,6 +34,13 @@ export const ConversionStateSchema = z.enum([
 export const LectureRowSchema = z.object({
   directory: z.string(),
   title: z.string(),
+  /** Its number in the course, if it has one. */
+  number: z.string().nullable(),
+  /**
+   * For a lecture with no number whose title holds one — imported before numbers were their
+   * own field — the number and the title without it, for the editor to offer.
+   */
+  numberInTitle: z.object({ number: z.string(), title: z.string() }).nullable(),
   sequence: z.string(),
   course: z.string().nullable(),
   module: z.string().nullable(),
@@ -112,6 +119,8 @@ export function asCommandError(thrown: unknown): CommandError {
 export interface LectureEdit {
   /** What to call it. Never blank — the Rust side refuses that rather than ignoring it. */
   readonly title: string;
+  /** Its number in the course; empty clears it. A new number moves the lecture to its place. */
+  readonly number: string;
   readonly course: string;
   readonly module: string;
   readonly week: string;

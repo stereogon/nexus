@@ -14,6 +14,8 @@ function row(directory: string, title: string): LectureRow {
   return {
     directory,
     title,
+    number: null,
+    numberInTitle: null,
     sequence: "a0",
     course: "Software Systems Engineering",
     module: null,

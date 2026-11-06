@@ -68,6 +68,13 @@ button.secondary {
   gap: var(--gap);
 }
 
+/* The offer to take a number out of an older lecture's title: the whole row, so it reads
+   as being about the two fields above and below it. */
+.editor-offer {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
 .editor-actions {
   grid-column: 1 / -1;
   display: flex;

@@ -27,6 +27,7 @@ export { CommandFailure } from "./answers/shared";
 const EditLecture = InLecture.extend({
   edit: z.object({
     title: z.string(),
+    number: z.string(),
     course: z.string(),
     module: z.string(),
     week: z.string(),
@@ -77,9 +78,14 @@ export function backend(fixture: Fixture): (command: string, args?: InvokeArgs) 
         throw new CommandFailure("ERR_E2E_NO_LECTURE", `No lecture at ${directory}.`);
       }
 
+      const number = edit.number.trim() === "" ? null : edit.number.trim();
+      // Placing a numbered lecture among the others is Rust's, and tested there; the
+      // harness keeps the row's order as it was.
       const after: LectureRow = {
         ...before,
         title: edit.title.trim(),
+        number,
+        numberInTitle: number === null ? before.numberInTitle : null,
         course: facet(edit.course),
         module: facet(edit.module),
         week: facet(edit.week),

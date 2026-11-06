@@ -26,6 +26,8 @@ afterEach(cleanup);
 function lecture(over: Partial<LectureRow> & { directory: string }): LectureRow {
   return {
     title: "Raft Consensus",
+    number: null,
+    numberInTitle: null,
     sequence: "a0",
     course: null,
     module: null,

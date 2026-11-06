@@ -57,6 +57,7 @@ impl Fixture {
 fn edit(course: &str, module: &str, week: &str, tags: &[&str]) -> LectureEdit {
     LectureEdit {
         title: None,
+        number: None,
         course: Some(course.to_owned()),
         module: Some(module.to_owned()),
         week: Some(week.to_owned()),

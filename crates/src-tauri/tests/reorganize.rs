@@ -68,6 +68,7 @@ impl Fixture {
             directory,
             &LectureEdit {
                 title: None,
+                number: None,
                 course: Some(course.to_owned()),
                 module: None,
                 week: Some(week.to_owned()),

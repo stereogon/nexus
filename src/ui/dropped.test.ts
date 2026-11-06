@@ -14,6 +14,8 @@ function lecture(title: string, conversion: ConversionState): LectureRow {
   return {
     directory: title.toLowerCase(),
     title,
+    number: null,
+    numberInTitle: null,
     sequence: "a0",
     course: null,
     module: null,
@@ -146,6 +148,8 @@ describe("importing a drop", () => {
   const lecture = (title: string): LectureRow => ({
     directory: title.toLowerCase(),
     title,
+    number: null,
+    numberInTitle: null,
     sequence: "a0",
     course: null,
     module: null,

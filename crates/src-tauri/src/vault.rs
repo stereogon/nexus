@@ -47,6 +47,16 @@ impl From<CoreError> for CommandError {
     }
 }
 
+/// A number found in a title, and the title without it.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NumberInTitle {
+    /// The number found.
+    pub number: String,
+    /// The title with it taken out.
+    pub title: String,
+}
+
 /// One lecture, as a sidebar row.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -55,6 +65,13 @@ pub struct LectureRow {
     pub directory: String,
     /// What the person knows it by.
     pub title: String,
+    /// Its number in the course, if it has one.
+    pub number: Option<String>,
+    /// For a lecture with no number whose title holds one — anything imported before
+    /// numbers were their own field — the number and the title without it, by the rules an
+    /// import uses, for the editor to offer. Offered, never applied: rewriting every
+    /// manifest on opening the vault would be a change nobody asked for.
+    pub number_in_title: Option<NumberInTitle>,
     /// The authoritative order key.
     pub sequence: String,
     /// The facets the sidebar groups on.
@@ -161,6 +178,8 @@ pub(crate) fn row(bundle: &lecture_core::LectureBundle) -> LectureRow {
     LectureRow {
         directory: bundle.directory().to_string(),
         title: manifest.title().as_str().to_owned(),
+        number: manifest.number().map(|number| number.as_str().to_owned()),
+        number_in_title: number_in_title(manifest),
         sequence: manifest.sequence().as_str().to_owned(),
         course: facets.course().map(label),
         module: facets.module().map(label),
@@ -169,6 +188,23 @@ pub(crate) fn row(bundle: &lecture_core::LectureBundle) -> LectureRow {
         conversion: name_of(source.conversion().state()),
         document_ready: source.document_is_ready(),
     }
+}
+
+fn number_in_title(manifest: &lecture_core::Manifest) -> Option<NumberInTitle> {
+    if manifest.number().is_some() {
+        return None;
+    }
+
+    let split = lecture_core::split_number(manifest.title().as_str());
+
+    // Only when taking it out leaves a title: `03` alone is its own name.
+    split
+        .number
+        .filter(|_| split.title != manifest.title().as_str())
+        .map(|number| NumberInTitle {
+            number: number.as_str().to_owned(),
+            title: split.title,
+        })
 }
 
 fn label(label: &Label) -> String {

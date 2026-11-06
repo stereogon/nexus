@@ -34,7 +34,7 @@ use std::path::Path;
 
 use lecture_core::{
     Clock, Conversion, CoreError, DocumentConverterPort, DocumentFormat, Facets, ImportPlan, Label,
-    Manifest, OrderKey, RelativePath, SOURCE_DIR_NAME, Slug, Source,
+    LectureNumber, Manifest, OrderKey, RelativePath, SOURCE_DIR_NAME, Slug, Source,
 };
 
 use crate::manifest_store::ManifestStore;
@@ -52,6 +52,8 @@ pub struct ImportRequest<'a> {
     pub bundle: RelativePath,
     /// What the person knows this lecture by.
     pub title: Label,
+    /// The lecture's number, if its file's name had one.
+    pub number: Option<LectureNumber>,
     /// Where it sits among its siblings.
     pub sequence: OrderKey,
     /// The taxonomy the sidebar groups on.
@@ -127,7 +129,8 @@ impl<C: Clock + Clone> Importer<C> {
             plan.source(imported)?,
             self.clock.now()?,
         )
-        .with_facets(request.facets.clone());
+        .with_facets(request.facets.clone())
+        .with_number(request.number.clone());
 
         // Save 1: the bundle becomes a lecture the vault walk can see.
         let manifest = self.manifests.save(&request.bundle, &manifest)?;

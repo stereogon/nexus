@@ -463,6 +463,47 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-05 · A lecture number of its own, taken from the file name and editable**
+Reported: "i don't get how we are taking out the lecture number from the pdf itself, and
+then there is no way to edit it… there should be a way to edit the lecture number that the
+app automatically took from the pdf file's name". What happened until now: the file's name
+became the title *and* the folder name, and the sidebar's number column read digits off the
+folder. Editing the title left that number behind, and it had no say in the order — lectures
+sorted by when they were imported. The user chose: the number orders the lectures, and is
+taken out of the title at import.
+
+**Manifest version 3** adds an optional `number` (`lecture_core::LectureNumber`: letters,
+digits, `.` and `-`, at most 12; natural order — `2` before `10`, `3` before `3a`, digits
+before `IV`). Versions 1 and 2 are still read, with no number, and written as 3 by the next
+save; reading never writes. Older Nexus builds will refuse a version 3 manifest, which is
+the contract working: an older reader would otherwise drop the number on its next save.
+`fixtures/manifest.json` and `vault-summary.json` changed by exactly the version and the
+new fields. The spec is amended beside the bundle layout.
+
+**At import** `split_number` takes the number out of the name (13 tests): a number at the
+start followed by a separator (`2. Process`, `02 - Raft`, `03_Paxos`, at most three digits so
+`2024 Exam Review` keeps its year), or `Lecture`/`Lec`/`L` and a number anywhere (`L03_Raft`,
+`Week 4 Lecture 2 - Logs`). A trailing letter must be lowercase — `5a` is a lecture, `3D
+printing` a subject (a test caught that). The folder is still named from the whole file
+name, so `Week 1 Lecture 1` and `Week 1 Lecture 2` cannot collide over the title they share.
+
+**Order stays `sequence`'s** (`CLAUDE.md` §3). A number does not replace it; it *places* it:
+`placed_by_number` gives the lecture a key just before the first lecture, in order, numbered
+higher — after every lecture numbered the same or less — and only that lecture's manifest is
+written. On import, and when an edit changes the number; clearing a number leaves the lecture
+where it is. An unusable number is refused with its own sentence (`ERR_LECTURE_NUMBER_UNUSABLE`),
+raised at the command layer because no `CoreError` variant's remediation fitted and
+`core_error.rs` has no room; a hand-edited manifest with one is reported as inconsistent.
+10 end-to-end tests through the real import and edit commands.
+
+**Lectures imported before this** keep the number in their title and have none of their own.
+Nothing rewrites them on opening — that would be every manifest changed behind the person's
+back. Instead the row carries `numberInTitle`, worked out by the same rules, and the edit
+panel offers "Take “2” out of the title", which fills both fields for the person to save.
+The sidebar's number column now shows the stored number only; a `01-` folder prefix (the
+renumber projection) is no longer shown as one. Three journeys in `e2e/numbers.spec.ts`; the
+offer's was proved by withholding it.
+
 **2026-11-05 · Find in the open document (⌘F)**
 The third of the three asked for. ⌘F opens a strip under the viewer's toolbar; typing marks
 every match on the drawn pages and says "2 of 24". Enter and Shift-Enter (or the arrows)

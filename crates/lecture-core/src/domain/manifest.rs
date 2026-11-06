@@ -14,7 +14,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::domain::{Facets, Label, OrderKey, SchemaRange, Source, Timestamp};
+use crate::domain::{Facets, Label, LectureNumber, OrderKey, SchemaRange, Source, Timestamp};
 use crate::error::CoreError;
 
 /// The schema version this build reads and writes.
@@ -23,13 +23,16 @@ use crate::error::CoreError;
 /// hold an older copy. Because unknown fields are refused, **adding any field requires
 /// bumping this**, which is deliberate: the alternative is an older reader silently
 /// dropping a newer device's data on the next save.
-pub const CURRENT_SCHEMA_VERSION: u32 = 2;
+///
+/// Version 3 (2026-11-05) added the lecture's `number`, optional; see `lecture_number`.
+pub const CURRENT_SCHEMA_VERSION: u32 = 3;
 
 /// The oldest manifest version this build can still read.
 ///
-/// Version 1 did not record source fingerprints. Nothing else about the format changed,
-/// so a version 1 manifest is read with both fingerprints absent — which is exactly what
-/// version 1 meant — and rewritten as version 2 by the next save. Reading never writes.
+/// Version 1 did not record source fingerprints, and versions 1 and 2 had no lecture
+/// number. Nothing else about the format changed, so an older manifest is read with those
+/// absent — which is exactly what it meant — and rewritten as the current version by the
+/// next save. Reading never writes.
 ///
 /// Refusing it instead would have been wrong in a way that is easy to miss: the file is
 /// not damaged, and the person holding it cannot do anything about the refusal.
@@ -48,6 +51,7 @@ pub const MANIFEST_FILE_NAME: &str = "manifest.json";
 #[serde(try_from = "RawManifest", into = "RawManifest")]
 pub struct Manifest {
     title: Label,
+    number: Option<LectureNumber>,
     sequence: OrderKey,
     facets: Facets,
     source: Source,
@@ -61,6 +65,8 @@ pub struct Manifest {
 struct RawManifest {
     schema_version: u32,
     title: Label,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    number: Option<LectureNumber>,
     sequence: OrderKey,
     #[serde(default)]
     facets: Facets,
@@ -87,6 +93,7 @@ impl TryFrom<RawManifest> for Manifest {
 
         Ok(Self {
             title: raw.title,
+            number: raw.number,
             sequence: raw.sequence,
             // Tag order is corrected rather than refused: losing access to a lecture
             // because its tags were listed alphabetically wrong would be a bad trade.
@@ -105,6 +112,7 @@ impl From<Manifest> for RawManifest {
             // is current by construction, so saving cannot write a stale version.
             schema_version: CURRENT_SCHEMA_VERSION,
             title: manifest.title,
+            number: manifest.number,
             sequence: manifest.sequence,
             facets: manifest.facets,
             source: manifest.source,
@@ -120,6 +128,7 @@ impl Manifest {
     pub fn new(title: Label, sequence: OrderKey, source: Source, at: Timestamp) -> Self {
         Self {
             title,
+            number: None,
             sequence,
             facets: Facets::empty(),
             source,
@@ -137,6 +146,14 @@ impl Manifest {
     #[must_use]
     pub fn with_title(mut self, title: Label) -> Self {
         self.title = title;
+        self
+    }
+
+    /// Gives the lecture a number, or takes it away. Does not move it: placing a numbered
+    /// lecture is `placed_by_number`'s job, done by whoever changes the number.
+    #[must_use]
+    pub fn with_number(mut self, number: Option<LectureNumber>) -> Self {
+        self.number = number;
         self
     }
 
@@ -191,10 +208,17 @@ impl Manifest {
         &self.title
     }
 
+    /// The lecture's number, if it has one.
+    #[must_use]
+    pub fn number(&self) -> Option<&LectureNumber> {
+        self.number.as_ref()
+    }
+
     /// The authoritative position among siblings.
     ///
     /// Folder-name prefixes such as `01-` are a *projection* of this, kept for Finder
-    /// legibility. Where the two disagree, this wins.
+    /// legibility. Where the two disagree, this wins. A lecture number does not replace it;
+    /// setting one moves this (`placed_by_number`).
     #[must_use]
     pub fn sequence(&self) -> &OrderKey {
         &self.sequence

@@ -21,6 +21,7 @@ mod highlight_semantic;
 mod image;
 mod import;
 mod label;
+mod lecture_number;
 mod manifest;
 mod normalized_rect;
 mod order_key;
@@ -59,6 +60,9 @@ pub use highlight_semantic::HighlightSemantic;
 pub use image::{ImageFormat, MAX_ASSET_BYTES, asset_file_name};
 pub use import::{DOCUMENT_FILE_NAME, ImportPlan, ORIGINAL_FILE_STEM};
 pub use label::Label;
+pub use lecture_number::{
+    LectureNumber, MAX_NUMBER_CHARS, SplitTitle, placed_by_number, split_number,
+};
 pub use manifest::{
     CURRENT_SCHEMA_VERSION, MANIFEST_FILE_NAME, MANIFEST_SCHEMA, Manifest,
     OLDEST_READABLE_SCHEMA_VERSION,

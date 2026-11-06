@@ -6,9 +6,11 @@
  * discourage creating the first lecture of a new course — which is exactly the moment
  * someone needs to.
  *
- * The title sits first because it is the field most likely to need fixing: a lecture is
- * named after the file it was imported from, and a university download is called something
- * like `TMSCOMSSAD18~TMSCOMSSSE01~2026~1`.
+ * The title and the number sit first because they are the fields most likely to need
+ * fixing: both are taken from the name of the file a lecture was imported from, and a
+ * university download is called something like `TMSCOMSSAD18~TMSCOMSSSE01~2026~1`, or
+ * numbers its slides the professor's own way. The number is what orders the lectures, so
+ * changing it moves the lecture.
  */
 import { useState } from "react";
 
@@ -18,6 +20,7 @@ import type { LectureEdit, LectureRow } from "../ipc/vault";
 function startingFrom(lecture: LectureRow): LectureEdit {
   return {
     title: lecture.title,
+    number: lecture.number ?? "",
     course: lecture.course ?? "",
     module: lecture.module ?? "",
     week: lecture.week ?? "",
@@ -63,6 +66,9 @@ export function LectureEditor({
   readonly onCancel: () => void;
 }) {
   const [draft, setDraft] = useState<LectureEdit>(() => startingFrom(lecture));
+  // Imported before numbers were their own field, the number may still be in the title.
+  const offer = lecture.numberInTitle;
+  const offering = offer !== null && draft.number.trim() === "" && draft.title === lecture.title;
 
   return (
     <form
@@ -80,6 +86,25 @@ export function LectureEditor({
         placeholder="Raft Consensus"
         value={draft.title}
       />
+      <Field
+        label="Number"
+        onChange={(number) => {
+          setDraft({ ...draft, number });
+        }}
+        placeholder="3"
+        value={draft.number}
+      />
+      {offering && (
+        <button
+          className="secondary editor-offer"
+          onClick={() => {
+            setDraft({ ...draft, number: offer.number, title: offer.title });
+          }}
+          type="button"
+        >
+          Take “{offer.number}” out of the title
+        </button>
+      )}
       <Field
         label="Course"
         onChange={(course) => {
@@ -134,7 +159,8 @@ export function LectureEditor({
           Cancel
         </button>
         <span className="hint">
-          Leave a facet empty to clear it. Renaming does not move the folder.
+          Leave a field empty to clear it. A new number moves the lecture to its place; renaming
+          does not move the folder.
         </span>
       </div>
     </form>

@@ -145,6 +145,12 @@ StudyVault/
     └── assets/                        # Local images and pasted figures
 ```
 
+> **Amended 2026-11-05 (the user's request).** `manifest.json` also holds an optional
+> `number` — the lecture's number in the course (`3`, `3a`, `IV`) — from schema version 3.
+> It is taken out of the file's name at import (`2. ProcessOverview.pdf` is number `2`,
+> title `ProcessOverview`), is editable, and *places* the lecture: setting it moves
+> `sequence`, which stays the one authority on order. Reasoning in `PROGRESS.md`.
+
 > **Amended 2026-10-27 (agreed with the user).** `manifest.json` originally also held
 > "last opened page/scroll state". It does not, because scroll position changes
 > constantly and the manifest is a *synced* file: storing it there would rewrite a synced
