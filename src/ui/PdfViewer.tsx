@@ -31,6 +31,7 @@ import { useFind } from "./useFind";
 import { useHighlightMenu } from "./useHighlightMenu";
 import { useStickies } from "./useStickies";
 import { usePageLayout } from "./usePageLayout";
+import { useReadingPosition } from "./useReadingPosition";
 import { useUndoKeys } from "./useUndoKeys";
 import { useJump, type Jump } from "./useJump";
 import { ZOOM_LIMITS } from "./zoom";
@@ -120,6 +121,8 @@ export function PdfViewer({
     }
     // Only a new match moves the document, not the page changing as it scrolls.
   }, [currentMatch]);
+
+  useReadingPosition({ vault, directory, boxes, mode, showing, scroller, arriving: jump !== null });
 
   const jumped = useJump({
     jump,

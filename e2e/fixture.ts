@@ -37,6 +37,10 @@ export interface Fixture {
   readonly notes?: Readonly<Record<string, string>>;
   /** Commands answered with a failure, for journeys about what the window does then. */
   readonly failing?: readonly string[];
+  /** This device's remembered places, as a previous session left them. */
+  readonly positions?: Readonly<Record<string, { readonly page: number; readonly offset: number }>>;
+  /** The lecture this device last had open, as a previous session left it. */
+  readonly lastLecture?: string;
 }
 
 /** Slide-shaped, because most of what this app opens is a lecture deck. */

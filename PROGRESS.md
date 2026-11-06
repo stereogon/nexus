@@ -463,6 +463,31 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-05 · Reopening where you left off**
+The first of the remaining items. A lecture now reopens at the page and the place on it this
+device left, and starting Nexus reopens the last lecture this device had open. The store
+existed since Milestone 1 — `DeviceStateStore`, `view-state.json` in Application Support,
+per vault, outside it (§3) — and nothing used it. Three commands, `lecture_position`,
+`remember_position` and `last_lecture`, all infallible like the theme's: losing a position
+costs a scroll, so a failed read answers "nowhere yet" and a failed write is logged by code
+(5 contract tests, with the store under a temporary folder). `LectureView` crosses IPC as it
+is; its own deserialisation refuses page 0 or an offset off the page.
+
+The place is a page and a fraction of it (`pdf/position.ts`, 7 tests), so it lands on the
+same words at another zoom or window size. Written when scrolling pauses for 500 ms, on a
+page change in page mode, and on closing the lecture. A journey found that last one wrong:
+read at close, the place came from an element React had already removed, which scrolls
+nowhere, and page 1 was written over the real place. It is now worked out as each scroll
+happens. Restoring waits until the pages are measured, and gives way to a lecture opened to
+go somewhere (a search result, a citation). The last lecture is reopened once per vault, and
+only into an empty pane.
+
+**Not done:** zoom. `LectureView` holds a zoom factor, which cannot say "fit width", so
+restoring it would pin a zoom the person never chose; it would need a view-state version 2.
+Three journeys in `e2e/position.spec.ts`; the reopen journey was proved by not tracking the
+place. On the way, `App`'s vault state moved into `ui/vaultState.ts` (the file had reached 300
+lines), and the README's lists were brought up to date.
+
 **2026-11-05 · A lecture number of its own, taken from the file name and editable**
 Reported: "i don't get how we are taking out the lecture number from the pdf itself, and
 then there is no way to edit it… there should be a way to edit the lecture number that the

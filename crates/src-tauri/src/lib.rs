@@ -16,6 +16,7 @@ pub mod import;
 pub mod layout;
 pub mod notes;
 pub mod picker;
+pub mod position;
 pub mod reorganize;
 pub mod search;
 pub mod theme;
@@ -69,6 +70,9 @@ pub fn run() -> Result<(), tauri::Error> {
             remember_theme,
             last_notes_width,
             remember_notes_width,
+            position::lecture_position,
+            position::remember_position,
+            position::last_lecture,
             last_vault,
             pick_vault_directory,
             pick_document,

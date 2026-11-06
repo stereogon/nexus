@@ -24,10 +24,8 @@ import {
   editLecture,
   openVault,
   rememberVault,
-  type CommandError,
   type LectureEdit,
   type LectureRow,
-  type VaultSummary,
 } from "./ipc/vault";
 import { DropOverlay } from "./ui/DropOverlay";
 import { EmptyPane } from "./ui/EmptyPane";
@@ -44,24 +42,14 @@ import { TitleBar } from "./ui/TitleBar";
 import { useAddDocuments } from "./ui/useAddDocuments";
 import { useErrorPanel } from "./ui/useErrorPanel";
 import { useFinding } from "./ui/useFinding";
+import { useResumeLecture } from "./ui/useResumeLecture";
 import { useNotice } from "./ui/useNotice";
 import { useOpenLecture } from "./ui/useOpenLecture";
 import { useRememberedVault } from "./ui/useRememberedVault";
 import { useSidebar } from "./ui/useSidebar";
 import { useTheme } from "./ui/useTheme";
+import { lecturesOf, rootOf, type VaultState } from "./ui/vaultState";
 import { Welcome } from "./ui/Welcome";
-
-type VaultState =
-  | { readonly kind: "idle" }
-  | { readonly kind: "open"; readonly summary: VaultSummary }
-  | { readonly kind: "failed"; readonly error: CommandError };
-
-const NO_LECTURES: readonly LectureRow[] = [];
-
-/** The open vault's lectures; one shared empty list otherwise, so it is stable across renders. */
-function lecturesOf(state: VaultState): readonly LectureRow[] {
-  return state.kind === "open" ? state.summary.lectures : NO_LECTURES;
-}
 
 export function App() {
   const [state, setState] = useState<VaultState>({ kind: "idle" });
@@ -76,7 +64,9 @@ export function App() {
   const notice = useNotice();
   const sidebar = useSidebar(state.kind === "open");
   const errorPanel = useErrorPanel(state.kind === "open");
-  const finding = useFinding(state.kind === "open" ? state.summary.root : null, lecturesOf(state), query, reading);
+  const root = rootOf(state);
+  useResumeLecture(root, lecturesOf(state), reading.lecture?.lecture.directory ?? null, reading.open);
+  const finding = useFinding(root, lecturesOf(state), query, reading);
 
   // Folded into `state` once it arrives, rather than rendering from two sources. The
   // functional update is what makes that safe: it fills an *idle* shell and leaves any

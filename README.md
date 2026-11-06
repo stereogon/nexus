@@ -31,15 +31,23 @@ you choose. Nothing leaves your Mac.
 **Vault**
 - Open any folder as a vault. A lecture is any folder containing a `manifest.json`, nested
   up to five levels deep.
-- Sidebar grouped by folder, week, module or tag, with search across titles and facets (`⌘P`).
+- Sidebar grouped by folder, week, module or tag.
+- Search (`⌘P`) across lecture titles and facets, and inside every lecture's notes and
+  highlighted text; a result opens the lecture at that line or highlight.
+- A **Highlights library** of every highlight in the vault, filterable by meaning, course,
+  module, week and words — "every exam point in week 3".
 - Import with the file picker (`⌘O`) or by dropping files on the window. PDFs are used as
   they are; PPT, PPTX, DOC and DOCX are converted to PDF once, at import, by LibreOffice when
   it is installed. The original is always kept.
-- Edit a lecture's title, course, module, week and tags in a side panel.
+- Each lecture has a **number**, taken from its file's name at import (`2. Process.pdf` is
+  lecture 2, "Process") and editable; the number orders the lectures.
+- Edit a lecture's title, number, course, module, week and tags in a side panel.
 
 **Reading**
 - PDF rendering with pdf.js, in continuous-scroll or one-page mode, with zoom, fit-width and
   a page field.
+- Each lecture reopens where you left it, and Nexus reopens the last lecture on launch.
+- Find in the open document (`⌘F`): every match marked, Enter for the next.
 - Text highlights in four meanings: **K**ey concept (amber), **D**efinition (green),
   **E**xam (red), **Q**uestion (blue). Each carries its letter as well as its colour.
 - Area highlights around diagrams and equations: hold **Option** and drag, or use the box tool.
@@ -72,8 +80,7 @@ you choose. Nothing leaves your Mac.
 
 Recorded in [`PROGRESS.md`](./PROGRESS.md) with the reasoning for each:
 
-- Search inside notes and highlighted quotes (search covers titles and facets only).
-- Reopening a lecture at the page you left.
+- Remembering zoom per lecture (the page and position are remembered; zoom is not yet).
 - Page thumbnails, the document outline, Fit page, `⌘+` / `⌘−` zoom.
 - `⌘L`, `⌘B`, and `⌘\` split presets (today `⌘\` shows or hides the notes).
 - The "Reorganize vault" screen (the engine exists; the window does not call it yet).
@@ -86,7 +93,8 @@ Recorded in [`PROGRESS.md`](./PROGRESS.md) with the reasoning for each:
 | Shortcut | Action |
 |---|---|
 | `⌘O` | Import a document |
-| `⌘P` | Search lectures |
+| `⌘P` | Search lectures, notes and highlights |
+| `⌘F` | Find in the open document |
 | `⌘\` | Show or hide the notes |
 | `⌘Z` / `⌘⇧Z` | Undo / redo highlights and sticky notes (in the notes: your typing) |
 | `⌘0` | Error panel |

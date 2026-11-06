@@ -46,6 +46,8 @@ export function backend(fixture: Fixture): (command: string, args?: InvokeArgs) 
   let lectures: LectureRow[] = [...fixture.lectures];
   // Per-device, so kept for the page's life like the real file is kept between launches.
   let notesWidth: number | null = null;
+  const positions = new Map(Object.entries(fixture.positions ?? {}));
+  let lastLecture = fixture.lastLecture ?? null;
 
   const vault: Handlers = {
     last_vault: () => fixture.vault,
@@ -56,6 +58,17 @@ export function backend(fixture: Fixture): (command: string, args?: InvokeArgs) 
     remember_vault: () => null,
     remember_theme: () => null,
     last_notes_width: () => notesWidth,
+    lecture_position: (args) => positions.get(InLecture.parse(args).directory) ?? null,
+    remember_position: (args) => {
+      const { directory, view } = InLecture.extend({
+        view: z.object({ page: z.number().int().positive(), offset: z.number().min(0).max(1) }),
+      }).parse(args);
+
+      positions.set(directory, view);
+      lastLecture = directory;
+      return null;
+    },
+    last_lecture: () => lastLecture,
     remember_notes_width: (args) => {
       notesWidth = z.object({ width: z.number().int() }).parse(args).width;
 
