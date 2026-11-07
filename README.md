@@ -142,6 +142,9 @@ Recorded in [`PROGRESS.md`](./PROGRESS.md) with the reasoning for each:
 - The rest of the diagnostics drawer: past logs, converter output, timings.
 - Telling you when LibreOffice is missing (imports wait safely until it is installed).
 - Restyling parts of the UI from the approved design canvas.
+- A table editor in the notes: insert a table by picking its rows and columns, then edit
+  it in place (add, remove and move rows and columns; align a column; header row). Today
+  a table is drawn from Markdown you type.
 - An MCP server, so AI agents (Claude and others) can search, read and add to a vault
   directly. Planned; see `PROGRESS.md` for the questions it raises first.
 

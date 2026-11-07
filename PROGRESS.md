@@ -5790,6 +5790,25 @@ the user's instruction, 2026-10-27), local only, never pushed without being aske
   generates one yet. Belongs with the `cargo deny` work so it is produced from the real
   dependency tree rather than maintained by hand.
 
+### Planned, raised 2026-11-07: a table editor in the notes
+The user: *"a proper table engine, i mean we can add table, select the number of rows and
+columns we want, then we can edit it with table formatting options"*. Today a GFM table is
+drawn in place (`preview/table.ts`) and shows its Markdown source while the cursor is in
+it; there is no way to make one except typing pipes.
+
+Not started. The intent:
+- **Inserting:** `+`'s menu and the format bar offer "Table", with a grid picker for rows ×
+  columns, as Notion's and Google Docs' do. It writes an ordinary GFM table.
+- **Editing in place:** type in cells directly, Tab and Shift-Tab between them; add,
+  delete and move rows and columns; toggle the header row; align a column left, centre or
+  right (GFM's `:---:`). Inline formatting inside cells uses the same marks as elsewhere.
+- **Still Markdown on disk**, written back as a tidy GFM table, so `notes.md` stays
+  readable in any editor (§1.2's "your files, readable without Nexus"). Cell merging and
+  colours have no GFM form, so they are out unless the user decides otherwise.
+- **The hard part** is editing cells inside CodeMirror without losing the cursor or undo
+  history (§1.4). Decide between a widget that edits the underlying text through
+  transactions and a nested editor per cell; the first keeps one undo history.
+
 ### Planned, raised 2026-11-07: an MCP server for agents
 The user: *"add an MCP in the todo, that can be connected to agents, that can access the app
 directly"*. A Model Context Protocol server would let an agent (Claude Code, Claude Desktop
