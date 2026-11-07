@@ -80,8 +80,6 @@ function hueOf([r, g, b]: Rgb): { hue: number; saturation: number } {
 }
 
 const WHITE = "#ffffff";
-/** Drawn on the white page beside the highlights, in every theme. */
-const ACCENT_INK = "#9e477b";
 const hueDistance = (a: number, b: number) => Math.min(Math.abs(a - b), 360 - Math.abs(a - b));
 const hueOfColour = (colour: string) => hueOf(solid(colour)).hue;
 
@@ -152,9 +150,23 @@ describe.each(PALETTE_ORDER)("the %s theme", (name) => {
     }
   });
 
+  it("draws its ink, the page's chrome, readable on white and in the accent's own hue", () => {
+    expect(ratio(solid(palette["accent-ink"]), solid(WHITE))).toBeGreaterThanOrEqual(4.5);
+
+    const accent = hueOf(solid(palette.accent));
+
+    if (accent.saturation >= 0.2) {
+      expect(hueDistance(accent.hue, hueOfColour(palette["accent-ink"]))).toBeLessThanOrEqual(3);
+    }
+  });
+
   it("keeps the four highlights apart from one another and from the page's accent ink", () => {
+    const ink = hueOf(solid(palette["accent-ink"]));
+
     for (const [index, [semantic, { colour }]] of highlights.entries()) {
-      expect(hueDistance(hueOfColour(colour), hueOfColour(ACCENT_INK)), `${semantic} against accent ink`).toBeGreaterThanOrEqual(25);
+      if (ink.saturation >= 0.2) {
+        expect(hueDistance(hueOfColour(colour), ink.hue), `${semantic} against accent ink`).toBeGreaterThanOrEqual(25);
+      }
 
       for (const [other, { colour: second }] of highlights.slice(index + 1)) {
         expect(hueDistance(hueOfColour(colour), hueOfColour(second)), `${semantic} against ${other}`).toBeGreaterThanOrEqual(30);

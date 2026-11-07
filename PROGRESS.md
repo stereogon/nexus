@@ -463,6 +463,39 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-07 · A cursor on every line; the page's chrome in the theme; a funkier Funky; Turn into only where it can**
+The user: *"the first two lines don't show the cursor … sometimes when i click on the first
+line, no cursor is visible, but typing is happening"*; *"the icon colors for link to citation
+the pdf and the sticky note, don't match the theme … can we also change the funky theme
+colors … it is supposed to be funkyyy"*; *"the turn to element option is appearing for
+everything, even for citatinos"*.
+
+**The cursor.** The editor left the caret to WebKit, which does not reliably paint one
+beside an uneditable widget, and the page's title sits above the first line. Probes found no
+DOM churn and nothing layered over the lines; a headless screenshot cannot show a blinking
+native caret, so the fix is CodeMirror's own answer to that browser bug, `drawSelection()`,
+part of its standard setup and missing here. `theme.ts` already styled `.cm-cursor`. The
+cursor journey measures the drawn cursor on lines one to three; it fails without the
+extension.
+
+**The page's chrome follows the theme.** `accent-ink` was one mulberry for every theme. Each
+palette now carries its own: the accent's hue, darkened until it reads at 4.6:1 on white
+(computed by script, then measured by `themes.test.ts`), plus `page-selection` for text
+selected on the page. The sticky note's folded icon stays white on the page in the theme's
+ink; its open card takes the theme's surface, text, borders and accent. CLAUDE.md §3
+amended.
+
+**Funky** is tangerine, plum and deep teal, where it was butter yellow and violet. The teal
+was darkened along its own hue until it read on tangerine and on a selected row; it sits
+near the blue "question", so Funky swaps in the violet one.
+
+**Turn into** comes from `turnsInto(line)` (`notes/format.ts`): nothing for a citation, an
+image, a one-line formula or a divider, and never the kind the line already is.
+
+Verified: gate green. New unit tests for the ink and `turnsInto`; journeys for the cursor,
+the sticky note in Midnight, and ⋮⋮ on a citation and on text. Each was proved by sabotage:
+no `drawSelection`, the card's old cream, `turnsInto` offering everything.
+
 **2026-11-07 · The sidebar can be dragged wider; Settings is a gear**
 The user: *"also make the sidebar width adjustable by dragging just like you have doen for
 notes section width"*, and *"update the settings icon, you have put a sun icon, instead of

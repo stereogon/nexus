@@ -254,6 +254,10 @@ and explain why. Rationale is recorded in `PROGRESS.md`.
   highlight colours, which `themes.test.ts` checks. `accentInk` is unchanged, being drawn
   on the always-white page.)* Brand accent: `#BE1A72` (light) / `#FF72C6` (dark); `accentInk` `#9E477B`. Chosen to sit
   outside the four highlight semantics *and* outside Obsidian's violet.
+  *(Amended 2026-11-07 at the user's request: `accentInk` is now per theme too — the
+  theme's accent in its own hue, darkened until it reads at 4.5:1 or better on the white
+  page — because the page's own icons and the sticky note did not match the theme around
+  them. Paper's is its accent, `#A8195E`. `themes.test.ts` checks every theme's ink.)*
 - Highlight semantics: amber `#F2B63C` key, green `#2EA37A` definition, red `#E0523C` exam,
   blue `#2E86DE` question — each also carrying a letter glyph (K/D/E/Q) so the set does not
   rely on hue alone.

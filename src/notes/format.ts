@@ -16,6 +16,8 @@
  * without selecting again — bold, then italic, as in Notion.
  */
 
+import { isCitationLine } from "./preview/find";
+
 export type Inline = "bold" | "italic" | "strike" | "code";
 export type Block = "h1" | "h2" | "h3" | "bullet" | "numbered" | "task" | "quote" | "paragraph";
 
@@ -145,6 +147,36 @@ export function blockOf(line: string): Block {
   if (marker.startsWith(">")) return "quote";
 
   return "paragraph";
+}
+
+/** Every block kind, in the order a menu offers them. */
+const KINDS: readonly Block[] = ["paragraph", "h1", "h2", "h3", "bullet", "numbered", "task", "quote"];
+
+/**
+ * A line drawn as an element rather than as text — a citation, an image, a formula on its
+ * own line, a divider — whose Markdown would break if a heading's `# ` or a list's `- ` were
+ * written in front of it.
+ */
+const ELEMENT = [
+  /^\s*!\[[^\]]*\]\([^)]*\)\s*$/u,
+  /^\s*\$\$.*\$\$\s*$/u,
+  /^\s*([-*_])(?:\s*\1){2,}\s*$/u,
+];
+
+/**
+ * What a one-line block can be turned into (reported 2026-11-07: "Turn into" was offered for
+ * a citation too). Nothing for an element; otherwise every kind but the one it already is,
+ * or every kind for a heading of level 4 to 6, which is none of them.
+ */
+export function turnsInto(line: string): Block[] {
+  if (isCitationLine(line) || ELEMENT.some((element) => element.test(line))) {
+    return [];
+  }
+
+  const current = blockOf(line);
+  const unnamed = current === "paragraph" && hiddenPrefix(line) > 0;
+
+  return KINDS.filter((kind) => unnamed || kind !== current);
 }
 
 function prefixFor(block: Block, index: number): string {

@@ -114,3 +114,19 @@ test("a code block has room around it, so what follows is not drawn against it",
 
   expect((next?.y ?? 0) - ((foot?.y ?? 0) + (foot?.height ?? 0))).toBeGreaterThanOrEqual(10);
 });
+
+test("⋮⋮ offers no Turn into for a citation, and never the kind a line already is", async ({ page }) => {
+  const grip = notes(page).getByRole("button", { name: "Move this block, or open its menu" });
+  const menu = page.getByRole("menu", { name: "Block" });
+
+  await notes(page).locator(".md-citation").hover();
+  await grip.click();
+  await expect(menu.getByRole("menuitem", { name: "Delete" })).toBeVisible();
+  await expect(menu.getByRole("menuitem", { name: /Turn into/u })).toHaveCount(0);
+  await page.keyboard.press("Escape");
+
+  await line(page, "First line").hover();
+  await grip.click();
+  await expect(menu.getByRole("menuitem", { name: "Turn into heading 1" })).toBeVisible();
+  await expect(menu.getByRole("menuitem", { name: "Turn into text" })).toHaveCount(0);
+});

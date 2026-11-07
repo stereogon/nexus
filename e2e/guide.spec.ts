@@ -110,6 +110,14 @@ async function showTop(page: Page): Promise<void> {
   await expect(line(page, "Markdown syntax guide")).toBeVisible();
 }
 
+/** Scrolls the notes to their end, for the last sections, as `showTop` does for the first. */
+async function showEnd(page: Page): Promise<void> {
+  await notes(page).locator(".cm-scroller").evaluate((scroller) => {
+    scroller.scrollTop = scroller.scrollHeight;
+  });
+  await expect(line(page, "This web site is using")).toBeVisible();
+}
+
 test.beforeEach(async ({ page }) => {
   await openNexus(page, { ...standardFixture(), notes: { [READING.directory]: GUIDE } });
   await openLecture(page, READING.title);
@@ -164,6 +172,7 @@ test("the code block is set as code", async ({ page }) => {
 });
 
 test("the diagram, the inline code, the formula and the citation all render", async ({ page }) => {
+  await showEnd(page);
   await expect(notes(page).locator(".md-diagram svg")).toHaveCount(1, { timeout: 15_000 });
   await expect(line(page, "This web site is using")).not.toContainText("`");
   await expect(notes(page).locator(".md-math .katex")).toHaveCount(1);

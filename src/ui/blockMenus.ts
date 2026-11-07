@@ -6,7 +6,7 @@
 import type { EditorView } from "@codemirror/view";
 
 import type { Block } from "../notes/blocks";
-import type { Block as Kind } from "../notes/format";
+import { turnsInto, type Block as Kind } from "../notes/format";
 import { formatBlock } from "../notes/markSelection";
 import type { MenuItem } from "./PopMenu";
 
@@ -56,10 +56,23 @@ function span(editor: EditorView, block: Block): { readonly from: number; readon
   return last.number < doc.lines ? { from: first.from, to: last.to + 1 } : { from: Math.max(0, first.from - 1), to: last.to };
 }
 
+/** How "Turn into" names each kind. */
+const TURN_INTO: Readonly<Record<Kind, string>> = {
+  paragraph: "Turn into text",
+  h1: "Turn into heading 1",
+  h2: "Turn into heading 2",
+  h3: "Turn into heading 3",
+  bullet: "Turn into bulleted list",
+  numbered: "Turn into numbered list",
+  task: "Turn into to-do",
+  quote: "Turn into quote",
+};
+
 /**
  * ⋮⋮'s menu for `block`: Delete and Duplicate, and for a one-line block the kinds it can be
- * turned into. A code block or a table is turned into nothing: it is several lines that
- * only mean something together.
+ * turned into (`turnsInto`): none for a citation, an image or a divider, and not the kind it
+ * already is. A code block or a table is turned into nothing: it is several lines that only
+ * mean something together.
  */
 export function blockActions(editor: EditorView, block: Block): MenuItem[] {
   const doc = editor.state.doc;
@@ -96,15 +109,5 @@ export function blockActions(editor: EditorView, block: Block): MenuItem[] {
     editor.focus();
   };
 
-  return [
-    ...actions,
-    { label: "Turn into text", onSelect: as("paragraph") },
-    { label: "Turn into heading 1", onSelect: as("h1") },
-    { label: "Turn into heading 2", onSelect: as("h2") },
-    { label: "Turn into heading 3", onSelect: as("h3") },
-    { label: "Turn into bulleted list", onSelect: as("bullet") },
-    { label: "Turn into numbered list", onSelect: as("numbered") },
-    { label: "Turn into to-do", onSelect: as("task") },
-    { label: "Turn into quote", onSelect: as("quote") },
-  ];
+  return [...actions, ...turnsInto(line.text).map((kind) => ({ label: TURN_INTO[kind], onSelect: as(kind) }))];
 }

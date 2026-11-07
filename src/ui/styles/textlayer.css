@@ -72,17 +72,14 @@
   cursor: default;
 }
 
-/* The selection colour. The canvas has no artboard for a text selection, so this is
-   derived from it rather than taken: `accentInk` is the token §3 designates for chrome
-   drawn *on the page* — sized for white — and the page is light in both themes, so one
-   value serves both. Kept well under half opacity so the glyphs underneath stay readable
-   through it. */
+/* The selection colour: the theme's `accent-ink`, the colour for chrome drawn *on the
+   page*, at well under half opacity so the glyphs underneath stay readable through it. */
 .textLayer ::selection {
-  background: rgba(158, 71, 123, 0.3);
+  background: var(--page-selection);
 }
 
 .textLayer::selection {
-  background: rgba(158, 71, 123, 0.3);
+  background: var(--page-selection);
 }
 
 /* Narrower than the sidebar's, which stretches to fill a 264px column. */

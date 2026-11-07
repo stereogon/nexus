@@ -3,7 +3,7 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { blockOf, cursorInside, hasInline, inlineAtCursor, linkAround, setBlock, toggleInline, type Change } from "./format";
+import { blockOf, cursorInside, hasInline, inlineAtCursor, linkAround, setBlock, toggleInline, turnsInto, type Change } from "./format";
 
 /** `doc` with `changes` applied, last first so earlier offsets stay right. */
 function applied(doc: string, changes: readonly Change[]): string {
@@ -149,5 +149,35 @@ describe("a format chosen before writing", () => {
 
     expect(applied(bold, changes)).toBe(doc);
     expect(cursor).toBe(doc.length);
+  });
+});
+
+describe("what a line can be turned into", () => {
+  it("is nothing for a line drawn as an element", () => {
+    for (const element of [
+      '> 📌 **[Page 4](cite://hl-1)**: *"Raft"*',
+      "![diagram](assets/raft.png)",
+      "$$E = mc^2$$",
+      "---",
+      "* * *",
+    ]) {
+      expect(turnsInto(element), element).toEqual([]);
+    }
+  });
+
+  it("is every kind but the one it is", () => {
+    expect(turnsInto("## Plans")).not.toContain("h2");
+    expect(turnsInto("## Plans")).toContain("paragraph");
+    expect(turnsInto("Just words")).not.toContain("paragraph");
+    expect(turnsInto("- [ ] Milk")).not.toContain("task");
+    expect(turnsInto("> quoted")).toHaveLength(7);
+  });
+
+  it("is every kind for a heading the menu has no name for", () => {
+    expect(turnsInto("#### Deep")).toHaveLength(8);
+  });
+
+  it("treats a quote that is not a citation as text", () => {
+    expect(turnsInto("> 📌 a pin, not a citation")).not.toEqual([]);
   });
 });

@@ -14,7 +14,7 @@
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { EditorState } from "@codemirror/state";
-import { EditorView, keymap, placeholder } from "@codemirror/view";
+import { drawSelection, EditorView, keymap, placeholder } from "@codemirror/view";
 import { useEffect, useImperativeHandle, useRef, useState, type Ref } from "react";
 
 import { barFor, formatKeys, formatStateOf } from "../notes/markSelection";
@@ -140,6 +140,9 @@ export function NotesEditor({
           // does not have. Without it a table was not even recognised (2026-11-05).
           markdown({ base: markdownLanguage, codeLanguages }),
           EditorView.lineWrapping,
+          // The cursor drawn by the editor: WebKit's own was not painted below the page's
+          // title, a widget it cannot edit (reported 2026-11-07).
+          drawSelection(),
           notesAppearance,
           page ? notePage : [],
           pageHeading(titled.current),

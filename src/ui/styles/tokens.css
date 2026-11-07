@@ -35,9 +35,11 @@
  */
 :root {
   /* Brand. The accent is for app chrome; `accent-ink` is sized for white and is what
-     page-drawn annotation chrome uses, since the document surface stays light. */
+     page-drawn annotation chrome uses, since the document surface stays light. Paper's
+     values; each theme sets its own (`src/ui/themes/`). */
   --accent: #a8195e;
-  --accent-ink: #9e477b;
+  --accent-ink: #a8195e;
+  --page-selection: rgba(168, 25, 94, 0.3);
   /* The page itself, white in every theme (§3: no inverted documents), and a grey sized for
      it, for words drawn on a page that has not rendered. No theme sets these: they belong
      to the document, not the window, and the themes journey checks the page stays white. */

@@ -5,8 +5,9 @@
  * where the user asked for "at least 10-15 different color theme styles … funky, plain
  * modern, neon, dark contrast". Each theme sets the window's own colours: grounds, text,
  * borders and one accent. The page stays white in every theme (no inverted documents,
- * CLAUDE.md §3), and `accent-ink`, which is drawn on that white page, stays the one value
- * sized for white. The four highlight meanings keep their letters everywhere; their colours
+ * CLAUDE.md §3), so what is drawn on it uses `accent-ink`: the theme's accent in its own
+ * hue, darkened until it reads on white. One fixed mulberry until 2026-11-07, when the user
+ * saw the page's icons not matching the theme around them. The four highlight meanings keep their letters everywhere; their colours
  * move aside in a theme whose accent would clash (`./highlights`). Fifteen at first, all but
  * three of the accents pink; the user asked for blues, greens and more (2026-11-07), and
  * the set grew to twenty-four.
@@ -65,6 +66,10 @@ export type Palette = {
   readonly "on-accent": string;
   readonly "accent-soft": string;
   readonly "accent-wash": string;
+  /** The accent darkened to read on the always-white page: chrome drawn on a document. */
+  readonly "accent-ink": string;
+  /** A text selection on the page, in the ink at 0.3 so the words stay readable through it. */
+  readonly "page-selection": string;
   readonly scrim: string;
   readonly chrome: string;
   readonly surface: string;
