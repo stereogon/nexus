@@ -81,11 +81,13 @@ in a folder you choose. Nothing leaves your Mac.
 **Look**
 - Fifteen themes — Paper, Ink, Plain, Graphite, Contrast, Contrast Dark, Funky, Solar,
   Sakura, Sepia, Neon, Fjord, Forest, Ocean and Terminal — or follow macOS between Paper and
-  Ink. Every one is contrast-tested, and the page stays white in all of them.
+  Ink, chosen in Settings (the gear at the foot of the sidebar). Every one is
+  contrast-tested, and the page stays white in all of them.
 
 **Diagnostics**
-- An error panel (`⌘0`) lists every error shown since launch, each with a code and a
-  plain sentence saying what to do.
+- An error panel (`⌘0`, or Settings → Errors since launch) lists every error shown since
+  launch, each with a code and a plain sentence saying what to do. The Settings gear
+  shows a dot when there have been any.
 
 ## Not built yet
 

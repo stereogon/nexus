@@ -57,7 +57,9 @@ test("an error stays in the panel after its card has gone", async ({ page }) => 
   await page.getByRole("button", { name: "← Vault" }).click();
   await expect(page.locator(".card.error")).toHaveCount(0);
 
-  await page.getByRole("button", { name: "Errors" }).click();
+  // Settings says there was one, before it is opened.
+  await page.getByRole("button", { name: "Settings, 1 error since launch" }).click();
+  await page.getByRole("button", { name: /Errors since launch/u }).click();
   await expect(errorPanel(page).locator(".error-panel-entry")).toHaveCount(1);
   await expect(errorPanel(page)).toContainText("ERR_E2E_FAILING");
 

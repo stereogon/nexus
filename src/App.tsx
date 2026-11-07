@@ -210,8 +210,7 @@ export function App() {
             foot={{
               libraryShown: finding.library,
               onToggleLibrary: finding.toggleLibrary,
-              errorsShown: errorPanel.open,
-              onToggleErrors: errorPanel.toggle,
+              onShowErrors: errorPanel.show,
               theme: appearance.theme,
               onChooseTheme: appearance.choose,
             }}

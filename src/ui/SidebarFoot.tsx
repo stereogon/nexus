@@ -1,33 +1,34 @@
 /**
- * The foot of the sidebar: the highlights library, the error panel and the theme picker,
- * which lived in the title bar until the redesign (2026-11-07), and the vault's path.
+ * The foot of the sidebar: the highlights library, which is something read, and Settings,
+ * which holds the things set rarely — the theme, the error panel, the vault (2026-11-07,
+ * at the user's request: one settings control rather than an icon each).
  */
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 
-import { ErrorsIcon, HighlightsIcon, ThemeIcon } from "./icons";
+import { onErrorsChanged, shownErrors } from "./errorLog";
+import { GearIcon, HighlightsIcon } from "./icons";
 import type { MenuAt } from "./menuPlacement";
 import { shortPath } from "./path";
-import { ThemePicker } from "./ThemePicker";
+import { SettingsBox } from "./SettingsBox";
 import type { ThemeName } from "./themes";
 
 export function SidebarFoot({
   root,
   libraryShown,
   onToggleLibrary,
-  errorsShown,
-  onToggleErrors,
+  onShowErrors,
   theme,
   onChooseTheme,
 }: {
   readonly root: string;
   readonly libraryShown: boolean;
   readonly onToggleLibrary: () => void;
-  readonly errorsShown: boolean;
-  readonly onToggleErrors: () => void;
+  readonly onShowErrors: () => void;
   readonly theme: ThemeName;
   readonly onChooseTheme: (theme: ThemeName) => void;
 }) {
-  const [picking, setPicking] = useState<MenuAt | null>(null);
+  const [settings, setSettings] = useState<MenuAt | null>(null);
+  const errors = useSyncExternalStore(onErrorsChanged, shownErrors).length;
 
   return (
     <div className="sidebar-foot">
@@ -42,42 +43,36 @@ export function SidebarFoot({
         <HighlightsIcon />
       </button>
       <button
-        aria-label="Errors"
-        aria-pressed={errorsShown}
-        className="chrome-icon"
-        onClick={onToggleErrors}
-        title="Errors (⌘0)"
-        type="button"
-      >
-        <ErrorsIcon />
-      </button>
-      <button
-        aria-expanded={picking !== null}
-        aria-haspopup="menu"
-        aria-label="Theme"
-        className="chrome-icon"
-        data-opens="theme"
+        aria-expanded={settings !== null}
+        aria-haspopup="dialog"
+        aria-label={errors === 0 ? "Settings" : `Settings, ${String(errors)} ${errors === 1 ? "error" : "errors"} since launch`}
+        className="chrome-icon settings-control"
+        data-opens="settings"
         onClick={(event) => {
           const box = event.currentTarget.getBoundingClientRect();
 
-          // Opens upward from the foot, where there is room.
-          setPicking((open) => (open === null ? { left: box.left, top: box.bottom + 6, above: box.top - 6 } : null));
+          // Opens upward from the foot, where there is room (`placeMenu` flips it).
+          setSettings((open) => (open === null ? { left: box.left, top: box.bottom + 6, above: box.top - 6 } : null));
         }}
-        title="Theme"
+        title="Settings"
         type="button"
       >
-        <ThemeIcon />
+        <GearIcon />
+        {errors > 0 && <span aria-hidden="true" className="settings-badge" />}
       </button>
       <span className="sidebar-path" title={root}>
         {shortPath(root)}
       </span>
-      {picking !== null && (
-        <ThemePicker
-          at={picking}
-          onChoose={onChooseTheme}
+      {settings !== null && (
+        <SettingsBox
+          at={settings}
+          errors={errors}
+          onChooseTheme={onChooseTheme}
           onDismiss={() => {
-            setPicking(null);
+            setSettings(null);
           }}
+          onShowErrors={onShowErrors}
+          root={root}
           theme={theme}
         />
       )}

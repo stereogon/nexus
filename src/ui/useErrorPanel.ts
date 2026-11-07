@@ -11,6 +11,7 @@ import { useMetaShortcut } from "./useMetaShortcut";
 export function useErrorPanel(enabled: boolean): {
   readonly open: boolean;
   readonly toggle: () => void;
+  readonly show: () => void;
   readonly close: () => void;
 } {
   const [open, setOpen] = useState(false);
@@ -19,11 +20,15 @@ export function useErrorPanel(enabled: boolean): {
     setOpen((current) => !current);
   }, []);
 
+  const show = useCallback(() => {
+    setOpen(true);
+  }, []);
+
   const close = useCallback(() => {
     setOpen(false);
   }, []);
 
   useMetaShortcut("0", enabled, toggle);
 
-  return { open: open && enabled, toggle, close };
+  return { open: open && enabled, toggle, show, close };
 }

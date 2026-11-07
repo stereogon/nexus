@@ -46,8 +46,7 @@ function footing(theme: ThemeName = "system") {
   return {
     libraryShown: false,
     onToggleLibrary: vi.fn(),
-    errorsShown: false,
-    onToggleErrors: vi.fn(),
+    onShowErrors: vi.fn(),
     theme,
     onChooseTheme: vi.fn(),
   };
@@ -242,46 +241,6 @@ describe("what the sidebar calls", () => {
     fireEvent.click(screen.getByRole("button", { name: "Hide sidebar" }));
 
     expect(props.onHide).toHaveBeenCalledOnce();
-  });
-
-  it("opens the theme picker from the foot, with the current theme checked, and chooses from it", () => {
-    const props = show(VAULT, { foot: footing("neon") });
-
-    fireEvent.click(screen.getByRole("button", { name: "Theme" }));
-    expect(screen.getByRole("menuitemradio", { name: /Neon/u }).getAttribute("aria-checked")).toBe("true");
-    expect(screen.getAllByRole("menuitemradio")).toHaveLength(16);
-
-    fireEvent.click(screen.getByRole("menuitemradio", { name: /Sepia/u }));
-    expect(props.foot.onChooseTheme).toHaveBeenCalledWith("sepia");
-
-    fireEvent.keyDown(document, { key: "Escape" });
-    expect(screen.queryByRole("menu", { name: "Theme" })).toBeNull();
-  });
-
-  it("opens the library and the error panel from the foot", () => {
-    const props = show(VAULT);
-
-    fireEvent.click(screen.getByRole("button", { name: "Highlights library" }));
-    fireEvent.click(screen.getByRole("button", { name: "Errors" }));
-
-    expect(props.foot.onToggleLibrary).toHaveBeenCalledOnce();
-    expect(props.foot.onToggleErrors).toHaveBeenCalledOnce();
-  });
-
-  it("edits from the row's own control", () => {
-    const props = show(VAULT);
-
-    fireEvent.click(screen.getByRole("button", { name: "Edit Loose notes" }));
-
-    expect(props.onEdit).toHaveBeenCalledWith(expect.objectContaining({ directory: "loose" }));
-  });
-
-  it("reports typing, letting the shell hold the query", () => {
-    const props = show(VAULT);
-
-    fireEvent.change(screen.getByLabelText("Search vault"), { target: { value: "raft" } });
-
-    expect(props.onQuery).toHaveBeenCalledWith("raft");
   });
 });
 

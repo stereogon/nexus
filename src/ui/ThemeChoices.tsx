@@ -1,15 +1,12 @@
 /**
- * Choosing one of the fifteen themes, or following macOS.
+ * Choosing one of the fifteen themes, or following macOS: a section of the Settings box.
  *
- * A menu of radio items, each with three swatches — the theme's ground, its text and its
- * accent — so a theme can be recognised before it is chosen. Choosing applies it at once
- * and leaves the menu open, so themes can be tried one after another; Escape or a click
- * elsewhere closes it. From the redesign canvas's themes board (2026-11-07).
+ * Radio items, each with three swatches — the theme's ground, its text and its accent — so
+ * a theme can be recognised before it is chosen. Choosing applies it at once and leaves the
+ * box open, so themes can be tried one after another. From the redesign canvas's themes
+ * board (2026-11-07).
  */
-import type { MenuAt } from "./menuPlacement";
 import { PALETTE_ORDER, THEMES, type PaletteName, type ThemeName } from "./themes";
-import { useFloating } from "./useFloating";
-import { useDismissOutside } from "./usePopover";
 
 function Swatches({ name }: { readonly name: PaletteName }) {
   const { palette } = THEMES[name];
@@ -45,7 +42,7 @@ function Choice({
       onClick={() => {
         onChoose(name);
       }}
-      role="menuitemradio"
+      role="radio"
       title={mood}
       type="button"
     >
@@ -67,23 +64,16 @@ function Choice({
   );
 }
 
-export function ThemePicker({
-  at,
+/** The sixteen choices, as a group of radio items: a section of the Settings box. */
+export function ThemeChoices({
   theme,
   onChoose,
-  onDismiss,
 }: {
-  readonly at: MenuAt;
   readonly theme: ThemeName;
   readonly onChoose: (theme: ThemeName) => void;
-  readonly onDismiss: () => void;
 }) {
-  const { box, placed } = useFloating(at, onDismiss);
-
-  useDismissOutside(box, "theme", onDismiss);
-
   return (
-    <div aria-label="Theme" className="theme-picker" ref={box} role="menu" style={{ left: placed.left, top: placed.top }}>
+    <div aria-label="Theme" className="theme-choices" role="radiogroup">
       <Choice
         chosen={theme === "system"}
         label="Follow macOS"
@@ -92,7 +82,6 @@ export function ThemePicker({
         onChoose={onChoose}
         swatches={null}
       />
-      <div aria-hidden="true" className="theme-divider" />
       <div className="theme-grid">
         {PALETTE_ORDER.map((name) => (
           <Choice

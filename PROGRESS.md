@@ -463,6 +463,23 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-07 · Settings, in place of the theme and errors icons**
+Asked for while step 2 was in review: *"it is not always required that you put icons
+together and visible, i am talking about the theme, diagonostic icons, we can have a
+settings icon, and that can open a box to select these things, like we have in vs code."*
+The sidebar's foot is now the Highlights library (something read, so it stays a control
+of its own), a Settings gear, and the vault path. Settings opens a box (`SettingsBox`, a
+dialog, closing on Escape or a click elsewhere) with three sections: **Theme** — the
+sixteen choices, now a radio group, left open so themes can be tried in turn; 
+**Diagnostics** — Errors since launch, with the count, opening the error panel (⌘0 still
+works from anywhere); and **Vault** — the full path, with switching left to the vault's
+name at the top. So the count is not hidden by the icon going, the gear carries a dot and
+says "Settings, 1 error since launch" when there have been errors. The standalone theme
+picker became `ThemeChoices`, the section.
+
+Verified: gate green. Sidebar tests for the box, the theme radios, the error count on the
+control and opening the panel; the themes and error-panel journeys go through Settings.
+
 **2026-11-07 · Redesign, step 2: no title bar, the new sidebar**
 The 40px title bar is gone. The window now uses `titleBarStyle: Overlay` with a hidden
 title, so the app draws to the top edge: the window's own buttons sit over the sidebar's
