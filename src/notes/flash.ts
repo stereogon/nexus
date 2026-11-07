@@ -6,7 +6,7 @@
  * animation fades by itself; the class alternates between two names so a second jump to
  * the same line restarts the animation rather than finding it already finished.
  */
-import { StateEffect, StateField } from "@codemirror/state";
+import { StateEffect, StateField, type EditorState } from "@codemirror/state";
 import { Decoration, EditorView, type DecorationSet } from "@codemirror/view";
 
 /** Flash the line containing this offset. */
@@ -35,3 +35,22 @@ export const lineFlash = StateField.define<{ readonly flips: number; readonly de
   },
   provide: (field) => EditorView.decorations.from(field, (value) => value.decorations),
 });
+
+/**
+ * The line being flashed and its class, if one is: for a citation, which is drawn as a block
+ * in place of its line and so has no line to carry the class, to flash itself.
+ */
+export function flashOn(state: EditorState): { readonly at: number; readonly cls: string } | null {
+  const field = state.field(lineFlash, false);
+  let found: { at: number; cls: string } | null = null;
+
+  field?.decorations.between(0, state.doc.length, (from, _to, value) => {
+    const spec: unknown = value.spec;
+
+    if (typeof spec === "object" && spec !== null && "class" in spec && typeof spec.class === "string") {
+      found = { at: from, cls: spec.class };
+    }
+  });
+
+  return found;
+}

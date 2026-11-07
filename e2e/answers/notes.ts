@@ -21,6 +21,8 @@ export function notesHandlers(fixture: Fixture): Handlers {
   let drops = 0;
   const notesOf = (directory: string) => notes.get(directory) ?? { text: "", version: "empty" };
 
+  window.__NEXUS_E2E_NOTES__ = (directory) => notesOf(directory).text;
+
   return {
     load_notes: (args) => {
       notesOpenFor = InLecture.parse(args).directory;

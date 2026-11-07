@@ -5,10 +5,9 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { READING, standardFixture } from "./fixture";
-import { openLecture, openNexus } from "./nexus";
+import { openLecture, openNexus, saved } from "./nexus";
 
 const notes = (page: Page) => page.getByRole("complementary", { name: "Notes" });
-const source = (page: Page) => notes(page).locator(".cm-content");
 const strip = (page: Page) => notes(page).getByRole("toolbar", { name: "Format" });
 const toggle = (page: Page) => notes(page).getByRole("button", { name: "Formatting" });
 
@@ -39,7 +38,7 @@ test("bold chosen before writing makes what is typed next bold", async ({ page }
   await strip(page).getByRole("button", { name: "Bold" }).click({ delay: 150 });
   await page.keyboard.type("quorum");
 
-  await expect(source(page)).toContainText("**quorum**");
+  await expect.poll(() => saved(page)).toContain("**quorum**");
   await expect(strip(page).getByRole("button", { name: "Bold" })).toHaveAttribute("aria-pressed", "true");
 });
 
@@ -48,7 +47,7 @@ test("a heading chosen before writing heads the line about to be written", async
   await strip(page).getByRole("button", { name: "Heading 2" }).click({ delay: 150 });
   await page.keyboard.type("Terms");
 
-  await expect(source(page)).toContainText("## Terms");
+  await expect.poll(() => saved(page)).toContain("## Terms");
 });
 
 test("a colour waits for words to be selected", async ({ page }) => {

@@ -64,8 +64,8 @@ const editorTheme = EditorView.theme({
     paddingLeft: "14px",
     color: "var(--text-secondary)",
   },
-  // A fenced code block reads as one panel: the lines share a background and side borders,
-  // and the first and last — the fences, hidden while the cursor is elsewhere — round it off.
+  // A fenced code block reads as one panel: the code lines share a background and side
+  // borders, between the header above and the foot below (drawn in place of the fences).
   ".md-code-line": {
     fontFamily: "var(--font-mono)",
     fontSize: "0.84em",
@@ -75,30 +75,39 @@ const editorTheme = EditorView.theme({
     borderRight: "1px solid var(--code-border)",
     padding: "0 18px",
   },
-  ".md-code-first": {
-    borderTop: "1px solid var(--code-border)",
-    borderTopLeftRadius: "10px",
-    borderTopRightRadius: "10px",
-    paddingTop: "6px",
-    marginTop: "6px",
-    color: "var(--text-faint)",
-  },
-  ".md-code-last": {
-    borderBottom: "1px solid var(--code-border)",
-    borderBottomLeftRadius: "10px",
-    borderBottomRightRadius: "10px",
-    paddingBottom: "6px",
-    marginBottom: "6px",
-    color: "var(--text-faint)",
-  },
   // The code block's header (2026-11-07): the language menu at the left, Copy at the right,
   // on the panel's first line, as Notion has them.
   ".md-code-head": {
-    display: "inline-flex",
-    width: "100%",
+    display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
     gap: "8px",
+    // No margin: the editor measures a block widget's own box (see `.md-page-head`).
+    padding: "6px 10px 2px",
+    backgroundColor: "var(--code-bg)",
+    border: "1px solid var(--code-border)",
+    borderBottom: "none",
+    borderTopLeftRadius: "10px",
+    borderTopRightRadius: "10px",
+  },
+  // Room around a code block, as padding on boxes of their own (never margins, which the
+  // editor would not count when placing the lines after the block).
+  ".md-code-top": { paddingTop: "10px" },
+  ".md-code-bottom": { paddingBottom: "12px" },
+  // Headings with room above them, more for a larger one, as Notion spaces them. Padding on
+  // the line itself, which the editor measures.
+  ".md-h1": { paddingTop: "0.9em" },
+  ".md-h2": { paddingTop: "0.7em" },
+  ".md-h3, .md-h4, .md-h5, .md-h6": { paddingTop: "0.5em" },
+  // The panel's foot, in place of the closing fence. Padding and border only: a block
+  // widget's own box is what the editor measures, so no margin outside it.
+  ".md-code-foot": {
+    height: "10px",
+    backgroundColor: "var(--code-bg)",
+    border: "1px solid var(--code-border)",
+    borderTop: "none",
+    borderBottomLeftRadius: "10px",
+    borderBottomRightRadius: "10px",
   },
   ".md-code-lang, .md-code-copy": {
     height: "24px",

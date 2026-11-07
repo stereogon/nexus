@@ -12,10 +12,9 @@ import type { EditorView } from "@codemirror/view";
 import { useEffect, useRef, useState, type RefObject } from "react";
 
 import { blockAt, moveBlock, type Block } from "../notes/blocks";
-import type { Block as Kind } from "../notes/format";
-import { formatBlock } from "../notes/markSelection";
+import { blockActions, turnInto } from "./blockMenus";
 import type { MenuAt } from "./menuPlacement";
-import { PopMenu, under, type MenuItem } from "./PopMenu";
+import { PopMenu, under } from "./PopMenu";
 
 /** The block under the pointer, and where its handle is drawn. */
 interface Hovered {
@@ -69,36 +68,6 @@ function landing(view: EditorView, y: number): { readonly before: number; readon
     : { before: target.to + 1, top: last?.bottom ?? y };
 }
 
-/**
- * What `+`'s menu turns the new line into, as Notion's does: a block type from the format
- * rules, or a code block or a divider written out.
- */
-function turnInto(editor: EditorView): MenuItem[] {
-  const as = (kind: Kind) => () => {
-    formatBlock(editor, kind);
-    editor.focus();
-  };
-  const write = (text: string, cursorAt: number) => () => {
-    const line = editor.state.doc.lineAt(editor.state.selection.main.head);
-
-    editor.dispatch({ changes: { from: line.from, to: line.to, insert: text }, selection: { anchor: line.from + cursorAt } });
-    editor.focus();
-  };
-
-  return [
-    { label: "Text", onSelect: () => { editor.focus(); } },
-    { label: "Heading 1", onSelect: as("h1") },
-    { label: "Heading 2", onSelect: as("h2") },
-    { label: "Heading 3", onSelect: as("h3") },
-    { label: "Bulleted list", onSelect: as("bullet") },
-    { label: "Numbered list", onSelect: as("numbered") },
-    { label: "To-do list", onSelect: as("task") },
-    { label: "Quote", onSelect: as("quote") },
-    { label: "Code", onSelect: write("```\n\n```", 4) },
-    { label: "Divider", onSelect: write("---\n", 4) },
-  ];
-}
-
 export function BlockHandles({
   view,
   box,
@@ -112,6 +81,8 @@ export function BlockHandles({
 }) {
   const [hovered, setHovered] = useState<Hovered | null>(null);
   const [menu, setMenu] = useState<MenuAt | null>(null);
+  // ⋮⋮'s menu, for the block it was opened on (Notion's: delete, duplicate, turn into).
+  const [actions, setActions] = useState<{ readonly at: MenuAt; readonly block: Block } | null>(null);
   // The notes when the menu opened, so the line `+` itself added does not close it.
   const openedOn = useRef<string | null>(null);
 
@@ -180,8 +151,26 @@ export function BlockHandles({
       />
     ) : null;
 
+  const actionsShown =
+    actions !== null && editor !== null ? (
+      <PopMenu
+        at={actions.at}
+        items={blockActions(editor, actions.block)}
+        label="Block"
+        onDismiss={() => {
+          setActions(null);
+        }}
+        opener="block-grip"
+      />
+    ) : null;
+
   if (hovered === null) {
-    return menuShown;
+    return (
+      <>
+        {menuShown}
+        {actionsShown}
+      </>
+    );
   }
 
   const select = (target: EditorView) => {
@@ -214,6 +203,7 @@ export function BlockHandles({
 
     event.preventDefault();
 
+    const button = event.currentTarget;
     const startY = event.clientY;
     const block = hovered.block;
     let moved = false;
@@ -240,7 +230,9 @@ export function BlockHandles({
       setDrop(null);
 
       if (!moved || before === null) {
+        // A click: the block selected, and its menu opened beside the handle.
         select(editor);
+        setActions({ at: under(button, "left", 220), block });
         return;
       }
 
@@ -278,10 +270,11 @@ export function BlockHandles({
           </svg>
         </button>
         <button
-          aria-label="Move or select this block"
+          aria-label="Move this block, or open its menu"
           className="block-handle-button grip"
+          data-opens="block-grip"
           onPointerDown={grab}
-          title="Drag to move · click to select · ⌥↑ ⌥↓ from the keyboard"
+          title="Drag to move · click for delete, duplicate, turn into · ⌥↑ ⌥↓ from the keyboard"
           type="button"
         >
           <svg aria-hidden="true" fill="currentColor" height="14" viewBox="0 0 10 14" width="10">
@@ -291,6 +284,7 @@ export function BlockHandles({
       </div>
       {drop !== null && <div aria-hidden="true" className="block-drop" style={{ top: drop - 1 }} />}
       {menuShown}
+      {actionsShown}
     </>
   );
 }

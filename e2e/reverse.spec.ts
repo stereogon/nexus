@@ -62,7 +62,8 @@ test("the indicator scrolls the notes to the citation and flashes its line", asy
 
   await expect(first).toBeInViewport();
 
-  const lit = notes(page).locator(".cm-line.md-flash-a, .cm-line.md-flash-b");
+  // A citation is a card drawn in place of its line, so the card is what lights.
+  const lit = notes(page).locator(".md-citation.md-flash-a, .md-citation.md-flash-b");
 
   await expect(lit).toHaveCount(1);
   // The class is not enough: the animation it names must exist, or the line never lights.

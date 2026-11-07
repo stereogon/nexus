@@ -17,12 +17,12 @@
 /* A citation, as the redesign canvas draws it (2026-11-07): a soft card, its page and a pin
    in the accent above the quote in the notes' italic. The page goes to the highlight. */
 .md-citation {
-  display: inline-flex;
+  position: relative;
+  display: flex;
   flex-direction: column;
   gap: 4px;
   width: 100%;
   box-sizing: border-box;
-  margin: 6px 0;
   padding: 11px 14px 12px;
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -59,6 +59,33 @@
   text-decoration: underline;
 }
 
+/* Removing the citation, at its corner, shown when the card is pointed at or focused. */
+.md-citation-remove {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-meta);
+  font-size: 12px;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.md-citation:hover .md-citation-remove,
+.md-citation-remove:focus-visible {
+  opacity: 1;
+}
+
+.md-citation-remove:hover {
+  background: var(--track);
+  color: var(--text);
+}
+
 .md-citation-quote {
   font-style: italic;
   color: var(--text-secondary);
@@ -77,16 +104,20 @@
   cursor: pointer;
 }
 
+/* The room around a drawn block: padding on a box of its own (`SpacedWidget`), never a
+   margin, which the editor would not count when placing the lines after it. */
+.md-block {
+  padding: 10px 0;
+}
+
 .md-math-display {
   display: block;
-  margin: 10px 0;
   overflow-x: auto;
   text-align: center;
 }
 
 .md-diagram,
 .md-chart {
-  margin: 8px 0;
   padding: 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -203,7 +234,6 @@ span.md-problem {
 }
 
 .md-table {
-  margin: 8px 0;
   overflow-x: auto;
 }
 

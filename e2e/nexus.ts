@@ -164,3 +164,12 @@ export async function dragAcross(page: Page, span: Locator, overshoot = 0): Prom
   await page.mouse.move(box.x + box.width - 1 + overshoot, middle, { steps: 8 });
   await page.mouse.up();
 }
+
+/**
+ * A lecture's notes as last saved, which is the Markdown itself: the window hides its marks
+ * (2026-11-07), so `# `, `**` and links are read here rather than off the screen. Polled,
+ * since a save follows typing after a pause.
+ */
+export async function saved(page: Page, directory: string = "week-2/process-overview"): Promise<string> {
+  return page.evaluate((at) => window.__NEXUS_E2E_NOTES__?.(at) ?? "", directory);
+}

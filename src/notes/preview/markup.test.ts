@@ -12,9 +12,15 @@ import { describe, expect, it } from "vitest";
 import { markupDecorations } from "./markup";
 
 /** The note, with the cursor at the end of line `cursorLine` (1-based). */
-function render(doc: string, cursorLine: number, claimed: (from: number, to: number) => boolean = () => false) {
+function render(
+  doc: string,
+  cursorLine: number,
+  claimed: (from: number, to: number) => boolean = () => false,
+  /** Where the cursor is, if not at the end of `cursorLine`. */
+  at?: number,
+) {
   const draft = EditorState.create({ doc, extensions: [markdown({ base: markdownLanguage })] });
-  const state = draft.update({ selection: EditorSelection.cursor(draft.doc.line(cursorLine).to) }).state;
+  const state = draft.update({ selection: EditorSelection.cursor(at ?? draft.doc.line(cursorLine).to) }).state;
 
   ensureSyntaxTree(state, state.doc.length, 5000);
 
@@ -119,10 +125,21 @@ describe("off the cursor's line", () => {
 });
 
 describe("on the cursor's line", () => {
-  it("shows the Markdown as written, so it can be edited", () => {
+  it("keeps the marks hidden there too, as Notion does (2026-11-07)", () => {
+    // Until 2026-11-07 the cursor's line showed its Markdown; the user asked for the marks
+    // to stay out of sight while still being Markdown underneath.
     const doc = "## Week **2**";
 
-    expect(render(doc, 1).replaced).toEqual([]);
+    expect(render(doc, 1).replaced).toEqual(["## ", "**", "**"]);
+  });
+
+  it("shows a link's address only while the cursor is inside the link", () => {
+    const doc = `See [the paper](https://raft.github.io) now.${END}`;
+    const inside = render(doc, 1, () => false, doc.indexOf("paper"));
+    const outside = render(doc, 1);
+
+    expect(inside.replaced).not.toContain("https://raft.github.io");
+    expect(outside.replaced).toContain("https://raft.github.io");
   });
 
   it("shows a table's source when the cursor is anywhere in it", () => {
@@ -131,6 +148,16 @@ describe("on the cursor's line", () => {
 
     expect(tables).toEqual([]);
     expect(lines.filter((line) => line.cls === "md-table-source")).toHaveLength(3);
+  });
+
+  it("leaves a rule as text while the cursor is inside it, as bold chosen on an empty line is", () => {
+    // Bold before writing puts `****` on the line with the cursor between the pairs; drawn
+    // as a rule, what was typed next went after it instead of between the marks.
+    const doc = `Above\n****${END}`;
+    const between = render(doc, 2, () => false, doc.indexOf("****") + 2);
+
+    expect(between.replaced).not.toContain("****");
+    expect(render(doc, 2).replaced).toContain("****");
   });
 
   it("still draws the quote's bar, so a quote being edited still reads as one", () => {

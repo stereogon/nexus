@@ -5,7 +5,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { READING, standardFixture } from "./fixture";
-import { openLecture, openNexus } from "./nexus";
+import { openLecture, openNexus, saved } from "./nexus";
 
 const notes = (page: Page) => page.getByRole("complementary", { name: "Notes" });
 
@@ -43,8 +43,7 @@ test("a pasted screenshot is kept, linked from the notes, and shown", async ({ p
   await expect.poll(() => image.evaluate((element) => element instanceof HTMLImageElement && element.naturalWidth)).toBeGreaterThan(0);
 
   // Underneath, the Markdown the spec describes.
-  await image.click();
-  await expect(notes(page).locator(".cm-content")).toContainText("![](assets/20261105-101530-pasted1.png)");
+  await expect.poll(() => saved(page)).toContain("![](assets/20261105-101530-pasted1.png)");
 });
 
 test("pasting something that only claims to be an image is refused, with a reason", async ({ page }) => {

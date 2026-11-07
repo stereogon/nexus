@@ -6,7 +6,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { READING, standardFixture } from "./fixture";
-import { openLecture, openNexus } from "./nexus";
+import { openLecture, openNexus, saved } from "./nexus";
 
 const NOTES = [
   "## Consensus",
@@ -98,10 +98,13 @@ test("list items show bullets, and a task shows a checkbox that ticks", async ({
   await expect(line(page, "read chapter 3").locator(".md-done")).toHaveCSS("text-decoration-line", "line-through");
 });
 
-test("the line the cursor is on shows its Markdown", async ({ page }) => {
+test("the line the cursor is on keeps its Markdown hidden, as Notion does", async ({ page }) => {
+  // Until 2026-11-07 the cursor's line showed its marks; the user asked for them to stay
+  // out of sight while the notes stay Markdown underneath.
   await line(page, "Raft elects").click();
 
-  await expect(line(page, "Raft elects")).toContainText("**leader**");
+  await expect(line(page, "Raft elects")).not.toContainText("**");
+  await expect.poll(() => saved(page)).toContain("**leader**");
 });
 
 test("an image from the web is not fetched, and says why", async ({ page }) => {

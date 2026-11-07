@@ -5,15 +5,15 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { READING, standardFixture } from "./fixture";
-import { openLecture, openNexus } from "./nexus";
+import { openLecture, openNexus, saved } from "./nexus";
 
 const FILLER = Array.from({ length: 40 }, (_, at) => `Filler line ${String(at + 1)}.`);
 const NOTES = ["Alpha line", "Beta line", "Gamma line", "", "# First", ...FILLER, "## Second", ...FILLER, "## Third", "The end."].join("\n");
 
 const notes = (page: Page) => page.getByRole("complementary", { name: "Notes" });
 const line = (page: Page, text: string) => notes(page).locator(".cm-line").filter({ hasText: text });
-// The notes' own lines, not the title drawn above them.
-const source = async (page: Page) => notes(page).locator(".cm-line").allInnerTexts();
+// The notes as saved: the Markdown itself, since the window hides its marks.
+const source = async (page: Page) => (await saved(page)).split("\n");
 
 test.beforeEach(async ({ page }) => {
   await openNexus(page, { ...standardFixture(), notes: { [READING.directory]: NOTES } });
@@ -24,7 +24,7 @@ test.beforeEach(async ({ page }) => {
 test("hovering a line shows its handle, and + adds a line below it, asking what it is", async ({ page }) => {
   await line(page, "Alpha line").hover();
 
-  await expect(notes(page).getByRole("button", { name: "Move or select this block" })).toBeVisible();
+  await expect(notes(page).getByRole("button", { name: "Move this block, or open its menu" })).toBeVisible();
   await notes(page).getByRole("button", { name: "Add a line below" }).click();
 
   const menu = page.getByRole("menu", { name: "Turn into" });
@@ -33,8 +33,11 @@ test("hovering a line shows its handle, and + adds a line below it, asking what 
   await expect(menu).toHaveCount(0);
   await page.keyboard.type("Inserted");
 
-  const lines = await source(page);
-  expect(lines.indexOf("- [ ] Inserted")).toBe(lines.indexOf("Alpha line") + 1);
+  await expect.poll(async () => {
+    const lines = await source(page);
+
+    return lines.indexOf("- [ ] Inserted") - lines.indexOf("Alpha line");
+  }).toBe(1);
 });
 
 test("typing after + leaves the menu behind and the new line plain", async ({ page }) => {
@@ -45,8 +48,11 @@ test("typing after + leaves the menu behind and the new line plain", async ({ pa
   await page.keyboard.type("Plain words");
 
   await expect(page.getByRole("menu", { name: "Turn into" })).toHaveCount(0);
-  const lines = await source(page);
-  expect(lines.indexOf("Plain words")).toBe(lines.indexOf("Beta line") + 1);
+  await expect.poll(async () => {
+    const lines = await source(page);
+
+    return lines.indexOf("Plain words") - lines.indexOf("Beta line");
+  }).toBe(1);
 });
 
 test("+ can start a code block, whose language menu changes its colouring", async ({ page }) => {
@@ -74,7 +80,7 @@ test("+ can start a code block, whose language menu changes its colouring", asyn
 test("dragging ⋮⋮ moves the line, and the move is saved", async ({ page }) => {
   await line(page, "Gamma line").hover();
 
-  const grip = notes(page).getByRole("button", { name: "Move or select this block" });
+  const grip = notes(page).getByRole("button", { name: "Move this block, or open its menu" });
   const from = await grip.boundingBox();
   const target = await line(page, "Alpha line").boundingBox();
 
@@ -88,18 +94,28 @@ test("dragging ⋮⋮ moves the line, and the move is saved", async ({ page }) =
   await expect(notes(page).locator(".block-drop")).toBeVisible();
   await page.mouse.up();
 
-  expect((await source(page)).slice(0, 3)).toEqual(["Gamma line", "Alpha line", "Beta line"]);
+  await expect.poll(async () => (await source(page)).slice(0, 3)).toEqual(["Gamma line", "Alpha line", "Beta line"]);
   await expect(notes(page).locator(".notes-status")).toHaveText("Saved");
 });
 
-test("clicking ⋮⋮ selects the line, so the format bar can turn it into a heading", async ({ page }) => {
+test("clicking ⋮⋮ opens the block's menu: turn it into a heading, duplicate it, delete it", async ({ page }) => {
+  const grip = notes(page).getByRole("button", { name: "Move this block, or open its menu" });
+  const menu = page.getByRole("menu", { name: "Block" });
+
   await line(page, "Beta line").hover();
-  await notes(page).getByRole("button", { name: "Move or select this block" }).click();
-
-  const bar = page.getByRole("toolbar", { name: "Format" });
-  await bar.getByRole("button", { name: "Heading 2" }).click({ delay: 150 });
-
+  await grip.click();
+  await menu.getByRole("menuitem", { name: "Turn into heading 2" }).click();
   await expect.poll(() => source(page)).toContain("## Beta line");
+
+  await line(page, "Alpha line").hover();
+  await grip.click();
+  await menu.getByRole("menuitem", { name: "Duplicate" }).click();
+  await expect.poll(async () => (await source(page)).filter((text) => text === "Alpha line")).toHaveLength(2);
+
+  await line(page, "Gamma line").hover();
+  await grip.click();
+  await menu.getByRole("menuitem", { name: "Delete" }).click();
+  await expect.poll(() => source(page)).not.toContain("Gamma line");
 });
 
 test("the headings run down the right edge, follow the reading, and take you there", async ({ page }) => {

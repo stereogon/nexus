@@ -92,7 +92,8 @@ export class CodeHeaderWidget extends WidgetType {
   }
 
   override toDOM(view: EditorView): HTMLElement {
-    const header = document.createElement("span");
+    // A block of its own above the code, in place of the opening fence line.
+    const header = document.createElement("div");
     const menu = document.createElement("select");
     const copy = document.createElement("button");
     const current = choiceFor(this.tag);
@@ -145,7 +146,13 @@ export class CodeHeaderWidget extends WidgetType {
 
     header.append(menu, copy);
 
-    return header;
+    // Room above the panel, as padding on a box of its own (see `SpacedWidget`).
+    const top = document.createElement("div");
+
+    top.className = "md-code-top";
+    top.append(header);
+
+    return top;
   }
 
   override ignoreEvent(): boolean {
@@ -164,5 +171,25 @@ export class RuleWidget extends WidgetType {
     rule.className = "md-rule";
 
     return rule;
+  }
+}
+
+/** The rounded foot of a code block, in place of its closing fence line. */
+export class CodeFootWidget extends WidgetType {
+  override eq(): boolean {
+    return true;
+  }
+
+  override toDOM(): HTMLElement {
+    const bottom = document.createElement("div");
+    const foot = document.createElement("div");
+
+    // Room below the panel, so what follows a code block is not drawn flush against it.
+    bottom.className = "md-code-bottom";
+    bottom.setAttribute("aria-hidden", "true");
+    foot.className = "md-code-foot";
+    bottom.append(foot);
+
+    return bottom;
   }
 }

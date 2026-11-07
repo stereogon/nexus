@@ -5,7 +5,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { READING, standardFixture } from "./fixture";
-import { openLecture, openNexus } from "./nexus";
+import { openLecture, openNexus, saved } from "./nexus";
 
 const NOTES = [
   "Raft elects a leader by majority.",
@@ -41,13 +41,12 @@ async function selectWord(page: Page): Promise<void> {
   await page.keyboard.press("Alt+Shift+ArrowLeft");
 }
 
-const source = (page: Page) => notes(page).locator(".cm-content");
 
 test("the bar offers formatting over a selection, and bold writes **", async ({ page }) => {
   await selectWord(page);
   await bar(page).getByRole("button", { name: "Bold" }).click({ delay: 150 });
 
-  await expect(source(page)).toContainText("**majority**");
+  await expect.poll(() => saved(page)).toContain("**majority**");
   // The words stay selected, so the bar stays, showing bold pressed.
   await expect(bar(page).getByRole("button", { name: "Bold" })).toHaveAttribute("aria-pressed", "true");
 });
@@ -57,7 +56,7 @@ test("formats combine without selecting again, as in Notion", async ({ page }) =
   await bar(page).getByRole("button", { name: "Bold" }).click({ delay: 150 });
   await bar(page).getByRole("button", { name: "Italic" }).click({ delay: 150 });
 
-  await expect(source(page)).toContainText("**_majority_**");
+  await expect.poll(() => saved(page)).toContain("**_majority_**");
 });
 
 test("pressing a format again takes it off", async ({ page }) => {
@@ -65,8 +64,8 @@ test("pressing a format again takes it off", async ({ page }) => {
   await bar(page).getByRole("button", { name: "Bold" }).click({ delay: 150 });
   await bar(page).getByRole("button", { name: "Bold" }).click({ delay: 150 });
 
-  await expect(source(page)).toContainText("Raft elects a leader by majority.");
-  await expect(source(page)).not.toContainText("**");
+  await expect.poll(() => saved(page)).toContain("Raft elects a leader by majority.");
+  await expect.poll(() => saved(page)).not.toContain("**");
 });
 
 test("the shortcuts do the same: ⌘B bold, ⌘I italic, ⌘E code", async ({ page }) => {
@@ -75,17 +74,17 @@ test("the shortcuts do the same: ⌘B bold, ⌘I italic, ⌘E code", async ({ pa
   await page.keyboard.press("Meta+I");
   await page.keyboard.press("Meta+E");
 
-  await expect(source(page)).toContainText("**_`majority`_**");
+  await expect.poll(() => saved(page)).toContain("**_`majority`_**");
 });
 
 test("a heading button turns the line into a heading, and back", async ({ page }) => {
   await selectWord(page);
   await bar(page).getByRole("button", { name: "Heading 2" }).click({ delay: 150 });
 
-  await expect(source(page)).toContainText("## Raft elects");
+  await expect.poll(() => saved(page)).toContain("## Raft elects");
 
   await bar(page).getByRole("button", { name: "Heading 2" }).click({ delay: 150 });
-  await expect(source(page)).not.toContainText("## Raft");
+  await expect.poll(() => saved(page)).not.toContain("## Raft");
 });
 
 test("a list button numbers every selected line", async ({ page }) => {
@@ -104,7 +103,7 @@ test("a link wraps the words and leaves the cursor for the address", async ({ pa
   await page.keyboard.press("Meta+K");
   await page.keyboard.type("https://raft.github.io");
 
-  await expect(source(page)).toContainText("[majority](https://raft.github.io)");
+  await expect.poll(() => saved(page)).toContain("[majority](https://raft.github.io)");
 });
 
 test("a code block is a panel: fences hidden, its language in a menu, code coloured", async ({ page }) => {

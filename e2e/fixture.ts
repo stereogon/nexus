@@ -14,6 +14,11 @@ declare global {
   interface Window {
     /** Set by `addInitScript` before the app loads. Absent means the standard fixture. */
     __NEXUS_E2E__?: Fixture;
+    /**
+     * Set by the harness: a lecture's notes as last saved. The notes hide their Markdown as
+     * Notion does (2026-11-07), so a journey reads what was written here, not off the screen.
+     */
+    __NEXUS_E2E_NOTES__?: (directory: string) => string;
     /** Set by the harness: fires a Tauri event, as the native side does for a file drag. */
     __NEXUS_E2E_EMIT__?: (event: string, payload: unknown) => Promise<void>;
   }

@@ -69,8 +69,13 @@ in a folder you choose. Nothing leaves your Mac.
 - A Notion-style format bar over a selection, or docked open from the notes' **Aa** button
   to choose a format before writing; shortcuts too, plus highlighting in the notes in the
   same four meanings.
+- Markdown underneath, never on screen: `# ` makes a heading and disappears, as in Notion.
+  Copying gives the Markdown.
 - Notion-style handles: hover a line for `+` (add a line below) and `⋮⋮` (drag to move it,
-  or click to select it); headings appear as dashes down the right edge, to jump between.
+  or click for Delete, Duplicate and Turn into); headings appear as dashes down the right
+  edge, to jump between.
+- Citations and images are elements: kept or removed whole. Typing ``` opens a code block
+  to write in.
 - To-dos are drawn as boxes; a done one is struck through.
 - Saves as you type. The divider between document and notes can be dragged, and its width
   is remembered on this Mac.

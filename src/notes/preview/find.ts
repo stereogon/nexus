@@ -30,6 +30,11 @@ export type Preview =
 
 /** The citation line `lecture_core::citation_block` writes; see `notes/citation.ts`. */
 const CITATION = /^> 📌 \*\*\[Page (\d+)\]\(cite:\/\/([A-Za-z0-9_-]+)\)\*\*(?:: \*"(.*)"\*)?\s*$/u;
+
+/** Whether a line is a citation, which the notes draw as one element. */
+export function isCitationLine(line: string): boolean {
+  return CITATION.test(line);
+}
 const FENCE = /^(`{3,}|~{3,})\s*([\w-]*)/;
 /**
  * `![alt](path)`, with the optional title CommonMark allows after the path —

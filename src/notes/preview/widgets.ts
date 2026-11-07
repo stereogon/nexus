@@ -33,19 +33,21 @@ export class CitationWidget extends WidgetType {
     readonly id: string,
     readonly quote: string | null,
     readonly onCite: (id: string) => void,
+    /** The flash class while the notes are being taken to this citation, or empty. */
+    readonly lit: string = "",
   ) {
     super();
   }
 
   override eq(other: CitationWidget): boolean {
-    return other.page === this.page && other.id === this.id && other.quote === this.quote;
+    return other.page === this.page && other.id === this.id && other.quote === this.quote && other.lit === this.lit;
   }
 
-  override toDOM(): HTMLElement {
+  override toDOM(view: EditorView): HTMLElement {
     const card = document.createElement("span");
     const jump = document.createElement("button");
 
-    card.className = "md-citation";
+    card.className = this.lit === "" ? "md-citation" : `md-citation ${this.lit}`;
     jump.className = "md-citation-page";
     jump.type = "button";
     jump.dataset["cite"] = this.id;
@@ -68,6 +70,27 @@ export class CitationWidget extends WidgetType {
     });
     card.append(jump);
 
+    // A citation is an element, kept or deleted whole (2026-11-07): this removes its line.
+    const remove = document.createElement("button");
+
+    remove.className = "md-citation-remove";
+    remove.type = "button";
+    remove.setAttribute("aria-label", "Remove citation");
+    remove.title = "Remove citation";
+    remove.textContent = "✕";
+    remove.addEventListener("mousedown", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const doc = view.state.doc;
+      const line = doc.lineAt(view.posAtDOM(card));
+      const span = line.number < doc.lines ? { from: line.from, to: line.to + 1 } : { from: Math.max(0, line.from - 1), to: line.to };
+
+      view.dispatch({ changes: span });
+      view.focus();
+    });
+    card.append(remove);
+
     if (this.quote !== null) {
       const quote = document.createElement("span");
 
@@ -80,7 +103,7 @@ export class CitationWidget extends WidgetType {
   }
 
   override ignoreEvent(event: Event): boolean {
-    return event.target instanceof Element && event.target.closest(".md-citation-page") !== null;
+    return event.target instanceof Element && event.target.closest(".md-citation-page, .md-citation-remove") !== null;
   }
 }
 
@@ -177,5 +200,43 @@ export class ImageWidget extends WidgetType {
 
   override ignoreEvent(): boolean {
     return false;
+  }
+}
+
+/**
+ * A block widget with room above and below it, as Notion spaces its elements (2026-11-07).
+ * The room is padding on a box of its own: the editor measures a block widget's own box to
+ * place the lines after it, and a margin outside it — as each card here used to have — put
+ * the line under the pointer a little further off with every block above it, until the
+ * handle's + appeared beside the wrong line (reported from a screenshot, 2026-11-07).
+ */
+export class SpacedWidget extends WidgetType {
+  constructor(readonly inner: WidgetType) {
+    super();
+  }
+
+  override eq(other: SpacedWidget): boolean {
+    return other instanceof SpacedWidget && this.inner.constructor === other.inner.constructor && this.inner.eq(other.inner);
+  }
+
+  override toDOM(view: EditorView): HTMLElement {
+    const block = document.createElement("div");
+
+    block.className = "md-block";
+    block.append(this.inner.toDOM(view));
+
+    return block;
+  }
+
+  override ignoreEvent(event: Event): boolean {
+    return this.inner.ignoreEvent(event);
+  }
+
+  override destroy(dom: HTMLElement): void {
+    const inner = dom.firstElementChild;
+
+    if (inner instanceof HTMLElement) {
+      this.inner.destroy(inner);
+    }
   }
 }

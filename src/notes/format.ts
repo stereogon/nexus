@@ -120,6 +120,18 @@ export function cursorInside(line: string, offset: number, inline: Inline): bool
 /** A line's block prefix: indentation, then a heading, list, task or quote marker. */
 const PREFIX = /^(\s*)(#{1,6}\s+|[-*+]\s+\[[ xX]\]\s+|[-*+]\s+|\d+[.)]\s+|>\s?)?/;
 
+/**
+ * How much of a line's start is a mark the notes keep hidden — a heading's `# `, a list's
+ * `- `, a to-do's `- [ ] `, a quote's `> ` — or 0 for none. A numbered list's `1. ` is
+ * shown, so it is not counted: there is no hidden text to type in front of.
+ */
+export function hiddenPrefix(line: string): number {
+  const match = PREFIX.exec(line);
+  const marker = match?.[2] ?? "";
+
+  return marker === "" || /^\d/.test(marker) ? 0 : (match?.[1]?.length ?? 0) + marker.length;
+}
+
 /** What kind of block a line is. */
 export function blockOf(line: string): Block {
   const marker = PREFIX.exec(line)?.[2] ?? "";

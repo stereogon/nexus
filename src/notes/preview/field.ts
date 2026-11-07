@@ -9,14 +9,15 @@
  * changed.
  */
 import { syntaxTree } from "@codemirror/language";
-import { StateField, type EditorState, type Extension } from "@codemirror/state";
+import { RangeSetBuilder, StateField, type EditorState, type Extension } from "@codemirror/state";
 import { Decoration, EditorView, type DecorationSet, type WidgetType } from "@codemirror/view";
 
 import { ChartWidget, MermaidWidget } from "./diagrams";
+import { flashLine, flashOn } from "../flash";
 import { findPreviews, type Preview } from "./find";
 import { activeLines, markupDecorations } from "./markup";
 import { noteMarkDecorations } from "./noteMarks";
-import { CitationWidget, ImageWidget, MathWidget } from "./widgets";
+import { CitationWidget, ImageWidget, MathWidget, SpacedWidget } from "./widgets";
 
 export interface PreviewContext {
   /** A citation's page button was pressed. */
@@ -32,13 +33,27 @@ function touched(state: EditorState, from: number, to: number): boolean {
 
 /** Drawn as a block of its own, replacing whole lines. */
 function isBlock(preview: Preview): boolean {
-  return preview.kind === "mermaid" || preview.kind === "chart" || (preview.kind === "math" && preview.display);
+  return (
+    preview.kind === "citation" ||
+    preview.kind === "mermaid" ||
+    preview.kind === "chart" ||
+    (preview.kind === "math" && preview.display)
+  );
 }
 
-function widgetFor(preview: Preview, context: PreviewContext): WidgetType {
+/**
+ * Whether a preview opens into its Markdown while the cursor is in it. A formula or a
+ * diagram is written as source, so it opens to be edited; a citation or an image is an
+ * element, as in Notion — kept or deleted whole, never edited (2026-11-07).
+ */
+function opens(preview: Preview): boolean {
+  return preview.kind !== "citation" && preview.kind !== "image";
+}
+
+function widgetFor(preview: Preview, context: PreviewContext, lit: string): WidgetType {
   switch (preview.kind) {
     case "citation":
-      return new CitationWidget(preview.page, preview.id, preview.quote, context.onCite);
+      return new CitationWidget(preview.page, preview.id, preview.quote, context.onCite, lit);
     case "math":
       return new MathWidget(preview.tex, preview.display);
     case "mermaid":
@@ -52,11 +67,13 @@ function widgetFor(preview: Preview, context: PreviewContext): WidgetType {
 
 function decorations(state: EditorState, context: PreviewContext): DecorationSet {
   const previews = findPreviews(state.doc.toString()).filter(
-    (preview) => !touched(state, preview.from, preview.to),
+    (preview) => !opens(preview) || !touched(state, preview.from, preview.to),
   );
   const claimed = (from: number, to: number) =>
     previews.some((preview) => preview.from <= from && to <= preview.to);
   const markup = markupDecorations(state, claimed);
+  const flash = flashOn(state);
+  const litAt = (from: number) => (flash !== null && state.doc.lineAt(from).from === flash.at ? flash.cls : "");
   const tables = markup.tables;
 
   // A rendered table replaces its lines whole, so a formula or image inside one is drawn
@@ -68,7 +85,12 @@ function decorations(state: EditorState, context: PreviewContext): DecorationSet
   return Decoration.set(
     [
       ...outside.map((preview) =>
-        Decoration.replace({ widget: widgetFor(preview, context), block: isBlock(preview) }).range(
+        Decoration.replace({
+          widget: isBlock(preview)
+            ? new SpacedWidget(widgetFor(preview, context, litAt(preview.from)))
+            : widgetFor(preview, context, litAt(preview.from)),
+          block: isBlock(preview),
+        }).range(
           preview.from,
           preview.to,
         ),
@@ -88,9 +110,30 @@ export function livePreview(context: PreviewContext): Extension {
     update: (current, transaction) =>
       transaction.docChanged ||
       transaction.selection !== undefined ||
+      transaction.effects.some((effect) => effect.is(flashLine)) ||
       syntaxTree(transaction.startState) !== syntaxTree(transaction.state)
         ? decorations(transaction.state, context)
         : current,
-    provide: (field) => EditorView.decorations.from(field),
+    provide: (field) => [
+      EditorView.decorations.from(field),
+      // What is hidden or drawn in place of the text is stepped over whole, so the cursor
+      // never stands inside a hidden `**` or a citation. Only replacements: a mark (bold,
+      // a highlight) is ordinary text the cursor moves through.
+      EditorView.atomicRanges.of((view) => {
+        const atomic = new RangeSetBuilder<Decoration>();
+
+        const at = view.state.field(field).iter();
+
+        while (at.value !== null) {
+          if (at.value.point && at.from < at.to) {
+            atomic.add(at.from, at.to, at.value);
+          }
+
+          at.next();
+        }
+
+        return atomic.finish();
+      }),
+    ],
   });
 }

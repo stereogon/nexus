@@ -29,6 +29,7 @@ import { codeLanguages } from "../notes/codeLanguages";
 import { flashLine, lineFlash } from "../notes/flash";
 import { citationAt } from "../notes/insert";
 import { livePreview } from "../notes/preview/field";
+import { blockKeys } from "../notes/blockKeys";
 import { pageHeading, setHeading, type PageHeading } from "../notes/pageHeading";
 import { pasteImages } from "../notes/pasteImage";
 import { notePage, notesAppearance } from "../notes/theme";
@@ -154,6 +155,7 @@ export function NotesEditor({
             cited.current(id);
           }),
           pasteImages(() => pasted.current),
+          blockKeys,
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
               changed.current(update.state.doc.toString());

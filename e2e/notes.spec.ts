@@ -4,7 +4,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { READING } from "./fixture";
-import { bed, dragAcross, openLecture, openNexus, pageField, settleOn, textOn } from "./nexus";
+import { bed, dragAcross, openLecture, openNexus, pageField, settleOn, textOn, saved } from "./nexus";
 
 const MENU = { name: "Highlight as" } as const;
 
@@ -56,8 +56,7 @@ test("Link to notes cites a selection at the cursor, as a badge", async ({ page 
 
   // Underneath, the Markdown is exactly the line `lecture_core::citation_block` writes,
   // cited by the id the highlight was stored under.
-  await notes(page).locator(".md-citation-quote").click();
-  await expect(editor(page)).toContainText('> 📌 **[Page 1](cite://e2e-1)**: *"Body text on page 1"*');
+  await expect.poll(() => saved(page)).toContain('> 📌 **[Page 1](cite://e2e-1)**: *"Body text on page 1"*');
 });
 
 test("a citation's badge takes the document to its highlight, and pulses it", async ({ page }) => {

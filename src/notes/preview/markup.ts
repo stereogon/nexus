@@ -19,8 +19,9 @@ import { syntaxTree } from "@codemirror/language";
 import type { EditorState, Range } from "@codemirror/state";
 import { Decoration } from "@codemirror/view";
 
-import { BulletWidget, CheckboxWidget, CodeHeaderWidget, RuleWidget } from "./markupWidgets";
+import { BulletWidget, CheckboxWidget, CodeFootWidget, CodeHeaderWidget, RuleWidget } from "./markupWidgets";
 import { parseTable, TableWidget } from "./table";
+import { SpacedWidget } from "./widgets";
 
 const hidden = Decoration.replace({});
 
@@ -55,7 +56,11 @@ export function markupDecorations(
   const active = activeLines(state);
   const doc = state.doc;
   const lineOf = (at: number) => doc.lineAt(at).number;
-  const offLine = (at: number) => !active.has(lineOf(at));
+  // Whether a cursor or selection is within `from`–`to`: only a link's address is shown
+  // then, since there is no other way to edit it. Every other mark stays hidden, as Notion
+  // keeps them (2026-11-07): the notes are still Markdown, and copying shows it.
+  const within = (from: number, to: number) =>
+    state.selection.ranges.some((range) => range.from >= from && range.to <= to);
   const lineClass = (from: number, to: number, className: string) => {
     for (let line = lineOf(from); line <= lineOf(to); line += 1) {
       out.push(Decoration.line({ class: className }).range(doc.line(line).from));
@@ -68,34 +73,30 @@ export function markupDecorations(
   let lists = 0;
 
   /**
-   * A fenced code block: one panel, its fences hidden and a header in place of the first —
-   * the language menu and Copy — unless the cursor is on a fence line. Reported 2026-11-05 — the ``` lines showed as text in
-   * a flat grey box, and nothing was coloured.
+   * A fenced code block: one panel, its fence lines drawn as blocks — the header, with the
+   * language menu and Copy, above; a rounded foot below — so the cursor can never stand on
+   * them. Hidden but still lines, the closing fence was where a click below the code put
+   * the cursor, and typing there went after the backticks and broke the block (reported
+   * 2026-11-07).
    */
   const codeBlock = (from: number, to: number) => {
     const first = doc.lineAt(from);
     const last = doc.lineAt(to);
     const closed = last.number > first.number && /^\s*(`{3,}|~{3,})\s*$/.test(last.text);
-    // Only the fence lines themselves show their Markdown when the cursor is on them;
-    // writing inside the block keeps its header, as Notion's does.
-    const touched = active.has(first.number) || (closed && active.has(last.number));
+    const lastBody = closed ? last.number - 1 : last.number;
 
-    for (let number = first.number; number <= last.number; number += 1) {
-      const edges = [number === first.number ? "md-code-first" : "", number === last.number ? "md-code-last" : ""];
-
-      out.push(Decoration.line({ class: ["md-code-line", ...edges].join(" ").trim() }).range(doc.line(number).from));
-    }
-
-    if (touched) {
-      return;
+    for (let number = first.number + 1; number <= lastBody; number += 1) {
+      out.push(Decoration.line({ class: "md-code-line" }).range(doc.line(number).from));
     }
 
     const language = /^\s*(?:`{3,}|~{3,})\s*([\w+#.-]*)/.exec(first.text)?.[1] ?? "";
 
-    out.push(Decoration.replace({ widget: new CodeHeaderWidget(language, first.from) }).range(first.from, first.to));
+    out.push(
+      Decoration.replace({ widget: new CodeHeaderWidget(language, first.from), block: true }).range(first.from, first.to),
+    );
 
     if (closed) {
-      out.push(hidden.range(last.from, last.to));
+      out.push(Decoration.replace({ widget: new CodeFootWidget(), block: true }).range(last.from, last.to));
     }
   };
 
@@ -122,12 +123,23 @@ export function markupDecorations(
           if (table === null || touched) {
             lineClass(node.from, node.to, "md-table-source");
           } else {
-            out.push(Decoration.replace({ widget: new TableWidget(source, table), block: true }).range(node.from, node.to));
+            out.push(
+              Decoration.replace({ widget: new SpacedWidget(new TableWidget(source, table)), block: true }).range(node.from, node.to),
+            );
             tables.push({ from: node.from, to: node.to });
           }
 
           return false;
         }
+
+        case "ATXHeading1":
+        case "ATXHeading2":
+        case "ATXHeading3":
+        case "ATXHeading4":
+        case "ATXHeading5":
+        case "ATXHeading6":
+          lineClass(node.from, node.to, `md-h${node.name.slice(-1)}`);
+          return true;
 
         case "InlineCode":
           out.push(Decoration.mark({ class: "md-inline-code" }).range(node.from, node.to));
@@ -144,30 +156,34 @@ export function markupDecorations(
 
         case "QuoteMark":
         case "HeaderMark":
-          if (offLine(node.from)) {
-            hideWithSpace(node.from, node.to);
-          }
+          hideWithSpace(node.from, node.to);
           return true;
 
         case "EmphasisMark":
         case "StrikethroughMark":
         case "CodeMark":
+          out.push(hidden.range(node.from, node.to));
+          return true;
+
         case "LinkMark":
         case "URL":
-        case "LinkTitle":
-          if (offLine(node.from)) {
+        case "LinkTitle": {
+          const link = node.node.parent;
+
+          if (link === null || !within(link.from, link.to)) {
             out.push(hidden.range(node.from, node.to));
           }
           return true;
+        }
 
         case "ListMark": {
           // A to-do is drawn as its box alone, as the canvas draws it: the list's own `-`
           // before it would put a bullet beside the box.
           const isTask = (node.node.parent?.getChild("Task") ?? null) !== null;
 
-          if (offLine(node.from) && isTask) {
+          if (isTask) {
             hideWithSpace(node.from, node.to);
-          } else if (offLine(node.from) && node.node.parent?.parent?.name === "BulletList") {
+          } else if (node.node.parent?.parent?.name === "BulletList") {
             out.push(Decoration.replace({ widget: new BulletWidget(lists - 1) }).range(node.from, node.to));
           }
           return true;
@@ -177,9 +193,7 @@ export function markupDecorations(
           const checked = /x/i.test(doc.sliceString(node.from, node.to));
           const task = node.node.parent;
 
-          if (offLine(node.from)) {
-            out.push(Decoration.replace({ widget: new CheckboxWidget(checked, node.from) }).range(node.from, node.to));
-          }
+          out.push(Decoration.replace({ widget: new CheckboxWidget(checked, node.from) }).range(node.from, node.to));
 
           // Done is struck through and quieter, whether or not the cursor is on the line.
           if (checked && task !== null && task.to > node.to) {
@@ -189,7 +203,9 @@ export function markupDecorations(
         }
 
         case "HorizontalRule":
-          if (offLine(node.from)) {
+          // A cursor strictly inside means it is still being written: bold chosen on an
+          // empty line writes `****`, which is a rule until the words go between the marks.
+          if (!state.selection.ranges.some((range) => range.from > node.from && range.to < node.to)) {
             out.push(Decoration.replace({ widget: new RuleWidget() }).range(node.from, node.to));
           }
           return true;

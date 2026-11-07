@@ -463,6 +463,55 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-07 · Notes as Notion writes them: hidden Markdown, elements, room, a block menu**
+The user: *"i am not liking the md things that are visible on the line we are on … if we
+type # somthing, it become heading but # is not visible. when we copy, it might become
+visible … the citations should not be editable … like an elemenet in notion … when i add a
+codeblock … my cursor always goes to the end of ''' ending backtciks"*; then *"every
+element should have some margin … we don't have a delete element optino"*; then, with a
+screenshot, *"the + symbol is appearing on the next line, instead of the same line"*.
+
+**The Markdown stays hidden on the cursor's line too.** The notes are still Markdown on
+disk and on the clipboard; only a link's address shows, while the cursor is inside the
+link, since there is no other way to edit it. This retires the line-level reveal recorded
+on 2026-11-05. With the marks hidden, some cursor positions would type into text nobody
+can see, so `blockKeys.ts` keeps a resting cursor off them (`settled`): past a hidden
+prefix (Home on a to-do lands between its hidden `- ` and its box), off a citation, off a
+code block's fences. ← from the start of a heading's words goes up a line rather than being
+settled back where it was. Backspace at the start of a heading's or to-do's words needed no
+code: CodeMirror's own Backspace deletes a hidden range whole. A first version had a branch
+for it, and a sabotage run showed the branch made no difference, so it was removed.
+
+**Citations and images are elements**, never opened into their Markdown. A citation has a
+✕ at its corner, and Backspace at the start of the line after it removes it whole. The
+indicator's flash now lights the card.
+
+**Code blocks you can type into.** The fence lines are drawn as the panel's header and
+foot, as block replacements, so a click below the code can no longer put the cursor after
+the closing backticks — the cause of the report. Typing ``` on an empty line opens a closed
+block with the cursor inside; Backspace in an empty block removes it; Backspace just after a
+block goes into its last line.
+
+**Room around every element, and the + misalignment.** Drawn blocks get their room from
+padding on a box of their own (`SpacedWidget`), and headings from padding on their line —
+never a margin, which CodeMirror does not count when placing the lines after a widget. The
+margins were why + sat a line low after a citation: the editor believed every line below was
+higher than it was.
+
+**A block menu:** clicking ⋮⋮ without dragging opens Delete, Duplicate and "Turn into"
+(`blockMenus.ts`).
+
+**Found on the way:** bold chosen on an empty line writes `****`, which the parser reads as
+a horizontal rule; drawn as one, what was typed next went after it. A rule with the cursor
+strictly inside it is now left as text.
+
+Verified: gate green. `blockKeys.test.ts` (9), `markup.test.ts` (15, two new); journeys in
+`hiddenMarks.spec.ts` (7), the ⋮⋮ menu, and the citation ✕. Each journey was proved by
+sabotage — `blockKeys` removed, the code panel's bottom padding zeroed, the rule guard
+dropped, the go-up rule dropped — and passed again once restored. Journeys that read
+Markdown off the screen now read the notes as saved (`saved(page)`), since the screen no
+longer shows it.
+
 **2026-11-07 · Notes' title and line under it; citations as cards; two fixes found on the way**
 The user, with the canvas's notes beside a document and its "Monday plans": *"why does the
 citaions don't look like this, and there is no header and sutitle in the notes ?"*
