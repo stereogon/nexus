@@ -1,7 +1,7 @@
 /**
  * The vault, one folder at a time.
  *
- * The vault switcher and the "+" (`SidebarHead`), search across the whole vault, a
+ * The vault switcher and the "+" (`SidebarHead`), the control that opens ⌘P search, a
  * breadcrumb saying which folder is showing, its folders and items, and the library, errors
  * and theme controls at the foot (`SidebarFoot`). Whatever is added goes into the folder on
  * screen, so nothing has to be filed afterwards.
@@ -11,7 +11,7 @@
  * Laid out from the redesign canvas (2026-11-07), which drew the folder sidebar chosen with
  * the user on 2026-11-06 (`sidebarRows.ts` says why).
  */
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 
 import type { LectureRow, ProblemRow } from "../ipc/vault";
 import { nameOf, trail, vaultNameOf } from "./folders";
@@ -19,7 +19,6 @@ import { SidebarFoot } from "./SidebarFoot";
 import { SidebarHead } from "./SidebarHead";
 import { Folder, Lecture, NameField, Problems } from "./SidebarLecture";
 import type { Making, SidebarRow } from "./sidebarRows";
-import { SEARCH_ID } from "./useSidebar";
 
 function SearchIcon() {
   return (
@@ -91,13 +90,11 @@ export function Sidebar({
   rows,
   root,
   folder,
-  query,
   busy,
   openDirectory,
   skipped,
   unloadable,
   onFolder,
-  onQuery,
   onOpen,
   onEdit,
   onMake,
@@ -105,19 +102,17 @@ export function Sidebar({
   onHide,
   onChooseVault,
   foot,
-  hits,
+  onSearch,
 }: {
   readonly rows: readonly SidebarRow[];
   readonly root: string;
   /** The folder showing; `""` is the top of the vault. */
   readonly folder: string;
-  readonly query: string;
   readonly busy: boolean;
   readonly openDirectory: string | null;
   readonly skipped: readonly ProblemRow[];
   readonly unloadable: readonly ProblemRow[];
   readonly onFolder: (path: string) => void;
-  readonly onQuery: (text: string) => void;
   readonly onOpen: (lecture: LectureRow) => void;
   readonly onEdit: (lecture: LectureRow) => void;
   /** Makes a note or folder of that name in the folder showing. */
@@ -128,11 +123,10 @@ export function Sidebar({
   readonly onChooseVault: () => void;
   /** The library, error panel and theme controls at the foot. */
   readonly foot: Omit<Parameters<typeof SidebarFoot>[0], "root">;
-  /** What the search found inside items, below the matching names; `null` when not searching. */
-  readonly hits: ReactNode;
+  /** Opens the ⌘P search window. */
+  readonly onSearch: () => void;
 }) {
   const [making, setMaking] = useState<Making | null>(null);
-  const searching = query.trim() !== "";
 
   return (
     <aside className="sidebar">
@@ -146,23 +140,14 @@ export function Sidebar({
       />
 
       <div className="sidebar-search">
-        <label className="vh" htmlFor={SEARCH_ID}>
-          Search vault
-        </label>
-        <SearchIcon />
-        <input
-          id={SEARCH_ID}
-          onChange={(event) => {
-            onQuery(event.target.value);
-          }}
-          placeholder="Search everything"
-          type="search"
-          value={query}
-        />
-        <span className="kbd">⌘P</span>
+        <button className="search-open" onClick={onSearch} type="button">
+          <SearchIcon />
+          <span>Search everything</span>
+          <span className="kbd">⌘P</span>
+        </button>
       </div>
 
-      {!searching && <Crumbs folder={folder} onFolder={onFolder} root={root} />}
+      <Crumbs folder={folder} onFolder={onFolder} root={root} />
 
       <div className="sidebar-list">
         {making !== null && (
@@ -178,11 +163,9 @@ export function Sidebar({
           />
         )}
 
-        {rows.length === 0 && hits === null && making === null && (
+        {rows.length === 0 && making === null && (
           <p className="sidebar-empty">
-            {searching
-              ? `Nothing matches “${query.trim()}”.`
-              : "Nothing here yet. Make a note or a folder with +, or drop a PDF, PowerPoint or Word file on the window."}
+            Nothing here yet. Make a note or a folder with +, or drop a PDF, PowerPoint or Word file on the window.
           </p>
         )}
 
@@ -201,7 +184,6 @@ export function Sidebar({
           ),
         )}
 
-        {hits}
 
         <Problems problems={skipped} title="Folders skipped" />
         <Problems problems={unloadable} title="Could not be read" />

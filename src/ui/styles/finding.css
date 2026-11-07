@@ -1,57 +1,8 @@
 /**
- * Finding things: search results inside lectures, under the sidebar's matching titles, and
- * the highlights library in the document pane.
- *
- * Neither is on the canvas — both were asked for after the artboards were drawn — so they
- * borrow what the window already has: the sidebar's overline and row type, the four
- * meanings' colours with their letters (§3), and the brand accent for what is matched.
- * Recorded in `PROGRESS.md` as owing a pass from the canvas.
+ * Finding things: the words around a match, the four meanings' letters as small glyphs,
+ * and the highlights library in the document pane. The ⌘P window's own layout is in
+ * `search.css`.
  */
-
-/* Search results in the sidebar. */
-.search-hits {
-  margin-top: 6px;
-  padding-top: 4px;
-  border-top: 1px solid var(--border);
-}
-
-.search-hit-lecture {
-  margin-bottom: 8px;
-}
-
-.search-hit-title {
-  margin: 6px 8px 2px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text);
-}
-
-.search-hit {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  width: 100%;
-  padding: 5px 8px;
-  border: none;
-  border-radius: 6px;
-  background: none;
-  color: var(--text-secondary);
-  font: inherit;
-  font-size: 12px;
-  text-align: left;
-  cursor: pointer;
-}
-
-.search-hit:hover,
-.search-hit:focus-visible {
-  background: var(--track);
-  color: var(--text);
-}
-
-.search-hit-where {
-  color: var(--text-meta);
-  font-size: 11px;
-}
 
 .search-snippet {
   overflow-wrap: anywhere;
@@ -65,14 +16,8 @@
   color: inherit;
 }
 
-.search-hit-more {
-  margin: 0 8px 4px;
-  color: var(--text-meta);
-  font-size: 11px;
-}
-
 /* A meaning's letter on its colour, as on the page. */
-.search-hit-badge,
+.search-glyph,
 .library-glyph {
   display: inline-flex;
   align-items: center;
@@ -88,23 +33,23 @@
   vertical-align: middle;
 }
 
-.search-hit-badge[data-semantic="key"],
+.search-glyph[data-semantic="key"],
 .library-glyph[data-kind="key"] {
   background: var(--semantic-key);
   color: var(--semantic-key-ink);
 }
 
-.search-hit-badge[data-semantic="definition"],
+.search-glyph[data-semantic="definition"],
 .library-glyph[data-kind="definition"] {
   background: var(--semantic-definition);
 }
 
-.search-hit-badge[data-semantic="exam"],
+.search-glyph[data-semantic="exam"],
 .library-glyph[data-kind="exam"] {
   background: var(--semantic-exam);
 }
 
-.search-hit-badge[data-semantic="question"],
+.search-glyph[data-semantic="question"],
 .library-glyph[data-kind="question"] {
   background: var(--semantic-question);
 }

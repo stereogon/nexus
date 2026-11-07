@@ -57,12 +57,10 @@ function show(
   over: Partial<Parameters<typeof Sidebar>[0]> = {},
 ) {
   const folder = over.folder ?? "";
-  const query = over.query ?? "";
   const props = {
-    rows: sidebarRows(listing, folder, query),
+    rows: sidebarRows(listing, folder, ""),
     root: "/Users/me/NexusVault",
     folder,
-    query,
     busy: false,
     openDirectory: null,
     skipped: [],
@@ -76,7 +74,7 @@ function show(
     onHide: vi.fn(),
     onChooseVault: vi.fn(),
     foot: footing(),
-    hits: null,
+    onSearch: vi.fn(),
     ...over,
   };
 
@@ -116,19 +114,6 @@ describe("what the sidebar shows", () => {
     show({ folders: ["Empty"], lectures: [] }, { folder: "Empty" });
 
     expect(screen.getByText(/Nothing here yet/)).not.toBeNull();
-  });
-
-  it("says what was searched for when nothing matches", () => {
-    show(VAULT, { query: "thermodynamics" });
-
-    expect(screen.getByText("Nothing matches “thermodynamics”.")).not.toBeNull();
-  });
-
-  it("searches the whole vault, and says where each result is", () => {
-    show(VAULT, { query: "raft" });
-
-    expect(screen.getByRole("button", { name: "Raft, in CS454 / Week 3" })).not.toBeNull();
-    expect(screen.queryByRole("navigation", { name: "Folder" })).toBeNull();
   });
 
   it("shortens the vault path and keeps the whole one available", () => {
@@ -242,15 +227,19 @@ describe("what the sidebar calls", () => {
 
     expect(props.onHide).toHaveBeenCalledOnce();
   });
+
+  it("opens the search window from its control, which says the shortcut", () => {
+    const props = show(VAULT);
+    const control = screen.getByRole("button", { name: /Search everything/u });
+
+    fireEvent.click(control);
+
+    expect(props.onSearch).toHaveBeenCalledOnce();
+    expect(control.textContent).toContain("⌘P");
+  });
 });
 
 describe("what the sidebar tells assistive technology", () => {
-  it("gives the search field a label, since its placeholder is not one", () => {
-    show(VAULT);
-
-    expect(screen.getByLabelText("Search vault")).not.toBeNull();
-  });
-
   it("marks the item being read", () => {
     show(VAULT, { openDirectory: "loose" });
 

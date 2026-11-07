@@ -85,14 +85,16 @@ test("moving the open document takes it, and the sidebar, to its new folder", as
 
 test("searching looks through every folder and says where each result is", async ({ page }) => {
   await showFolderOf(page, OTHER.title);
-  await page.getByLabel("Search vault").fill("Process");
+  await page.getByRole("button", { name: /Search everything/u }).click();
+  await page.keyboard.type("Process");
 
-  await expect(
-    sidebar(page).getByRole("button", { name: `${READING.title}, in week-2`, exact: true }),
-  ).toBeVisible();
+  const found = page.getByRole("listbox", { name: "Results" }).getByRole("option").filter({ hasText: READING.title });
 
-  await sidebar(page).getByLabel("Search vault").fill("");
-  await expect(crumbs(page)).toBeVisible();
+  await expect(found).toContainText("week-2");
+  await found.click();
+
+  // Opening it shows its folder in the sidebar, whichever one was showing.
+  await expect(crumbs(page).getByRole("button", { name: "week-2" })).toHaveAttribute("aria-current", "location");
 });
 
 test("deleting the open document closes it, asks first, and takes it out of the list", async ({ page }) => {

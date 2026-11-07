@@ -88,7 +88,8 @@ test("⌘Z in a text box undoes the typing there, never a highlight", async ({ p
   // case the check for typing exists for.
   await highlightHeading(page);
 
-  await page.getByRole("searchbox", { name: "Search vault" }).fill("raft");
+  await page.keyboard.press("Meta+p");
+  await page.getByRole("combobox").fill("raft");
   await page.keyboard.press("Meta+z");
   await page.keyboard.press("Meta+z");
 

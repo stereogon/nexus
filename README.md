@@ -35,8 +35,8 @@ in a folder you choose. Nothing leaves your Mac.
 - **Plain notes**: `+ Note` makes a note with no document beside it, written full width.
 - `+ Folder` makes a folder; the edit panel moves an item to another one, taking its notes,
   highlights and remembered place with it.
-- Search (`⌘P`) across every folder — names, and inside every item's notes and highlighted
-  text; each result says which folder it is in, and opens at that line or highlight.
+- Search everything with `⌘P`: a window listing names, lines of notes and highlights from
+  every folder, each saying where it is. `↑`/`↓` to choose, `↵` to open at that place.
 - A **Highlights library** of every highlight in the vault, filterable by meaning, folder
   and words — "every exam point in Week 3".
 - Import with `Import…`, the file picker (`⌘O`) or by dropping files on the window. PDFs are
@@ -109,7 +109,7 @@ Recorded in [`PROGRESS.md`](./PROGRESS.md) with the reasoning for each:
 | Shortcut | Action |
 |---|---|
 | `⌘O` | Import a document |
-| `⌘P` | Search names, notes and highlights in every folder |
+| `⌘P` | Search window: names, notes and highlights in every folder |
 | `⌘F` | Find in the open document |
 | `⌘\` | Show or hide the notes |
 | `⌘Z` / `⌘⇧Z` | Undo / redo highlights and sticky notes (in the notes: your typing) |

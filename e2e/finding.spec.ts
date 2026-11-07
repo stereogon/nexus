@@ -35,27 +35,37 @@ function fixture(): Fixture {
   };
 }
 
-const search = (page: Page) => page.getByRole("searchbox", { name: "Search vault" });
-const hits = (page: Page) => page.getByRole("region", { name: "Found in notes and highlights" });
+/** Opens the ⌘P window and answers its field. */
+async function search(page: Page) {
+  await page.keyboard.press("Meta+p");
+
+  return page.getByRole("dialog", { name: "Search everything" }).getByRole("combobox");
+}
+
+const results = (page: Page) => page.getByRole("listbox", { name: "Results" });
+const result = (page: Page, text: string) => results(page).getByRole("option").filter({ hasText: text });
 const library = (page: Page) => page.getByRole("main", { name: "Highlights" });
 
 test.beforeEach(async ({ page }) => {
   await openNexus(page, fixture());
-  await expect(search(page)).toBeVisible();
+  await expect(page.getByRole("button", { name: /Search everything/u })).toBeVisible();
 });
 
 test("a search finds words in lectures' notes and highlights", async ({ page }) => {
-  await search(page).fill("QUORUM");
+  await (await search(page)).fill("QUORUM");
 
-  await expect(hits(page).getByRole("button", { name: /Notes, line 51/ })).toContainText("A quorum is a majority");
-  await expect(hits(page).getByRole("button", { name: /Exam \/ important, page 3/ })).toContainText("Every quorum overlaps");
-  await expect(hits(page).locator("mark").first()).toHaveText("quorum");
+  await expect(result(page, "line 51")).toContainText("A quorum is a majority");
+  await expect(result(page, "page 3")).toContainText("Every quorum overlaps");
+  await expect(result(page, "page 3").locator(".search-glyph")).toHaveText("E");
+  await expect(results(page).locator("mark").first()).toHaveText("quorum");
 });
 
 test("one letter is not searched", async ({ page }) => {
-  await search(page).fill("q");
+  await (await search(page)).fill("q");
 
-  await expect(hits(page)).toHaveCount(0);
+  // Names still match as typed; notes and highlights wait for a second letter.
+  await expect(result(page, "line ")).toHaveCount(0);
+  await expect(result(page, "page ")).toHaveCount(0);
 });
 
 /** Records whether "no longer has that highlight" is ever shown, even for a moment. */
@@ -74,8 +84,8 @@ async function watchForMissing(page: Page): Promise<() => Promise<boolean>> {
 test("a highlight found by search opens its lecture there, and pulses", async ({ page }) => {
   const sawMissing = await watchForMissing(page);
 
-  await search(page).fill("quorum");
-  await hits(page).getByRole("button", { name: /page 3/ }).click();
+  await (await search(page)).fill("quorum");
+  await result(page, "page 3").click();
 
   await expect(page.locator(".highlight.pulse")).toHaveCount(1);
   await expect(page.locator(".highlight.pulse")).toBeInViewport();
@@ -84,8 +94,8 @@ test("a highlight found by search opens its lecture there, and pulses", async ({
 });
 
 test("a line of notes found by search opens its lecture with the notes at that line", async ({ page }) => {
-  await search(page).fill("quorum");
-  await hits(page).getByRole("button", { name: /Notes, line 51/ }).click();
+  await (await search(page)).fill("quorum");
+  await result(page, "line 51").click();
 
   const line = page.getByRole("complementary", { name: "Notes" }).locator(".cm-line", { hasText: "A quorum is a majority" });
 

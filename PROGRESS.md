@@ -463,6 +463,38 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-07 · Redesign, step 3: ⌘P search window**
+Search left the 260px sidebar for a window over the workspace (redesign canvas), with room
+for the words around a match. ⌘P opens it from anywhere — while typing in the notes too —
+as does the sidebar's "Search everything ⌘P" control, which replaced the search box. The
+sidebar no longer has a search mode at all: it only ever shows the folder it is in.
+
+**One list, in reading order** (`searchResults`, pure and tested): names — documents,
+notes and folders anywhere whose names match, each with its folder — then lines of notes,
+then highlights with their meaning's letter. ↑/↓ move through all of it and keep the
+choice in view, Enter opens it, a click opens it, Escape or a click outside closes; focus
+goes into the field on opening and back where it was on closing. The field is a combobox
+and the list a listbox with `aria-activedescendant`, so a screen reader follows the
+choice. A folder opens in the sidebar (showing it if hidden); an item opens; a line or
+highlight opens at its place, as search results did before. The query is kept, selected,
+so ⌘P again replaces it with one keystroke; notes and highlights are searched only while
+the window is open.
+
+`SearchHits.tsx` (the sidebar's result list) was deleted, its snippet rendering moved into
+the window and its role into `searchResults`. `App.tsx` passed 300 lines with the wiring,
+so two jobs moved out along their seams: `useVault` (restoring, choosing and re-reading
+the vault) and `WorkspaceSearch` (where each kind of result goes).
+
+**Open:** in one full Playwright run the paste journey's image did not appear (`paste.spec`
+line 42, under the suite's full parallel load); 30 isolated repeats passed, and the next
+full run passed. Recorded rather than retried away; to look at if it recurs.
+
+Verified: gate green. `searchResults.test.ts` (5), `SearchWindow.test.tsx` (7: order,
+focus, arrows and Enter, click, closing, typing), the sidebar's search control; journeys
+for searching notes and highlights through the window, ⌘P reopening with the last search,
+Enter opening the first result with the sidebar hidden, ↓ keeping the choice in view, and
+results across folders.
+
 **2026-11-07 · Settings, in place of the theme and errors icons**
 Asked for while step 2 was in review: *"it is not always required that you put icons
 together and visible, i am talking about the theme, diagonostic icons, we can have a

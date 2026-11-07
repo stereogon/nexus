@@ -18,8 +18,7 @@
  */
 import { useCallback, useEffect, useState } from "react";
 
-import { pickVaultDirectory } from "./ipc/picker";
-import { asCommandError, openVault, rememberVault, type LectureRow } from "./ipc/vault";
+import type { LectureRow } from "./ipc/vault";
 import { DropOverlay } from "./ui/DropOverlay";
 import { EmptyPane } from "./ui/EmptyPane";
 import { Failure } from "./ui/Failure";
@@ -28,7 +27,6 @@ import { EditorPanel } from "./ui/EditorPanel";
 import { HighlightsLibrary } from "./ui/HighlightsLibrary";
 import { ErrorPanel } from "./ui/ErrorPanel";
 import { Reading } from "./ui/Reading";
-import { SearchHits } from "./ui/SearchHits";
 import { Sidebar } from "./ui/Sidebar";
 import { parentOf, vaultNameOf } from "./ui/folders";
 import { existingFolder, sidebarRows } from "./ui/sidebarRows";
@@ -41,14 +39,15 @@ import { useResumeLecture } from "./ui/useResumeLecture";
 import { useNotice } from "./ui/useNotice";
 import { useOpenLecture } from "./ui/useOpenLecture";
 import { useRememberedVault } from "./ui/useRememberedVault";
+import { useSearchWindow } from "./ui/useSearchWindow";
 import { useSidebar } from "./ui/useSidebar";
 import { useTheme } from "./ui/useTheme";
-import { lecturesOf, rootOf, type VaultState } from "./ui/vaultState";
+import { lecturesOf, rootOf } from "./ui/vaultState";
+import { useVault } from "./ui/useVault";
 import { Welcome } from "./ui/Welcome";
+import { WorkspaceSearch } from "./ui/WorkspaceSearch";
 
 export function App() {
-  const [state, setState] = useState<VaultState>({ kind: "idle" });
-  const [busy, setBusy] = useState(false);
   // The folder the sidebar shows; `""` is the top of the vault.
   const [folder, setFolder] = useState("");
   const [query, setQuery] = useState("");
@@ -57,11 +56,17 @@ export function App() {
   const reading = useOpenLecture();
   const appearance = useTheme();
   const notice = useNotice();
-  const sidebar = useSidebar(state.kind === "open");
+  const forgetEditing = useCallback(() => {
+    setEditing(null);
+  }, []);
+  const { state, busy, against, choose } = useVault(remembered.summary, notice, forgetEditing);
+  const sidebar = useSidebar();
+  const searching = useSearchWindow(state.kind === "open");
   const errorPanel = useErrorPanel(state.kind === "open");
   const root = rootOf(state);
   useResumeLecture(root, lecturesOf(state), reading.lecture?.lecture.directory ?? null, reading.open);
-  const finding = useFinding(root, lecturesOf(state), query, reading);
+  // Only searched while the window asking is open, so nothing runs for a closed window.
+  const finding = useFinding(root, lecturesOf(state), searching.open ? query : "", reading);
   const openDirectory = reading.lecture?.lecture.directory ?? null;
 
   // Whatever opens — from the sidebar, a search, or on launch — the sidebar shows the
@@ -74,78 +79,8 @@ export function App() {
 
   const goToFolder = useCallback((path: string) => {
     setFolder(path);
-    setQuery("");
   }, []);
 
-  // Folded into `state` once it arrives, rather than rendering from two sources. The
-  // functional update is what makes that safe: it fills an *idle* shell and leaves any
-  // other state alone, so someone who clicks "Open a vault" before the restore lands keeps
-  // the vault they chose.
-  useEffect(() => {
-    const restored = remembered.summary;
-
-    if (restored === null) {
-      return;
-    }
-
-    setState((current) =>
-      current.kind === "idle"
-        ? { kind: "open", summary: restored }
-        : current,
-    );
-  }, [remembered.summary]);
-
-  /** Runs an action that changes the vault, then re-reads the vault from disk. */
-  const against = useCallback(
-    (vault: string, act: () => Promise<string | null>) => {
-      void (async () => {
-        setBusy(true);
-
-        try {
-          const note = await act();
-
-          // Re-scanned rather than having rows patched in place: the vault on disk is the
-          // truth, and a list maintained by editing drifts from it the first time anything
-          // changes a lecture without going through this window.
-          setState({ kind: "open", summary: await openVault(vault) });
-          notice.show(note);
-        } catch (thrown: unknown) {
-          setState({ kind: "failed", error: asCommandError(thrown) });
-        } finally {
-          setBusy(false);
-        }
-      })();
-    },
-    [notice],
-  );
-
-  const choose = useCallback(() => {
-    void (async () => {
-      setBusy(true);
-
-      try {
-        const chosen = await pickVaultDirectory();
-
-        // Cancelling is not a failure, and leaving the previous state alone is the whole
-        // point: someone who opens the picker by accident keeps the vault they had.
-        if (chosen !== null) {
-          setEditing(null);
-
-          const summary = await openVault(chosen);
-
-          // Recorded only once the open has succeeded, so a folder that turns out not to be
-          // a vault is not the one waiting on the next launch.
-          await rememberVault(chosen);
-          setState({ kind: "open", summary });
-          notice.show(null);
-        }
-      } catch (thrown: unknown) {
-        setState({ kind: "failed", error: asCommandError(thrown) });
-      } finally {
-        setBusy(false);
-      }
-    })();
-  }, [notice]);
 
   const actions = useItemActions({ vault: root, folder, reading, against, onFolder: goToFolder });
   const { add, zone } = useAddDocuments(root, folder, busy, against);
@@ -181,6 +116,7 @@ export function App() {
   // Held to what the vault still has, so a folder removed in Finder steps up, not to nothing.
   const showing = existingFolder(summary, folder);
 
+
   return (
     <div className="app">
       {/* Beside the window's own buttons, only while the sidebar that holds the hide
@@ -215,21 +151,13 @@ export function App() {
               onChooseTheme: appearance.choose,
             }}
             onMake={actions.make}
-            hits={
-              finding.search.failure !== null ? (
-                <Failure error={finding.search.failure} />
-              ) : finding.search.found === null ? null : (
-                <SearchHits found={finding.search.found} lectures={summary.lectures} onOpenAt={finding.goTo} />
-              )
-            }
+            onSearch={searching.show}
             onOpen={(lecture) => {
               reading.open(summary.root, lecture);
             }}
-            onQuery={setQuery}
             openDirectory={openDirectory}
-            query={query}
             root={summary.root}
-            rows={sidebarRows(summary, showing, query)}
+            rows={sidebarRows(summary, showing, "")}
             skipped={summary.skipped}
             unloadable={summary.unloadable}
           />
@@ -286,6 +214,27 @@ export function App() {
         {errorPanel.open && <ErrorPanel onClose={errorPanel.close} />}
       </div>
 
+      {searching.open && (
+        <WorkspaceSearch
+          failure={finding.search.failure}
+          found={finding.search.found}
+          listing={summary}
+          onClose={searching.close}
+          onFolder={(path) => {
+            if (!sidebar.shown) {
+              sidebar.toggle();
+            }
+
+            goToFolder(path);
+          }}
+          onOpen={(lecture) => {
+            reading.open(summary.root, lecture);
+          }}
+          onOpenAt={finding.goTo}
+          onQuery={setQuery}
+          query={query}
+        />
+      )}
       {zone.dragging && <DropOverlay formats={zone.formats} />}
     </div>
   );
