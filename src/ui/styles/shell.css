@@ -1,5 +1,5 @@
 /**
- * The window itself: title bar, the pane grid, and the pane with nothing in it.
+ * The window itself: its drag strips, the pane grid, and the pane with nothing in it.
  *
  * Everything here is structure that exists before any content does, which is why the
  * universal reset and `body` live here too.
@@ -38,9 +38,12 @@ body {
   height: 100vh;
 }
 
-.titlebar {
-  height: 38px;
+/* Before a vault is open: an empty strip the window is dragged by, and that the window's
+   own buttons sit over. `titleBarStyle: Overlay` (2026-11-07) gives the app the whole
+   window, so the app draws its own strips. */
+.window-strip {
   flex: 0 0 auto;
+  height: 52px;
 }
 
 .content {
@@ -49,62 +52,36 @@ body {
 }
 
 /* ---------------------------------------------------------------------------------
-   The workspace shell: title bar, sidebar, panes.
-
-   Values are the canvas's Workspace Light and Workspace Dark artboards, read off them
-   rather than chosen here: 40px title bar, 264px sidebar, 30px rows at 13px, headings at
-   11px uppercase with 0.3px tracking, 13px indent per level, 7px row radius.
+   The workspace shell, from the redesign canvas (2026-11-07): no title bar, a 260px
+   sidebar, and one 52px header strip per pane, each a window drag region.
    --------------------------------------------------------------------------------- */
-.titlebar {
-  flex: 0 0 auto;
-  height: 40px;
+
+/* Every pane's header strip, the same height as the sidebar's top so the strips line up
+   across the window. */
+.pane-head {
+  min-height: 52px;
   box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 0 14px;
-  background: var(--chrome);
-  border-bottom: 1px solid var(--border);
 }
 
-/* The window's own controls sit here, so this much width is left alone. The window uses
-   `titleBarStyle: Transparent`, which draws them over our chrome. */
-.titlebar-controls {
-  flex: 0 0 auto;
-  width: 54px;
+/* With the sidebar hidden, the leftmost header sits under the window's own buttons and
+   beside the Show sidebar control, so it leaves room for both. */
+.panes[data-sidebar="hidden"] .pane-head.lead {
+  padding-left: 124px;
 }
 
-.wordmark {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-family: var(--font-brand);
-  font-size: 15px;
-  font-weight: 800;
-  letter-spacing: -0.4px;
-  color: var(--text);
+.sidebar-show {
+  position: fixed;
+  top: 11px;
+  left: 82px;
+  z-index: 40;
 }
 
-.crumbs {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-}
-
-.crumbs-path {
-  color: var(--text-faint);
-  white-space: nowrap;
-}
-
-.crumbs-here {
-  color: var(--text);
-  font-weight: 500;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+/* The empty pane's strip: only something to drag the window by. */
+.pane-strip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
 }
 
 .panes {
@@ -132,6 +109,7 @@ body {
    the top, which is where it sat when these rules did not exist at all.
    --------------------------------------------------------------------------------- */
 .pane {
+  position: relative;
   flex: 1 1 auto;
   min-width: 0;
   display: flex;

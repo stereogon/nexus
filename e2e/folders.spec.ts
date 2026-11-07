@@ -29,23 +29,25 @@ test("the top of the vault shows its folders, and stepping in shows what is insi
 });
 
 test("a folder made here is stepped into, and a note made there opens to be written in", async ({ page }) => {
-  await page.getByRole("button", { name: "+ Folder" }).click();
+  await page.getByRole("button", { name: "New note, folder or import" }).click();
+  await page.getByRole("menuitem", { name: "Folder" }).click();
   await page.getByLabel("Name of the new folder").fill("Journal");
   await page.getByLabel("Name of the new folder").press("Enter");
 
   await expect(crumbs(page).getByRole("button", { name: "Journal" })).toHaveAttribute("aria-current", "location");
   await expect(sidebar(page).getByText(/Nothing here yet/)).toBeVisible();
 
-  await page.getByRole("button", { name: "+ Note" }).click();
+  await page.getByRole("button", { name: "New note, folder or import" }).click();
+  await page.getByRole("menuitem", { name: "Note" }).click();
   await page.getByLabel("Name of the new note").fill("Monday plans");
   await page.getByLabel("Name of the new note").press("Enter");
 
   // A note has no document: its notes are the whole pane, headed by its name.
   const notes = page.getByRole("complementary", { name: "Notes" });
-  await expect(notes.locator(".notes-title")).toHaveText("Monday plans");
+  await expect(notes.locator(".notes-title")).toHaveText("Journal /Monday plans");
   await expect(page.getByLabel("Page 1", { exact: true })).toHaveCount(0);
   await expect(sidebar(page).getByRole("button", { name: "Monday plans", exact: true })).toBeVisible();
-  await expect(page.locator(".titlebar")).toContainText("Journal /");
+  await expect(notes.locator(".notes-bar")).toContainText("Journal /");
 
   await notes.locator(".cm-content").click();
   await page.keyboard.type("Call the library");
@@ -56,7 +58,8 @@ test("a folder made here is stepped into, and a note made there opens to be writ
 });
 
 test("a blank name makes nothing", async ({ page }) => {
-  await page.getByRole("button", { name: "+ Note" }).click();
+  await page.getByRole("button", { name: "New note, folder or import" }).click();
+  await page.getByRole("menuitem", { name: "Note" }).click();
   await page.getByLabel("Name of the new note").press("Enter");
 
   await expect(page.getByLabel("Name of the new note")).toHaveCount(0);

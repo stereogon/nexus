@@ -28,7 +28,7 @@ test("⌘P puts the cursor in the search, ready to replace what was there", asyn
 
 test("⌘P shows the sidebar when it was hidden", async ({ page }) => {
   await openNexus(page);
-  await page.getByRole("button", { name: "Toggle sidebar" }).click();
+  await page.getByRole("button", { name: "Hide sidebar" }).click();
   await expect(search(page)).toHaveCount(0);
 
   await page.keyboard.press("Meta+p");

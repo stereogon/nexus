@@ -17,6 +17,7 @@ import { documentUrl, type OpenedDocument } from "../ipc/document";
 import { matchesByPage, NO_MATCHES } from "../pdf/find";
 import { usePdfDocument } from "../pdf/useDocument";
 import { DocumentNotice } from "./DocumentNotice";
+import { parentOf, spoken } from "./folders";
 import { Failure } from "./Failure";
 import { FindBar } from "./FindBar";
 import { HighlightMenu } from "./HighlightMenu";
@@ -154,6 +155,7 @@ export function PdfViewer({
         scale={scale}
         showing={showing}
         title={title}
+        place={spoken(parentOf(directory))}
       />
 
       <DocumentNotice

@@ -84,7 +84,7 @@ export function HighlightsLibrary({
 
   return (
     <main aria-labelledby="library-heading" className="pane library">
-      <header className="library-head">
+      <header className="library-head pane-head lead" data-tauri-drag-region="">
         <h2 id="library-heading">Highlights</h2>
         {marks !== null && <span className="library-count">{shown === 1 ? "1 highlight" : `${String(shown)} highlights`}</span>}
         <button className="secondary" onClick={onClose} type="button">

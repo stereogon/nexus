@@ -81,20 +81,6 @@ button.crumb-back:disabled {
   opacity: 0.35;
 }
 
-/* The three ways to add to the folder showing, along the bottom where the list ends. */
-.sidebar-add {
-  flex: 0 0 auto;
-  display: flex;
-  gap: 4px;
-  padding: 6px 8px;
-  border-top: 1px solid var(--border);
-}
-
-.sidebar-add button {
-  flex: 1 1 0;
-  font-size: 12px;
-}
-
 /* The field naming a new note or folder, drawn as the row it is about to become. */
 .sidebar-name {
   display: flex;

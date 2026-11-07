@@ -27,6 +27,7 @@ function Chevron({ back }: { readonly back: boolean }) {
 
 export function PdfToolbar({
   title,
+  place,
   showing,
   pages,
   scale,
@@ -44,6 +45,8 @@ export function PdfToolbar({
   onNotes,
 }: {
   readonly title: string;
+  /** The folders the document is in, as `CS454 / Week 3`; empty at the top of the vault. */
+  readonly place: string;
   /** Zero-based, as everything inside the viewer is. */
   readonly showing: number;
   readonly pages: number;
@@ -66,11 +69,14 @@ export function PdfToolbar({
   const empty = pages === 0;
 
   return (
-    <div className="viewer-bar">
+    <div className="viewer-bar pane-head lead" data-tauri-drag-region="">
       <button className="quiet" onClick={onClose} type="button">
         ← Vault
       </button>
-      <span className="viewer-title">{title}</span>
+      <span className="viewer-title" data-tauri-drag-region="">
+        {place !== "" && <span className="viewer-place">{`${place} /`}</span>}
+        {title}
+      </span>
 
       <div className="viewer-pages">
         <button

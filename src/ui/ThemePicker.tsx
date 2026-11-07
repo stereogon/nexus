@@ -6,11 +6,10 @@
  * and leaves the menu open, so themes can be tried one after another; Escape or a click
  * elsewhere closes it. From the redesign canvas's themes board (2026-11-07).
  */
-import { useEffect } from "react";
-
 import type { MenuAt } from "./menuPlacement";
 import { PALETTE_ORDER, THEMES, type PaletteName, type ThemeName } from "./themes";
 import { useFloating } from "./useFloating";
+import { useDismissOutside } from "./usePopover";
 
 function Swatches({ name }: { readonly name: PaletteName }) {
   const { palette } = THEMES[name];
@@ -81,23 +80,7 @@ export function ThemePicker({
 }) {
   const { box, placed } = useFloating(at, onDismiss);
 
-  // A click anywhere else closes it — except on the control that opened it, which toggles
-  // it itself and would otherwise close it here and reopen it a moment later.
-  useEffect(() => {
-    const onPointer = (event: PointerEvent) => {
-      const target = event.target;
-
-      if (target instanceof Node && box.current?.contains(target) !== true && !(target instanceof Element && target.closest("[data-opens-theme]") !== null)) {
-        onDismiss();
-      }
-    };
-
-    document.addEventListener("pointerdown", onPointer);
-
-    return () => {
-      document.removeEventListener("pointerdown", onPointer);
-    };
-  }, [box, onDismiss]);
+  useDismissOutside(box, "theme", onDismiss);
 
   return (
     <div aria-label="Theme" className="theme-picker" ref={box} role="menu" style={{ left: placed.left, top: placed.top }}>

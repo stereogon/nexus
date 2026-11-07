@@ -143,6 +143,15 @@ describe("the page the person is looking at", () => {
   it("reaches the last page at the bottom", () => {
     expect(currentIndex(EIGHTEEN, totalHeight(EIGHTEEN) - 800, 800)).toBe(17);
   });
+
+  it("is the last page when scrolled to the end, even with the last two both on screen", () => {
+    const boxes = stack([400, 400, 400, 400], 20);
+    const viewport = 900; // holds two whole pages
+
+    expect(currentIndex(boxes, totalHeight(boxes) - viewport, viewport)).toBe(3);
+    // One pixel short of the end is still "most visible, earlier on a tie".
+    expect(currentIndex(boxes, totalHeight(boxes) - viewport - 40, viewport)).toBe(2);
+  });
 });
 
 describe("fitting a page to the width", () => {

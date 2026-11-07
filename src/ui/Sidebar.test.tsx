@@ -20,6 +20,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ConversionState, LectureRow } from "../ipc/vault";
 import { Sidebar } from "./Sidebar";
 import { sidebarRows, type Listing } from "./sidebarRows";
+import type { ThemeName } from "./themes";
 
 afterEach(cleanup);
 
@@ -37,6 +38,18 @@ function lecture(over: Partial<LectureRow> & { directory: string }): LectureRow 
     conversion: "ready" satisfies ConversionState,
     documentReady: true,
     ...over,
+  };
+}
+
+/** The foot's controls, each a fresh spy. */
+function footing(theme: ThemeName = "system") {
+  return {
+    libraryShown: false,
+    onToggleLibrary: vi.fn(),
+    errorsShown: false,
+    onToggleErrors: vi.fn(),
+    theme,
+    onChooseTheme: vi.fn(),
   };
 }
 
@@ -61,6 +74,9 @@ function show(
     onEdit: vi.fn(),
     onMake: vi.fn(),
     onImport: vi.fn(),
+    onHide: vi.fn(),
+    onChooseVault: vi.fn(),
+    foot: footing(),
     hits: null,
     ...over,
   };
@@ -150,7 +166,7 @@ describe("what the sidebar refuses", () => {
   it("disables everything while the vault is busy", () => {
     show(VAULT, { busy: true });
 
-    for (const name of ["Folder CS454", "Loose notes", "+ Note", "+ Folder", "Import…"]) {
+    for (const name of ["Folder CS454", "Loose notes", "New note, folder or import"]) {
       expect(screen.getByRole("button", { name })).toHaveProperty("disabled", true);
     }
   });
@@ -176,11 +192,13 @@ describe("what the sidebar calls", () => {
   it("makes a note with the name typed, and nothing for a blank one", () => {
     const props = show(VAULT);
 
-    fireEvent.click(screen.getByRole("button", { name: "+ Note" }));
+    fireEvent.click(screen.getByRole("button", { name: "New note, folder or import" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Note" }));
     fireEvent.submit(screen.getByLabelText("Name of the new note"));
     expect(props.onMake).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole("button", { name: "+ Note" }));
+    fireEvent.click(screen.getByRole("button", { name: "New note, folder or import" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Note" }));
     fireEvent.change(screen.getByLabelText("Name of the new note"), { target: { value: "  Plans  " } });
     fireEvent.submit(screen.getByLabelText("Name of the new note"));
     expect(props.onMake).toHaveBeenCalledWith("note", "Plans");
@@ -189,7 +207,8 @@ describe("what the sidebar calls", () => {
   it("forgets a new folder's name on Escape", () => {
     const props = show(VAULT);
 
-    fireEvent.click(screen.getByRole("button", { name: "+ Folder" }));
+    fireEvent.click(screen.getByRole("button", { name: "New note, folder or import" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Folder" }));
     fireEvent.change(screen.getByLabelText("Name of the new folder"), { target: { value: "Week 4" } });
     fireEvent.keyDown(screen.getByLabelText("Name of the new folder"), { key: "Escape" });
 
@@ -197,12 +216,56 @@ describe("what the sidebar calls", () => {
     expect(props.onMake).not.toHaveBeenCalled();
   });
 
-  it("imports into the folder showing", () => {
+  it("imports into the folder showing, from the + menu, which says where things go", () => {
     const props = show(VAULT);
 
-    fireEvent.click(screen.getByRole("button", { name: "Import…" }));
+    fireEvent.click(screen.getByRole("button", { name: "New note, folder or import" }));
+    expect(screen.getByText("Added to the folder showing")).not.toBeNull();
+    fireEvent.click(screen.getByRole("menuitem", { name: /Import document/u }));
 
     expect(props.onImport).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("menu", { name: "New" })).toBeNull();
+  });
+
+  it("opens another vault from the vault's name", () => {
+    const props = show(VAULT);
+
+    fireEvent.click(screen.getByRole("button", { name: "Vault: NexusVault" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Open another vault…" }));
+
+    expect(props.onChooseVault).toHaveBeenCalledOnce();
+  });
+
+  it("hides itself from its own control", () => {
+    const props = show(VAULT);
+
+    fireEvent.click(screen.getByRole("button", { name: "Hide sidebar" }));
+
+    expect(props.onHide).toHaveBeenCalledOnce();
+  });
+
+  it("opens the theme picker from the foot, with the current theme checked, and chooses from it", () => {
+    const props = show(VAULT, { foot: footing("neon") });
+
+    fireEvent.click(screen.getByRole("button", { name: "Theme" }));
+    expect(screen.getByRole("menuitemradio", { name: /Neon/u }).getAttribute("aria-checked")).toBe("true");
+    expect(screen.getAllByRole("menuitemradio")).toHaveLength(16);
+
+    fireEvent.click(screen.getByRole("menuitemradio", { name: /Sepia/u }));
+    expect(props.foot.onChooseTheme).toHaveBeenCalledWith("sepia");
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("menu", { name: "Theme" })).toBeNull();
+  });
+
+  it("opens the library and the error panel from the foot", () => {
+    const props = show(VAULT);
+
+    fireEvent.click(screen.getByRole("button", { name: "Highlights library" }));
+    fireEvent.click(screen.getByRole("button", { name: "Errors" }));
+
+    expect(props.foot.onToggleLibrary).toHaveBeenCalledOnce();
+    expect(props.foot.onToggleErrors).toHaveBeenCalledOnce();
   });
 
   it("edits from the row's own control", () => {

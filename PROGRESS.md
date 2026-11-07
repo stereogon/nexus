@@ -463,6 +463,40 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-07 · Redesign, step 2: no title bar, the new sidebar**
+The 40px title bar is gone. The window now uses `titleBarStyle: Overlay` with a hidden
+title, so the app draws to the top edge: the window's own buttons sit over the sidebar's
+52px top strip, and every pane has one 52px header strip lined up with it. The strips are
+marked `data-tauri-drag-region` (with `core:window:allow-start-dragging` added to the
+capability) because with no native title bar they are where the window is moved from.
+**Not verified in the real window** — WebKit in Playwright has no native title bar, so the
+overlay, the buttons' position and dragging need one look in the app.
+
+**The sidebar, top to bottom:** the strip with Hide sidebar; the vault switcher (an N mark
+and the vault's name, opening a menu with its path and Open another vault…); the "+" that
+opens New: Note, Folder, Import document… (⌘O), said to add to the folder showing; search;
+the breadcrumb; the list; and the foot — Highlights library, Errors (⌘0), Theme, and the
+vault path — which is where the title bar's controls went. With the sidebar hidden, a Show
+sidebar control sits beside the window's buttons and the leftmost header leaves room for
+both (`--lead`: `.panes[data-sidebar="hidden"] .pane-head.lead`).
+
+**The breadcrumb** moved from the title bar into the headers that own it: a document's
+header reads `CS454 / Week 3 / Raft consensus`, and so does a plain note's.
+
+**Found on the way:** the page counter stopped one short at the end of a document when the
+last two pages fit on screen together, because "the page showing most, earlier on a tie"
+can never pick the last one there. The taller window, with the title bar gone, exposed it
+in the layout journey. Scrolled to the end now means the last page (`currentIndex`),
+with a unit test proved by removing the rule.
+
+`TitleBar.tsx` and its tests were deleted; its theme-picker tests moved to the sidebar's,
+its breadcrumb tests to `PdfToolbar.test.tsx`. Small menus are one `PopMenu`, closing on
+Escape, a click elsewhere (`useDismissOutside`, shared with the theme picker) or a choice.
+
+Verified: gate green. Sidebar tests for the + menu, vault switcher, hide, foot controls
+and picker; toolbar breadcrumb tests; journeys updated for the new controls, and one for
+hiding the sidebar and the room the header leaves.
+
 **2026-11-07 · Redesign, step 1: fifteen themes, measured**
 The user asked for a design from scratch (*"since you have the most context … find out a
 better and better ux and ui experience. first design and show me"*), then mid-design for

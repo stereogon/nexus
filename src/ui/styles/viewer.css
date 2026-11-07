@@ -47,6 +47,15 @@
   white-space: nowrap;
 }
 
+/* The folders the document is in, before its title: quieter, so the title leads. */
+.viewer-place {
+  margin-right: 6px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-meta);
+}
+
 .viewer-zoom {
   display: flex;
   align-items: center;

@@ -6,7 +6,7 @@
  */
 
 .sidebar {
-  flex: 0 0 264px;
+  flex: 0 0 260px;
   min-width: 0;
   box-sizing: border-box;
   display: flex;
@@ -15,38 +15,45 @@
   border-right: 1px solid var(--border);
 }
 
+/* Search across the whole vault, drawn as the redesign's field: a quiet box on the
+   chrome with ⌘P at its end. */
 .sidebar-search {
   flex: 0 0 auto;
-  padding: 12px 12px 8px;
+  padding: 0 12px 12px;
   position: relative;
 }
 
 .sidebar-search input {
   width: 100%;
   box-sizing: border-box;
-  height: 32px;
-  padding: 0 34px 0 30px;
+  height: 34px;
+  padding: 0 40px 0 32px;
   background: var(--field);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 9px;
   color: var(--text);
   font-family: var(--font-ui);
   font-size: 13px;
 }
 
+.sidebar-search input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
 .sidebar-search svg {
   position: absolute;
-  left: 22px;
-  top: 21px;
-  color: var(--text-faint);
+  left: 23px;
+  top: 10px;
+  color: var(--text-meta);
 }
 
 /* Over the right end of the search input, which `.sidebar-search` is `position: relative`
    for. Here rather than on `.kbd` itself, so the pill stays reusable inline. */
 .sidebar-search .kbd {
   position: absolute;
-  right: 20px;
-  top: 20px;
+  right: 21px;
+  top: 8px;
 }
 
 .sidebar-list {
@@ -202,12 +209,13 @@ button.row-edit:focus-visible {
   opacity: 1;
 }
 
+/* The library, errors and theme controls, then the vault's path. */
 .sidebar-foot {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 9px 12px;
+  gap: 2px;
+  padding: 8px 10px;
   border-top: 1px solid var(--border);
   color: var(--text-meta);
   font-size: 11px;
@@ -217,8 +225,9 @@ button.row-edit:focus-visible {
    moved the leading slash to the end: `/Users/me/NexusVault` was drawn as
    `Users/me/NexusVault/`. The tail is chosen in `shortPath` instead, where it can be
    tested. */
-.sidebar-foot span {
+.sidebar-path {
   flex: 1 1 auto;
+  text-align: right;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;

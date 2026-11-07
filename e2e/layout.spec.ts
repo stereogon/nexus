@@ -17,8 +17,8 @@ test.beforeEach(async ({ page }) => {
 
 test("only the document scrolls, not the window around it", async ({ page }) => {
   // Reported 2026-10-29: `.app` had `min-height: 100vh`, so the bed grew to the whole
-  // document and the window scrolled instead -- title bar, sidebar and all.
-  const header = page.locator(".titlebar");
+  // document and the window scrolled instead -- headers, sidebar and all.
+  const header = page.locator(".viewer-bar");
   const before = await header.boundingBox();
 
   await bed(page).hover();
@@ -94,7 +94,7 @@ test("the editor opens beside the document rather than instead of it", async ({ 
   // Beside, not over: the document ends where the panel begins.
   expect(bedBox.x + bedBox.width).toBeLessThanOrEqual(panelBox.x + 1);
   // And the breadcrumb keeps naming the lecture being read, not the one being edited.
-  await expect(page.locator(".titlebar")).toContainText(READING.title);
+  await expect(page.locator(".viewer-bar")).toContainText(READING.title);
 });
 
 test("renaming the open lecture renames it on screen", async ({ page }) => {
@@ -102,6 +102,24 @@ test("renaming the open lecture renames it on screen", async ({ page }) => {
   await page.getByLabel("Title").fill("2. The Requirements Engineering Process");
   await page.getByRole("button", { name: "Save" }).click();
 
-  await expect(page.locator(".titlebar")).toContainText("2. The Requirements Engineering Process");
-  await expect(page.locator(".viewer-title")).toHaveText("2. The Requirements Engineering Process");
+  await expect(page.locator(".viewer-bar")).toContainText("2. The Requirements Engineering Process");
+  await expect(page.locator(".viewer-title")).toHaveText("week-2 /2. The Requirements Engineering Process");
+});
+
+test("hiding the sidebar leaves room beside the window's own buttons, and shows it again", async ({ page }) => {
+  // With the title bar gone (2026-11-07) the window's buttons sit over the leftmost
+  // header; the sidebar's top strip makes room for them, and without it the header must.
+  const inset = () => page.locator(".viewer-bar").evaluate((element) => Number.parseFloat(getComputedStyle(element).paddingLeft));
+
+  expect(await inset()).toBeLessThan(40);
+
+  await page.getByRole("button", { name: "Hide sidebar" }).click();
+
+  await expect(page.locator(".sidebar")).toHaveCount(0);
+  expect(await inset()).toBeGreaterThanOrEqual(120);
+
+  await page.getByRole("button", { name: "Show sidebar" }).click();
+
+  await expect(page.locator(".sidebar")).toBeVisible();
+  expect(await inset()).toBeLessThan(40);
 });

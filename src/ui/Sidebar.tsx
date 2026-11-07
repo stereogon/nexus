@@ -1,21 +1,22 @@
 /**
  * The vault, one folder at a time.
  *
- * Search across the whole vault, a breadcrumb saying which folder is showing, its folders
- * and items, and the three ways to add something here: a note, a folder, or a document.
- * Whatever is added goes into the folder on screen, so nothing has to be filed afterwards.
+ * The vault switcher and the "+" (`SidebarHead`), search across the whole vault, a
+ * breadcrumb saying which folder is showing, its folders and items, and the library, errors
+ * and theme controls at the foot (`SidebarFoot`). Whatever is added goes into the folder on
+ * screen, so nothing has to be filed afterwards.
  * What goes in the list is decided in `sidebarRows.ts`, tested on its own; this file draws
  * the result.
  *
- * The canvas's sidebar groups by Folder/Week/Module/Tag instead. Stepping into folders was
- * chosen with the user on 2026-11-06 (`sidebarRows.ts` says why), so this is designed here
- * to sit with the rest of the window and is recorded in `PROGRESS.md` as owing an artboard.
+ * Laid out from the redesign canvas (2026-11-07), which drew the folder sidebar chosen with
+ * the user on 2026-11-06 (`sidebarRows.ts` says why).
  */
 import { useState, type ReactNode } from "react";
 
 import type { LectureRow, ProblemRow } from "../ipc/vault";
 import { nameOf, trail, vaultNameOf } from "./folders";
-import { shortPath } from "./path";
+import { SidebarFoot } from "./SidebarFoot";
+import { SidebarHead } from "./SidebarHead";
 import { Folder, Lecture, NameField, Problems } from "./SidebarLecture";
 import type { Making, SidebarRow } from "./sidebarRows";
 import { SEARCH_ID } from "./useSidebar";
@@ -25,19 +26,6 @@ function SearchIcon() {
     <svg aria-hidden="true" height="14" viewBox="0 0 14 14" width="14">
       <circle cx="6" cy="6" fill="none" r="4.3" stroke="currentColor" strokeWidth="1.3" />
       <path d="M9.3 9.3 L12.5 12.5" stroke="currentColor" strokeLinecap="round" strokeWidth="1.3" />
-    </svg>
-  );
-}
-
-function FolderIcon() {
-  return (
-    <svg aria-hidden="true" height="13" viewBox="0 0 13 13" width="13">
-      <path
-        d="M1.2 3.4 A1.2 1.2 0 0 1 2.4 2.2 L5.2 2.2 L6.4 3.8 L10.6 3.8 A1.2 1.2 0 0 1 11.8 5 L11.8 9.6 A1.2 1.2 0 0 1 10.6 10.8 L2.4 10.8 A1.2 1.2 0 0 1 1.2 9.6 Z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.2"
-      />
     </svg>
   );
 }
@@ -114,6 +102,9 @@ export function Sidebar({
   onEdit,
   onMake,
   onImport,
+  onHide,
+  onChooseVault,
+  foot,
   hits,
 }: {
   readonly rows: readonly SidebarRow[];
@@ -133,6 +124,10 @@ export function Sidebar({
   readonly onMake: (making: Making, name: string) => void;
   /** Picks documents to import into the folder showing. */
   readonly onImport: () => void;
+  readonly onHide: () => void;
+  readonly onChooseVault: () => void;
+  /** The library, error panel and theme controls at the foot. */
+  readonly foot: Omit<Parameters<typeof SidebarFoot>[0], "root">;
   /** What the search found inside items, below the matching names; `null` when not searching. */
   readonly hits: ReactNode;
 }) {
@@ -141,6 +136,15 @@ export function Sidebar({
 
   return (
     <aside className="sidebar">
+      <SidebarHead
+        busy={busy}
+        onChooseVault={onChooseVault}
+        onHide={onHide}
+        onImport={onImport}
+        onMake={setMaking}
+        root={root}
+      />
+
       <div className="sidebar-search">
         <label className="vh" htmlFor={SEARCH_ID}>
           Search vault
@@ -178,7 +182,7 @@ export function Sidebar({
           <p className="sidebar-empty">
             {searching
               ? `Nothing matches “${query.trim()}”.`
-              : "Nothing here yet. Make a note or a folder below, or drop a PDF, PowerPoint or Word file on the window."}
+              : "Nothing here yet. Make a note or a folder with +, or drop a PDF, PowerPoint or Word file on the window."}
           </p>
         )}
 
@@ -203,36 +207,7 @@ export function Sidebar({
         <Problems problems={unloadable} title="Could not be read" />
       </div>
 
-      <div aria-label="Add to this folder" className="sidebar-add" role="group">
-        <button
-          className="quiet"
-          disabled={busy}
-          onClick={() => {
-            setMaking("note");
-          }}
-          type="button"
-        >
-          + Note
-        </button>
-        <button
-          className="quiet"
-          disabled={busy}
-          onClick={() => {
-            setMaking("folder");
-          }}
-          type="button"
-        >
-          + Folder
-        </button>
-        <button className="quiet" disabled={busy} onClick={onImport} title="Import a document (⌘O)" type="button">
-          Import…
-        </button>
-      </div>
-
-      <div className="sidebar-foot">
-        <FolderIcon />
-        <span title={root}>{shortPath(root)}</span>
-      </div>
+      <SidebarFoot root={root} {...foot} />
     </aside>
   );
 }

@@ -170,12 +170,21 @@ export function renderWindow(
  * The one showing most of itself, and the earlier page on a tie. Picking the page under
  * the top edge instead would flicker to the next page the moment a gap crossed the fold,
  * which is the behaviour every PDF reader gets wrong at some point.
+ *
+ * Scrolled to the very end, it is the last page, whatever else is showing: when the last
+ * pages fit on screen together, the last can never be the one showing most, and the
+ * counter stopped one short of the end (found 2026-11-07, when the window grew taller with
+ * the title bar gone).
  */
 export function currentIndex(
   boxes: readonly PageBox[],
   scrollTop: number,
   viewportHeight: number,
 ): number {
+  if (boxes.length > 1 && viewportHeight > 0 && scrollTop + viewportHeight >= totalHeight(boxes) - 1) {
+    return boxes.length - 1;
+  }
+
   let best = 0;
   let mostVisible = -1;
 

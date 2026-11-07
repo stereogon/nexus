@@ -1,7 +1,7 @@
 /**
- * The workspace shell: the title bar, the sidebar, and the pane beside it.
+ * The workspace shell: the sidebar, and the panes beside it.
  *
- * The layout is the canvas's Workspace artboards — a 40px title bar over a 264px sidebar
+ * The layout is the redesign canvas's Workspace artboards — a 260px sidebar
  * and the document pane. Before a vault is open there is no workspace to draw, so that is
  * a separate screen (`Welcome`) rather than a state of this one.
  *
@@ -32,7 +32,7 @@ import { SearchHits } from "./ui/SearchHits";
 import { Sidebar } from "./ui/Sidebar";
 import { parentOf, vaultNameOf } from "./ui/folders";
 import { existingFolder, sidebarRows } from "./ui/sidebarRows";
-import { TitleBar } from "./ui/TitleBar";
+import { SidebarIcon } from "./ui/icons";
 import { useAddDocuments } from "./ui/useAddDocuments";
 import { useErrorPanel } from "./ui/useErrorPanel";
 import { useFinding } from "./ui/useFinding";
@@ -155,7 +155,7 @@ export function App() {
   if (remembered.checking && state.kind === "idle") {
     return (
       <div className="app">
-        <div className="titlebar" />
+        <div className="window-strip" data-tauri-drag-region="" />
       </div>
     );
   }
@@ -163,7 +163,7 @@ export function App() {
   if (state.kind !== "open") {
     return (
       <div className="app">
-        <div className="titlebar" />
+        <div className="window-strip" data-tauri-drag-region="" />
         <Welcome
           busy={busy}
           failures={[
@@ -183,19 +183,21 @@ export function App() {
 
   return (
     <div className="app">
-      <TitleBar
-        lecture={open?.lecture ?? editing ?? null}
-        onChooseTheme={appearance.choose}
-        onToggleSidebar={sidebar.toggle}
-        sidebarShown={sidebar.shown}
-        errorsShown={errorPanel.open}
-        onToggleErrors={errorPanel.toggle}
-        libraryShown={finding.library}
-        onToggleLibrary={finding.toggleLibrary}
-        theme={appearance.theme}
-      />
+      {/* Beside the window's own buttons, only while the sidebar that holds the hide
+          control is hidden; the leftmost header leaves room for both (`--lead-inset`). */}
+      {!sidebar.shown && (
+        <button
+          aria-label="Show sidebar"
+          className="chrome-icon sidebar-show"
+          onClick={sidebar.toggle}
+          title="Show sidebar"
+          type="button"
+        >
+          <SidebarIcon />
+        </button>
+      )}
 
-      <div className="panes">
+      <div className="panes" data-sidebar={sidebar.shown ? "shown" : "hidden"}>
         {sidebar.shown && (
           <Sidebar
             busy={busy || reading.opening}
@@ -203,6 +205,16 @@ export function App() {
             onEdit={setEditing}
             onFolder={goToFolder}
             onImport={add}
+            onHide={sidebar.toggle}
+            onChooseVault={choose}
+            foot={{
+              libraryShown: finding.library,
+              onToggleLibrary: finding.toggleLibrary,
+              errorsShown: errorPanel.open,
+              onToggleErrors: errorPanel.toggle,
+              theme: appearance.theme,
+              onChooseTheme: appearance.choose,
+            }}
             onMake={actions.make}
             hits={
               finding.search.failure !== null ? (
@@ -242,6 +254,7 @@ export function App() {
           />
         ) : (
           <main className="pane">
+            <div className="pane-head lead pane-strip" data-tauri-drag-region="" />
             {notice.text !== null && (
               <Notice onDismiss={notice.dismiss} text={notice.text} />
             )}

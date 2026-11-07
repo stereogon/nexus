@@ -15,6 +15,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Annotation } from "../ipc/annotations";
 import type { OpenedDocument } from "../ipc/document";
 import { citationBlock } from "../notes/citation";
+import { parentOf, spoken } from "./folders";
 import { NotesDivider } from "./NotesDivider";
 import type { NotesHandle } from "./NotesEditor";
 import { NotesPane } from "./NotesPane";
@@ -143,7 +144,7 @@ export function Reading({
     return (
       <div className="reading" ref={area}>
         <NotesPane
-          alone={{ title, onClose }}
+          alone={{ title, place: spoken(parentOf(directory)), onClose }}
           directory={directory}
           handle={notes}
           hidden={false}

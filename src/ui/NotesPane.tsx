@@ -75,7 +75,7 @@ export function NotesPane({
    * For a plain note, which has no document: the pane is then the whole reading area, its
    * header names the note, and closing it closes the note. `null` beside a document.
    */
-  readonly alone: { readonly title: string; readonly onClose: () => void } | null;
+  readonly alone: { readonly title: string; readonly place: string; readonly onClose: () => void } | null;
 }) {
   const notes = useNotes(vault, directory);
 
@@ -178,8 +178,11 @@ export function NotesPane({
       ref={pane}
       style={width === null ? undefined : { flexBasis: width }}
     >
-      <header className="notes-bar">
-        <span className="notes-title">{alone === null ? "Notes" : alone.title}</span>
+      <header className={alone === null ? "notes-bar pane-head" : "notes-bar pane-head lead"} data-tauri-drag-region="">
+        <span className="notes-title" data-tauri-drag-region="">
+          {alone !== null && alone.place !== "" && <span className="viewer-place">{`${alone.place} /`}</span>}
+          {alone === null ? "Notes" : alone.title}
+        </span>
         <span aria-live="polite" className={`notes-status ${notes.status}`}>
           {STATUS_TEXT[notes.status]}
         </span>

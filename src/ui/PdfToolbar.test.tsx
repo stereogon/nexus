@@ -16,6 +16,7 @@ afterEach(cleanup);
 function show(over: Partial<Parameters<typeof PdfToolbar>[0]> = {}) {
   const props = {
     title: "Raft Consensus",
+    place: "CS454 / Week 3",
     showing: 3,
     pages: 18,
     scale: 1.24,
@@ -207,5 +208,19 @@ describe("the box tool", () => {
     fireEvent.click(tool());
 
     expect(props.onBoxing).toHaveBeenCalledWith(false);
+  });
+});
+
+describe("where the document is", () => {
+  it("says which folders it is in, before its title", () => {
+    show();
+
+    expect(screen.getByText("CS454 / Week 3 /")).toBeDefined();
+  });
+
+  it("says nothing of folders for a document at the top of the vault", () => {
+    show({ place: "" });
+
+    expect(screen.queryByText(/CS454/u)).toBeNull();
   });
 });
