@@ -5,7 +5,7 @@
  * The rules — what wrapping, recolouring or removing changes — are `marks.ts`, pure and
  * tested; this applies them to a live editor.
  */
-import type { EditorView } from "@codemirror/view";
+import type { EditorView, KeyBinding } from "@codemirror/view";
 
 import type { HighlightSemantic } from "../ipc/annotations";
 import type { MenuAt } from "../ui/menuPlacement";
@@ -129,3 +129,23 @@ export function barFor(view: EditorView): MenuAt | null {
 
   return start === null || end === null ? null : { left: start.left, top: end.bottom + 8, above: start.top - 8 };
 }
+
+/**
+ * Notion's formatting shortcuts, so hands that know them need not learn others. ⌘⇧H, a
+ * key concept highlight, is Notion's highlight shortcut too. Beside the commands they run,
+ * so a shortcut and its command are changed together.
+ */
+export const formatKeys: readonly KeyBinding[] = [
+  { key: "Mod-Shift-h", run: (target) => markSelection(target, "key") },
+  { key: "Mod-b", run: (target) => formatInline(target, "bold") },
+  { key: "Mod-i", run: (target) => formatInline(target, "italic") },
+  { key: "Mod-Shift-s", run: (target) => formatInline(target, "strike") },
+  { key: "Mod-e", run: (target) => formatInline(target, "code") },
+  { key: "Mod-k", run: formatLink },
+  { key: "Mod-Alt-1", run: (target) => formatBlock(target, "h1") },
+  { key: "Mod-Alt-2", run: (target) => formatBlock(target, "h2") },
+  { key: "Mod-Alt-3", run: (target) => formatBlock(target, "h3") },
+  { key: "Mod-Alt-4", run: (target) => formatBlock(target, "task") },
+  { key: "Mod-Alt-5", run: (target) => formatBlock(target, "bullet") },
+  { key: "Mod-Alt-6", run: (target) => formatBlock(target, "numbered") },
+];

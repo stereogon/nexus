@@ -17,8 +17,10 @@ import { EditorState } from "@codemirror/state";
 import { EditorView, keymap, placeholder } from "@codemirror/view";
 import { useEffect, useImperativeHandle, useRef, useState, type Ref } from "react";
 
-import { barFor, formatBlock, formatInline, formatLink, formatStateOf, markSelection } from "../notes/markSelection";
+import { barFor, formatKeys, formatStateOf } from "../notes/markSelection";
 import type { FormatState } from "./NotesFormatBar";
+import { BlockHandles } from "./BlockHandles";
+import { HeadingRail } from "./HeadingRail";
 import { NotesFormatting } from "./NotesFormatting";
 import type { MenuAt } from "./menuPlacement";
 
@@ -27,7 +29,7 @@ import { codeLanguages } from "../notes/codeLanguages";
 import { flashLine, lineFlash } from "../notes/flash";
 import { citationAt } from "../notes/insert";
 import { livePreview } from "../notes/preview/field";
-import { notesAppearance } from "../notes/theme";
+import { notePage, notesAppearance } from "../notes/theme";
 import type { Point } from "./notesDrop";
 
 /** What the pane can ask of the editor. */
@@ -51,6 +53,7 @@ export function NotesEditor({
   onPasteImage,
   reveal,
   formatting,
+  page,
 }: {
   /** The text to start from, taken afresh only when `generation` changes. */
   readonly text: string;
@@ -71,8 +74,16 @@ export function NotesEditor({
   readonly reveal: { readonly id: string; readonly nonce: number } | null;
   /** The format controls are docked open, so they are there before anything is written. */
   readonly formatting: boolean;
+  /** A plain note's whole page, rather than notes beside a document. Fixed for a mount. */
+  readonly page: boolean;
 }) {
   const host = useRef<HTMLDivElement | null>(null);
+  const body = useRef<HTMLDivElement | null>(null);
+  // The text as it now is, for the heading rail, and whether the view exists yet: the
+  // overlays' effects run before this component's, so they wait on this rather than
+  // finding no editor once and never looking again.
+  const [current, setCurrent] = useState(text);
+  const [viewReady, setViewReady] = useState(false);
   const view = useRef<EditorView | null>(null);
   // What the selection or cursor has, and where a floating bar goes for a selection; `null`
   // until the editor has reported once.
@@ -113,20 +124,7 @@ export function NotesEditor({
         extensions: [
           history(),
           keymap.of([
-            // Notion's shortcuts, so hands that know them need not learn others. ⌘⇧H, a key
-            // concept highlight, is Notion's highlight shortcut too.
-            { key: "Mod-Shift-h", run: (target) => markSelection(target, "key") },
-            { key: "Mod-b", run: (target) => formatInline(target, "bold") },
-            { key: "Mod-i", run: (target) => formatInline(target, "italic") },
-            { key: "Mod-Shift-s", run: (target) => formatInline(target, "strike") },
-            { key: "Mod-e", run: (target) => formatInline(target, "code") },
-            { key: "Mod-k", run: formatLink },
-            { key: "Mod-Alt-1", run: (target) => formatBlock(target, "h1") },
-            { key: "Mod-Alt-2", run: (target) => formatBlock(target, "h2") },
-            { key: "Mod-Alt-3", run: (target) => formatBlock(target, "h3") },
-            { key: "Mod-Alt-4", run: (target) => formatBlock(target, "task") },
-            { key: "Mod-Alt-5", run: (target) => formatBlock(target, "bullet") },
-            { key: "Mod-Alt-6", run: (target) => formatBlock(target, "numbered") },
+            ...formatKeys,
             ...defaultKeymap,
             ...historyKeymap,
           ]),
@@ -135,6 +133,7 @@ export function NotesEditor({
           markdown({ base: markdownLanguage, codeLanguages }),
           EditorView.lineWrapping,
           notesAppearance,
+          page ? notePage : [],
           lineFlash,
           livePreview({
             onCite: (id) => {
@@ -169,6 +168,7 @@ export function NotesEditor({
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
               changed.current(update.state.doc.toString());
+              setCurrent(update.state.doc.toString());
             }
 
             if (update.selectionSet || update.focusChanged || update.docChanged) {
@@ -184,11 +184,16 @@ export function NotesEditor({
     });
 
     view.current = built;
+    setCurrent(built.state.doc.toString());
+    // Known from the start, so formatting docked open is there before anything is typed.
+    setFormat({ at: null, state: formatStateOf(built), selected: false });
+    setViewReady(true);
     ready.current();
 
     return () => {
       built.destroy();
       view.current = null;
+      setViewReady(false);
     };
   }, [generation]);
 
@@ -272,7 +277,11 @@ export function NotesEditor({
 
   return (
     <>
-      <div className="notes-editor" ref={host} />
+      <div className="notes-body" ref={body}>
+        <div className="notes-editor" ref={host} />
+        {viewReady && <BlockHandles box={body} view={view} />}
+        {viewReady && <HeadingRail text={current} view={view} />}
+      </div>
       {format !== null && (
         <NotesFormatting
           at={format.at}

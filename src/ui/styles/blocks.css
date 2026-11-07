@@ -1,0 +1,169 @@
+/**
+ * Notion's handles in the notes (2026-11-07): `+` and ⋮⋮ beside the block under the
+ * pointer, the line showing where a dragged block lands, and the headings as dashes down
+ * the right edge, listed by name on hover.
+ */
+
+/* The box the editor and its overlays share, which they are positioned in. */
+.notes-body {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
+
+.block-handle {
+  position: absolute;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.block-handle-button {
+  width: 22px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+}
+
+.block-handle-button:hover,
+.block-handle-button:focus-visible {
+  background: var(--track);
+  color: var(--text-secondary);
+}
+
+.block-handle-button.grip {
+  cursor: grab;
+}
+
+.block-handle-button.grip:active {
+  cursor: grabbing;
+}
+
+/* Where a dragged block will land: the accent, across the writing. */
+.block-drop {
+  position: absolute;
+  z-index: 4;
+  left: 40px;
+  right: 40px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+  pointer-events: none;
+}
+
+/* The headings, as dashes at the right edge: longer for a higher level, bright for the
+   section being read. The names appear beside them on hover or keyboard focus. */
+.heading-rail {
+  position: absolute;
+  top: 24px;
+  right: 10px;
+  z-index: 5;
+}
+
+.heading-dashes {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  margin: 0;
+  padding: 6px 4px;
+  list-style: none;
+}
+
+.heading-dashes li {
+  display: flex;
+}
+
+.heading-dash {
+  display: block;
+  width: 18px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border-strong);
+}
+
+.heading-dash[data-level="2"] {
+  width: 14px;
+}
+
+.heading-dash[data-level="3"],
+.heading-dash[data-level="4"],
+.heading-dash[data-level="5"],
+.heading-dash[data-level="6"] {
+  width: 10px;
+}
+
+.heading-dash[data-current="true"] {
+  background: var(--text);
+}
+
+.heading-list {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: none;
+  min-width: 200px;
+  max-width: 280px;
+  max-height: 60vh;
+  overflow-y: auto;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+}
+
+.heading-rail:hover .heading-list,
+.heading-rail:focus-within .heading-list {
+  display: block;
+}
+
+.heading-link {
+  display: block;
+  width: 100%;
+  padding: 6px 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.heading-link:hover,
+.heading-link:focus-visible {
+  background: var(--track);
+  color: var(--text);
+}
+
+.heading-link[data-level="2"] {
+  padding-left: 22px;
+}
+
+.heading-link[data-level="3"],
+.heading-link[data-level="4"],
+.heading-link[data-level="5"],
+.heading-link[data-level="6"] {
+  padding-left: 34px;
+}
+
+.heading-link[aria-current="location"] {
+  color: var(--accent);
+  font-weight: 500;
+}

@@ -17,97 +17,12 @@
  */
 import { syntaxTree } from "@codemirror/language";
 import type { EditorState, Range } from "@codemirror/state";
-import { Decoration, WidgetType, type EditorView } from "@codemirror/view";
+import { Decoration } from "@codemirror/view";
 
+import { BulletWidget, CheckboxWidget, LanguageWidget, RuleWidget } from "./markupWidgets";
 import { parseTable, TableWidget } from "./table";
 
 const hidden = Decoration.replace({});
-
-class BulletWidget extends WidgetType {
-  constructor(readonly depth: number) {
-    super();
-  }
-
-  override eq(other: BulletWidget): boolean {
-    return other.depth === this.depth;
-  }
-
-  override toDOM(): HTMLElement {
-    const bullet = document.createElement("span");
-
-    bullet.className = "md-bullet";
-    bullet.textContent = ["•", "◦", "▪"][this.depth % 3] ?? "•";
-
-    return bullet;
-  }
-}
-
-/** A task's box. Clicking it toggles `[ ]` and `[x]` in the text itself. */
-class CheckboxWidget extends WidgetType {
-  constructor(
-    readonly checked: boolean,
-    readonly at: number,
-  ) {
-    super();
-  }
-
-  override eq(other: CheckboxWidget): boolean {
-    return other.checked === this.checked && other.at === this.at;
-  }
-
-  override toDOM(view: EditorView): HTMLElement {
-    const box = document.createElement("input");
-
-    box.type = "checkbox";
-    box.className = "md-checkbox";
-    box.checked = this.checked;
-    box.setAttribute("aria-label", this.checked ? "Done" : "Not done");
-    box.addEventListener("mousedown", (event) => {
-      event.preventDefault();
-      view.dispatch({ changes: { from: this.at, to: this.at + 3, insert: this.checked ? "[ ]" : "[x]" } });
-    });
-
-    return box;
-  }
-
-  override ignoreEvent(): boolean {
-    return true;
-  }
-}
-
-/** The language of a code block, as a quiet label in its top corner. */
-class LanguageWidget extends WidgetType {
-  constructor(readonly language: string) {
-    super();
-  }
-
-  override eq(other: LanguageWidget): boolean {
-    return other.language === this.language;
-  }
-
-  override toDOM(): HTMLElement {
-    const label = document.createElement("span");
-
-    label.className = "md-code-lang";
-    label.textContent = this.language;
-
-    return label;
-  }
-}
-
-class RuleWidget extends WidgetType {
-  override eq(): boolean {
-    return true;
-  }
-
-  override toDOM(): HTMLElement {
-    const rule = document.createElement("span");
-
-    rule.className = "md-rule";
-
-    return rule;
-  }
-}
 
 /** The lines any cursor or selection touches. */
 export function activeLines(state: EditorState): Set<number> {
@@ -245,19 +160,33 @@ export function markupDecorations(
           }
           return true;
 
-        case "ListMark":
-          if (offLine(node.from) && node.node.parent?.parent?.name === "BulletList") {
+        case "ListMark": {
+          // A to-do is drawn as its box alone, as the canvas draws it: the list's own `-`
+          // before it would put a bullet beside the box.
+          const isTask = (node.node.parent?.getChild("Task") ?? null) !== null;
+
+          if (offLine(node.from) && isTask) {
+            hideWithSpace(node.from, node.to);
+          } else if (offLine(node.from) && node.node.parent?.parent?.name === "BulletList") {
             out.push(Decoration.replace({ widget: new BulletWidget(lists - 1) }).range(node.from, node.to));
           }
           return true;
+        }
 
-        case "TaskMarker":
+        case "TaskMarker": {
+          const checked = /x/i.test(doc.sliceString(node.from, node.to));
+          const task = node.node.parent;
+
           if (offLine(node.from)) {
-            const checked = /x/i.test(doc.sliceString(node.from, node.to));
-
             out.push(Decoration.replace({ widget: new CheckboxWidget(checked, node.from) }).range(node.from, node.to));
           }
+
+          // Done is struck through and quieter, whether or not the cursor is on the line.
+          if (checked && task !== null && task.to > node.to) {
+            out.push(Decoration.mark({ class: "md-done" }).range(node.to, task.to));
+          }
           return true;
+        }
 
         case "HorizontalRule":
           if (offLine(node.from)) {

@@ -463,6 +463,46 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-07 · Notes like the canvas, and like Notion: page, to-dos, handles, headings**
+The user: *"you didn't build the notes page exactly as that in the canvas … the formatting
+bar appears on the top below the name of the note, then everything is centered, the
+checkbox appear different … i would also like to see the line by line marker like we have
+in notion … the scroll bar in notion shows"* — with screenshots of Notion's ⋮⋮ handle and
+its heading dashes at the right edge.
+
+**A plain note's page** now matches "Monday plans": its formatting bar is open from the
+start, centred under the header, and the writing is a centred 680px column at 17px with
+room above (`notePage`, a CodeMirror theme, since stylesheet rules lose to the editor's
+own — a test enforces that). Found on the way: a docked bar could not draw until the editor
+first reported a change, so a fresh note showed none; the editor now reports once on
+creation.
+
+**To-dos** are the canvas's rounded squares (a drawn element with `role="checkbox"`, so
+the tick takes each theme's on-accent colour — white vanished on a light accent), drawn
+without the list's bullet beside them, and a done item's words are struck through and
+quieter.
+
+**The ⋮⋮ handle** (`BlockHandles`, rules in `notes/blocks.ts`): hovering a line shows `+`
+and ⋮⋮ beside it. `+` adds a line below; a click on ⋮⋮ selects the block, so the format
+bar can turn it into a heading or list; a drag moves it, with an accent line where it will
+land. A block is a line, or a whole fenced code block or table, which move as one. ⌥↑/⌥↓
+(CodeMirror's) moves a line from the keyboard, as the handle's title says. The writing's
+left padding grew to 56px to make room.
+
+**The heading rail** (`HeadingRail`): a dash per heading down the right edge, longer for a
+higher level, bright for the section being read; a hover or keyboard focus lists them by
+name, and choosing one goes there. Shown from two headings. Found by its journey: a heading
+near the end can never scroll to the top, so at the very bottom the current section is the
+last heading on screen — the same end-of-document case as the page counter's.
+
+`NotesEditor.tsx` stayed under 300 lines by moving the formatting shortcuts beside their
+commands (`formatKeys` in `markSelection.ts`).
+
+Verified: gate green. `blocks.test.ts` (12: blocks, moving, headings); task-drawing unit
+tests; journeys for the handle's +, drag (proved by making moves do nothing), click to
+select and turn into a heading, the rail following and jumping, to-dos, and a new note
+opening with its formatting showing.
+
 **2026-11-07 · Redesign, step 5: details sheet, notices, library, empty pane, drop**
 **The edit panel is the canvas's Details sheet**: headed by the item itself — its kind's
 icon and its name — then "Document · in CS454 / Week 3", then Title across, Number and

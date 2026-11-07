@@ -32,7 +32,18 @@ function render(doc: string, cursorLine: number, claimed: (from: number, to: num
       return { line: state.doc.lineAt(range.from).number, cls };
     });
 
-  return { replaced, lines, tables };
+  // Marks over words, by the class they give them.
+  const marks = decorations
+    .filter((range) => range.from !== range.to)
+    .flatMap((range) => {
+      const spec: unknown = range.value.spec;
+
+      return typeof spec === "object" && spec !== null && "class" in spec
+        ? [{ text: doc.slice(range.from, range.to), cls: String(spec.class) }]
+        : [];
+    });
+
+  return { replaced, lines, marks, tables };
 }
 
 const END = "\n\nThe end.";
@@ -66,10 +77,21 @@ describe("off the cursor's line", () => {
     expect(render(doc, last(doc)).replaced).toEqual(["-"]);
   });
 
-  it("draws a checkbox for a task", () => {
+  it("draws a task as its box alone, with no bullet beside it", () => {
     const doc = `- [ ] read the paper${END}`;
+    const { replaced } = render(doc, last(doc));
 
-    expect(render(doc, last(doc)).replaced).toContain("[ ]");
+    expect(replaced).toContain("[ ]");
+    // The list's `-` (and its space) goes, rather than becoming a bullet.
+    expect(replaced).toContain("- ");
+  });
+
+  it("strikes through a done task's words, and not an open one's", () => {
+    const doc = `- [x] read the paper\n- [ ] write it up${END}`;
+    const { marks } = render(doc, last(doc));
+
+    expect(marks).toContainEqual({ text: " read the paper", cls: "md-done" });
+    expect(marks.some((mark) => mark.text.includes("write it up"))).toBe(false);
   });
 
   it("keeps a link's words and hides its address", () => {

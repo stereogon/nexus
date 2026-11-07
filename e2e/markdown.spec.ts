@@ -88,11 +88,14 @@ test("list items show bullets, and a task shows a checkbox that ticks", async ({
   await expect(line(page, "first point").locator(".md-bullet")).toHaveText("•");
   await expect(line(page, "a nested one").locator(".md-bullet")).toHaveText("◦");
 
-  const box = line(page, "read chapter 3").locator("input.md-checkbox");
+  // The box alone, as the canvas draws a to-do: no bullet beside it.
+  const box = line(page, "read chapter 3").getByRole("checkbox");
 
-  await expect(box).not.toBeChecked();
+  await expect(line(page, "read chapter 3").locator(".md-bullet")).toHaveCount(0);
+  await expect(box).toHaveAttribute("aria-checked", "false");
   await box.click();
-  await expect(line(page, "read chapter 3").locator("input.md-checkbox")).toBeChecked();
+  await expect(line(page, "read chapter 3").getByRole("checkbox")).toHaveAttribute("aria-checked", "true");
+  await expect(line(page, "read chapter 3").locator(".md-done")).toHaveCSS("text-decoration-line", "line-through");
 });
 
 test("the line the cursor is on shows its Markdown", async ({ page }) => {

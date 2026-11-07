@@ -70,6 +70,12 @@
   border-left: none;
 }
 
+/* A plain note's page, as the canvas draws "Monday plans": the formatting centred under
+   the header. The writing's own column is `notePage` in `notes/theme.ts`. */
+.notes-pane.alone .format-strip {
+  justify-content: center;
+}
+
 .notes-pane[hidden] {
   display: none;
 }

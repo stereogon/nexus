@@ -45,6 +45,9 @@ test("a folder made here is stepped into, and a note made there opens to be writ
   // A note has no document: its notes are the whole pane, headed by its name.
   const notes = page.getByRole("complementary", { name: "Notes" });
   await expect(notes.locator(".notes-title")).toHaveText("Journal /Monday plans");
+  // As the canvas draws a note: its formatting open from the start, under the header.
+  await expect(notes.getByRole("toolbar", { name: "Format" })).toBeVisible();
+  await expect(notes.getByRole("button", { name: "Formatting" })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByLabel("Page 1", { exact: true })).toHaveCount(0);
   await expect(sidebar(page).getByRole("button", { name: "Monday plans", exact: true })).toBeVisible();
   await expect(notes.locator(".notes-bar")).toContainText("Journal /");

@@ -86,7 +86,9 @@ export function NotesPane({
   const [pasteFailure, setPasteFailure] = useState<CommandError | null>(null);
   const [dropping, setDropping] = useState(false);
   // The format controls docked open under the header, for choosing a format before writing.
-  const [formatting, setFormatting] = useState(false);
+  // Open from the start on a plain note, as the canvas draws one: a note is written, not
+  // annotated beside a document, so its formatting is wanted up front.
+  const [formatting, setFormatting] = useState(alone !== null);
   const pane = useRef<HTMLElement | null>(null);
   const editor = useRef<NotesHandle | null>(null);
 
@@ -255,6 +257,7 @@ export function NotesPane({
           reveal={reveal}
           onReady={onReady}
           formatting={formatting}
+          page={alone !== null}
           text={notes.loaded.text}
         />
       )}

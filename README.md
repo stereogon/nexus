@@ -69,6 +69,9 @@ in a folder you choose. Nothing leaves your Mac.
 - A Notion-style format bar over a selection, or docked open from the notes' **Aa** button
   to choose a format before writing; shortcuts too, plus highlighting in the notes in the
   same four meanings.
+- Notion-style handles: hover a line for `+` (add a line below) and `⋮⋮` (drag to move it,
+  or click to select it); headings appear as dashes down the right edge, to jump between.
+- To-dos are drawn as boxes; a done one is struck through.
 - Saves as you type. The divider between document and notes can be dragged, and its width
   is remembered on this Mac.
 

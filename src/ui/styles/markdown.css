@@ -145,11 +145,43 @@ span.md-problem {
   font-weight: 700;
 }
 
+/* A to-do's box, drawn as the canvas draws it (2026-11-07): a rounded square, filled with
+   the accent and ticked in the on-accent colour once done. */
 .md-checkbox {
-  margin: 0 0.35em 0 0;
-  vertical-align: -0.1em;
-  accent-color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 16px;
+  height: 16px;
+  margin: 0 0.55em 0 0;
+  border: 1.5px solid var(--text-faint);
+  border-radius: 4px;
+  background: var(--surface);
+  vertical-align: -0.15em;
   cursor: pointer;
+}
+
+.md-checkbox[aria-checked="true"] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.md-checkbox svg {
+  width: 11px;
+  height: 11px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* A done to-do's words: struck through and quieter. */
+.md-done {
+  color: var(--text-meta);
+  text-decoration: line-through;
 }
 
 /* `---`, drawn as a rule across the measure. */

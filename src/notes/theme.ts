@@ -32,7 +32,8 @@ const editorTheme = EditorView.theme({
     // A reading measure: long lines of prose are hard to track back across.
     maxWidth: "68ch",
     margin: "0 auto",
-    padding: "28px 32px 40vh",
+    // Deeper on the left, for the + and ⋮⋮ handle beside each line (`BlockHandles`).
+    padding: "28px 32px 40vh 56px",
     caretColor: "var(--accent)",
   },
   ".cm-line": { padding: "0" },
@@ -136,3 +137,13 @@ const markdownStyle = HighlightStyle.define([
 
 /** Everything about the notes' appearance, as one extension. */
 export const notesAppearance = [editorTheme, syntaxHighlighting(markdownStyle)];
+
+/**
+ * A plain note's page, over `notesAppearance`: as the redesign canvas draws "Monday
+ * plans", the writing is the whole pane, so it sits in a wider centred column, a little
+ * larger, with room above it. Beside a document the narrower measure stays.
+ */
+export const notePage = EditorView.theme({
+  ".cm-scroller": { fontSize: "17px" },
+  ".cm-content": { maxWidth: "680px", paddingTop: "48px" },
+});
