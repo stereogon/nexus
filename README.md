@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="crates/src-tauri/icons/128x128@2x.png" width="128" height="128" alt="The Nexus icon: a hand-drawn paper creature with a folded corner and a smile, in white on near-black">
+</p>
+
 # Nexus
 
 **A local-first macOS app for Markdown notes — on their own, or beside the documents they are about.**
