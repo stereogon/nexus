@@ -15,6 +15,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Annotation } from "../ipc/annotations";
 import type { OpenedDocument } from "../ipc/document";
 import { citationBlock } from "../notes/citation";
+import type { PageHeading } from "../notes/pageHeading";
 import { parentOf, spoken } from "./folders";
 import { NotesDivider } from "./NotesDivider";
 import type { NotesHandle } from "./NotesEditor";
@@ -28,6 +29,7 @@ import { useNotesWidth } from "./useNotesWidth";
 export function Reading({
   document,
   title,
+  heading,
   vault,
   directory,
   onClose,
@@ -36,6 +38,8 @@ export function Reading({
   /** `null` for a plain note: its notes are then the whole pane. */
   readonly document: OpenedDocument | null;
   readonly title: string;
+  /** The notes' title and the line under it. */
+  readonly heading: PageHeading;
   readonly vault: string;
   readonly directory: string;
   readonly onClose: () => void;
@@ -144,6 +148,7 @@ export function Reading({
     return (
       <div className="reading" ref={area}>
         <NotesPane
+          heading={heading}
           alone={{ title, place: spoken(parentOf(directory)), onClose }}
           directory={directory}
           handle={notes}
@@ -176,6 +181,7 @@ export function Reading({
       />
       {notesOpen && <NotesDivider sizing={sizing} />}
       <NotesPane
+        heading={heading}
         directory={directory}
         handle={notes}
         hidden={!notesOpen}

@@ -4,7 +4,7 @@
  */
 import { expect, test, type Page } from "@playwright/test";
 
-import { READING } from "./fixture";
+import { READING, standardFixture } from "./fixture";
 import { openLecture, openNexus } from "./nexus";
 
 const notes = (page: Page) => page.getByRole("complementary", { name: "Notes" });
@@ -62,4 +62,32 @@ test("an image path outside the lecture is not loaded", async ({ page }) => {
 
   await expect(notes(page).getByText(/Only images in these notes' assets folder are shown/)).toBeVisible();
   await expect(notes(page).locator("img.md-image")).toHaveCount(0);
+});
+
+test("typing on before a pasted image is kept still links it where it was pasted", async ({ page }) => {
+  // A fresh window whose disk is slow, so the typing lands first.
+  await page.goto("about:blank");
+  await openNexus(page, { ...standardFixture(), assetDelayMs: 600, notes: { [READING.directory]: "Before" } });
+  await openLecture(page, READING.title);
+  await notes(page).locator(".cm-line").filter({ hasText: "Before" }).click();
+  await page.keyboard.press("End");
+
+  await paste(page, PNG, "image/png");
+  await page.keyboard.type(" and after");
+
+  // The image sits where it was pasted, before the words typed while it was kept.
+  const line = notes(page).locator(".cm-line").filter({ has: page.locator("img.md-image") });
+  await expect(line).toHaveCount(1);
+  expect(
+    await line.evaluate((element) => {
+      const nodes = [...element.childNodes];
+      const image = nodes.findIndex((node) => node instanceof HTMLImageElement && node.classList.contains("md-image"));
+
+      return nodes
+        .slice(0, image)
+        .map((node) => node.textContent)
+        .join("");
+    }),
+  ).toBe("Before");
+  await expect(line).toContainText(" and after");
 });

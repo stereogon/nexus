@@ -71,6 +71,7 @@ export function folderHandlers(held: Held): Handlers {
       const note: LectureRow = {
         directory: path,
         kind: "note",
+        createdAt: new Date().toISOString().replace(/\.\d+Z$/, "Z"),
         title: title.trim(),
         number: null,
         numberInTitle: null,

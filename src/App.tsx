@@ -44,6 +44,7 @@ import { useSidebar } from "./ui/useSidebar";
 import { useTheme } from "./ui/useTheme";
 import { lecturesOf, rootOf } from "./ui/vaultState";
 import { useVault } from "./ui/useVault";
+import { headingMeta } from "./notes/pageHeading";
 import { Welcome } from "./ui/Welcome";
 import { WorkspaceSearch } from "./ui/WorkspaceSearch";
 
@@ -177,6 +178,7 @@ export function App() {
             document={open.document}
             onClose={reading.close}
             title={open.lecture.title}
+            heading={{ title: open.lecture.title, meta: headingMeta(open.lecture.createdAt, open.lecture.tags) }}
             vault={summary.root}
           />
         ) : (

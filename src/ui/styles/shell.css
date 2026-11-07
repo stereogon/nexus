@@ -9,6 +9,34 @@
   box-sizing: border-box;
 }
 
+/* Scrollbars, thin and quiet, brighter under the pointer, on the lists and panels a long
+   note or vault scrolls in (2026-11-07). Not on the document's bed: a drawn scrollbar takes
+   width where macOS's overlay one does not, so the page re-fitted narrower once it
+   appeared, after the reading place had been restored, and reopened 23px low (found by the
+   position journey). The notes' scroller is styled in their editor theme. */
+.sidebar-list::-webkit-scrollbar,
+.library-body::-webkit-scrollbar,
+.search-results::-webkit-scrollbar,
+.settings-box::-webkit-scrollbar {
+  width: 10px;
+}
+
+.sidebar-list::-webkit-scrollbar-thumb,
+.library-body::-webkit-scrollbar-thumb,
+.search-results::-webkit-scrollbar-thumb,
+.settings-box::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 10px;
+  background: var(--border) padding-box;
+}
+
+.sidebar-list::-webkit-scrollbar-thumb:hover,
+.library-body::-webkit-scrollbar-thumb:hover,
+.search-results::-webkit-scrollbar-thumb:hover,
+.settings-box::-webkit-scrollbar-thumb:hover {
+  background: var(--text-faint) padding-box;
+}
+
 body {
   margin: 0;
   background: var(--chrome);

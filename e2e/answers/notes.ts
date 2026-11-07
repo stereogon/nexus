@@ -37,7 +37,16 @@ export function notesHandlers(fixture: Fixture): Handlers {
 
       pastes += 1;
 
-      return { outcome: "saved", path: `assets/20261105-101530-pasted${String(pastes)}.png` };
+      const saved = { outcome: "saved", path: `assets/20261105-101530-pasted${String(pastes)}.png` };
+
+      // Answered late when the fixture says the disk is slow; the mock IPC awaits it.
+      return fixture.assetDelayMs === undefined
+        ? saved
+        : new Promise((resolve) => {
+            setTimeout(() => {
+              resolve(saved);
+            }, fixture.assetDelayMs);
+          });
     },
     // Judged by name here; the real command judges the bytes, which Rust tests cover.
     save_dropped_image: (args) => {

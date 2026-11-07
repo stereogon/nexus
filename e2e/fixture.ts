@@ -41,6 +41,11 @@ export interface Fixture {
   readonly positions?: Readonly<Record<string, { readonly page: number; readonly offset: number }>>;
   /** The lecture this device last had open, as a previous session left it. */
   readonly lastLecture?: string;
+  /**
+   * How long keeping a pasted image takes, to stand in for a slow disk: the paste journey
+   * types on before it is kept, which is how the link landing mid-sentence was found.
+   */
+  readonly assetDelayMs?: number;
   /** Folders with nothing in them; those holding an item are listed from its path. */
   readonly folders?: readonly string[];
 }
@@ -52,6 +57,7 @@ function row(directory: string, title: string, week: string): LectureRow {
   return {
     directory,
     kind: "document",
+    createdAt: "2026-11-01T09:00:00Z",
     title,
     number: null,
     numberInTitle: null,

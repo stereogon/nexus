@@ -14,6 +14,7 @@ function lecture(title: string, conversion: ConversionState): LectureRow {
   return {
     directory: title.toLowerCase(),
     kind: "document",
+    createdAt: "2026-11-01T09:00:00Z",
     title,
     number: null,
     numberInTitle: null,
@@ -149,6 +150,7 @@ describe("importing a drop", () => {
   const lecture = (title: string): LectureRow => ({
     directory: title.toLowerCase(),
     kind: "document",
+    createdAt: "2026-11-01T09:00:00Z",
     title,
     number: null,
     numberInTitle: null,

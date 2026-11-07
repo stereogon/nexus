@@ -42,6 +42,8 @@ export const LectureRowSchema = z.object({
   directory: z.string(),
   kind: z.enum(["document", "note"]),
   title: z.string(),
+  /** When it was made, as RFC 3339; shown under the notes' title. */
+  createdAt: z.string(),
   /** Its number in the course, if it has one. */
   number: z.string().nullable(),
   /**

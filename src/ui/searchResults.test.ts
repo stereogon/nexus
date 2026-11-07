@@ -8,6 +8,7 @@ function item(directory: string, title: string, kind: LectureRow["kind"] = "docu
   return {
     directory,
     kind,
+    createdAt: "2026-11-01T09:00:00Z",
     title,
     number: null,
     numberInTitle: null,

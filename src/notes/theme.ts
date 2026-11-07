@@ -19,10 +19,24 @@ import { tags } from "@lezer/highlight";
 const editorTheme = EditorView.theme({
   "&": {
     height: "100%",
+    // The whole pane, so the measure below is centred in it with margins either side. As a
+    // flex child it shrank to its own measure and sat at the left, its scrollbar halfway
+    // across the pane (reported 2026-11-07).
+    flex: "1 1 auto",
+    minWidth: "0",
     color: "var(--text)",
     backgroundColor: "var(--surface)",
   },
   "&.cm-focused": { outline: "none" },
+  // A thin, quiet scrollbar, as the window's lists have (`shell.css`), rather than a full
+  // bar drawn down the pane (reported 2026-11-07).
+  ".cm-scroller::-webkit-scrollbar": { width: "10px" },
+  ".cm-scroller::-webkit-scrollbar-thumb": {
+    border: "3px solid transparent",
+    borderRadius: "10px",
+    background: "var(--border) padding-box",
+  },
+  ".cm-scroller::-webkit-scrollbar-thumb:hover": { background: "var(--text-faint) padding-box" },
   ".cm-scroller": {
     fontFamily: "var(--font-prose)",
     fontSize: "16px",
@@ -77,13 +91,48 @@ const editorTheme = EditorView.theme({
     marginBottom: "6px",
     color: "var(--text-faint)",
   },
-  ".md-code-lang": {
-    float: "right",
+  // The code block's header (2026-11-07): the language menu at the left, Copy at the right,
+  // on the panel's first line, as Notion has them.
+  ".md-code-head": {
+    display: "inline-flex",
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "8px",
+  },
+  ".md-code-lang, .md-code-copy": {
+    height: "24px",
+    padding: "0 6px",
+    border: "none",
+    borderRadius: "6px",
+    background: "transparent",
+    color: "var(--text-meta)",
     fontFamily: "var(--font-ui)",
-    fontSize: "11px",
-    letterSpacing: "0.04em",
-    textTransform: "uppercase",
-    color: "var(--text-faint)",
+    fontSize: "12px",
+    cursor: "pointer",
+  },
+  ".md-code-lang:hover, .md-code-copy:hover": {
+    background: "var(--track)",
+    color: "var(--text)",
+  },
+  // The notes' title and the line under it (`pageHeading`), as the canvas draws them.
+  // Padding, never margin: the editor measures a block widget's own box to place the lines
+  // after it, and a margin outside it put every click below the title a line off (found by
+  // the formatting journeys, 2026-11-07).
+  ".md-page-head": { paddingBottom: "26px" },
+  ".md-page-title": {
+    margin: "0",
+    fontFamily: "var(--font-prose)",
+    fontSize: "2em",
+    fontWeight: "600",
+    lineHeight: "1.2",
+    color: "var(--text)",
+  },
+  ".md-page-meta": {
+    margin: "6px 0 0",
+    fontFamily: "var(--font-ui)",
+    fontSize: "12px",
+    color: "var(--text-meta)",
   },
   ".md-table-source": { fontFamily: "var(--font-mono)", fontSize: "0.86em" },
   ".md-inline-code": {

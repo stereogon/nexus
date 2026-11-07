@@ -7,6 +7,7 @@
     {
       "conversion": "ready",
       "course": "CS454 Distributed Systems",
+      "createdAt": "2026-10-27T16:00:00Z",
       "directory": "cs454/01-raft",
       "documentReady": true,
       "kind": "document",
@@ -24,6 +25,7 @@
     {
       "conversion": "notRequired",
       "course": null,
+      "createdAt": "2026-10-27T16:00:00Z",
       "directory": "cs454/02-paxos",
       "documentReady": true,
       "kind": "document",
@@ -38,6 +40,7 @@
     {
       "conversion": "notRequired",
       "course": null,
+      "createdAt": "2026-10-27T16:00:00Z",
       "directory": "cs454/summary",
       "documentReady": false,
       "kind": "note",

@@ -463,6 +463,76 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-07 · Notes' title and line under it; citations as cards; two fixes found on the way**
+The user, with the canvas's notes beside a document and its "Monday plans": *"why does the
+citaions don't look like this, and there is no header and sutitle in the notes ?"*
+
+**The notes begin with the item's title and a line under it** — "Created 2 November 2026 ·
+errands, uni, gym" (`headingMeta`) — beside a document and on a plain note alike. Drawn by
+the editor above the first line (`pageHeading`, a block widget), so it scrolls with the
+writing and sits in its measure, but it is not written into `notes.md`: the name is the
+item's own, and renaming it redraws the title in place. `LectureRow` gained `createdAt`
+for it; `fixtures/vault-summary.json` regenerated.
+
+**A citation is the canvas's card**: a bordered soft panel, a pin and "Page 4" in the
+accent, the quote below in the notes' italic. It had been a coloured bar down one side and
+a filled "Page 4 ↗" pill.
+
+**Found on the way, both by journeys:**
+- *Reopening a document landed 23px low.* The thin scrollbars added earlier today were
+  global, and a drawn scrollbar takes width where macOS's overlay one does not: the bed
+  narrowed once its scrollbar appeared, after the reading place had been restored, and the
+  page re-fitted under it. Scrollbars are now styled only on the lists and panels (and the
+  notes, through their editor theme); the document's bed keeps the native one.
+- *A pasted image's link went wherever the cursor was once the image was kept*, not where
+  it was pasted — so typing on straight away put it mid-sentence. That was the paste
+  journey's intermittent failure under load (recorded open earlier today), and it was a
+  real bug, not a flaky test. The spot is now held as a marker the editor maps through
+  every edit meanwhile (`pasteImage.ts`), and the link lands there; the cursor follows it
+  only if it has not moved. A journey with a slow disk (`assetDelayMs`) types on before the
+  image is kept, and fails with the old behaviour.
+- *Every click below the new title landed a line off.* The editor measures a block
+  widget's own box to place the lines after it; the title's gap was a margin, outside
+  that box. Fourteen formatting and block journeys failed on it; the gap is padding now.
+
+Verified: gate green. `pageHeading.test.ts` (3); journeys for the title above the writing,
+renaming it in place, the citation card, and the slow paste (proved by restoring the old
+insertion point).
+
+**2026-11-07 · Notes: centred, formatting on top, + asks, code blocks with a language**
+From a screenshot of the real window: *"what is this scrollbar … the text should be
+centered right ? … when we click on + it should open the formatting panel as well … our
+code blocks don't look like the code blocks of notion, where we can change language"*.
+
+**The bar down the middle was the editor's scrollbar.** The editor, a flex child, shrank
+to its own 680px measure and sat at the left of the pane, so its scrollbar was drawn
+halfway across and the writing was not centred. It now fills the pane (`flex: 1 1 auto` in
+its theme), the measure centred with margins either side; a journey checks the margins
+are even, and fails without the fix. Scrollbars throughout are now thin and faint,
+brighter under the pointer. **The docked formatting bar** had been rendered after the
+editor, so it sat at the foot of a note; it is now under the header, as the canvas draws
+it, which the same journey checks.
+
+**+ asks what the new line is**, as Notion's does: Text, Heading 1–3, Bulleted, Numbered,
+To-do, Quote, Code, Divider. Typing instead closes the menu and leaves the line plain.
+
+**Code blocks have a header**: a language menu and Copy (`CodeHeaderWidget`). Choosing a
+language rewrites the fence's tag and the colouring follows; a block in a language that
+is not installed keeps its own name in the menu, marked "not coloured", rather than being
+called plain text. Copy takes the code without its fences, and says so when the clipboard
+refuses. The header now stays while writing inside the block — only the fence lines
+themselves show their Markdown when the cursor is on them.
+
+**Languages:** the menu offers what is installed — JavaScript, TypeScript, JSON, CSS,
+HTML, plain text. Python, Java, C/C++, Rust, Go, SQL and others each need a CodeMirror
+grammar package (`@codemirror/lang-python` and so on); not added, since installing is the
+user's to approve.
+
+Verified: gate green. `codeLanguages.test.ts` (3); journeys for + and its menu, typing
+past it, + starting a code block whose language menu rewrites the fence and colours it,
+and the note page's formatting on top and writing centred (proved by letting the editor
+shrink again).
+
 **2026-11-07 · Notes like the canvas, and like Notion: page, to-dos, handles, headings**
 The user: *"you didn't build the notes page exactly as that in the canvas … the formatting
 bar appears on the top below the name of the note, then everything is centered, the
@@ -575,9 +645,9 @@ the window and its role into `searchResults`. `App.tsx` passed 300 lines with th
 so two jobs moved out along their seams: `useVault` (restoring, choosing and re-reading
 the vault) and `WorkspaceSearch` (where each kind of result goes).
 
-**Open:** in one full Playwright run the paste journey's image did not appear (`paste.spec`
-line 42, under the suite's full parallel load); 30 isolated repeats passed, and the next
-full run passed. Recorded rather than retried away; to look at if it recurs.
+**Open (resolved later the same day):** in one full Playwright run the paste journey's
+image did not appear (`paste.spec` line 42, under the suite's full parallel load). It
+recurred, and was a real bug — see "a pasted image's link went wherever the cursor was".
 
 Verified: gate green. `searchResults.test.ts` (5), `SearchWindow.test.tsx` (7: order,
 focus, arrows and Enter, click, closing, typing), the sidebar's search control; journeys

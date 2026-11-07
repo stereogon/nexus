@@ -29,6 +29,8 @@ import { codeLanguages } from "../notes/codeLanguages";
 import { flashLine, lineFlash } from "../notes/flash";
 import { citationAt } from "../notes/insert";
 import { livePreview } from "../notes/preview/field";
+import { pageHeading, setHeading, type PageHeading } from "../notes/pageHeading";
+import { pasteImages } from "../notes/pasteImage";
 import { notePage, notesAppearance } from "../notes/theme";
 import type { Point } from "./notesDrop";
 
@@ -54,6 +56,7 @@ export function NotesEditor({
   reveal,
   formatting,
   page,
+  heading,
 }: {
   /** The text to start from, taken afresh only when `generation` changes. */
   readonly text: string;
@@ -76,6 +79,8 @@ export function NotesEditor({
   readonly formatting: boolean;
   /** A plain note's whole page, rather than notes beside a document. Fixed for a mount. */
   readonly page: boolean;
+  /** The title and the line under it, drawn above the first line (`pageHeading`). */
+  readonly heading: PageHeading;
 }) {
   const host = useRef<HTMLDivElement | null>(null);
   const body = useRef<HTMLDivElement | null>(null);
@@ -109,6 +114,8 @@ export function NotesEditor({
   // Read once per generation: a new value of `text` alone must not rebuild the view.
   const starting = useRef(text);
   starting.current = text;
+  const titled = useRef(heading);
+  titled.current = heading;
 
   useEffect(() => {
     const parent = host.current;
@@ -134,6 +141,7 @@ export function NotesEditor({
           EditorView.lineWrapping,
           notesAppearance,
           page ? notePage : [],
+          pageHeading(titled.current),
           lineFlash,
           livePreview({
             onCite: (id) => {
@@ -145,26 +153,7 @@ export function NotesEditor({
           citeLinks((id) => {
             cited.current(id);
           }),
-          EditorView.domEventHandlers({
-            paste(event, view) {
-              const file = [...(event.clipboardData?.files ?? [])].find((item) => item.type.startsWith("image/"));
-
-              if (file === undefined) {
-                return false;
-              }
-
-              // Ours, not the browser's: the browser would paste nothing, or a file name.
-              event.preventDefault();
-
-              void pasted.current(file).then((path) => {
-                if (path !== null) {
-                  view.dispatch(view.state.replaceSelection(`![](${path})`));
-                }
-              });
-
-              return true;
-            },
-          }),
+          pasteImages(() => pasted.current),
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
               changed.current(update.state.doc.toString());
@@ -196,6 +185,11 @@ export function NotesEditor({
       setViewReady(false);
     };
   }, [generation]);
+
+  // A rename or new tags redraw the heading in place, keeping the cursor and the history.
+  useEffect(() => {
+    view.current?.dispatch({ effects: setHeading.of({ title: heading.title, meta: heading.meta }) });
+  }, [heading.title, heading.meta]);
 
   // Where each highlight's citation was last shown, so the next press moves on from it.
   const shown = useRef(new Map<string, number>());
@@ -277,11 +271,7 @@ export function NotesEditor({
 
   return (
     <>
-      <div className="notes-body" ref={body}>
-        <div className="notes-editor" ref={host} />
-        {viewReady && <BlockHandles box={body} view={view} />}
-        {viewReady && <HeadingRail text={current} view={view} />}
-      </div>
+      {/* First, so docked formatting sits under the header, as the canvas draws it. */}
       {format !== null && (
         <NotesFormatting
           at={format.at}
@@ -294,6 +284,11 @@ export function NotesEditor({
           view={view}
         />
       )}
+      <div className="notes-body" ref={body}>
+        <div className="notes-editor" ref={host} />
+        {viewReady && <BlockHandles box={body} text={current} view={view} />}
+        {viewReady && <HeadingRail text={current} view={view} />}
+      </div>
     </>
   );
 }

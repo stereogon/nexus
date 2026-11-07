@@ -14,6 +14,7 @@ import { saveDroppedImage, saveImage } from "../ipc/assets";
 import { asCommandError, type CommandError } from "../ipc/vault";
 
 import { assetUrl } from "../notes/assets";
+import type { PageHeading } from "../notes/pageHeading";
 import { Failure } from "./Failure";
 import { NotesEditor, type NotesHandle } from "./NotesEditor";
 import { acceptNotesDrops } from "./notesDrop";
@@ -55,6 +56,7 @@ export function NotesPane({
   onCited,
   width,
   alone,
+  heading,
 }: {
   readonly vault: string;
   readonly directory: string;
@@ -76,6 +78,8 @@ export function NotesPane({
    * header names the note, and closing it closes the note. `null` beside a document.
    */
   readonly alone: { readonly title: string; readonly place: string; readonly onClose: () => void } | null;
+  /** The title and the line under it, drawn above the writing. */
+  readonly heading: PageHeading;
 }) {
   const notes = useNotes(vault, directory);
 
@@ -258,6 +262,7 @@ export function NotesPane({
           onReady={onReady}
           formatting={formatting}
           page={alone !== null}
+          heading={heading}
           text={notes.loaded.text}
         />
       )}

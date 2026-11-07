@@ -19,7 +19,7 @@ import { syntaxTree } from "@codemirror/language";
 import type { EditorState, Range } from "@codemirror/state";
 import { Decoration } from "@codemirror/view";
 
-import { BulletWidget, CheckboxWidget, LanguageWidget, RuleWidget } from "./markupWidgets";
+import { BulletWidget, CheckboxWidget, CodeHeaderWidget, RuleWidget } from "./markupWidgets";
 import { parseTable, TableWidget } from "./table";
 
 const hidden = Decoration.replace({});
@@ -68,15 +68,17 @@ export function markupDecorations(
   let lists = 0;
 
   /**
-   * A fenced code block: one panel, its fences hidden and its language shown as a label
-   * while the cursor is elsewhere. Reported 2026-11-05 — the ``` lines showed as text in
+   * A fenced code block: one panel, its fences hidden and a header in place of the first —
+   * the language menu and Copy — unless the cursor is on a fence line. Reported 2026-11-05 — the ``` lines showed as text in
    * a flat grey box, and nothing was coloured.
    */
   const codeBlock = (from: number, to: number) => {
     const first = doc.lineAt(from);
     const last = doc.lineAt(to);
     const closed = last.number > first.number && /^\s*(`{3,}|~{3,})\s*$/.test(last.text);
-    const touched = [...active].some((line) => line >= first.number && line <= last.number);
+    // Only the fence lines themselves show their Markdown when the cursor is on them;
+    // writing inside the block keeps its header, as Notion's does.
+    const touched = active.has(first.number) || (closed && active.has(last.number));
 
     for (let number = first.number; number <= last.number; number += 1) {
       const edges = [number === first.number ? "md-code-first" : "", number === last.number ? "md-code-last" : ""];
@@ -90,9 +92,7 @@ export function markupDecorations(
 
     const language = /^\s*(?:`{3,}|~{3,})\s*([\w+#.-]*)/.exec(first.text)?.[1] ?? "";
 
-    out.push(
-      (language === "" ? hidden : Decoration.replace({ widget: new LanguageWidget(language) })).range(first.from, first.to),
-    );
+    out.push(Decoration.replace({ widget: new CodeHeaderWidget(language, first.from) }).range(first.from, first.to));
 
     if (closed) {
       out.push(hidden.range(last.from, last.to));

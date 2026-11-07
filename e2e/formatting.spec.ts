@@ -107,14 +107,17 @@ test("a link wraps the words and leaves the cursor for the address", async ({ pa
   await expect(source(page)).toContainText("[majority](https://raft.github.io)");
 });
 
-test("a code block is a panel: fences hidden, language shown, code coloured", async ({ page }) => {
+test("a code block is a panel: fences hidden, its language in a menu, code coloured", async ({ page }) => {
   await line(page, "The end.").click();
 
   const block = line(page, "let message");
 
   await expect(block).toHaveClass(/md-code-line/);
   await expect(notes(page)).not.toContainText("```");
-  await expect(notes(page).locator(".md-code-lang")).toHaveText("js");
+  // Each block's header reads back its language: the first is JavaScript, the second plain.
+  const languages = notes(page).getByRole("combobox", { name: "Code language" });
+  await expect(languages.nth(0)).toHaveValue("js");
+  await expect(languages.nth(1)).toHaveValue("");
 
   // The keyword is coloured differently from the plain text beside it.
   const keyword = await block.getByText("let", { exact: true }).evaluate((element) => getComputedStyle(element).color);

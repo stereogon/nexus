@@ -48,6 +48,17 @@ test("a folder made here is stepped into, and a note made there opens to be writ
   // As the canvas draws a note: its formatting open from the start, under the header.
   await expect(notes.getByRole("toolbar", { name: "Format" })).toBeVisible();
   await expect(notes.getByRole("button", { name: "Formatting" })).toHaveAttribute("aria-pressed", "true");
+  // Under the header, not below the writing; and the writing centred, with margins.
+  const strip = await notes.getByRole("toolbar", { name: "Format" }).boundingBox();
+  const writing = await notes.locator(".cm-content").boundingBox();
+  const pane = await notes.boundingBox();
+
+  if (strip === null || writing === null || pane === null) {
+    throw new Error("The note is not laid out.");
+  }
+
+  expect(strip.y).toBeLessThan(writing.y);
+  expect(Math.abs(writing.x - pane.x - (pane.x + pane.width - (writing.x + writing.width)))).toBeLessThan(24);
   await expect(page.getByLabel("Page 1", { exact: true })).toHaveCount(0);
   await expect(sidebar(page).getByRole("button", { name: "Monday plans", exact: true })).toBeVisible();
   await expect(notes.locator(".notes-bar")).toContainText("Journal /");

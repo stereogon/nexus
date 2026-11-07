@@ -6,6 +6,7 @@ import { existingFolder, sidebarRows, type Listing, type SidebarRow } from "./si
 function lecture(over: Partial<LectureRow> & { directory: string }): LectureRow {
   return {
     kind: "document",
+    createdAt: "2026-11-01T09:00:00Z",
     title: "Raft Consensus",
     number: null,
     numberInTitle: null,

@@ -4,6 +4,9 @@
  */
 import { WidgetType, type EditorView } from "@codemirror/view";
 
+import { blockAt } from "../blocks";
+import { CODE_CHOICES, choiceFor } from "../codeLanguages";
+
 export class BulletWidget extends WidgetType {
   constructor(readonly depth: number) {
     super();
@@ -70,23 +73,83 @@ export class CheckboxWidget extends WidgetType {
   }
 }
 
-/** The language of a code block, as a quiet label in its top corner. */
-export class LanguageWidget extends WidgetType {
-  constructor(readonly language: string) {
+/**
+ * A code block's header, as Notion has it (2026-11-07): a menu of languages — choosing one
+ * rewrites the fence's tag, and the colouring follows — and Copy, which takes the code
+ * without its fences.
+ */
+export class CodeHeaderWidget extends WidgetType {
+  constructor(
+    readonly tag: string,
+    /** Where the opening fence starts. */
+    readonly at: number,
+  ) {
     super();
   }
 
-  override eq(other: LanguageWidget): boolean {
-    return other.language === this.language;
+  override eq(other: CodeHeaderWidget): boolean {
+    return other.tag === this.tag && other.at === this.at;
   }
 
-  override toDOM(): HTMLElement {
-    const label = document.createElement("span");
+  override toDOM(view: EditorView): HTMLElement {
+    const header = document.createElement("span");
+    const menu = document.createElement("select");
+    const copy = document.createElement("button");
+    const current = choiceFor(this.tag);
+    const choices = CODE_CHOICES.some((choice) => choice.tag === current.tag) ? CODE_CHOICES : [...CODE_CHOICES, current];
 
-    label.className = "md-code-lang";
-    label.textContent = this.language;
+    header.className = "md-code-head";
+    menu.className = "md-code-lang";
+    menu.setAttribute("aria-label", "Code language");
 
-    return label;
+    for (const choice of choices) {
+      const option = document.createElement("option");
+
+      option.value = choice.tag;
+      option.textContent = choice.label;
+      option.selected = choice.tag === current.tag;
+      menu.append(option);
+    }
+
+    menu.addEventListener("change", () => {
+      const fence = view.state.doc.lineAt(this.at);
+      const marker = /^\s*(`{3,}|~{3,})/.exec(fence.text)?.[0] ?? "```";
+
+      view.dispatch({ changes: { from: fence.from, to: fence.to, insert: `${marker}${menu.value}` } });
+      view.focus();
+    });
+
+    copy.type = "button";
+    copy.className = "md-code-copy";
+    copy.textContent = "Copy";
+    copy.addEventListener("click", () => {
+      const doc = view.state.doc;
+      const block = blockAt(doc.toString(), doc.lineAt(this.at).number);
+      const closed = block.to > block.from && /^\s*(`{3,}|~{3,})\s*$/.test(doc.line(block.to).text);
+      const lines = [];
+
+      for (let line = block.from + 1; line <= (closed ? block.to - 1 : block.to); line += 1) {
+        lines.push(doc.line(line).text);
+      }
+
+      // Said either way: a refused clipboard is shown, not left to look like a copy.
+      navigator.clipboard.writeText(lines.join("\n")).then(
+        () => {
+          copy.textContent = "Copied";
+        },
+        () => {
+          copy.textContent = "Couldn't copy";
+        },
+      );
+    });
+
+    header.append(menu, copy);
+
+    return header;
+  }
+
+  override ignoreEvent(): boolean {
+    return true;
   }
 }
 

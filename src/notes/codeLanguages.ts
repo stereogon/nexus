@@ -31,3 +31,44 @@ export const codeLanguages = [
     load: async () => (await import("@codemirror/lang-html")).html(),
   }),
 ];
+
+/** A language a code block can be set to from its menu, and the tag written after ```. */
+export interface CodeChoice {
+  readonly label: string;
+  readonly tag: string;
+}
+
+/**
+ * The code block menu's choices: plain text, and each language coloured by a grammar that
+ * is installed. Choosing one rewrites the fence's tag, and the colouring follows from it.
+ */
+export const CODE_CHOICES: readonly CodeChoice[] = [
+  { label: "Plain text", tag: "" },
+  { label: "JavaScript", tag: "js" },
+  { label: "TypeScript", tag: "ts" },
+  { label: "JSON", tag: "json" },
+  { label: "CSS", tag: "css" },
+  { label: "HTML", tag: "html" },
+];
+
+/**
+ * The menu choice a fence's tag stands for: an installed language by any of its names, or,
+ * for a tag nothing here colours, a choice of its own, so the menu still shows what the
+ * block says it is rather than calling it plain text.
+ */
+export function choiceFor(tag: string): CodeChoice {
+  const lower = tag.toLowerCase();
+
+  if (lower === "") {
+    return { label: "Plain text", tag: "" };
+  }
+
+  if (lower === "json") {
+    return { label: "JSON", tag: "json" };
+  }
+
+  const known = codeLanguages.find((language) => language.alias.includes(lower));
+  const choice = known === undefined ? undefined : CODE_CHOICES.find((each) => each.label === known.name);
+
+  return choice ?? { label: `${tag} (not coloured)`, tag };
+}

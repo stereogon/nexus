@@ -50,7 +50,15 @@ export class CitationWidget extends WidgetType {
     jump.type = "button";
     jump.dataset["cite"] = this.id;
     jump.title = "Show in the document";
-    jump.textContent = `Page ${String(this.page)}`;
+    // A pin before the page, as the canvas draws it, in the page's own colour.
+    const pin = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    const shape = document.createElementNS("http://www.w3.org/2000/svg", "path");
+
+    pin.setAttribute("viewBox", "0 0 12 12");
+    pin.setAttribute("aria-hidden", "true");
+    shape.setAttribute("d", "M6 1.5v6M3.5 4.5h5M6 7.5 4.5 10.5h3z");
+    pin.append(shape);
+    jump.append(pin, `Page ${String(this.page)}`);
     // Pressed rather than clicked, so the editor never sees the press and the cursor stays
     // where it was: the button goes somewhere else; it does not edit.
     jump.addEventListener("mousedown", (event) => {

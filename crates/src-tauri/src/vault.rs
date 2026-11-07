@@ -67,6 +67,8 @@ pub struct LectureRow {
     pub kind: &'static str,
     /// What the person knows it by.
     pub title: String,
+    /// When it was made, RFC 3339 in UTC: shown under the notes' title.
+    pub created_at: String,
     /// Its number in the course, if it has one.
     pub number: Option<String>,
     /// For a lecture with no number whose title holds one — anything imported before
@@ -185,6 +187,7 @@ pub(crate) fn row(bundle: &lecture_core::LectureBundle) -> LectureRow {
         directory: bundle.directory().to_string(),
         kind: if source.is_some() { "document" } else { "note" },
         title: manifest.title().as_str().to_owned(),
+        created_at: manifest.created_at().as_str().to_owned(),
         number: manifest.number().map(|number| number.as_str().to_owned()),
         number_in_title: number_in_title(manifest),
         sequence: manifest.sequence().as_str().to_owned(),

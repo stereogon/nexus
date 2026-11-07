@@ -14,6 +14,7 @@ function row(directory: string, title: string): LectureRow {
   return {
     directory,
     kind: "document",
+    createdAt: "2026-11-01T09:00:00Z",
     title,
     number: null,
     numberInTitle: null,

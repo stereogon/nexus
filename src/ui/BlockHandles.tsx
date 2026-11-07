@@ -9,9 +9,13 @@
  * box holding the editor, so they are right at any scroll and in either pane.
  */
 import type { EditorView } from "@codemirror/view";
-import { useEffect, useState, type RefObject } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 
 import { blockAt, moveBlock, type Block } from "../notes/blocks";
+import type { Block as Kind } from "../notes/format";
+import { formatBlock } from "../notes/markSelection";
+import type { MenuAt } from "./menuPlacement";
+import { PopMenu, under, type MenuItem } from "./PopMenu";
 
 /** The block under the pointer, and where its handle is drawn. */
 interface Hovered {
@@ -65,15 +69,58 @@ function landing(view: EditorView, y: number): { readonly before: number; readon
     : { before: target.to + 1, top: last?.bottom ?? y };
 }
 
+/**
+ * What `+`'s menu turns the new line into, as Notion's does: a block type from the format
+ * rules, or a code block or a divider written out.
+ */
+function turnInto(editor: EditorView): MenuItem[] {
+  const as = (kind: Kind) => () => {
+    formatBlock(editor, kind);
+    editor.focus();
+  };
+  const write = (text: string, cursorAt: number) => () => {
+    const line = editor.state.doc.lineAt(editor.state.selection.main.head);
+
+    editor.dispatch({ changes: { from: line.from, to: line.to, insert: text }, selection: { anchor: line.from + cursorAt } });
+    editor.focus();
+  };
+
+  return [
+    { label: "Text", onSelect: () => { editor.focus(); } },
+    { label: "Heading 1", onSelect: as("h1") },
+    { label: "Heading 2", onSelect: as("h2") },
+    { label: "Heading 3", onSelect: as("h3") },
+    { label: "Bulleted list", onSelect: as("bullet") },
+    { label: "Numbered list", onSelect: as("numbered") },
+    { label: "To-do list", onSelect: as("task") },
+    { label: "Quote", onSelect: as("quote") },
+    { label: "Code", onSelect: write("```\n\n```", 4) },
+    { label: "Divider", onSelect: write("---\n", 4) },
+  ];
+}
+
 export function BlockHandles({
   view,
   box,
+  text,
 }: {
   readonly view: RefObject<EditorView | null>;
   /** The positioned box holding the editor, which the handle is drawn in. */
   readonly box: RefObject<HTMLElement | null>;
+  /** The notes as they now are: typing after `+` closes its menu, as choosing would. */
+  readonly text: string;
 }) {
   const [hovered, setHovered] = useState<Hovered | null>(null);
+  const [menu, setMenu] = useState<MenuAt | null>(null);
+  // The notes when the menu opened, so the line `+` itself added does not close it.
+  const openedOn = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (openedOn.current !== null && openedOn.current !== text) {
+      openedOn.current = null;
+      setMenu(null);
+    }
+  }, [text]);
   const [drop, setDrop] = useState<number | null>(null);
   const [dragging, setDragging] = useState(false);
 
@@ -117,20 +164,34 @@ export function BlockHandles({
     };
   }, [box, view, dragging]);
 
+  const editor = view.current;
+  const menuShown =
+    menu !== null && editor !== null ? (
+      <PopMenu
+        at={menu}
+        items={turnInto(editor)}
+        label="Turn into"
+        note="Turn the new line into"
+        onDismiss={() => {
+          openedOn.current = null;
+          setMenu(null);
+        }}
+        opener="block-plus"
+      />
+    ) : null;
+
   if (hovered === null) {
-    return null;
+    return menuShown;
   }
 
-  const select = (editor: EditorView) => {
-    const doc = editor.state.doc;
+  const select = (target: EditorView) => {
+    const doc = target.state.doc;
 
-    editor.dispatch({ selection: { anchor: doc.line(hovered.block.from).from, head: doc.line(hovered.block.to).to } });
-    editor.focus();
+    target.dispatch({ selection: { anchor: doc.line(hovered.block.from).from, head: doc.line(hovered.block.to).to } });
+    target.focus();
   };
 
-  const addBelow = () => {
-    const editor = view.current;
-
+  const addBelow = (event: React.MouseEvent<HTMLButtonElement>) => {
     if (editor === null) {
       return;
     }
@@ -139,10 +200,12 @@ export function BlockHandles({
 
     editor.dispatch({ changes: { from: end, insert: "\n" }, selection: { anchor: end + 1 }, scrollIntoView: true });
     editor.focus();
+    // Then what the new line should be, as Notion asks (2026-11-07).
+    openedOn.current = editor.state.doc.toString();
+    setMenu(under(event.currentTarget, "left", 220));
   };
 
   const grab = (event: React.PointerEvent<HTMLButtonElement>) => {
-    const editor = view.current;
     const frame = box.current;
 
     if (editor === null || frame === null) {
@@ -202,7 +265,14 @@ export function BlockHandles({
   return (
     <>
       <div className="block-handle" style={{ top: hovered.top, left: hovered.left, height: hovered.height }}>
-        <button aria-label="Add a line below" className="block-handle-button" onClick={addBelow} title="Add a line below" type="button">
+        <button
+          aria-label="Add a line below"
+          className="block-handle-button"
+          data-opens="block-plus"
+          onClick={addBelow}
+          title="Add a line below, and choose what it is"
+          type="button"
+        >
           <svg aria-hidden="true" fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeWidth="1.6" viewBox="0 0 14 14" width="14">
             <path d="M7 2.5v9M2.5 7h9" />
           </svg>
@@ -220,6 +290,7 @@ export function BlockHandles({
         </button>
       </div>
       {drop !== null && <div aria-hidden="true" className="block-drop" style={{ top: drop - 1 }} />}
+      {menuShown}
     </>
   );
 }

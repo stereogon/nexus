@@ -16,6 +16,7 @@ afterEach(cleanup);
 const LECTURE: LectureRow = {
   directory: "week-2/process-overview",
   kind: "document",
+  createdAt: "2026-11-01T09:00:00Z",
   title: "2. ProcessOverview",
   number: null,
   numberInTitle: null,

@@ -9,6 +9,7 @@ function lecture(directory: string, week: string, module = "Consensus"): Lecture
   return {
     directory,
     kind: "document",
+    createdAt: "2026-11-01T09:00:00Z",
     title: directory,
     number: null,
     numberInTitle: null,
