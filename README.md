@@ -77,8 +77,8 @@ in a folder you choose. Nothing leaves your Mac.
 - Citations and images are elements: kept or removed whole. Typing ``` opens a code block
   to write in.
 - To-dos are drawn as boxes; a done one is struck through.
-- Saves as you type. The divider between document and notes can be dragged, and its width
-  is remembered on this Mac.
+- Saves as you type. The divider between document and notes can be dragged, and so can the
+  sidebar's edge; both widths are remembered on this Mac.
 
 **Linking**
 - **Link to notes** saves the highlight and inserts a citation at your cursor:

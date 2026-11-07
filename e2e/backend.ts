@@ -25,6 +25,9 @@ import type { Fixture } from "./fixture";
 
 export { CommandFailure } from "./answers/shared";
 
+/** As `lecture_fs::pane_width::Pane` accepts it: anything else is refused there too. */
+const Pane = z.object({ pane: z.enum(["notes", "sidebar"]) });
+
 const EditLecture = InLecture.extend({
   edit: z.object({
     title: z.string(),
@@ -50,7 +53,7 @@ export function backend(fixture: Fixture): (command: string, args?: InvokeArgs) 
     movedFrom: new Map(),
   };
   // Per-device, so kept for the page's life like the real file is kept between launches.
-  let notesWidth: number | null = null;
+  const paneWidths = new Map<string, number>();
   const positions = new Map(Object.entries(fixture.positions ?? {}));
   let lastLecture = fixture.lastLecture ?? null;
 
@@ -62,7 +65,7 @@ export function backend(fixture: Fixture): (command: string, args?: InvokeArgs) 
     // it an empty body, answering `undefined` — caught by reading the result.)
     remember_vault: () => null,
     remember_theme: () => null,
-    last_notes_width: () => notesWidth,
+    last_pane_width: (args) => paneWidths.get(Pane.parse(args).pane) ?? null,
     lecture_position: (args) => positions.get(InLecture.parse(args).directory) ?? null,
     remember_position: (args) => {
       const { directory, view } = InLecture.extend({
@@ -74,8 +77,10 @@ export function backend(fixture: Fixture): (command: string, args?: InvokeArgs) 
       return null;
     },
     last_lecture: () => lastLecture,
-    remember_notes_width: (args) => {
-      notesWidth = z.object({ width: z.number().int() }).parse(args).width;
+    remember_pane_width: (args) => {
+      const { pane, width } = Pane.extend({ width: z.number().int() }).parse(args);
+
+      paneWidths.set(pane, width);
 
       return null;
     },

@@ -16,12 +16,13 @@
  * which vault is open, and folding them in would mean enumerating combinations that cannot
  * actually occur — an editing-with-no-vault state, a folder-in-a-failed-vault one.
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { LectureRow } from "./ipc/vault";
 import { DropOverlay } from "./ui/DropOverlay";
 import { EmptyPane } from "./ui/EmptyPane";
 import { Failure } from "./ui/Failure";
+import { PaneDivider } from "./ui/PaneDivider";
 import { Notice } from "./ui/Notice";
 import { EditorPanel } from "./ui/EditorPanel";
 import { HighlightsLibrary } from "./ui/HighlightsLibrary";
@@ -41,6 +42,7 @@ import { useOpenLecture } from "./ui/useOpenLecture";
 import { useRememberedVault } from "./ui/useRememberedVault";
 import { useSearchWindow } from "./ui/useSearchWindow";
 import { useSidebar } from "./ui/useSidebar";
+import { useSidebarWidth } from "./ui/useSidebarWidth";
 import { useTheme } from "./ui/useTheme";
 import { lecturesOf, rootOf } from "./ui/vaultState";
 import { useVault } from "./ui/useVault";
@@ -62,6 +64,8 @@ export function App() {
   }, []);
   const { state, busy, against, choose } = useVault(remembered.summary, notice, forgetEditing);
   const sidebar = useSidebar();
+  const panes = useRef<HTMLDivElement | null>(null);
+  const sidebarSizing = useSidebarWidth(panes);
   const searching = useSearchWindow(state.kind === "open");
   const errorPanel = useErrorPanel(state.kind === "open");
   const root = rootOf(state);
@@ -134,7 +138,7 @@ export function App() {
         </button>
       )}
 
-      <div className="panes" data-sidebar={sidebar.shown ? "shown" : "hidden"}>
+      <div className="panes" data-sidebar={sidebar.shown ? "shown" : "hidden"} ref={panes}>
         {sidebar.shown && (
           <Sidebar
             busy={busy || reading.opening}
@@ -161,8 +165,10 @@ export function App() {
             rows={sidebarRows(summary, showing, "")}
             skipped={summary.skipped}
             unloadable={summary.unloadable}
+            width={sidebarSizing.width}
           />
         )}
+        {sidebar.shown && <PaneDivider label="Sidebar width" sizing={sidebarSizing} title="Drag to resize the sidebar" />}
 
         {finding.library ? (
           <HighlightsLibrary

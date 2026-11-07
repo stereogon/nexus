@@ -103,6 +103,7 @@ export function Sidebar({
   onChooseVault,
   foot,
   onSearch,
+  width,
 }: {
   readonly rows: readonly SidebarRow[];
   readonly root: string;
@@ -125,11 +126,14 @@ export function Sidebar({
   readonly foot: Omit<Parameters<typeof SidebarFoot>[0], "root">;
   /** Opens the ⌘P search window. */
   readonly onSearch: () => void;
+  /** A dragged width, or `null` for the stylesheet's. */
+  readonly width: number | null;
 }) {
   const [making, setMaking] = useState<Making | null>(null);
 
   return (
-    <aside className="sidebar">
+    // A dragged width replaces the stylesheet's; `useSidebarWidth` has held it to the window.
+    <aside className="sidebar" style={width === null ? undefined : { flexBasis: width }}>
       <SidebarHead
         busy={busy}
         onChooseVault={onChooseVault}

@@ -103,11 +103,16 @@ export function ImportIcon() {
   );
 }
 
+/**
+ * A gear with eight teeth, for Settings. It had been a ring with eight short rays, which
+ * read as a sun (reported 2026-11-07); the outline is generated: each tooth narrows from
+ * 34° at the root (r 4.7) to 20° at its tip (r 6.5).
+ */
 export function GearIcon() {
   return (
     <Icon>
-      <circle cx="8" cy="8" r="2.2" />
-      <path d="M8 1.8v1.6M8 12.6v1.6M1.8 8h1.6M12.6 8h1.6M3.6 3.6l1.1 1.1M11.3 11.3l1.1 1.1M3.6 12.4l1.1-1.1M11.3 4.7l1.1-1.1" />
+      <path d="M6.63 3.51 L6.87 1.6 L9.13 1.6 L9.37 3.51 L10.21 3.85 L11.73 2.68 L13.32 4.27 L12.15 5.79 L12.49 6.63 L14.4 6.87 L14.4 9.13 L12.49 9.37 L12.15 10.21 L13.32 11.73 L11.73 13.32 L10.21 12.15 L9.37 12.49 L9.13 14.4 L6.87 14.4 L6.63 12.49 L5.79 12.15 L4.27 13.32 L2.68 11.73 L3.85 10.21 L3.51 9.37 L1.6 9.13 L1.6 6.87 L3.51 6.63 L3.85 5.79 L2.68 4.27 L4.27 2.68 L5.79 3.85Z" />
+      <circle cx="8" cy="8" r="2" />
     </Icon>
   );
 }

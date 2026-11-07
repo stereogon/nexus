@@ -17,7 +17,7 @@ import type { OpenedDocument } from "../ipc/document";
 import { citationBlock } from "../notes/citation";
 import type { PageHeading } from "../notes/pageHeading";
 import { parentOf, spoken } from "./folders";
-import { NotesDivider } from "./NotesDivider";
+import { PaneDivider } from "./PaneDivider";
 import type { NotesHandle } from "./NotesEditor";
 import { NotesPane } from "./NotesPane";
 import { PdfViewer } from "./PdfViewer";
@@ -179,7 +179,7 @@ export function Reading({
         title={title}
         vault={vault}
       />
-      {notesOpen && <NotesDivider sizing={sizing} />}
+      {notesOpen && <PaneDivider label="Notes width" sizing={sizing} title="Drag to resize the notes" />}
       <NotesPane
         heading={heading}
         directory={directory}

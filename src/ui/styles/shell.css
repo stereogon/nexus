@@ -119,6 +119,36 @@ body {
   align-items: stretch;
 }
 
+/* A pane's divider (`PaneDivider`), beside the notes or the sidebar: no width of its own,
+   so the pane's border stays the one line, with a hit area either side of it wide enough
+   for a trackpad. Above the viewer's scroller, which
+   would otherwise take the half of the hit area that overlaps it. */
+.pane-divider {
+  flex: 0 0 0;
+  position: relative;
+  z-index: 5;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.pane-divider::before {
+  content: "";
+  position: absolute;
+  inset: 0 -4px;
+}
+
+.pane-divider:hover::before,
+.pane-divider:focus-visible::before,
+.pane-divider.dragging::before {
+  /* A line down the middle, painted inside the hit area rather than by shrinking it, which
+     would move the hover boundary under the pointer and flicker. */
+  background: linear-gradient(var(--accent), var(--accent)) center / 2px 100% no-repeat;
+}
+
+.pane-divider:focus-visible {
+  outline: none;
+}
+
 /* Visually hidden, but read aloud and focusable: for a label whose field already carries
    a placeholder and an icon. */
 .vh {

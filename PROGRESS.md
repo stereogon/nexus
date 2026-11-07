@@ -463,6 +463,32 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-07 · The sidebar can be dragged wider; Settings is a gear**
+The user: *"also make the sidebar width adjustable by dragging just like you have doen for
+notes section width"*, and *"update the settings icon, you have put a sun icon, instead of
+a gear icon"*.
+
+**One divider, one store, two panes.** `NotesDivider` became `PaneDivider` (label and title
+given by the pane); loading and recording a width became `useRecordedWidth(pane)`, which
+`useNotesWidth` and the new `useSidebarWidth` share; each keeps only what differs, which
+side its pane is on and what it is held to (`sidebarWidth.ts`: 200–480px, leaving the panes
+beside it 520). On disk, `lecture_fs::notes_width` became `pane_width` with a `Pane` enum,
+and the commands became `last_pane_width(pane)` / `remember_pane_width(pane, width)`. The
+notes keep their file name, `notes-width.txt`, so a width chosen before today is still
+found (a test says so); the sidebar's is `sidebar-width.txt`. The sidebar's limits come
+from the window's width rather than from measuring `.panes`, which is not mounted until a
+vault opens, after the hook's first run.
+
+**The gear** had been a ring with eight rays, which reads as a sun. It is now an outline
+with eight teeth, generated from its geometry.
+
+Verified: gate green. `pane_width` tests (9, including the old notes file and the window's
+pane names), `sidebarWidth.test.ts` (4), journeys for dragging, the limits and the arrows,
+and the width surviving hide and show. Sabotage: the sidebar ignoring its dragged width
+failed all three journeys. The limits journey first passed under that sabotage, since the
+default width sat inside its loose bounds; it now checks that the sidebar reaches 200 and
+480.
+
 **2026-11-07 · Themes in any colour; highlights move aside; highlight marks hidden on every line**
 The user: *"for the themes, i believe you are holding onto the pink color … I would love to
 see more themes with more color combinations like blue, green"*; asked about the rule in
