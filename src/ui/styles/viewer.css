@@ -86,7 +86,7 @@
   left: 0;
   right: 0;
   margin-inline: auto;
-  background: var(--surface);
+  background: var(--page);
   box-shadow: 0 1px 3px rgb(0 0 0 / 18%), 0 8px 24px rgb(0 0 0 / 10%);
 }
 
@@ -105,7 +105,7 @@
   text-align: center;
   font-family: var(--font-ui);
   font-size: 13px;
-  color: var(--text-meta);
+  color: var(--page-text-meta);
 }
 
 /* ---------------------------------------------------------------------------------

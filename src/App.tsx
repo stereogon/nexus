@@ -185,7 +185,7 @@ export function App() {
     <div className="app">
       <TitleBar
         lecture={open?.lecture ?? editing ?? null}
-        onCycleTheme={appearance.cycle}
+        onChooseTheme={appearance.choose}
         onToggleSidebar={sidebar.toggle}
         sidebarShown={sidebar.shown}
         errorsShown={errorPanel.open}

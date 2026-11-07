@@ -10,10 +10,13 @@
  * the sidebar's current grouping, because it answers "what am I looking at", not "how is
  * the list arranged".
  */
-import type { Theme } from "../ipc/theme";
+import { useState } from "react";
+
 import type { LectureRow } from "../ipc/vault";
 import { parentOf, spoken } from "./folders";
-import { THEME_LABEL } from "./useTheme";
+import type { MenuAt } from "./menuPlacement";
+import { ThemePicker } from "./ThemePicker";
+import type { ThemeName } from "./themes";
 
 /** The mark from the canvas: a path through three nodes, the middle one in ink. */
 function Mark() {
@@ -78,40 +81,20 @@ function LogsIcon() {
   );
 }
 
-/** Sun, moon, or half-and-half for following the system. */
-function ThemeIcon({ theme }: { readonly theme: Theme }) {
-  if (theme === "light") {
-    return (
-      <svg aria-hidden="true" height="15" viewBox="0 0 15 15" width="15">
-        <circle cx="7.5" cy="7.5" fill="none" r="3.2" stroke="currentColor" strokeWidth="1.3" />
-        <path
-          d="M7.5 1 L7.5 2.6 M7.5 12.4 L7.5 14 M1 7.5 L2.6 7.5 M12.4 7.5 L14 7.5 M3 3 L4.1 4.1 M10.9 10.9 L12 12 M12 3 L10.9 4.1 M4.1 10.9 L3 12"
-          stroke="currentColor"
-          strokeLinecap="round"
-          strokeWidth="1.3"
-        />
-      </svg>
-    );
-  }
-
-  if (theme === "dark") {
-    return (
-      <svg aria-hidden="true" height="15" viewBox="0 0 15 15" width="15">
-        <path
-          d="M12.2 9.3 A5.4 5.4 0 1 1 5.7 2.8 A4.3 4.3 0 0 0 12.2 9.3 Z"
-          fill="none"
-          stroke="currentColor"
-          strokeLinejoin="round"
-          strokeWidth="1.3"
-        />
-      </svg>
-    );
-  }
-
+/** A palette: the control opens the theme picker. */
+function ThemeIcon() {
   return (
     <svg aria-hidden="true" height="15" viewBox="0 0 15 15" width="15">
-      <circle cx="7.5" cy="7.5" fill="none" r="5" stroke="currentColor" strokeWidth="1.3" />
-      <path d="M7.5 2.5 A5 5 0 0 1 7.5 12.5 Z" fill="currentColor" />
+      <path
+        d="M7.5 1.6 A5.9 5.9 0 1 0 7.5 13.4 C8.4 13.4 8.7 12.6 8.2 11.9 C7.7 11.2 8.1 10.3 9 10.3 L10.6 10.3 A2.8 2.8 0 0 0 13.4 7.5 A5.9 5.9 0 0 0 7.5 1.6 Z"
+        fill="none"
+        stroke="currentColor"
+        strokeLinejoin="round"
+        strokeWidth="1.3"
+      />
+      <circle cx="4.6" cy="7" fill="currentColor" r="0.9" />
+      <circle cx="6.6" cy="4.4" fill="currentColor" r="0.9" />
+      <circle cx="9.6" cy="4.8" fill="currentColor" r="0.9" />
     </svg>
   );
 }
@@ -121,7 +104,7 @@ export function TitleBar({
   sidebarShown,
   theme,
   onToggleSidebar,
-  onCycleTheme,
+  onChooseTheme,
   errorsShown,
   onToggleErrors,
   libraryShown,
@@ -129,14 +112,16 @@ export function TitleBar({
 }: {
   readonly lecture: LectureRow | null;
   readonly sidebarShown: boolean;
-  readonly theme: Theme;
+  readonly theme: ThemeName;
   readonly onToggleSidebar: () => void;
-  readonly onCycleTheme: () => void;
+  readonly onChooseTheme: (theme: ThemeName) => void;
   readonly errorsShown: boolean;
   readonly onToggleErrors: () => void;
   readonly libraryShown: boolean;
   readonly onToggleLibrary: () => void;
 }) {
+  // Where the theme picker opens, while it is open.
+  const [picking, setPicking] = useState<MenuAt | null>(null);
   // The folders the open item is in: where it is, now that a folder is where it belongs.
   const place = lecture === null ? "" : spoken(parentOf(lecture.directory));
 
@@ -177,18 +162,33 @@ export function TitleBar({
         <HighlightsIcon />
       </button>
 
-      {/* Not on the canvas, which has light and dark artboards but no control to choose
-          between them. Added because following macOS was the only way to change theme,
-          and there was no way to pin one. It cycles system → light → dark. */}
+      {/* Opens the theme picker: fifteen themes and following macOS (2026-11-07). */}
       <button
-        aria-label={THEME_LABEL[theme]}
+        aria-expanded={picking !== null}
+        aria-haspopup="menu"
+        aria-label="Theme"
         className="chrome-icon"
-        onClick={onCycleTheme}
-        title={THEME_LABEL[theme]}
+        data-opens-theme=""
+        onClick={(event) => {
+          const box = event.currentTarget.getBoundingClientRect();
+
+          setPicking((open) => (open === null ? { left: box.right - 380, top: box.bottom + 6, above: box.top - 6 } : null));
+        }}
+        title="Theme"
         type="button"
       >
-        <ThemeIcon theme={theme} />
+        <ThemeIcon />
       </button>
+      {picking !== null && (
+        <ThemePicker
+          at={picking}
+          onChoose={onChooseTheme}
+          onDismiss={() => {
+            setPicking(null);
+          }}
+          theme={theme}
+        />
+      )}
 
       {/* Where the canvas puts the diagnostics control. It opens the error panel — the
           errors shown since launch — which is the part of the spec's drawer built so far. */}

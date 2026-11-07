@@ -1,29 +1,20 @@
 /**
  * Applying and remembering the theme.
  *
- * The stylesheet carries three cases: a `prefers-color-scheme` media query for `system`,
- * and `:root[data-theme="light"|"dark"]` for a pinned choice. This hook's whole job is to
- * set that attribute and write the choice down.
+ * The palettes are data (`./themes`); this hook resolves "follow the system" to Paper or
+ * Ink, writes the chosen palette onto the document, and records the choice. Resolved here
+ * rather than in a `prefers-color-scheme` query so there is one place a colour comes from.
  */
 import { useCallback, useEffect, useState } from "react";
 
-import { lastTheme, rememberTheme, type Theme } from "../ipc/theme";
-
-/** The order the title-bar control cycles through. */
-const ORDER: readonly Theme[] = ["system", "light", "dark"];
-
-/** What the control should say it will do next. */
-export const THEME_LABEL: Record<Theme, string> = {
-  system: "Theme: following the system",
-  light: "Theme: light",
-  dark: "Theme: dark",
-};
+import { lastTheme, rememberTheme } from "../ipc/theme";
+import { applyTheme, resolve, type ThemeName } from "./themes";
 
 export function useTheme(): {
-  readonly theme: Theme;
-  readonly cycle: () => void;
+  readonly theme: ThemeName;
+  readonly choose: (theme: ThemeName) => void;
 } {
-  const [theme, setTheme] = useState<Theme>("system");
+  const [theme, setTheme] = useState<ThemeName>("system");
 
   useEffect(() => {
     const session = { cancelled: false };
@@ -41,18 +32,11 @@ export function useTheme(): {
     };
   }, []);
 
-  // "Follow the system" is resolved here rather than in the stylesheet, and a concrete
-  // `data-theme` is always written. That lets the dark palette be declared once; the
-  // alternative -- a `prefers-color-scheme` query for the system case plus a rule for a
-  // pinned one -- means two copies of every token, and the first to be forgotten is a bug
-  // nobody notices until they switch themes.
   useEffect(() => {
     const dark = window.matchMedia("(prefers-color-scheme: dark)");
 
     const apply = () => {
-      const resolved = theme === "system" ? (dark.matches ? "dark" : "light") : theme;
-
-      document.documentElement.setAttribute("data-theme", resolved);
+      applyTheme(document.documentElement, resolve(theme, dark.matches));
     };
 
     apply();
@@ -70,17 +54,12 @@ export function useTheme(): {
     };
   }, [theme]);
 
-  const cycle = useCallback(() => {
-    setTheme((current) => {
-      const next = ORDER[(ORDER.indexOf(current) + 1) % ORDER.length] ?? "system";
-
-      // Applied immediately and recorded in the background: the window has already
-      // changed, and waiting on a file write to repaint would be backwards.
-      void rememberTheme(next);
-
-      return next;
-    });
+  const choose = useCallback((next: ThemeName) => {
+    // Applied immediately and recorded in the background: the window has already changed,
+    // and waiting on a file write to repaint would be backwards.
+    setTheme(next);
+    void rememberTheme(next);
   }, []);
 
-  return { theme, cycle };
+  return { theme, choose };
 }

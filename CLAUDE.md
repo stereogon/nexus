@@ -239,11 +239,20 @@ and explain why. Rationale is recorded in `PROGRESS.md`.
   neutral ramp where the canvas specifies a warm stone one. Extracted token values are in
   `PROGRESS.md` so the palette is usable without opening the canvas, but they are a copy
   and not the source.)*
+  *(Amended 2026-11-07 at the user's request: the authoritative canvas is now the
+  redesign, <https://claude.ai/artifact/DqL93ozsfahcZsqKXzE4fT> ("Nexus — Redesign"):
+  workspace light and dark, a plain note, ⌘P search, the highlights library, the small
+  surfaces, and fifteen themes. The first canvas is history. The themes' exact values live
+  in `src/ui/themes/`, measured for contrast by `themes.test.ts`, and the canvas's colours
+  are the starting point those values were tuned from.)*
 - **No dark-mode PDF inversion.** Inverting a document corrupts photographs, colour-coded
   diagrams and scans. The page stays light in both themes, on a dark bed.
 - The document surface is light in both themes, so page-drawn annotation chrome uses
   `accentInk` (sized for white) while app chrome uses the theme `accent`.
-- Brand accent: `#BE1A72` (light) / `#FF72C6` (dark); `accentInk` `#9E477B`. Chosen to sit
+- *(Amended 2026-11-07: the accent is now per theme — Paper's is `#A8195E`, Ink's
+  `#FF7AC6` — and every theme's accent is kept at least 25° of hue from the four
+  highlight colours, which `themes.test.ts` checks. `accentInk` is unchanged, being drawn
+  on the always-white page.)* Brand accent: `#BE1A72` (light) / `#FF72C6` (dark); `accentInk` `#9E477B`. Chosen to sit
   outside the four highlight semantics *and* outside Obsidian's violet.
 - Highlight semantics: amber `#F2B63C` key, green `#2EA37A` definition, red `#E0523C` exam,
   blue `#2E86DE` question — each also carrying a letter glyph (K/D/E/Q) so the set does not

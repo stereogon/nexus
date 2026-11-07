@@ -78,6 +78,11 @@ in a folder you choose. Nothing leaves your Mac.
 - Clicking a citation scrolls the document to the highlight and pulses it.
 - A highlight that is cited shows a ¶ marker; clicking it scrolls the notes to the citation.
 
+**Look**
+- Fifteen themes — Paper, Ink, Plain, Graphite, Contrast, Contrast Dark, Funky, Solar,
+  Sakura, Sepia, Neon, Fjord, Forest, Ocean and Terminal — or follow macOS between Paper and
+  Ink. Every one is contrast-tested, and the page stays white in all of them.
+
 **Diagnostics**
 - An error panel (`⌘0`) lists every error shown since launch, each with a code and a
   plain sentence saying what to do.

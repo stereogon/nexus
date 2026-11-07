@@ -34,7 +34,7 @@ function show(over: Partial<Parameters<typeof TitleBar>[0]> = {}) {
     sidebarShown: true,
     theme: "system" as const,
     onToggleSidebar: vi.fn(),
-    onCycleTheme: vi.fn(),
+    onChooseTheme: vi.fn(),
     errorsShown: false,
     onToggleErrors: vi.fn(),
     libraryShown: false,
@@ -94,18 +94,26 @@ describe("the chrome controls", () => {
     expect(props.onToggleSidebar).toHaveBeenCalled();
   });
 
-  it("names the theme it is currently on", () => {
-    show({ theme: "dark" });
+  it("opens the theme picker with the current theme checked, and chooses from it", () => {
+    const props = show({ theme: "neon" });
 
-    expect(screen.getByRole("button", { name: "Theme: dark" })).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: "Theme" }));
+
+    expect(screen.getByRole("menuitemradio", { name: /Neon/u }).getAttribute("aria-checked")).toBe("true");
+    expect(screen.getAllByRole("menuitemradio")).toHaveLength(16);
+
+    fireEvent.click(screen.getByRole("menuitemradio", { name: /Sepia/u }));
+
+    expect(props.onChooseTheme).toHaveBeenCalledWith("sepia");
   });
 
-  it("cycles the theme", () => {
-    const props = show({ theme: "system" });
+  it("closes the picker on Escape", () => {
+    show();
 
-    fireEvent.click(screen.getByRole("button", { name: /^Theme/u }));
+    fireEvent.click(screen.getByRole("button", { name: "Theme" }));
+    fireEvent.keyDown(document, { key: "Escape" });
 
-    expect(props.onCycleTheme).toHaveBeenCalled();
+    expect(screen.queryByRole("menu", { name: "Theme" })).toBeNull();
   });
 
   it("opens the error panel from where the canvas puts the diagnostics control", () => {

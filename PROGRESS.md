@@ -463,6 +463,54 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-07 · Redesign, step 1: fifteen themes, measured**
+The user asked for a design from scratch (*"since you have the most context … find out a
+better and better ux and ui experience. first design and show me"*), then mid-design for
+*"multiple themes with different color combinations … funky, plain modern, neon, dark
+contrast … at least 10-15"*. The redesign canvas,
+<https://claude.ai/artifact/DqL93ozsfahcZsqKXzE4fT>, was approved with *"lets start
+building the redesign"*, and is now the authoritative design (`CLAUDE.md` §3, amended).
+The restyle goes in steps: themes; the shell (pane headers, sidebar); ⌘P search; viewer
+and notes; the details sheet, library and states.
+
+**Fifteen themes plus "Follow macOS"**: Paper, Ink, Plain, Graphite, Contrast, Contrast
+Dark, Funky, Solar, Sakura, Sepia, Neon, Fjord, Forest, Ocean, Terminal. They are data
+(`src/ui/themes/`: `index.ts`, `light.ts`, `dark.ts`), not fifteen stylesheet blocks:
+`useTheme` writes the chosen palette onto the root as custom properties over `tokens.css`
+(which keeps Paper's values as the starting point) and sets `data-scheme`, under which the
+colours every dark theme shares — code colours, the exam wash — are declared once.
+
+**The canvas said every text colour passes 4.5:1; that had been eyeballed, so it is now a
+test.** `themes.test.ts` computes WCAG contrast for each theme: body, secondary, meta and
+row text at 4.5:1 on chrome, surface and field; the accent at 4.5:1 on both grounds *and*
+on a selected row's wash, blended as it is drawn; the label on the accent; code and
+shortcut badges; faint text at 3:1, being never the only way to read anything. It also
+keeps every coloured accent at least 25° of hue from the four highlight colours, so a
+meaning is never mistaken for chrome. Several canvas values were adjusted to pass (Paper's
+meta and faint greys, Neon's and Funky's accents). Proved by setting a grey and an accent
+that should fail, which failed five checks.
+
+**The page is white in every theme**, now by its own token (`--page`), not `--surface`:
+the themes journey found the page's background was the theme's surface — dark in every
+dark theme, visible while a page draws — which had been so in the old dark mode too. The
+text drawn on an undrawn page has its own grey sized for white (`--page-text-meta`).
+
+**The stored theme** grew from three names to sixteen (`lecture_core::Theme`, one table
+for both directions). `light` and `dark` in an existing `theme.txt` read as Paper and Ink,
+the same colours renamed, so nobody's choice is lost; writing uses the new names.
+
+**The picker** is a menu of radio items with three swatches each (ground, text, accent),
+applying at once and staying open so themes can be tried in turn; Escape or a click
+elsewhere closes it. For now it opens from the title bar, which step 2 replaces with the
+sidebar's foot.
+
+**Also resolved:** the release app quitting on launch, open since 2026-11-04 — the user
+reports it does not.
+
+Verified: gate green. `themes.test.ts` (139: contrast for all fifteen, the set, applying);
+title-bar picker tests; `lecture-fs` theme tests for the old names and all sixteen;
+`themes.spec.ts` (2), which found the page-background bug.
+
 **2026-11-07 · Deleting a document or note, into the vault's `.trash`**
 Reported by the user: *"there is no delete button for notes or documents."* Three places
 for a deleted item were put to the user — the macOS Trash (needs the `trash` crate), a

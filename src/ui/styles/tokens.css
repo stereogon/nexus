@@ -1,23 +1,25 @@
 /**
  * The palette, type scale and spacing every other stylesheet reads.
  *
- * Imported first, because everything below is written in terms of these names. The dark
- * palette is declared **once**, under `:root[data-theme="dark"]`, rather than twinned in a
- * `prefers-color-scheme` block: `useTheme` resolves `system` in JavaScript and always
- * writes a concrete `data-theme`, so there is one place a colour can be wrong.
+ * Imported first, because everything below is written in terms of these names. The values
+ * here are the **Paper** theme's, the default and what the window paints before a choice
+ * is read. The fifteen themes live as data in `src/ui/themes/`, which `useTheme` writes
+ * onto the document over these, and which `themes.test.ts` measures for contrast; only
+ * what every dark theme shares (code colours, the exam wash) is declared below, under
+ * `[data-scheme="dark"]`. (Redesigned 2026-11-07; before that this file held one light and
+ * one dark palette.)
  *
- * Values come from the design canvas (CLAUDE.md §3), which wins over anything here.
+ * Values come from the redesign canvas (CLAUDE.md §3), which wins over anything here.
  */
 
 /*
  * The design tokens, taken from the project's design canvas.
  *
- *   https://claude.ai/artifact/5gEifzabFanVAW9R1Wp3i2   ("Nexus UI")
+ *   https://claude.ai/artifact/DqL93ozsfahcZsqKXzE4fT   ("Nexus — Redesign", 2026-11-07)
  *
- * That canvas is the approved design and this file must follow it. Every value below is
- * read off its "Colour and type system" artboard rather than chosen here. An earlier
- * version of this file invented a cool pink-grey neutral ramp; the real one is a warm
- * stone, and the difference was visible everywhere.
+ * It replaced the first canvas, https://claude.ai/artifact/5gEifzabFanVAW9R1Wp3i2, at the
+ * user's request. The warm stone ramp is kept from that one; the accent is a deeper
+ * mulberry, for contrast.
  *
  * # No network, ever
  *
@@ -34,39 +36,44 @@
 :root {
   /* Brand. The accent is for app chrome; `accent-ink` is sized for white and is what
      page-drawn annotation chrome uses, since the document surface stays light. */
-  --accent: #be1a72;
+  --accent: #a8195e;
   --accent-ink: #9e477b;
+  /* The page itself, white in every theme (§3: no inverted documents), and a grey sized for
+     it, for words drawn on a page that has not rendered. No theme sets these: they belong
+     to the document, not the window, and the themes journey checks the page stays white. */
+  --page: #ffffff;
+  --page-text-meta: #67625a;
   --on-accent: #ffffff;
   /* The drop zone's fill, which the canvas gives as rgba(190,26,114,0.06). A literal
      rather than a `color-mix` of `--accent`: this file's pattern is one explicit value per
      theme, and `color-mix` is newer than the Safari 15 baseline the build targets. */
-  --accent-wash: rgba(190, 26, 114, 0.06);
+  --accent-wash: rgba(168, 25, 94, 0.06);
   /* The scrim behind the drop overlay: the chrome colour, mostly opaque. Same reasoning as
      above -- an explicit value per theme rather than a `color-mix` of `--chrome`. */
-  --scrim: rgba(244, 242, 238, 0.82);
+  --scrim: rgba(246, 244, 239, 0.84);
 
   /* Neutrals — light. A warm stone ramp, not a grey one. */
-  --chrome: #f4f2ee;
+  --chrome: #f6f4ef;
   --surface: #ffffff;
-  --viewer-bed: #eae7e1;
-  --border: #e2dfd8;
-  --border-strong: #d8d4cb;
-  --text: #1b1a18;
-  --text-secondary: #5e5a53;
-  --text-meta: #6e6a62;
+  --viewer-bed: #e9e6df;
+  --border: #e4e0d7;
+  --border-strong: #d3cec3;
+  --text: #1c1b19;
+  --text-secondary: #4e4a43;
+  --text-meta: #67625a;
   /* Fainter than `text-meta`: row numbers, the search glyph, the vault path. */
-  --text-faint: #8a857c;
+  --text-faint: #8a847a;
   /* A sidebar row's label, a touch lighter than `text` so a selected row stands out. */
   --row-text: #2e2c29;
   /* A text field's own fill, which is not `surface` in dark. */
   --field: #ffffff;
   /* The track a segmented control sits in, and the raised state of its chosen segment. */
-  --track: #eae7e1;
+  --track: #ece9e2;
 
   /* Code in the notes (2026-11-05). Not on the canvas, which shows no code; chosen from the
      palette's own families -- the brand's ink for keywords, the semantic hues muted for
      strings, functions and types -- at contrasts readable on --code-bg. */
-  --code-bg: #f6f4f0;
+  --code-bg: #f7f5f1;
   --code-border: #e7e3dc;
   --code-keyword: #9e477b;
   --code-string: #2a7a59;
@@ -76,11 +83,11 @@
   --code-type: #7a5a14;
   --segment-on: #ffffff;
   /* A keyboard shortcut badge. */
-  --kbd: #efece6;
-  --kbd-border: #e2dfd8;
+  --kbd: #ece9e2;
+  --kbd-border: #e0dbd1;
   /* The accent at a tenth, for a selected row's bed. An explicit value per theme rather
      than a `color-mix`, as with `accent-wash` above. */
-  --accent-soft: rgba(190, 26, 114, 0.1);
+  --accent-soft: rgba(168, 25, 94, 0.09);
   /* The exam semantic at a tenth, for the pill on a lecture that could not be converted.
      An explicit value per theme, like the other washes in this file. */
   --exam-wash: rgba(224, 82, 60, 0.12);
@@ -118,42 +125,11 @@
   --gap: 12px;
 }
 
-/* The dark palette, declared once.
-   `useTheme` resolves "follow the system" in JavaScript and always writes a concrete
-   `data-theme`, so this needs no `prefers-color-scheme` twin. The alternative -- a media
-   query for the system case plus this rule for a pinned one -- means maintaining two
-   copies of every token, and the first of them to be forgotten is a bug nobody sees until
-   they switch themes. */
-:root[data-theme="dark"] {
-  --accent: #ff72c6;
-  /* On the dark accent the label is dark, not white -- the canvas is explicit about it,
-     and white on #FF72C6 would not carry the contrast. */
-  --on-accent: #2b0918;
-  /* Derived, not taken: the canvas draws the drop state on the light artboard only. The
-     dark accent is lighter, so a 6% wash all but disappears on #16161a. */
-  --accent-wash: rgba(255, 114, 198, 0.1);
-  --scrim: rgba(22, 22, 26, 0.86);
-
-  --chrome: #16161a;
-  --surface: #1a1a1f;
-  --viewer-bed: #0f0f12;
-  --border: #2c2c34;
-  --border-strong: #3a3a44;
-  --text: #eceae7;
-  --text-faint: #8f8b84;
-  --row-text: #d6d3ce;
-  --field: #1f1f25;
-  --track: #1f1f25;
-  --segment-on: #2e2e38;
-  --kbd: #26262e;
-  --kbd-border: #333340;
-  --accent-soft: rgba(255, 114, 198, 0.1);
+/* What every dark theme shares: code colours sized for a dark ground, and a stronger exam
+   wash, since a tenth of red all but disappears on charcoal. Each dark theme's own
+   grounds, text and accent come from `src/ui/themes/dark.ts`. */
+:root[data-scheme="dark"] {
   --exam-wash: rgba(224, 82, 60, 0.2);
-  --text-secondary: #a8a49d;
-  --text-meta: #8f8b84;
-
-  --code-bg: #1d1d23;
-  --code-border: #2c2c34;
   --code-keyword: #ff8fd3;
   --code-string: #6fcf9f;
   --code-comment: #8f8b84;
