@@ -56,14 +56,17 @@ function DropArrow() {
  */
 export function DropOverlay({
   formats,
+  into,
 }: {
   readonly formats: readonly string[];
+  /** The folder the files will be added to, by name, as the sidebar shows it. */
+  readonly into: string;
 }) {
   return (
     <div aria-hidden="true" className="drop-overlay">
       <div className="drop-zone">
         <DropArrow />
-        <div className="drop-title">Drop to add a document</div>
+        <div className="drop-title">{`Drop to add to ${into}`}</div>
         <div className="drop-detail">
           Files are copied into the vault, never moved
         </div>

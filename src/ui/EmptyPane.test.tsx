@@ -31,7 +31,7 @@ describe("choosing a line", () => {
 
 describe("what the pane shows", () => {
   it("greets with one of the lines, and always says what to do", () => {
-    render(<EmptyPane busy={false} onAdd={vi.fn()} onChooseVault={vi.fn()} />);
+    render(<EmptyPane busy={false} folder="Week 3" onAdd={vi.fn()} onChooseVault={vi.fn()} />);
 
     const greeting = EMPTY_LINES.filter((line) => screen.queryByText(line) !== null);
 
@@ -39,24 +39,24 @@ describe("what the pane shows", () => {
 
     // The instruction is not part of the rotation. A pane that is only witty leaves
     // someone no better off than a blank one.
-    expect(screen.getByText(/Choose something from the sidebar/u)).toBeDefined();
+    expect(screen.getByText(/Open something from the sidebar/u)).toBeDefined();
     expect(screen.getByText("⌘O")).toBeDefined();
   });
 
   it("keeps the same line across re-renders", () => {
     const { rerender } = render(
-      <EmptyPane busy={false} onAdd={vi.fn()} onChooseVault={vi.fn()} />,
+      <EmptyPane busy={false} folder="Week 3" onAdd={vi.fn()} onChooseVault={vi.fn()} />,
     );
     const first = EMPTY_LINES.find((line) => screen.queryByText(line) !== null);
 
-    rerender(<EmptyPane busy onAdd={vi.fn()} onChooseVault={vi.fn()} />);
+    rerender(<EmptyPane busy folder="Week 3" onAdd={vi.fn()} onChooseVault={vi.fn()} />);
 
     expect(screen.queryByText(first ?? "")).not.toBeNull();
   });
 
   it("hides the ghost from assistive technology, being decoration", () => {
     const { container } = render(
-      <EmptyPane busy={false} onAdd={vi.fn()} onChooseVault={vi.fn()} />,
+      <EmptyPane busy={false} folder="Week 3" onAdd={vi.fn()} onChooseVault={vi.fn()} />,
     );
 
     expect(container.querySelector(".pixel-ghost")?.getAttribute("aria-hidden")).toBe(
@@ -67,7 +67,7 @@ describe("what the pane shows", () => {
   it("offers both ways out, and disables them while the vault is busy", () => {
     const props = { onAdd: vi.fn(), onChooseVault: vi.fn() };
 
-    render(<EmptyPane busy={false} {...props} />);
+    render(<EmptyPane busy={false} folder="Week 3" {...props} />);
     fireEvent.click(screen.getByRole("button", { name: "Import a document" }));
     fireEvent.click(screen.getByRole("button", { name: "Open another vault" }));
 
@@ -75,7 +75,7 @@ describe("what the pane shows", () => {
     expect(props.onChooseVault).toHaveBeenCalled();
 
     cleanup();
-    render(<EmptyPane busy {...props} />);
+    render(<EmptyPane busy folder="Week 3" {...props} />);
 
     for (const name of ["Import a document", "Open another vault"]) {
       expect(screen.getByRole("button", { name }).hasAttribute("disabled")).toBe(true);
@@ -105,12 +105,20 @@ describe("the sprite", () => {
 
   it("draws every row of the ghost", () => {
     const { container } = render(
-      <EmptyPane busy={false} onAdd={vi.fn()} onChooseVault={vi.fn()} />,
+      <EmptyPane busy={false} folder="Week 3" onAdd={vi.fn()} onChooseVault={vi.fn()} />,
     );
     const ghost = container.querySelector(".pixel-ghost");
 
     // 12 rows, none of them blank, so a sprite that silently lost a row would show.
     expect(ghost?.getAttribute("viewBox")).toBe("0 0 12 12");
     expect(new Set([...(ghost?.querySelectorAll("rect") ?? [])].map((r) => r.getAttribute("y"))).size).toBe(12);
+  });
+});
+
+describe("where things go", () => {
+  it("names the folder anything added will go into", () => {
+    render(<EmptyPane busy={false} folder="Week 3" onAdd={vi.fn()} onChooseVault={vi.fn()} />);
+
+    expect(screen.getByText("Week 3").tagName).toBe("STRONG");
   });
 });

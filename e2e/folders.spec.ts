@@ -76,6 +76,8 @@ test("moving the open document takes it, and the sidebar, to its new folder", as
   await panel.getByLabel("Folder").selectOption("week-1");
   await panel.getByRole("button", { name: "Save" }).click();
 
+  // Confirmed with the document still open: the message floats over whatever is open.
+  await expect(page.getByRole("status").filter({ hasText: `Moved "${READING.title}" to week-1.` })).toBeVisible();
   await expect(crumbs(page).getByRole("button", { name: "week-1" })).toHaveAttribute("aria-current", "location");
   await expect(sidebar(page).getByRole("button", { name: READING.title, exact: true })).toBeVisible();
   await expect(sidebar(page).getByRole("button", { name: OTHER.title, exact: true })).toBeVisible();

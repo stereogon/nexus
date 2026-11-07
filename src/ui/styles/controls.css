@@ -46,20 +46,24 @@ button.danger {
 .field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
   font-size: 12px;
-  color: var(--text-meta);
+  font-weight: 500;
+  color: var(--text-secondary);
 }
 
 .field input,
 .field select {
+  height: 34px;
+  box-sizing: border-box;
   font: inherit;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 400;
   color: var(--text);
-  background: var(--surface);
-  border: 1px solid var(--border-strong);
+  background: var(--field);
+  border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 7px 10px;
+  padding: 0 10px;
 }
 
 .field input:focus-visible,
@@ -72,8 +76,13 @@ button.danger {
    mounts it -- a card inside the panel would draw a border inside a border. */
 .editor {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: var(--gap);
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 12px 10px;
+}
+
+/* Title and tags across the sheet; number and folder beside each other. */
+.field.wide {
+  grid-column: 1 / -1;
 }
 
 /* The offer to take a number out of an older lecture's title: the whole row, so it reads

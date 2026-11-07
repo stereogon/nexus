@@ -102,11 +102,3 @@
   color: var(--text-meta);
 }
 
-/* Which lecture is being edited. With a document open this is often not the one on
-   screen, so it is stated rather than left to be inferred from the sidebar. */
-.editor-panel-subject {
-  margin: 0 0 2px;
-  color: var(--text-secondary);
-  font-size: 12px;
-  overflow-wrap: anywhere;
-}

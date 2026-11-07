@@ -33,14 +33,17 @@ function Field({
   value,
   onChange,
   placeholder,
+  wide = false,
 }: {
   readonly label: string;
   readonly value: string;
   readonly onChange: (next: string) => void;
   readonly placeholder: string;
+  /** Across the whole sheet, rather than one of two beside each other. */
+  readonly wide?: boolean;
 }) {
   return (
-    <label className="field">
+    <label className={wide ? "field wide" : "field"}>
       <span>{label}</span>
       <input
         onChange={(event) => {
@@ -93,6 +96,7 @@ export function LectureEditor({
         }}
         placeholder="Raft consensus"
         value={draft.title}
+        wide
       />
       <Field
         label="Number"
@@ -102,17 +106,6 @@ export function LectureEditor({
         placeholder="3"
         value={draft.number}
       />
-      {offering && (
-        <button
-          className="secondary editor-offer"
-          onClick={() => {
-            setDraft({ ...draft, number: offer.number, title: offer.title });
-          }}
-          type="button"
-        >
-          Take “{offer.number}” out of the title
-        </button>
-      )}
       <label className="field">
         <span>Folder</span>
         <select
@@ -129,6 +122,17 @@ export function LectureEditor({
           ))}
         </select>
       </label>
+      {offering && (
+        <button
+          className="secondary editor-offer"
+          onClick={() => {
+            setDraft({ ...draft, number: offer.number, title: offer.title });
+          }}
+          type="button"
+        >
+          Take “{offer.number}” out of the title
+        </button>
+      )}
       <Field
         label="Tags"
         onChange={(tags) => {
@@ -144,6 +148,7 @@ export function LectureEditor({
         }}
         placeholder="exam, consensus"
         value={draft.tags.join(", ")}
+        wide
       />
 
       <div className="editor-actions">

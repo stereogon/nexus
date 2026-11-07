@@ -28,7 +28,7 @@ import { HighlightsLibrary } from "./ui/HighlightsLibrary";
 import { ErrorPanel } from "./ui/ErrorPanel";
 import { Reading } from "./ui/Reading";
 import { Sidebar } from "./ui/Sidebar";
-import { parentOf, vaultNameOf } from "./ui/folders";
+import { nameOf, parentOf, vaultNameOf } from "./ui/folders";
 import { existingFolder, sidebarRows } from "./ui/sidebarRows";
 import { SidebarIcon } from "./ui/icons";
 import { useAddDocuments } from "./ui/useAddDocuments";
@@ -182,13 +182,15 @@ export function App() {
         ) : (
           <main className="pane">
             <div className="pane-head lead pane-strip" data-tauri-drag-region="" />
-            {notice.text !== null && (
-              <Notice onDismiss={notice.dismiss} text={notice.text} />
-            )}
             {reading.failure !== null && <Failure error={reading.failure} />}
             {zone.failure !== null && <Failure error={zone.failure} />}
 
-            <EmptyPane busy={busy} onAdd={add} onChooseVault={choose} />
+            <EmptyPane
+              busy={busy}
+              folder={showing === "" ? vaultNameOf(summary.root) : nameOf(showing)}
+              onAdd={add}
+              onChooseVault={choose}
+            />
           </main>
         )}
 
@@ -235,7 +237,10 @@ export function App() {
           query={query}
         />
       )}
-      {zone.dragging && <DropOverlay formats={zone.formats} />}
+      {notice.text !== null && <Notice onDismiss={notice.dismiss} text={notice.text} />}
+      {zone.dragging && (
+        <DropOverlay formats={zone.formats} into={showing === "" ? vaultNameOf(summary.root) : nameOf(showing)} />
+      )}
     </div>
   );
 }

@@ -1,0 +1,42 @@
+/**
+ * The confirmation that floats at the foot of the window (`Notice`).
+ */
+
+/* A confirmation, floating at the foot of the window whatever is open (redesign,
+   2026-11-07). Drawn in reverse — the theme's text colour as its ground — so it stands off
+   every theme without a colour of its own; the pair already passes 4.5:1 in each. */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  z-index: 45;
+  transform: translateX(-50%);
+  max-width: min(560px, calc(100vw - 48px));
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px 10px 16px;
+  border-radius: 12px;
+  background: var(--text);
+  color: var(--surface);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+
+/* For someone who has read it and wants it gone now; it goes by itself anyway. */
+.toast-dismiss {
+  flex: 0 0 auto;
+  background: none;
+  border: none;
+  padding: 0 4px;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--surface);
+  opacity: 0.75;
+  cursor: pointer;
+}
+
+.toast-dismiss:hover {
+  opacity: 1;
+}

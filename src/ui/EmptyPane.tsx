@@ -52,10 +52,13 @@ export function lineFor(roll: number): string {
 
 export function EmptyPane({
   busy,
+  folder,
   onAdd,
   onChooseVault,
 }: {
   readonly busy: boolean;
+  /** The folder showing in the sidebar, where anything added goes. */
+  readonly folder: string;
   readonly onAdd: () => void;
   readonly onChooseVault: () => void;
 }) {
@@ -73,8 +76,8 @@ export function EmptyPane({
           what it offers. This keeps both reachable with a mouse, and says so, because a
           shortcut nobody is told about is a shortcut nobody has. */}
       <p>
-        Choose something from the sidebar, make a note there, drop a PDF on the window, or press{" "}
-        <span className="kbd">⌘O</span>.
+        Open something from the sidebar, or add to <strong>{folder}</strong>: make a note with +, drop a PDF
+        on the window, or press <span className="kbd">⌘O</span>.
       </p>
 
       <div className="pane-empty-actions">

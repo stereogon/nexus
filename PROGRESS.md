@@ -463,6 +463,33 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-07 · Redesign, step 5: details sheet, notices, library, empty pane, drop**
+**The edit panel is the canvas's Details sheet**: headed by the item itself — its kind's
+icon and its name — then "Document · in CS454 / Week 3", then Title across, Number and
+Folder side by side, Tags across, Save and Cancel, and Delete set apart below. Fields are
+34px on the theme's field colour.
+
+**Notices float at the foot of the window, whatever is open** (`Notice`, now `.toast`,
+drawn in reverse: the theme's text colour as its ground). They used to sit in the empty
+pane, so a move or a rename made with a document open — the usual case — was never
+confirmed; the move journey's check for its message, dropped in step 2 for exactly that
+reason, is back, and fails if notices are hidden while something is open. The inline
+`.note` loses its coloured left edge.
+
+**The highlights library** is a header strip, a filter bar (meaning chips with 20px
+letters, the folder menu, words at the right), and each document's highlights as a card,
+two or more to a row as the pane allows. **The empty pane** greets in the notes' italic and
+names the folder anything added will go into; **the drop target** says "Drop to add to
+Week 3".
+
+**Not done in this step: the "waiting for LibreOffice" notice** the canvas draws. It would
+have to say what happens after installing, and nothing happens: a queued conversion is not
+retried, and importing again collides with the item already there. So it belongs with a
+real "Convert now" action, as its own item, rather than as a notice that promises one.
+
+Verified: gate green. Empty-pane folder test; the move journey's toast check, proved by
+hiding notices while a document is open.
+
 **2026-11-07 · Redesign, step 4: the document's header, floating page controls, the notes header**
 **The document's header** is the canvas's strip: `CS454 / Week 3 / Raft consensus` in the
 brand face, then a Select | Box tool switch (the box tool of 2026-11-05, drawn as the

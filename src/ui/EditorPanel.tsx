@@ -26,6 +26,8 @@
 import { useEffect, useRef, useState } from "react";
 
 import type { LectureEdit, LectureRow } from "../ipc/vault";
+import { parentOf, spoken } from "./folders";
+import { DocumentIcon, NoteIcon } from "./icons";
 import { LectureEditor } from "./LectureEditor";
 
 export function EditorPanel({
@@ -46,6 +48,7 @@ export function EditorPanel({
   readonly onDelete: () => void;
 }) {
   const panel = useRef<HTMLElement | null>(null);
+  const place = spoken(parentOf(lecture.directory));
   // Asked once more before anything moves: the button is beside Save and Cancel.
   const [confirming, setConfirming] = useState(false);
 
@@ -87,9 +90,14 @@ export function EditorPanel({
   }, [lecture.directory]);
 
   return (
-    <aside aria-labelledby="editor-panel-heading" className="side-panel" ref={panel}>
+    <aside aria-label={lecture.kind === "note" ? "Edit note" : "Edit document"} className="side-panel" ref={panel}>
+      {/* Headed by the item itself, as the canvas's Details sheet is: with a document open,
+          the item being edited is often not the one on screen. */}
       <header className="side-panel-head">
-        <h2 id="editor-panel-heading">{lecture.kind === "note" ? "Edit note" : "Edit document"}</h2>
+        <span aria-hidden="true" className="details-kind">
+          {lecture.kind === "note" ? <NoteIcon /> : <DocumentIcon />}
+        </span>
+        <h2 className="details-title">{lecture.title}</h2>
         <button
           aria-label="Close the editor"
           className="side-panel-close"
@@ -101,9 +109,10 @@ export function EditorPanel({
         </button>
       </header>
 
-      {/* The title is shown rather than assumed: with a document open, the item being
-          edited is often not the one on screen. */}
-      <p className="editor-panel-subject">{lecture.title}</p>
+      <p className="details-meta">
+        {lecture.kind === "note" ? "Note" : "Document"}
+        {place === "" ? " · at the top of the vault" : ` · in ${place}`}
+      </p>
 
       <LectureEditor
         busy={busy}

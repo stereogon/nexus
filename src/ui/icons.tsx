@@ -111,3 +111,12 @@ export function GearIcon() {
     </Icon>
   );
 }
+
+export function DocumentIcon() {
+  return (
+    <Icon>
+      <path d="M4 2h5.5l3 3v9h-8.5z" />
+      <path d="M9.5 2v3h3" />
+    </Icon>
+  );
+}

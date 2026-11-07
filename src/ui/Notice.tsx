@@ -1,5 +1,7 @@
 /**
- * The confirmation strip: what just happened, and a way to stop reading it.
+ * The confirmation: what just happened, and a way to stop reading it. A message floating at
+ * the foot of the window (redesign, 2026-11-07), shown whatever is open — until then it sat
+ * in the empty pane, so a move or a rename made with a document open was never confirmed.
  *
  * `role="status"` rather than `alert`: this reports something that succeeded, so it should
  * be announced when there is a pause rather than interrupting whatever is being read.
@@ -13,11 +15,11 @@ export function Notice({
   readonly onDismiss: () => void;
 }) {
   return (
-    <div className="note" role="status">
+    <div className="toast" role="status">
       <span>{text}</span>
       <button
         aria-label="Dismiss"
-        className="note-dismiss"
+        className="toast-dismiss"
         onClick={onDismiss}
         type="button"
       >

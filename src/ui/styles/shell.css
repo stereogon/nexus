@@ -154,9 +154,12 @@ body {
 
 /* Larger and darker than the sentence under it: the line is what the eye lands on, and the
    instruction is what it reads next. */
+/* The greeting, in the notes' italic face (redesign canvas: "A clear desk."). */
 .pane-empty-line {
-  font-family: var(--font-brand);
-  font-size: 17px;
+  margin: 0;
+  font-family: var(--font-prose);
+  font-size: 19px;
+  font-style: italic;
   color: var(--text-secondary);
 }
 

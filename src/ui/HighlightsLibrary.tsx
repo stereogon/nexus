@@ -147,44 +147,48 @@ export function HighlightsLibrary({
         </label>
       </div>
 
-      {failure !== null && <Failure error={failure} />}
-      {marks === null && failure === null && <p className="empty">Reading the vault's highlights…</p>}
-      {marks !== null && marks.lectures.length === 0 && (
-        <p className="empty">No highlights yet. Select text on a page and choose a meaning to make one.</p>
-      )}
-      {marks !== null && marks.lectures.length > 0 && groups.length === 0 && <p className="empty">No highlights match these filters.</p>}
-      {marks !== null && marks.unreadable > 0 && (
-        <p className="note">
-          {marks.unreadable === 1 ? "One document's" : `${String(marks.unreadable)} documents'`} highlights could not be read
-          and are not shown. Opening the document shows why.
-        </p>
-      )}
+      <div className="library-body">
+        {failure !== null && <Failure error={failure} />}
+        {marks === null && failure === null && <p className="empty">Reading the vault's highlights…</p>}
+        {marks !== null && marks.lectures.length === 0 && (
+          <p className="empty">No highlights yet. Select text on a page and choose a meaning to make one.</p>
+        )}
+        {marks !== null && marks.lectures.length > 0 && groups.length === 0 && <p className="empty">No highlights match these filters.</p>}
+        {marks !== null && marks.unreadable > 0 && (
+          <p className="note">
+            {marks.unreadable === 1 ? "One document's" : `${String(marks.unreadable)} documents'`} highlights could not be read
+            and are not shown. Opening the document shows why.
+          </p>
+        )}
 
-      {groups.map((group) => (
-        <section aria-label={group.lecture.title} className="library-lecture" key={group.lecture.directory}>
-          <h3>{group.lecture.title}</h3>
-          <p className="library-facets">{spoken(parentOf(group.lecture.directory))}</p>
-          <ul>
-            {group.marks.map((mark) => (
-              <li key={mark.id}>
-                <button
-                  className="library-mark"
-                  onClick={() => {
-                    onOpenAt(group.lecture, { kind: "highlight", id: mark.id });
-                  }}
-                  type="button"
-                >
-                  <span className="library-glyph" data-kind={kindOf(mark)} title={KIND_LABEL[kindOf(mark)]}>
-                    {KIND_GLYPH[kindOf(mark)]}
-                  </span>
-                  <span className="library-words">{wordsOf(mark) === "" ? "An area of the page" : wordsOf(mark)}</span>
-                  <span className="library-page">p. {mark.page}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
+        <div className="library-groups">
+          {groups.map((group) => (
+            <section aria-label={group.lecture.title} className="library-lecture" key={group.lecture.directory}>
+              <h3>{group.lecture.title}</h3>
+              <p className="library-facets">{spoken(parentOf(group.lecture.directory))}</p>
+              <ul>
+                {group.marks.map((mark) => (
+                  <li key={mark.id}>
+                    <button
+                      className="library-mark"
+                      onClick={() => {
+                        onOpenAt(group.lecture, { kind: "highlight", id: mark.id });
+                      }}
+                      type="button"
+                    >
+                      <span className="library-glyph" data-kind={kindOf(mark)} title={KIND_LABEL[kindOf(mark)]}>
+                        {KIND_GLYPH[kindOf(mark)]}
+                      </span>
+                      <span className="library-words">{wordsOf(mark) === "" ? "An area of the page" : wordsOf(mark)}</span>
+                      <span className="library-page">p. {mark.page}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+      </div>
     </main>
   );
 }
