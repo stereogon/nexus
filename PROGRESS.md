@@ -5790,6 +5790,27 @@ the user's instruction, 2026-10-27), local only, never pushed without being aske
   generates one yet. Belongs with the `cargo deny` work so it is produced from the real
   dependency tree rather than maintained by hand.
 
+### Planned, raised 2026-11-07: Diagram and Chart blocks you can find
+The user: *"there is no way to add mermaid diagram … add a separate mermaid diagram block
+where we can simply paste the mermaid code … also for chart.js idk how to even use it
+here"*. Both render today (`preview/diagrams.ts`), but only from a fenced block whose
+language is `mermaid` or `chart`, which nothing in the window tells anyone. `+`'s menu
+offers Code and Divider and stops there.
+
+Not started. The intent:
+- **Diagram.** "Diagram" in `+`'s menu and the format bar inserts an empty ```mermaid
+  block with the cursor inside, ready for pasted Mermaid code. The diagram is drawn below
+  the code as it is typed, and an invalid one keeps its inline hint (§1.4). An empty block
+  shows a one-line hint and a link to an example, not a blank box.
+- **Chart.** The ```chart block takes JSON (`chartSpec.ts`: `type` line, bar, pie or
+  scatter, `data.labels`, `data.datasets[]`, and `options` title, xLabel, yLabel, stacked),
+  which nobody should have to write by hand. "Chart" in `+`'s menu should open a small
+  form: the chart type, a grid of labels and values pasted or typed like a little
+  spreadsheet, and the title and axis names. It writes the same JSON, so the file stays
+  plain text and a hand-edited block still works. Editing an existing chart reopens the form.
+- **Discoverability.** Both, with Math (`$$…$$`), belong in the README's notes section with
+  a short example each, since none is visible in the window today.
+
 ### Planned, raised 2026-11-07: a table editor in the notes
 The user: *"a proper table engine, i mean we can add table, select the number of rows and
 columns we want, then we can edit it with table formatting options"*. Today a GFM table is

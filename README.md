@@ -145,6 +145,10 @@ Recorded in [`PROGRESS.md`](./PROGRESS.md) with the reasoning for each:
 - A table editor in the notes: insert a table by picking its rows and columns, then edit
   it in place (add, remove and move rows and columns; align a column; header row). Today
   a table is drawn from Markdown you type.
+- A Diagram block and a Chart block in `+`'s menu. Today both work only by typing a code
+  block with the language `mermaid` or `chart`; nothing offers them. The diagram block
+  takes pasted Mermaid code; the chart block will be filled in from a small form rather
+  than hand-written JSON.
 - An MCP server, so AI agents (Claude and others) can search, read and add to a vault
   directly. Planned; see `PROGRESS.md` for the questions it raises first.
 
