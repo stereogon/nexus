@@ -5790,6 +5790,30 @@ the user's instruction, 2026-10-27), local only, never pushed without being aske
   generates one yet. Belongs with the `cargo deny` work so it is produced from the real
   dependency tree rather than maintained by hand.
 
+### Planned, raised 2026-11-07: an MCP server for agents
+The user: *"add an MCP in the todo, that can be connected to agents, that can access the app
+directly"*. A Model Context Protocol server would let an agent (Claude Code, Claude Desktop
+or any other MCP client) work with a vault: search it, read an item's notes and highlights,
+and append to notes or cite a highlight.
+
+Not started. To settle before building:
+- **Where it lives.** The likely shape is a separate local binary, `crates/nexus-mcp`,
+  speaking MCP over stdio and built on `lecture-core` / `lecture-fs`, not routed through the
+  window. That way an agent works with the app closed, and every write takes the same
+  atomic path (§1.3). The app already flags notes changed underneath it as a conflict, so
+  an agent editing an open item cannot overwrite unsaved typing. An MCP SDK crate (such as
+  `rmcp`) is a new dependency and needs the user's approval.
+- **Privacy (§1.2).** The server itself is local and offline, but an agent backed by a
+  cloud model sends what it reads to that model. That would be the user's explicit choice,
+  not Nexus's, but it should be visible. Proposed: opt-in per vault, read-only unless
+  writing is switched on, scoped to one vault root, and nothing logged beyond codes
+  (§4: nothing a person typed or named reaches the log).
+- **The tools.** A first set to argue over: `search`, `list_folder`, `read_notes`,
+  `read_highlights`, `append_to_notes`, `cite_highlight`. Importing documents and deleting
+  are left out until there is a reason.
+- **iPad (§3).** The core stays platform-free; the server is a desktop adapter like the
+  converters, so nothing here constrains Phase 2.
+
 ### Deferred to a 2.0, with reasoning (decided 2026-10-27)
 - **Cloud-drive vaults (Google Drive, Dropbox, OneDrive).** Deferred until the product
   exists, then added incrementally. The user asked whether allowing a symlinked vault

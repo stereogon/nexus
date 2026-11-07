@@ -142,6 +142,8 @@ Recorded in [`PROGRESS.md`](./PROGRESS.md) with the reasoning for each:
 - The rest of the diagnostics drawer: past logs, converter output, timings.
 - Telling you when LibreOffice is missing (imports wait safely until it is installed).
 - Restyling parts of the UI from the approved design canvas.
+- An MCP server, so AI agents (Claude and others) can search, read and add to a vault
+  directly. Planned; see `PROGRESS.md` for the questions it raises first.
 
 ## Keyboard shortcuts
 
