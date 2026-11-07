@@ -463,6 +463,25 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-07 · Screenshots in the README; a new app icon; the DMG rebuilt**
+The user: *"can you add some screenshot in the readme … please build the dmg again … change
+the logo of the app to something better, pink background does not look good … a doodle
+emoji like icon, like discord, reddit, grok bots, chatgpt dots"*.
+
+**Screenshots** come from `scripts/screenshots/` (`npx playwright test -c
+scripts/screenshots/screenshots.config.ts`). It uses the suite's harness, mocked backend
+and sample fixture, so a screenshot cannot contain real notes. It is kept apart from the
+suite because it asserts nothing and only draws: the workspace in Paper and in Midnight,
+Settings on Funky, and ⌘P search, at 2x, into `docs/screenshots/`. Four PNGs, about 1.6 MB
+together. `tsconfig.json` now includes the folder, so the script is type-checked.
+
+**The icon** is a doodle bot on near-black: a cream face, wide eyes, a small smile and an
+antenna with a yellow tip. The user picked it from three original sketches (a smiling page,
+the bot, linked dots); none copies another app's mascot. `scripts/make-icon.swift` keeps
+Apple's squircle geometry and now draws plain shapes, so it no longer needs Bricolage
+Grotesque installed. Only the four macOS sizes are kept from `tauri icon`, generated in the
+scratchpad. The in-app "N" mark in the sidebar is unchanged.
+
 **2026-11-07 · Deleting all of a formatted text takes its marks too**
 The user: *"when i write something, hightlight it, then select it and delte it, i am left
 with =="*. With the marks hidden, selecting the words one can see selects only what is

@@ -11,6 +11,30 @@ in a folder you choose. Nothing leaves your Mac.
 > and is not a released product. See [What works today](#what-works-today) and
 > [Not built yet](#not-built-yet) for an honest picture.
 
+![A document on the left with highlights, and its notes on the right with a citation, to-dos, a code block and a formula, in the Paper theme](docs/screenshots/workspace-light.png)
+
+<table>
+  <tr>
+    <td><img src="docs/screenshots/workspace-dark.png" alt="The same workspace in the Midnight theme; the page stays white"></td>
+    <td><img src="docs/screenshots/themes.png" alt="Settings open on the Funky theme, showing all twenty-four themes"></td>
+  </tr>
+  <tr>
+    <td align="center">Midnight, one of the dark themes. The page stays white.</td>
+    <td align="center">Twenty-four themes, chosen in Settings.</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/search.png" alt="The ⌘P search window over the workspace"></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td align="center">⌘P searches documents, notes and folders.</td>
+    <td></td>
+  </tr>
+</table>
+
+The screenshots use the test suite's sample vault, not real notes. They are retaken with
+`npx playwright test -c scripts/screenshots/screenshots.config.ts`.
+
 ---
 
 ## Principles
