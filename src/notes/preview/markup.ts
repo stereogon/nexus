@@ -1,19 +1,16 @@
 /**
  * Ordinary Markdown, rendered in place: the markup hidden, what it means drawn.
  *
- * The established CodeMirror technique for a live preview (the approach Obsidian calls
- * "Live Preview"): walk the syntax tree, and on every line the cursor is *not* on, hide
- * the markup characters and draw their meaning — `#` gone and the heading large, `**` gone
- * and the words bold, `>` gone and a bar beside the quote, `-` drawn as a bullet, `[ ]` as
- * a checkbox, `---` as a rule, a table as a table. The line the cursor is on shows its
- * Markdown, so everything stays editable as text.
+ * The established CodeMirror technique for a live preview: walk the syntax tree, hide the
+ * markup characters and draw their meaning — `#` gone and the heading large, `**` gone and
+ * the words bold, `>` gone and a bar beside the quote, `-` drawn as a bullet, `[ ]` as a
+ * checkbox, `---` as a rule, a table as a table.
  *
- * Line-level reveal, not character-level: entering a line shows all of its markup. That is
- * the predictable rule — the line jumps once, when the cursor arrives, and not again as it
- * moves across each bold word.
- *
- * Reported 2026-11-05: quotes only dimmed, tables were not recognised at all, and the
- * notes showed their Markdown and its preview at once.
+ * Hidden on the cursor's line too, as Notion does (2026-11-07; until then the cursor's line
+ * showed its Markdown). The text underneath is still Markdown, and copying gives it. The
+ * exceptions are what cannot be edited any other way: a link's address while the cursor is
+ * in the link, a table's source while the cursor is in the table, and a rule still being
+ * written. `blockKeys.ts` keeps the cursor off positions only hidden text occupies.
  */
 import { syntaxTree } from "@codemirror/language";
 import type { EditorState, Range } from "@codemirror/state";
