@@ -85,45 +85,6 @@
   background: rgba(158, 71, 123, 0.3);
 }
 
-/* The page controls in the viewer's toolbar. Not on the canvas, which shows a counter
-   that only reports; these step, jump and switch layout. */
-.viewer-pages {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  color: var(--text-meta);
-}
-
-.viewer-pages input {
-  width: 42px;
-  height: 24px;
-  box-sizing: border-box;
-  padding: 0 4px;
-  background: var(--field);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-}
-
-/* The spinners are redundant beside the arrows either side, and they crowd a 42px field. */
-.viewer-pages input::-webkit-outer-spin-button,
-.viewer-pages input::-webkit-inner-spin-button {
-  margin: 0;
-  appearance: none;
-}
-
-.viewer-total {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
 /* Narrower than the sidebar's, which stretches to fill a 264px column. */
 .viewer-bar .segmented {
   flex: 0 0 auto;

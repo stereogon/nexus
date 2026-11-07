@@ -1,178 +1,71 @@
 /**
- * The viewer's toolbar.
+ * The document's header strip (redesign canvas, 2026-11-07): where it is and what it is
+ * called, then how it is worked on — the tool, the view, find, the notes — and closing it.
+ * Pages and zoom float at the foot of the document instead (`PageControls`).
  *
- * The canvas specifies `n / total · − · 124% · + · Fit width`. Three things here go beyond
- * it, added on request after the first real use, and marked as additions: arrows to step a
- * page, a number field to jump to one, and a Scroll/Page switch. The canvas shows a
- * continuous scroller and a page counter that only reports; reading one slide at a time is
- * a different way to work and the counter alone does not serve it.
+ * The Select | Box switch is the box tool from 2026-11-05 (asked for because Option-drag
+ * is awkward on a touchpad), drawn as the canvas's tool control. The canvas also draws a
+ * Sticky tool; sticky notes are made from the highlight menu, so there is no third tool
+ * until there is something for it to do.
  */
-import { PageField } from "./PageField";
 import type { ViewMode } from "./viewMode";
-
-function Chevron({ back }: { readonly back: boolean }) {
-  return (
-    <svg aria-hidden="true" height="13" viewBox="0 0 13 13" width="13">
-      <path
-        d={back ? "M8 2.5 L4 6.5 L8 10.5" : "M5 2.5 L9 6.5 L5 10.5"}
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.5"
-      />
-    </svg>
-  );
-}
 
 export function PdfToolbar({
   title,
   place,
-  showing,
-  pages,
-  scale,
-  fitting,
   mode,
-  limits,
   onClose,
-  onGoTo,
-  onZoom,
-  onFit,
   onMode,
   boxing,
   onBoxing,
+  onFind,
   notesOpen,
   onNotes,
 }: {
   readonly title: string;
   /** The folders the document is in, as `CS454 / Week 3`; empty at the top of the vault. */
   readonly place: string;
-  /** Zero-based, as everything inside the viewer is. */
-  readonly showing: number;
-  readonly pages: number;
-  readonly scale: number;
-  readonly fitting: boolean;
   readonly mode: ViewMode;
-  readonly limits: { readonly min: number; readonly max: number };
   readonly onClose: () => void;
-  readonly onGoTo: (index: number) => void;
-  readonly onZoom: (direction: 1 | -1) => void;
-  readonly onFit: () => void;
   readonly onMode: (mode: ViewMode) => void;
   /** Whether a plain drag draws a box rather than selecting text. */
   readonly boxing: boolean;
   readonly onBoxing: (on: boolean) => void;
+  readonly onFind: () => void;
   /** Whether the notes are showing beside the document. */
   readonly notesOpen: boolean;
   readonly onNotes: () => void;
 }) {
-  const empty = pages === 0;
-
   return (
     <div className="viewer-bar pane-head lead" data-tauri-drag-region="">
-      <button className="quiet" onClick={onClose} type="button">
-        ← Vault
-      </button>
       <span className="viewer-title" data-tauri-drag-region="">
         {place !== "" && <span className="viewer-place">{`${place} /`}</span>}
         {title}
       </span>
 
-      <div className="viewer-pages">
+      <div aria-label="Tool" className="segmented" role="group">
         <button
-          aria-label="Previous page"
-          className="quiet"
-          disabled={empty || showing === 0}
+          aria-pressed={!boxing}
           onClick={() => {
-            onGoTo(showing - 1);
+            onBoxing(false);
           }}
+          title="Select text to highlight it"
           type="button"
         >
-          <Chevron back />
+          Select
         </button>
-
-        <label className="vh" htmlFor="page-number">
-          Page number
-        </label>
-        <PageField onGoTo={onGoTo} pages={pages} showing={showing} />
-        <span className="viewer-total">{empty ? "—" : `/ ${String(pages)}`}</span>
-
         <button
-          aria-label="Next page"
-          className="quiet"
-          disabled={empty || showing >= pages - 1}
+          aria-pressed={boxing}
           onClick={() => {
-            onGoTo(showing + 1);
+            onBoxing(true);
           }}
+          title="Draw a box around a diagram or scan (or hold Option and drag)"
           type="button"
         >
-          <Chevron back={false} />
+          Box
         </button>
       </div>
 
-      <div className="viewer-zoom">
-        <button
-          aria-label="Zoom out"
-          className="quiet"
-          disabled={scale <= limits.min}
-          onClick={() => {
-            onZoom(-1);
-          }}
-          type="button"
-        >
-          −
-        </button>
-        <span className="viewer-scale">{`${String(Math.round(scale * 100))}%`}</span>
-        <button
-          aria-label="Zoom in"
-          className="quiet"
-          disabled={scale >= limits.max}
-          onClick={() => {
-            onZoom(1);
-          }}
-          type="button"
-        >
-          +
-        </button>
-        <button
-          aria-pressed={fitting}
-          className={fitting ? "quiet on" : "quiet"}
-          onClick={onFit}
-          type="button"
-        >
-          Fit width
-        </button>
-      </div>
-
-      {/* The box tool, for a touchpad. Option-drag needs a physical click held while the
-          finger moves, which most touchpad setups make awkward; with this on, a plain drag
-          draws the box. Added 2026-11-05 at the user's request; not on the canvas. */}
-      <button
-        aria-label="Draw a box"
-        aria-pressed={boxing}
-        className={boxing ? "quiet on" : "quiet"}
-        onClick={() => {
-          onBoxing(!boxing);
-        }}
-        title="Draw a box around a diagram or scan (or hold Option and drag)"
-        type="button"
-      >
-        <svg aria-hidden="true" height="14" viewBox="0 0 14 14" width="14">
-          <rect
-            fill="none"
-            height="11"
-            rx="1.5"
-            stroke="currentColor"
-            strokeDasharray="2.5 2"
-            strokeWidth="1.4"
-            width="11"
-            x="1.5"
-            y="1.5"
-          />
-        </svg>
-      </button>
-
-      {/* Not on the canvas: see this file's note. */}
       <div aria-label="View mode" className="segmented" role="group">
         <button
           aria-pressed={mode === "scroll"}
@@ -193,14 +86,30 @@ export function PdfToolbar({
           Page
         </button>
       </div>
+
+      <button aria-label="Find in document" className="chrome-icon" onClick={onFind} title="Find (⌘F)" type="button">
+        <svg aria-hidden="true" fill="none" height="16" stroke="currentColor" strokeLinecap="round" strokeWidth="1.4" viewBox="0 0 16 16" width="16">
+          <circle cx="7" cy="7" r="4.5" />
+          <path d="M10.4 10.4l3.2 3.2" />
+        </svg>
+      </button>
       <button
+        aria-label="Notes"
         aria-pressed={notesOpen}
-        className={notesOpen ? "quiet on" : "quiet"}
+        className="chrome-icon"
         onClick={onNotes}
-        title="Show or hide the notes (⌘\\)"
+        title={"Show or hide the notes (⌘\\)"}
         type="button"
       >
-        Notes
+        <svg aria-hidden="true" fill="none" height="16" stroke="currentColor" strokeWidth="1.4" viewBox="0 0 16 16" width="16">
+          <rect height="10" rx="2" width="12" x="2" y="3" />
+          <path d="M10 3v10" />
+        </svg>
+      </button>
+      <button aria-label="Close document" className="chrome-icon" onClick={onClose} title="Close" type="button">
+        <svg aria-hidden="true" fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeWidth="1.6" viewBox="0 0 14 14" width="14">
+          <path d="M3.5 3.5l7 7M10.5 3.5l-7 7" />
+        </svg>
       </button>
     </div>
   );

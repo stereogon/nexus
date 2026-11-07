@@ -86,7 +86,7 @@ test("a note can be reworded, and keeps its words across reopening the lecture",
   await page.getByRole("textbox", { name: "Sticky note text" }).fill("Better thought");
   await page.keyboard.press("Enter");
 
-  await page.getByRole("button", { name: "← Vault" }).click();
+  await page.getByRole("button", { name: "Close document" }).click();
   await openLecture(page, READING.title);
 
   await expect(icons(page)).toHaveAccessibleName("Sticky note: Better thought");
@@ -114,7 +114,7 @@ test("a note can be dragged somewhere else, and stays there", async ({ page }) =
   // Stored, not just drawn: still there after reopening.
   const moved = await card(page).boundingBox();
 
-  await page.getByRole("button", { name: "← Vault" }).click();
+  await page.getByRole("button", { name: "Close document" }).click();
   await openLecture(page, READING.title);
   await icons(page).click();
 

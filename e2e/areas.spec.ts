@@ -167,7 +167,7 @@ test("an area survives closing and reopening the lecture", async ({ page }) => {
   await page.getByRole("group", MENU).getByRole("button", { name: "Definition" }).click();
   await expect(page.locator(".highlight")).toHaveCount(1);
 
-  await page.getByRole("button", { name: "← Vault" }).click();
+  await page.getByRole("button", { name: "Close document" }).click();
   await openLecture(page, READING.title);
 
   await expect(page.locator('.highlight[data-semantic="definition"]')).toHaveCount(1);
@@ -176,7 +176,7 @@ test("an area survives closing and reopening the lecture", async ({ page }) => {
 test("with the box tool on, a plain drag draws a box -- for a touchpad", async ({ page }) => {
   // Option-drag needs a physical click held while the finger moves, which most touchpad
   // setups make awkward. Reported 2026-11-05.
-  await page.getByRole("button", { name: "Draw a box" }).click();
+  await page.getByRole("button", { name: "Box", exact: true }).click();
 
   await dragOnFirstPage(page, EMPTY_CORNER.from, EMPTY_CORNER.to, false);
   await page.getByRole("group", MENU).getByRole("button", { name: "Definition" }).click();
@@ -185,7 +185,7 @@ test("with the box tool on, a plain drag draws a box -- for a touchpad", async (
 });
 
 test("the box tool stays on for the next box, and off means text again", async ({ page }) => {
-  const tool = page.getByRole("button", { name: "Draw a box" });
+  const tool = page.getByRole("button", { name: "Box", exact: true });
 
   await tool.click();
   await dragOnFirstPage(page, { x: 0.55, y: 0.5 }, { x: 0.7, y: 0.7 }, false);
@@ -194,7 +194,8 @@ test("the box tool stays on for the next box, and off means text again", async (
   await page.getByRole("group", MENU).getByRole("button", { name: "Question" }).click();
   await expect(page.locator(".highlight")).toHaveCount(2);
 
-  await tool.click();
+  // Back to selecting text, from the tool switch's other half.
+  await page.getByRole("button", { name: "Select", exact: true }).click();
   await expect(tool).toHaveAttribute("aria-pressed", "false");
 
   const words = textOn(page, 1).filter({ hasText: "Page 1 heading" });

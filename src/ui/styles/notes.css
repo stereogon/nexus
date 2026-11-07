@@ -78,9 +78,9 @@
 .notes-bar {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 16px;
-  background: var(--chrome);
+  gap: 10px;
+  padding: 0 12px 0 20px;
+  background: var(--surface);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-ui);
   font-size: 13px;
@@ -88,6 +88,7 @@
 
 /* Shows the format controls docked open; pressed while they are. */
 .notes-format-toggle {
+  margin-left: auto;
   font-family: var(--font-prose);
   font-weight: 600;
 }
@@ -98,18 +99,56 @@
 }
 
 .notes-title {
-  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
 }
 
+/* A plain note's header is its name, in the brand face, as a document's is. */
+.notes-pane.alone .notes-title {
+  font-family: var(--font-brand);
+  font-size: 16px;
+}
+
+/* What happened to the last save: a dot says it at a glance, the words say it exactly.
+   The words stay in a readable text colour; the semantic red is below 4.5:1 as text. */
 .notes-status {
-  margin-left: auto;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   color: var(--text-meta);
   font-size: 12px;
 }
 
+.notes-status::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-faint);
+}
+
+.notes-status.saved::before {
+  background: var(--semantic-definition);
+}
+
+.notes-status.unsaved::before,
+.notes-status.saving::before {
+  background: var(--semantic-key);
+}
+
 .notes-status.conflict,
 .notes-status.failed {
-  color: var(--semantic-exam);
+  color: var(--text);
+  font-weight: 500;
+}
+
+.notes-status.conflict::before,
+.notes-status.failed::before {
+  background: var(--semantic-exam);
 }
 
 .notes-editor {

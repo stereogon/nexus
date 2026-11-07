@@ -14,7 +14,7 @@ test("a lecture reopens at the page it was left on", async ({ page }) => {
   await pageField(page).press("Enter");
   await settleOn(page, 5);
 
-  await page.getByRole("button", { name: "← Vault" }).click();
+  await page.getByRole("button", { name: "Close document" }).click();
   // Not `openLecture`, which waits for page 1 to be drawn: it is not, being far above.
   await page.getByRole("button", { name: READING.title, exact: true }).click();
 
@@ -30,7 +30,7 @@ test("starting Nexus again reopens the last lecture at its place", async ({ page
     positions: { [READING.directory]: { page: 4, offset: 0 } },
   });
 
-  await expect(page.getByRole("button", { name: "← Vault" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Close document" })).toBeVisible();
   await settleOn(page, 4);
 });
 

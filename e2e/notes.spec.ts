@@ -39,7 +39,7 @@ test("what is typed is saved, and is there when the lecture is opened again", as
   await page.keyboard.type("Raft elects a leader.");
   await expect(notes(page).getByText("Saved", { exact: true })).toBeVisible();
 
-  await page.getByRole("button", { name: "← Vault" }).click();
+  await page.getByRole("button", { name: "Close document" }).click();
   await openLecture(page, READING.title);
 
   await expect(editor(page)).toContainText("Raft elects a leader.");

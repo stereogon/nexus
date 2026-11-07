@@ -29,6 +29,8 @@ export interface Find {
   /** Whether a page's text could not be read, so the search did not finish. */
   readonly failed: boolean;
   readonly step: (direction: 1 | -1) => void;
+  /** Opens the find bar, as ⌘F does. */
+  readonly show: () => void;
   readonly close: () => void;
   /** Whether the current match still has to be scrolled into view. */
   readonly reveal: boolean;
@@ -137,5 +139,5 @@ export function useFind(source: PageSource | null, pageCount: number, showing: n
 
   useMetaShortcut("f", source !== null, show);
 
-  return { open, focusKey, query, setQuery, matches, current, searching, failed, step, close, reveal, revealed };
+  return { open, focusKey, query, setQuery, matches, current, searching, failed, step, show, close, reveal, revealed };
 }

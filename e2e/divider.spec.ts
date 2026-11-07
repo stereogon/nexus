@@ -73,7 +73,7 @@ test("the width chosen is kept when the lecture is opened again", async ({ page 
   await drag(page, -120);
   const chosen = await notesWidth(page);
 
-  await page.getByRole("button", { name: "← Vault" }).click();
+  await page.getByRole("button", { name: "Close document" }).click();
   await openLecture(page, READING.title);
 
   await expect.poll(async () => Math.abs((await notesWidth(page)) - chosen)).toBeLessThanOrEqual(1);

@@ -20,6 +20,7 @@
    `min-width: 0` lets it shrink below the page's width rather than pushing the layout
    wider, which is what makes the bed scroll instead of the window. */
 .viewer {
+  position: relative;
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
@@ -31,16 +32,22 @@
 .viewer-bar {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 16px;
-  background: var(--chrome);
+  gap: 10px;
+  padding: 0 12px 0 20px;
+  background: var(--surface);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-ui);
   font-size: 13px;
 }
 
+/* The document's name leads the strip, in the brand face; everything after it is pushed
+   to the right end. */
 .viewer-title {
-  font-weight: 500;
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--font-brand);
+  font-size: 16px;
+  font-weight: 600;
   color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -56,26 +63,13 @@
   color: var(--text-meta);
 }
 
-.viewer-zoom {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.viewer-scale {
-  min-width: 48px;
-  text-align: center;
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  color: var(--text-secondary);
-}
-
 .viewer-bed {
   flex: 1;
   min-height: 0;
   overflow: auto;
   background: var(--viewer-bed);
-  padding: 24px 0;
+  /* Deeper at the foot, so the last page can scroll clear of the floating page controls. */
+  padding: 24px 0 80px;
 }
 
 /* The pages are absolutely placed inside this, so its height is the whole document's and

@@ -189,7 +189,7 @@ export function NotesPane({
         <button
           aria-label="Formatting"
           aria-pressed={formatting}
-          className="quiet notes-format-toggle"
+          className="chrome-icon notes-format-toggle"
           // Not taking focus, so the cursor stays where the next words will be typed.
           onMouseDown={(event) => {
             event.preventDefault();
@@ -203,8 +203,10 @@ export function NotesPane({
           Aa
         </button>
         {alone === null ? (
-          <button aria-label="Hide notes" className="quiet" onClick={onHide} type="button">
-            ✕
+          <button aria-label="Hide notes" className="chrome-icon" onClick={onHide} title={"Hide notes (⌘\\)"} type="button">
+            <svg aria-hidden="true" fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeWidth="1.6" viewBox="0 0 14 14" width="14">
+              <path d="M3.5 3.5l7 7M10.5 3.5l-7 7" />
+            </svg>
           </button>
         ) : (
           <button className="secondary" onClick={alone.onClose} type="button">

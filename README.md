@@ -49,8 +49,8 @@ in a folder you choose. Nothing leaves your Mac.
   folder; drag it back out in Finder to restore it.
 
 **Reading**
-- PDF rendering with pdf.js, in continuous-scroll or one-page mode, with zoom, fit-width and
-  a page field.
+- PDF rendering with pdf.js, in continuous-scroll or one-page mode. Pages and zoom float at
+  the foot of the document: arrows, a page field, zoom and fit-width.
 - Each document and note reopens where you left it, and Nexus reopens the last one on launch.
 - Find in the open document (`⌘F`): every match marked, Enter for the next.
 - Text highlights in four meanings: **K**ey concept (amber), **D**efinition (green),

@@ -1,11 +1,10 @@
 /**
  * The document pane: a light page on a dark bed, virtualised.
  *
- * Taken from the canvas's *Workspace* artboards, whose viewer toolbar reads
- * `4 / 18 · − · 124% · + · Fit width`. §3 makes that authoritative, so the controls are
- * those controls in that order, and the page surface stays light in both themes — there is
- * no dark-mode inversion, because inverting a page ruins photographs, colour-coded
- * diagrams and scans. Confirmed with the user on 2026-10-28.
+ * From the redesign canvas's *Workspace* artboards (2026-11-07): a header strip with the
+ * tools (`PdfToolbar`), and pages and zoom floating at the foot (`PageControls`). The page
+ * surface stays white in every theme — there is no dark-mode inversion, because inverting
+ * a page ruins photographs, colour-coded diagrams and scans (CLAUDE.md §3).
  *
  * Only the visible pages and a two-page buffer are mounted. The arithmetic for that lives
  * in `../pdf/pages`, tested on its own, so this file reads scroll offsets and draws.
@@ -23,6 +22,7 @@ import { FindBar } from "./FindBar";
 import { HighlightMenu } from "./HighlightMenu";
 import { PdfPage } from "./PdfPage";
 import type { NotesLink } from "./HighlightLayer";
+import { PageControls } from "./PageControls";
 import { PdfToolbar } from "./PdfToolbar";
 import { onPage } from "./annotationList";
 import { useAnnotations } from "./useAnnotations";
@@ -140,22 +140,15 @@ export function PdfViewer({
     <section className="viewer">
       <PdfToolbar
         boxing={boxing}
-        fitting={zoom.fitting}
+        mode={mode}
         notesOpen={notesOpen}
         onBoxing={setBoxing}
-        onNotes={onNotes}
-        limits={ZOOM_LIMITS}
-        mode={mode}
         onClose={onClose}
-        onFit={zoom.fit}
-        onGoTo={goTo}
+        onFind={find.show}
         onMode={changeMode}
-        onZoom={zoom.step}
-        pages={state.sizes.length}
-        scale={scale}
-        showing={showing}
-        title={title}
+        onNotes={onNotes}
         place={spoken(parentOf(directory))}
+        title={title}
       />
 
       <DocumentNotice
@@ -227,6 +220,17 @@ export function PdfViewer({
             })}
         </div>
       </div>
+
+      <PageControls
+        fitting={zoom.fitting}
+        limits={ZOOM_LIMITS}
+        onFit={zoom.fit}
+        onGoTo={goTo}
+        onZoom={zoom.step}
+        pages={state.sizes.length}
+        scale={scale}
+        showing={showing}
+      />
     </section>
   );
 }

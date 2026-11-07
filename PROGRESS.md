@@ -463,6 +463,29 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-07 · Redesign, step 4: the document's header, floating page controls, the notes header**
+**The document's header** is the canvas's strip: `CS454 / Week 3 / Raft consensus` in the
+brand face, then a Select | Box tool switch (the box tool of 2026-11-05, drawn as the
+canvas's tool control; its Sticky tool is left out, because sticky notes are made from the
+highlight menu and a third tool would have nothing to do), the Scroll | Page view, Find
+(⌘F, now also a button), Notes, and Close document, which replaced "← Vault" — a word
+that meant little once the vault became folders. **Pages and zoom float at the foot of the
+document** (`PageControls`): `‹ 4 / 18 › · − 124% + · Fit width`; the bed's foot is
+deeper, so the last page scrolls clear of them, which a journey checks and which failed
+with the old padding. `PdfToolbar.test.tsx` was split along the same line into
+`PageControls.test.tsx`.
+
+**The notes header** lines up with the document's: the title, then what happened to the
+last save as a dot — green saved, amber editing or saving, red not saved — beside the
+words, then Aa and hide. Found on the way: a failed save was written in the semantic red,
+under 4.5:1 as text on white; the red is now the dot's, and the words stay a readable text
+colour. Also fixed: two tooltips had `⌘\\` written in a JSX string, which showed both
+backslashes.
+
+Verified: gate green. Header and page-control unit tests; journeys updated for Close
+document and the tool switch, and one for the floating controls clearing the last page,
+proved by restoring the old padding.
+
 **2026-11-07 · Redesign, step 3: ⌘P search window**
 Search left the 260px sidebar for a window over the workspace (redesign canvas), with room
 for the words around a match. ⌘P opens it from anywhere — while typing in the notes too —

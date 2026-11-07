@@ -118,7 +118,7 @@ test("a highlight can be re-marked from its badge without becoming a new one", a
   expect(await page.locator(".highlight").first().boundingBox()).toEqual(before);
 
   // And still that way after the lecture is closed and opened again.
-  await page.getByRole("button", { name: "← Vault" }).click();
+  await page.getByRole("button", { name: "Close document" }).click();
   await openLecture(page, READING.title);
   await expect(page.locator(".highlight").first()).toHaveAttribute("data-semantic", "exam");
 });
@@ -191,7 +191,7 @@ test("the menu closes when the document scrolls", async ({ page }) => {
 test("highlights survive closing and reopening the lecture", async ({ page }) => {
   await highlightHeading(page);
 
-  await page.getByRole("button", { name: "← Vault" }).click();
+  await page.getByRole("button", { name: "Close document" }).click();
   await openLecture(page, READING.title);
 
   await expect(page.locator(".highlight")).toHaveCount(1);

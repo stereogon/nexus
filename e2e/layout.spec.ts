@@ -123,3 +123,27 @@ test("hiding the sidebar leaves room beside the window's own buttons, and shows 
   await expect(page.locator(".sidebar")).toBeVisible();
   expect(await inset()).toBeLessThan(40);
 });
+
+test("the page controls float at the foot, and the last page scrolls clear of them", async ({ page }) => {
+  const controls = page.getByRole("toolbar", { name: "Pages and zoom" });
+  const bedBox = await bed(page).boundingBox();
+  const controlsBox = await controls.boundingBox();
+
+  if (bedBox === null || controlsBox === null) {
+    throw new Error("The document or its controls are not laid out.");
+  }
+
+  // Over the foot of the document, not in a header.
+  expect(controlsBox.y + controlsBox.height).toBeLessThanOrEqual(bedBox.y + bedBox.height);
+  expect(controlsBox.y).toBeGreaterThan(bedBox.y + bedBox.height / 2);
+
+  await bed(page).evaluate((element) => {
+    element.scrollTo({ top: element.scrollHeight });
+  });
+
+  const last = page.getByLabel("Page 12", { exact: true });
+  await expect(last).toBeInViewport();
+  const lastBox = await last.boundingBox();
+
+  expect((lastBox?.y ?? Number.POSITIVE_INFINITY) + (lastBox?.height ?? 0)).toBeLessThanOrEqual(controlsBox.y);
+});

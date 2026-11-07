@@ -1,0 +1,88 @@
+/**
+ * Pages and zoom, floating at the foot of the document (redesign, 2026-11-07): the bar, its
+ * page number field and total, and the zoom readout.
+ */
+
+/* Pages and zoom, floating over the foot of the document. */
+.page-controls {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  z-index: 6;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 5px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.16);
+  color: var(--text-meta);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.page-controls-divider {
+  width: 1px;
+  height: 18px;
+  margin: 0 4px;
+  background: var(--border);
+}
+
+button.page-fit {
+  height: 28px;
+  margin-left: 2px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 7px;
+  background: var(--track);
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+button.page-fit[aria-pressed="true"] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.viewer-scale {
+  min-width: 48px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+/* The page number field in the floating page controls. */
+.page-controls input {
+  width: 42px;
+  height: 24px;
+  box-sizing: border-box;
+  padding: 0 4px;
+  background: var(--field);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* The spinners are redundant beside the arrows either side, and they crowd a 42px field. */
+.page-controls input::-webkit-outer-spin-button,
+.page-controls input::-webkit-inner-spin-button {
+  margin: 0;
+  appearance: none;
+}
+
+.viewer-total {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

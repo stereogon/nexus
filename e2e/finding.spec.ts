@@ -122,5 +122,5 @@ test("a highlight chosen in the library opens its lecture there, and the library
 
   await expect(library(page)).toHaveCount(0);
   await expect(page.locator(".highlight.pulse")).toHaveCount(1);
-  await expect(page.getByRole("button", { name: "← Vault" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Close document" })).toBeVisible();
 });
