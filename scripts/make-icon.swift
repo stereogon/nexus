@@ -1,4 +1,5 @@
-// Draws the Nexus app icon at 1024x1024 as an RGBA PNG.
+// Draws the Nexus app icon at 1024x1024 as an RGBA PNG, from the mascot in
+// `scripts/icon/mascot.png`.
 //
 // Committed rather than run once and forgotten, because the geometry below is the whole
 // point and is not guessable from looking at the result.
@@ -16,22 +17,27 @@
 //     uses rather than a circular-arc radius. A plain rounded rectangle reads subtly wrong
 //     beside real macOS icons; the squircle is why theirs look softer at the same radius.
 //
-// # Why a little bot on near-black
+// # The mascot, and what is done to it
 //
-// Until 2026-11-07 this was the Bricolage "N" in white on flat brand pink. The user found
-// the pink background unappealing and asked for a dark one with a doodle mascot, in the
-// spirit of the friendly bots other apps use; of three original sketches they chose this
-// one: a round cream face with wide eyes and a small smile, and an antenna with a yellow
-// tip. Near-black rather than pure black, so the squircle still reads against a dark Dock.
-// Drawn from plain shapes, so the script needs no font installed.
+// A hand-drawn paper creature, white lines on black, which the user made with an image
+// generator and asked to have refined (2026-11-07), after a geometric bot drawn here looked
+// "very mechanical". The source is kept as it came. This script:
+//
+//   - finds the drawing by its bright pixels, leaving out the bottom-right corner, where
+//     the generator put its watermark;
+//   - turns brightness into coverage, so the lines are pure white on a flat ground and the
+//     source's grain is gone;
+//   - thickens the lines by `thicken` source pixels, because the source's are a few pixels
+//     wide and would break up at the 32px size;
+//   - centres the drawing in the squircle at `figureShare` of the artwork's width.
 //
 // # Running it
 //
-//   swift scripts/make-icon.swift
+//   swift scripts/make-icon.swift [thicken] [output]
 //
 // from the repository root. Needs the Xcode Command Line Tools (for `swift`). Then
-// `npx tauri icon crates/src-tauri/icons/icon.png -o crates/src-tauri/icons`, keeping only
-// the macOS sizes.
+// `npx tauri icon crates/src-tauri/icons/icon.png -o <a scratch folder>`, keeping only the
+// macOS sizes.
 
 import CoreGraphics
 import Foundation
@@ -43,23 +49,27 @@ let margin = 100.0
 let side = Double(canvas) - 2.0 * margin
 let squircleExponent = 5.0
 
+/// The flat ground, close to the source's own.
+let ground = (red: 0x16, green: 0x16, blue: 0x15)
+
+/// How much of the artwork's width the drawing spans.
+let figureShare = 0.70
+
+/// Where the watermark is: the source's bottom-right corner, from this pixel on.
+let watermarkCorner = 820
+
+/// Brightness, of 255, below which a pixel is ground, and above which it is line.
+let groundBelow = 50.0
+let lineAbove = 170.0
+
+let arguments = CommandLine.arguments
+let thicken = arguments.count > 1 ? Int(arguments[1]) ?? 3 : 3
+let output = arguments.count > 2 ? arguments[2] : "crates/src-tauri/icons/icon.png"
+
 func fail(_ message: String) -> Never {
     FileHandle.standardError.write(Data("make-icon: \(message)\n".utf8))
     exit(1)
 }
-
-func colour(_ hex: UInt32) -> CGColor {
-    CGColor(
-        srgbRed: Double((hex >> 16) & 0xFF) / 255.0,
-        green: Double((hex >> 8) & 0xFF) / 255.0,
-        blue: Double(hex & 0xFF) / 255.0,
-        alpha: 1.0
-    )
-}
-
-let ground = colour(0x141317)
-let face = colour(0xF7F4EE)
-let glow = colour(0xFFC94D)
 
 /// The rounded square, as a path sampled from the superellipse.
 func squircle(centre: Double, reach: Double) -> CGPath {
@@ -86,6 +96,126 @@ func squircle(centre: Double, reach: Double) -> CGPath {
     return path
 }
 
+// ---- The source, as brightness, row 0 at the top ------------------------------------
+
+let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+
+guard
+    let source = CGImageSourceCreateWithURL(root.appendingPathComponent("scripts/icon/mascot.png") as CFURL, nil),
+    let picture = CGImageSourceCreateImageAtIndex(source, 0, nil)
+else {
+    fail("could not read scripts/icon/mascot.png")
+}
+
+let width = picture.width
+let height = picture.height
+var pixels = [UInt8](repeating: 0, count: width * height * 4)
+
+guard
+    let reader = CGContext(
+        data: &pixels,
+        width: width,
+        height: height,
+        bitsPerComponent: 8,
+        bytesPerRow: width * 4,
+        space: CGColorSpaceCreateDeviceRGB(),
+        bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+    )
+else {
+    fail("could not read the source's pixels")
+}
+
+reader.draw(picture, in: CGRect(x: 0, y: 0, width: width, height: height))
+
+func brightness(_ x: Int, _ y: Int) -> Double {
+    let at = (y * width + x) * 4
+
+    return (Double(pixels[at]) + Double(pixels[at + 1]) + Double(pixels[at + 2])) / 3.0
+}
+
+// ---- Coverage: how much of each pixel is line ----------------------------------------
+
+var coverage = [Double](repeating: 0, count: width * height)
+var left = width, right = 0, top = height, bottom = 0
+
+for y in 0..<height {
+    for x in 0..<width where !(x >= watermarkCorner && y >= watermarkCorner) {
+        let amount = min(1.0, max(0.0, (brightness(x, y) - groundBelow) / (lineAbove - groundBelow)))
+
+        coverage[y * width + x] = amount
+
+        if amount > 0.5 {
+            left = min(left, x)
+            right = max(right, x)
+            top = min(top, y)
+            bottom = max(bottom, y)
+        }
+    }
+}
+
+guard right > left, bottom > top else {
+    fail("found no drawing in the source")
+}
+
+// Thicker lines: each pixel takes the most coverage within `thicken` of it.
+var thick = coverage
+
+if thicken > 0 {
+    for y in max(0, top - thicken)...min(height - 1, bottom + thicken) {
+        for x in max(0, left - thicken)...min(width - 1, right + thicken) {
+            var most = 0.0
+
+            for dy in -thicken...thicken {
+                for dx in -thicken...thicken where dx * dx + dy * dy <= thicken * thicken {
+                    let sx = x + dx
+                    let sy = y + dy
+
+                    if sx >= 0, sy >= 0, sx < width, sy < height {
+                        most = max(most, coverage[sy * width + sx])
+                    }
+                }
+            }
+
+            thick[y * width + x] = most
+        }
+    }
+}
+
+// The drawing as a mask: white where there is line, cropped to the drawing and its room.
+let pad = thicken + 4
+let cropLeft = max(0, left - pad)
+let cropTop = max(0, top - pad)
+let cropWidth = min(width, right + pad + 1) - cropLeft
+let cropHeight = min(height, bottom + pad + 1) - cropTop
+var maskBytes = [UInt8](repeating: 0, count: cropWidth * cropHeight)
+
+for y in 0..<cropHeight {
+    for x in 0..<cropWidth {
+        maskBytes[y * cropWidth + x] = UInt8((thick[(y + cropTop) * width + x + cropLeft] * 255.0).rounded())
+    }
+}
+
+guard
+    let provider = CGDataProvider(data: Data(maskBytes) as CFData),
+    let mask = CGImage(
+        width: cropWidth,
+        height: cropHeight,
+        bitsPerComponent: 8,
+        bitsPerPixel: 8,
+        bytesPerRow: cropWidth,
+        space: CGColorSpaceCreateDeviceGray(),
+        bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.none.rawValue),
+        provider: provider,
+        decode: nil,
+        shouldInterpolate: true,
+        intent: .defaultIntent
+    )
+else {
+    fail("could not make the drawing's mask")
+}
+
+// ---- The icon ------------------------------------------------------------------------
+
 guard
     let space = CGColorSpace(name: CGColorSpace.sRGB),
     let context = CGContext(
@@ -102,59 +232,37 @@ else {
 }
 
 context.setShouldAntialias(true)
-context.setAllowsAntialiasing(true)
-
-// Measured from the top, as the sketch was drawn: Core Graphics counts up from the bottom.
-context.translateBy(x: 0, y: Double(canvas))
-context.scaleBy(x: 1, y: -1)
+context.interpolationQuality = .high
 
 let centre = Double(canvas) / 2.0
+let squircleShape = squircle(centre: centre, reach: side / 2.0)
 
-context.addPath(squircle(centre: centre, reach: side / 2.0))
-context.setFillColor(ground)
-context.fillPath()
-
-// The antenna: a curved stalk rising from the head, and its glowing tip.
-context.setStrokeColor(face)
-context.setLineWidth(24)
-context.setLineCap(.round)
-context.move(to: CGPoint(x: 512, y: 330))
-context.addQuadCurve(to: CGPoint(x: 560, y: 225), control: CGPoint(x: 500, y: 260))
-context.strokePath()
-context.setFillColor(glow)
-context.fillEllipse(in: CGRect(x: 530, y: 180, width: 70, height: 70))
-
-// The head: wider than tall, softly squared.
-context.setFillColor(face)
-context.addPath(
-    CGPath(
-        roundedRect: CGRect(x: 262, y: 320, width: 500, height: 430),
-        cornerWidth: 215,
-        cornerHeight: 200,
-        transform: nil
-    )
+context.addPath(squircleShape)
+context.setFillColor(
+    CGColor(srgbRed: Double(ground.red) / 255.0, green: Double(ground.green) / 255.0, blue: Double(ground.blue) / 255.0, alpha: 1.0)
 )
 context.fillPath()
 
-// The eyes, each with a highlight up and to the left, and the smile.
-context.setFillColor(ground)
-context.fillEllipse(in: CGRect(x: 380, y: 455, width: 78, height: 110))
-context.fillEllipse(in: CGRect(x: 566, y: 455, width: 78, height: 110))
-context.setFillColor(face)
-context.fillEllipse(in: CGRect(x: 408, y: 472, width: 26, height: 26))
-context.fillEllipse(in: CGRect(x: 594, y: 472, width: 26, height: 26))
-context.setStrokeColor(ground)
-context.setLineWidth(22)
-context.move(to: CGPoint(x: 470, y: 630))
-context.addQuadCurve(to: CGPoint(x: 554, y: 630), control: CGPoint(x: 512, y: 668))
-context.strokePath()
+// The drawing, scaled to its share and centred on its own bounds. A grey mask's white is
+// where the fill shows, which is the line.
+let scale = side * figureShare / Double(max(cropWidth, cropHeight))
+let drawnWidth = Double(cropWidth) * scale
+let drawnHeight = Double(cropHeight) * scale
+let place = CGRect(x: centre - drawnWidth / 2.0, y: centre - drawnHeight / 2.0, width: drawnWidth, height: drawnHeight)
+
+context.saveGState()
+context.addPath(squircleShape)
+context.clip()
+context.clip(to: place, mask: mask)
+context.setFillColor(CGColor(srgbRed: 1.0, green: 1.0, blue: 1.0, alpha: 1.0))
+context.fill(place)
+context.restoreGState()
 
 guard let image = context.makeImage() else {
     fail("could not produce an image from the drawing context")
 }
 
-let destination = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-    .appendingPathComponent("crates/src-tauri/icons/icon.png")
+let destination = output.hasPrefix("/") ? URL(fileURLWithPath: output) : root.appendingPathComponent(output)
 
 guard
     let sink = CGImageDestinationCreateWithURL(
