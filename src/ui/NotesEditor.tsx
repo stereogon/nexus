@@ -17,8 +17,9 @@ import { EditorState } from "@codemirror/state";
 import { EditorView, keymap, placeholder } from "@codemirror/view";
 import { useEffect, useImperativeHandle, useRef, useState, type Ref } from "react";
 
-import { barFor, formatBlock, formatInline, formatLink, markSelection } from "../notes/markSelection";
-import { NotesFormatBar, type FormatState } from "./NotesFormatBar";
+import { barFor, formatBlock, formatInline, formatLink, formatStateOf, markSelection } from "../notes/markSelection";
+import type { FormatState } from "./NotesFormatBar";
+import { NotesFormatting } from "./NotesFormatting";
 import type { MenuAt } from "./menuPlacement";
 
 import { citationOffsets, citeLinks, nextOccurrence } from "../notes/citeLinks";
@@ -49,6 +50,7 @@ export function NotesEditor({
   imageUrl,
   onPasteImage,
   reveal,
+  formatting,
 }: {
   /** The text to start from, taken afresh only when `generation` changes. */
   readonly text: string;
@@ -67,11 +69,18 @@ export function NotesEditor({
    * each time, so pressing the indicator again moves on to the next citation.
    */
   readonly reveal: { readonly id: string; readonly nonce: number } | null;
+  /** The format controls are docked open, so they are there before anything is written. */
+  readonly formatting: boolean;
 }) {
   const host = useRef<HTMLDivElement | null>(null);
   const view = useRef<EditorView | null>(null);
-  // The four-colour bar over a selection, and the mark the selection is inside, if any.
-  const [bar, setBar] = useState<{ readonly at: MenuAt; readonly state: FormatState } | null>(null);
+  // What the selection or cursor has, and where a floating bar goes for a selection; `null`
+  // until the editor has reported once.
+  const [format, setFormat] = useState<{
+    readonly at: MenuAt | null;
+    readonly state: FormatState;
+    readonly selected: boolean;
+  } | null>(null);
 
   // The latest callbacks, read by the view's listeners. Rebuilding the view to pick up a
   // new callback would throw away the cursor and the undo history.
@@ -163,7 +172,11 @@ export function NotesEditor({
             }
 
             if (update.selectionSet || update.focusChanged || update.docChanged) {
-              setBar(barFor(update.view));
+              setFormat({
+                at: barFor(update.view),
+                state: formatStateOf(update.view),
+                selected: !update.state.selection.main.empty,
+              });
             }
           }),
         ],
@@ -260,33 +273,16 @@ export function NotesEditor({
   return (
     <>
       <div className="notes-editor" ref={host} />
-      {bar !== null && (
-        <NotesFormatBar
-          at={bar.at}
-          onBlock={(kind) => {
-            if (view.current !== null) {
-              formatBlock(view.current, kind);
-            }
-          }}
+      {format !== null && (
+        <NotesFormatting
+          at={format.at}
+          docked={formatting}
           onDismiss={() => {
-            setBar(null);
+            setFormat((current) => (current === null ? null : { ...current, at: null }));
           }}
-          onHighlight={(semantic) => {
-            if (view.current !== null) {
-              markSelection(view.current, semantic);
-            }
-          }}
-          onInline={(kind) => {
-            if (view.current !== null) {
-              formatInline(view.current, kind);
-            }
-          }}
-          onLink={() => {
-            if (view.current !== null) {
-              formatLink(view.current);
-            }
-          }}
-          state={bar.state}
+          selected={format.selected}
+          state={format.state}
+          view={view}
         />
       )}
     </>

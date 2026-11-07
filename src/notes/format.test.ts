@@ -3,7 +3,7 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { blockOf, hasInline, linkAround, setBlock, toggleInline, type Change } from "./format";
+import { blockOf, cursorInside, hasInline, inlineAtCursor, linkAround, setBlock, toggleInline, type Change } from "./format";
 
 /** `doc` with `changes` applied, last first so earlier offsets stay right. */
 function applied(doc: string, changes: readonly Change[]): string {
@@ -108,5 +108,46 @@ describe("a link", () => {
 
     expect(after).toBe("See [the paper]() here.");
     expect(after.slice(cursor - 2, cursor + 1)).toBe("](" + ")");
+  });
+
+  it("with nothing selected, leaves the cursor where the words go", () => {
+    const { changes, cursor } = linkAround("See ", 4, 4);
+    const after = applied("See ", changes);
+
+    expect(after).toBe("See []()");
+    expect(after.slice(cursor - 1, cursor + 1)).toBe("[]");
+  });
+});
+
+describe("a format chosen before writing", () => {
+  const doc = "Raft elects ";
+
+  it("puts a pair of markers at the cursor, with the cursor between them", () => {
+    for (const [kind, pair] of [["bold", "****"], ["italic", "__"], ["strike", "~~~~"], ["code", "``"]] as const) {
+      const { changes, cursor } = inlineAtCursor(doc, doc.length, kind);
+      const after = applied(doc, changes);
+
+      expect(after).toBe(doc + pair);
+      expect(after.slice(0, cursor) + "a leader" + after.slice(cursor)).toBe(
+        `${doc}${pair.slice(0, pair.length / 2)}a leader${pair.slice(pair.length / 2)}`,
+      );
+    }
+  });
+
+  it("shows as pressed while the cursor is between them, before and after typing", () => {
+    expect(hasInline("Raft ****", 7, 7, "bold")).toBe(true);
+    expect(cursorInside("Raft **quo**", 10, "bold")).toBe(true);
+    expect(cursorInside("Raft **quo** more", 15, "bold")).toBe(false);
+    expect(cursorInside("Raft _quo_", 9, "italic")).toBe(true);
+    // Bold's `**` is not two italics.
+    expect(cursorInside("Raft **quo**", 10, "italic")).toBe(false);
+  });
+
+  it("is taken away by pressing it again before anything is typed", () => {
+    const bold = `${doc}****`;
+    const { changes, cursor } = inlineAtCursor(bold, doc.length + 2, "bold");
+
+    expect(applied(bold, changes)).toBe(doc);
+    expect(cursor).toBe(doc.length);
   });
 });

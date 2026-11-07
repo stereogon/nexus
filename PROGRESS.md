@@ -463,6 +463,28 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-07 · Formatting before writing, from the notes' header**
+Asked for by the user: *"the formatting panel only opens when we select text … we should
+be able to open the formatting panel anytime before writing as well."* An **Aa** button in
+the notes' header docks the same controls under it, open until pressed again; while docked
+the floating bar over a selection stands aside, so there are never two. Both are one
+`FormatControls` component, so they cannot drift apart.
+
+With nothing selected, bold, italic, strikethrough and code put an empty pair of markers
+at the cursor with the cursor between them (`inlineAtCursor`), so what is typed next has
+the format; pressed again before typing, the pair goes. A link with nothing selected is
+`[]()` with the cursor where the words go. Headings, lists and quotes already worked on
+the cursor's line, but left the new `## ` *selected*, so the first letter typed replaced
+it — a bug the new journey found, fixed by keeping a bare cursor a cursor. The pressed
+state now reads a bare cursor by whether its line has the format open there
+(`cursorInside`), which is what typing into a chosen format leaves. The four colours stay
+disabled with nothing selected, because an empty highlight shows nothing.
+
+Not done: the docked state is not remembered between launches.
+
+Verified: gate green. New unit tests in `format.test.ts`; `formatStrip.spec.ts` (4),
+proved by stopping the controls docking, which failed all four.
+
 **2026-11-06 · Folders you step into, plain notes, and no more "lecture"**
 Asked for by the user: *"a simple folder like structure like in notion … i don't want any
 complex notion features … i should be able to create a simple non pdfs note … current one

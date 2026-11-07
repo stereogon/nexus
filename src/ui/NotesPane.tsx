@@ -85,6 +85,8 @@ export function NotesPane({
   const [pasteProblem, setPasteProblem] = useState<string | null>(null);
   const [pasteFailure, setPasteFailure] = useState<CommandError | null>(null);
   const [dropping, setDropping] = useState(false);
+  // The format controls docked open under the header, for choosing a format before writing.
+  const [formatting, setFormatting] = useState(false);
   const pane = useRef<HTMLElement | null>(null);
   const editor = useRef<NotesHandle | null>(null);
 
@@ -181,6 +183,22 @@ export function NotesPane({
         <span aria-live="polite" className={`notes-status ${notes.status}`}>
           {STATUS_TEXT[notes.status]}
         </span>
+        <button
+          aria-label="Formatting"
+          aria-pressed={formatting}
+          className="quiet notes-format-toggle"
+          // Not taking focus, so the cursor stays where the next words will be typed.
+          onMouseDown={(event) => {
+            event.preventDefault();
+          }}
+          onClick={() => {
+            setFormatting((open) => !open);
+          }}
+          title={formatting ? "Hide formatting" : "Show formatting"}
+          type="button"
+        >
+          Aa
+        </button>
         {alone === null ? (
           <button aria-label="Hide notes" className="quiet" onClick={onHide} type="button">
             ✕
@@ -231,6 +249,7 @@ export function NotesPane({
           // the journey that reveals from a hidden pane passes without withholding.)
           reveal={reveal}
           onReady={onReady}
+          formatting={formatting}
           text={notes.loaded.text}
         />
       )}

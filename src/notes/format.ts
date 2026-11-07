@@ -88,6 +88,35 @@ export function toggleInline(doc: string, from: number, to: number, inline: Inli
   ]);
 }
 
+/**
+ * Bold, italic, strikethrough or code at a cursor with nothing selected: a pair of markers
+ * with the cursor between them, so what is typed next has the format — choosing it before
+ * writing, as Notion lets you. Pressed again on that empty pair, before anything is typed,
+ * it takes the pair away, so a press made by mistake leaves nothing behind.
+ */
+export function inlineAtCursor(doc: string, at: number, inline: Inline): { changes: Change[]; cursor: number } {
+  const marker = MARKER[inline];
+  const width = marker.length;
+
+  if (doc.slice(at - width, at) === marker && doc.slice(at, at + width) === marker) {
+    return { changes: [{ from: at - width, to: at + width, insert: "" }], cursor: at - width };
+  }
+
+  return { changes: [{ from: at, insert: marker + marker }], cursor: at + width };
+}
+
+/**
+ * Whether a cursor `offset` characters into `line` is inside an `inline` run: an odd number
+ * of its markers before it and one after it. Counted so `**` is read as bold's marker and
+ * never as two of anything else; italic's `_` is not part of any other marker.
+ */
+export function cursorInside(line: string, offset: number, inline: Inline): boolean {
+  const marker = MARKER[inline];
+  const before = line.slice(0, offset).split(marker).length - 1;
+
+  return before % 2 === 1 && line.indexOf(marker, offset) !== -1;
+}
+
 /** A line's block prefix: indentation, then a heading, list, task or quote marker. */
 const PREFIX = /^(\s*)(#{1,6}\s+|[-*+]\s+\[[ xX]\]\s+|[-*+]\s+|\d+[.)]\s+|>\s?)?/;
 
@@ -163,6 +192,7 @@ export function linkAround(doc: string, from: number, to: number): { changes: Ch
 
   return {
     changes: [{ from, to, insert: `[${words}]()` }],
-    cursor: from + words.length + 3,
+    // With nothing selected there are no words yet, so the cursor goes where they are typed.
+    cursor: words === "" ? from + 1 : from + words.length + 3,
   };
 }

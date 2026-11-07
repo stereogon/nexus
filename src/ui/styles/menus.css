@@ -184,3 +184,21 @@
   align-items: center;
   gap: 4px;
 }
+
+/* The same controls docked under the notes' header, opened from its Aa button. A strip of
+   the header's chrome rather than a floating surface, wrapping on a narrow pane. */
+.format-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 12px;
+  background: var(--chrome);
+  border-bottom: 1px solid var(--border);
+}
+
+/* A colour waits for words to be selected; an empty highlight would show nothing. */
+.highlight-pick:disabled {
+  opacity: 0.35;
+  cursor: default;
+}

@@ -86,6 +86,17 @@
   font-size: 13px;
 }
 
+/* Shows the format controls docked open; pressed while they are. */
+.notes-format-toggle {
+  font-family: var(--font-prose);
+  font-weight: 600;
+}
+
+.notes-format-toggle[aria-pressed="true"] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
 .notes-title {
   font-weight: 500;
 }

@@ -64,8 +64,9 @@ in a folder you choose. Nothing leaves your Mac.
 - LaTeX through KaTeX, `mermaid` diagrams, and declarative `chart` blocks. A broken block
   shows a hint inline and never takes the editor down.
 - Paste or drop images. They are saved into the item's `assets/` folder.
-- A Notion-style format bar and shortcuts, plus highlighting in the notes in the same four
-  meanings.
+- A Notion-style format bar over a selection, or docked open from the notes' **Aa** button
+  to choose a format before writing; shortcuts too, plus highlighting in the notes in the
+  same four meanings.
 - Saves as you type. The divider between document and notes can be dragged, and its width
   is remembered on this Mac.
 
