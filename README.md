@@ -45,6 +45,8 @@ in a folder you choose. Nothing leaves your Mac.
 - Each item can have a **number**, taken from a document's file name at import
   (`2. Process.pdf` is number 2, "Process") and editable; numbers order a folder's items.
 - Edit an item's title, number, tags and folder in a side panel.
+- Delete an item from the same panel. It moves, whole, to the vault's hidden `.trash`
+  folder; drag it back out in Finder to restore it.
 
 **Reading**
 - PDF rendering with pdf.js, in continuous-scroll or one-page mode, with zoom, fit-width and

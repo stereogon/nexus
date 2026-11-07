@@ -201,6 +201,18 @@ export async function createNote(vault: string, parent: string, title: string): 
   return LectureRowSchema.parse(payload);
 }
 
+/**
+ * Deletes the item at `directory` by moving it, whole, into the vault's hidden `.trash`
+ * folder, where Finder can bring it back. Resolves to where it went.
+ *
+ * @throws {CommandError} if the item is gone or could not be moved; it is then left as it was.
+ */
+export async function deleteItem(vault: string, directory: string): Promise<string> {
+  const payload: unknown = await invoke("delete_item", { vault, directory });
+
+  return z.string().parse(payload);
+}
+
 /** An item after a move, and why its remembered place could not follow it, if it could not. */
 export const MovedItemSchema = z.object({
   item: LectureRowSchema,

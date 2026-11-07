@@ -21,6 +21,7 @@ pub mod position;
 pub mod reorganize;
 pub mod search;
 pub mod theme;
+pub mod trash;
 pub mod vault;
 
 pub use annotations::{
@@ -83,6 +84,7 @@ pub fn run() -> Result<(), tauri::Error> {
             folders::create_folder,
             folders::create_note,
             folders::move_item,
+            trash::delete_item,
             preview_reorganize,
             apply_reorganize,
             search::search_vault,

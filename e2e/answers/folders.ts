@@ -87,6 +87,17 @@ export function folderHandlers(held: Held): Handlers {
 
       return note;
     },
+    delete_item: (args) => {
+      const { directory } = z.object({ vault: z.string(), directory: z.string() }).parse(args);
+
+      if (!held.lectures.some((lecture) => lecture.directory === directory)) {
+        throw new CommandFailure("ERR_ITEM_NOT_FOUND", `No item at ${directory}.`);
+      }
+
+      held.lectures = held.lectures.filter((lecture) => lecture.directory !== directory);
+
+      return `.trash/${directory.replaceAll("/", " - ")}`;
+    },
     move_item: (args) => {
       const { directory, folder } = z
         .object({ vault: z.string(), directory: z.string(), folder: z.string() })

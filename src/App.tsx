@@ -264,6 +264,10 @@ export function App() {
               setEditing(null);
               actions.save(editing, edit, into);
             }}
+            onDelete={() => {
+              setEditing(null);
+              actions.remove(editing);
+            }}
             vaultName={vaultNameOf(summary.root)}
           />
         )}

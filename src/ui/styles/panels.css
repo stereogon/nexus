@@ -94,3 +94,21 @@
   display: flex;
   justify-content: flex-end;
 }
+
+/* Deleting an item, apart from Save and Cancel at the foot of the editor, and asking once
+   more before anything moves. */
+.editor-delete {
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-meta);
+}
+
+.editor-delete p {
+  margin: 0 0 10px;
+}
+
+button.editor-delete-start {
+  color: var(--semantic-exam);
+}

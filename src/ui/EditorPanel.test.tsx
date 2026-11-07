@@ -42,18 +42,20 @@ function field(label: string): HTMLInputElement {
 function panel() {
   const onCancel = vi.fn();
   const onSave = vi.fn();
+  const onDelete = vi.fn();
   const rendered = render(
     <EditorPanel
       busy={false}
       folders={["week-1", "week-2"]}
       lecture={LECTURE}
       onCancel={onCancel}
+      onDelete={onDelete}
       onSave={onSave}
       vaultName="StudyVault"
     />,
   );
 
-  return { onCancel, onSave, unmount: rendered.unmount };
+  return { onCancel, onSave, onDelete, unmount: rendered.unmount };
 }
 
 /** A button outside the panel, standing in for the sidebar's Edit control. */
@@ -106,6 +108,29 @@ describe("what it says", () => {
       expect.objectContaining({ course: "Software Systems Engineering", week: "Week 2" }),
       "week-1",
     );
+  });
+});
+
+describe("deleting it", () => {
+  it("asks once more before anything moves, and says where it goes", () => {
+    const { onDelete } = panel();
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete this document…" }));
+    expect(onDelete).not.toHaveBeenCalled();
+    expect(screen.getByText(/hidden/)).not.toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    expect(onDelete).toHaveBeenCalledOnce();
+  });
+
+  it("can be called off", () => {
+    const { onDelete } = panel();
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete this document…" }));
+    fireEvent.click(screen.getByRole("button", { name: "Keep it" }));
+
+    expect(onDelete).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Delete this document…" })).not.toBeNull();
   });
 });
 

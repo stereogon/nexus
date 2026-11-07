@@ -91,3 +91,18 @@ test("searching looks through every folder and says where each result is", async
   await sidebar(page).getByLabel("Search vault").fill("");
   await expect(crumbs(page)).toBeVisible();
 });
+
+test("deleting the open document closes it, asks first, and takes it out of the list", async ({ page }) => {
+  await openLecture(page, READING.title);
+  await page.getByRole("button", { name: `Edit ${READING.title}` }).click();
+
+  const panel = page.getByRole("complementary", { name: "Edit document" });
+  await panel.getByRole("button", { name: "Delete this document…" }).click();
+  // Nothing has moved yet: it is still open, and still listed.
+  await expect(page.getByLabel("Page 1", { exact: true })).toBeVisible();
+  await panel.getByRole("button", { name: "Delete", exact: true }).click();
+
+  await expect(page.getByText(/It is in the vault's hidden .trash folder/)).toBeVisible();
+  await expect(page.getByLabel("Page 1", { exact: true })).toHaveCount(0);
+  await expect(sidebar(page).getByRole("button", { name: READING.title, exact: true })).toHaveCount(0);
+});

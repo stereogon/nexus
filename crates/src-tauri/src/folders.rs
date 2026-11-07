@@ -233,7 +233,7 @@ fn refuse_taken(storage: &AtomicFsStorage, path: &RelativePath) -> Result<(), Co
     Ok(())
 }
 
-fn open(vault: &str) -> Result<(AtomicFsStorage, LoadedVault), CommandError> {
+pub(crate) fn open(vault: &str) -> Result<(AtomicFsStorage, LoadedVault), CommandError> {
     let root = VaultRoot::open(Path::new(vault))?;
     let loaded = VaultLoader::new(ManifestStore::new(
         AtomicFsStorage::new(root.clone()),
@@ -245,7 +245,7 @@ fn open(vault: &str) -> Result<(AtomicFsStorage, LoadedVault), CommandError> {
 }
 
 /// Runs `work` off the main thread, as every command that touches the disk does.
-async fn blocking<T: Send + 'static>(
+pub(crate) async fn blocking<T: Send + 'static>(
     work: impl FnOnce() -> Result<T, CommandError> + Send + 'static,
 ) -> Result<T, CommandError> {
     tauri::async_runtime::spawn_blocking(work)

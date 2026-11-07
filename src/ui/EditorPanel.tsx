@@ -23,7 +23,7 @@
  * The canvas has no artboard for the editor in either form, so this is designed here on
  * purpose rather than by default, and is recorded in `PROGRESS.md` as owing one.
  */
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { LectureEdit, LectureRow } from "../ipc/vault";
 import { LectureEditor } from "./LectureEditor";
@@ -35,6 +35,7 @@ export function EditorPanel({
   vaultName,
   onCancel,
   onSave,
+  onDelete,
 }: {
   readonly busy: boolean;
   readonly lecture: LectureRow;
@@ -42,8 +43,11 @@ export function EditorPanel({
   readonly vaultName: string;
   readonly onCancel: () => void;
   readonly onSave: (edit: LectureEdit, folder: string) => void;
+  readonly onDelete: () => void;
 }) {
   const panel = useRef<HTMLElement | null>(null);
+  // Asked once more before anything moves: the button is beside Save and Cancel.
+  const [confirming, setConfirming] = useState(false);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -110,6 +114,43 @@ export function EditorPanel({
         onCancel={onCancel}
         onSave={onSave}
       />
+
+      <div className="editor-delete">
+        {confirming ? (
+          <>
+            <p>
+              Delete “{lecture.title}”? It moves, with its notes and highlights, to the vault's
+              hidden <code>.trash</code> folder, and can be dragged back out in Finder.
+            </p>
+            <div className="editor-actions">
+              <button className="danger" disabled={busy} onClick={onDelete} type="button">
+                Delete
+              </button>
+              <button
+                className="secondary"
+                disabled={busy}
+                onClick={() => {
+                  setConfirming(false);
+                }}
+                type="button"
+              >
+                Keep it
+              </button>
+            </div>
+          </>
+        ) : (
+          <button
+            className="quiet editor-delete-start"
+            disabled={busy}
+            onClick={() => {
+              setConfirming(true);
+            }}
+            type="button"
+          >
+            Delete this {lecture.kind === "note" ? "note" : "document"}…
+          </button>
+        )}
+      </div>
     </aside>
   );
 }

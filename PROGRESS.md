@@ -463,6 +463,33 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-07 · Deleting a document or note, into the vault's `.trash`**
+Reported by the user: *"there is no delete button for notes or documents."* Three places
+for a deleted item were put to the user — the macOS Trash (needs the `trash` crate), a
+`.trash` folder in the vault, or gone for good — and the user chose **`.trash` in the
+vault**: no new dependency, and nothing lost to a slip.
+
+`delete_item` (`src-tauri/src/trash.rs`) moves the item's whole folder — document,
+original, notes, highlights, images — to `<vault>/.trash/`, named for where it came from
+(`CS454/Week 3/raft` becomes `CS454 - Week 3 - raft`, then ` 2`, ` 3` … if deleted
+again), through the rename that refuses an occupied target, so nothing in `.trash` is
+written over. A leading dot is how the vault walk already skips a folder, so the item
+leaves the sidebar with no new rule. It is deliberately not `.nexus/`, which holds only
+what a scan can rebuild. Restoring is dragging the folder out of `.trash` in Finder.
+
+The control is in the edit panel, under Save and Cancel and set apart from them, and asks
+once more, saying where the item goes, before anything moves. Deleting the open item
+closes it first.
+
+Trade-offs, recorded rather than hidden: `.trash` syncs with the vault and keeps its size
+until emptied by hand in Finder; there is no Restore or Empty inside Nexus; the item's
+remembered reading place stays in this device's state file, unused, and comes back into
+use if the item is dragged back to the same place. Folders cannot be deleted from Nexus
+yet.
+
+Verified: gate green. `tests/trash.rs` (3); editor-panel unit tests (2); a journey in
+`folders.spec.ts`, proved by skipping the delete, which failed it.
+
 **2026-11-07 · Formatting before writing, from the notes' header**
 Asked for by the user: *"the formatting panel only opens when we select text … we should
 be able to open the formatting panel anytime before writing as well."* An **Aa** button in

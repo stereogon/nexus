@@ -34,6 +34,14 @@ button.secondary {
   border: 1px solid var(--border-strong);
 }
 
+/* The one button that takes something away. The exam semantic is the canvas's colour for
+   what needs attention. */
+button.danger {
+  color: #fff;
+  background: var(--semantic-exam);
+  border: 1px solid var(--semantic-exam);
+}
+
 /* A form field: a label above its control, or beside it when inline. */
 .field {
   display: flex;

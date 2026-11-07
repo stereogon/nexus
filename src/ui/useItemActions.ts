@@ -10,6 +10,7 @@ import { useCallback } from "react";
 import {
   createFolder,
   createNote,
+  deleteItem,
   editLecture,
   moveItem,
   type LectureEdit,
@@ -29,12 +30,14 @@ export function useItemActions({
   readonly vault: string | null;
   /** The folder showing, where anything made goes. */
   readonly folder: string;
-  readonly reading: Pick<Opening, "open" | "refile" | "lecture">;
+  readonly reading: Pick<Opening, "open" | "refile" | "lecture" | "close">;
   readonly against: (vault: string, act: () => Promise<string | null>) => void;
   readonly onFolder: (path: string) => void;
 }): {
   readonly make: (making: Making, name: string) => void;
   readonly save: (item: LectureRow, edit: LectureEdit, folder: string) => void;
+  /** Moves an item into the vault's `.trash`, closing it first if it is open. */
+  readonly remove: (item: LectureRow) => void;
 } {
   const make = useCallback(
     (making: Making, name: string) => {
@@ -96,5 +99,25 @@ export function useItemActions({
     [against, reading, vault],
   );
 
-  return { make, save };
+  const remove = useCallback(
+    (item: LectureRow) => {
+      if (vault === null) {
+        return;
+      }
+
+      // Closed before the move, so nothing on screen is left reading files that have gone.
+      if (reading.lecture?.lecture.directory === item.directory) {
+        reading.close();
+      }
+
+      against(vault, async () => {
+        await deleteItem(vault, item.directory);
+
+        return `Deleted "${item.title}". It is in the vault's hidden .trash folder; drag it out in Finder to bring it back.`;
+      });
+    },
+    [against, reading, vault],
+  );
+
+  return { make, save, remove };
 }
