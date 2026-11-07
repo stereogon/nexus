@@ -1,5 +1,5 @@
 /**
- * Choosing one of the fifteen themes, or following macOS: a section of the Settings box.
+ * Choosing one of the themes, or following macOS: a section of the Settings box.
  *
  * Radio items, each with three swatches — the theme's ground, its text and its accent — so
  * a theme can be recognised before it is chosen. Choosing applies it at once and leaves the

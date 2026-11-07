@@ -3,6 +3,7 @@
  * is in `./index.ts`.
  */
 import type { Theme } from "./index";
+import { CRIMSON_EXAM, VIOLET_QUESTION, YELLOW_KEY } from "./highlights";
 
 export const LIGHT_THEMES: Readonly<Record<"paper" | "plain" | "contrast" | "funky" | "solar" | "sakura" | "sepia", Theme>> = {
   paper: {
@@ -66,12 +67,13 @@ export const LIGHT_THEMES: Readonly<Record<"paper" | "plain" | "contrast" | "fun
   contrast: {
     label: "Contrast",
     scheme: "light",
-    mood: "Black on white, black rules. Seven to one everywhere.",
+    mood: "Black on white, black rules, a cobalt accent. Seven to one or near it.",
+    highlights: { question: VIOLET_QUESTION },
     palette: {
-      accent: "#7a0045",
+      accent: "#003099",
       "on-accent": "#ffffff",
-      "accent-soft": "rgba(122, 0, 69, 0.1)",
-      "accent-wash": "rgba(122, 0, 69, 0.07)",
+      "accent-soft": "rgba(0, 48, 153, 0.09)",
+      "accent-wash": "rgba(0, 48, 153, 0.06)",
       scrim: "rgba(255, 255, 255, 0.9)",
       chrome: "#ffffff",
       surface: "#ffffff",
@@ -124,12 +126,13 @@ export const LIGHT_THEMES: Readonly<Record<"paper" | "plain" | "contrast" | "fun
   solar: {
     label: "Solar",
     scheme: "light",
-    mood: "Solarized's cream and slate, with its magenta.",
+    mood: "Solarized's cream and slate, with its blue.",
+    highlights: { question: VIOLET_QUESTION },
     palette: {
-      accent: "#b52a6e",
+      accent: "#1d6ca5",
       "on-accent": "#ffffff",
-      "accent-soft": "rgba(181, 42, 110, 0.1)",
-      "accent-wash": "rgba(181, 42, 110, 0.07)",
+      "accent-soft": "rgba(29, 108, 165, 0.09)",
+      "accent-wash": "rgba(29, 108, 165, 0.06)",
       scrim: "rgba(253, 246, 227, 0.86)",
       chrome: "#fdf6e3",
       surface: "#fffdf5",
@@ -183,11 +186,12 @@ export const LIGHT_THEMES: Readonly<Record<"paper" | "plain" | "contrast" | "fun
     label: "Sepia",
     scheme: "light",
     mood: "Old paper and brown ink, like reading a book.",
+    highlights: { key: YELLOW_KEY, exam: CRIMSON_EXAM },
     palette: {
-      accent: "#7a3e65",
+      accent: "#884d20",
       "on-accent": "#ffffff",
-      "accent-soft": "rgba(122, 62, 101, 0.1)",
-      "accent-wash": "rgba(122, 62, 101, 0.07)",
+      "accent-soft": "rgba(136, 77, 32, 0.09)",
+      "accent-wash": "rgba(136, 77, 32, 0.06)",
       scrim: "rgba(244, 236, 216, 0.86)",
       chrome: "#f4ecd8",
       surface: "#faf5e8",

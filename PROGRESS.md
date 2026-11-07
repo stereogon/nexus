@@ -463,6 +463,47 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-07 · Themes in any colour; highlights move aside; highlight marks hidden on every line**
+The user: *"for the themes, i believe you are holding onto the pink color … I would love to
+see more themes with more color combinations like blue, green"*; asked about the rule in
+the way, *"you [can] put other highlight colors when someone chooses a theme with
+conflicting colors"*. Then: *"for hightlights, this is still visible ==ijjojok=={exam}"*.
+
+**Why the themes were pink.** Every accent was kept 25° of hue from the four fixed
+highlight colours (amber 40°, green 159°, red 8°, blue 210°). That left pink, magenta,
+violet, indigo and lime, and twelve of the fifteen accents were pink or magenta — Terminal,
+"phosphor green on black", had a pink one.
+
+**Highlight colours are now per theme** (`src/ui/themes/highlights.ts`). A theme lists
+swaps; `applyTheme` writes the full set every time, so one theme's swap never outlives it.
+Five alternatives: violet question, teal or lime definition, yellow key, crimson exam. Each
+was measured against the bar the standard four set, and `themes.test.ts` now holds every
+theme to it: the wash visible on white (≥1.25:1) with the page text readable over it (≥7:1),
+dark ink on the K chip (≥7:1), white on D/E/Q (≥3.1:1), the four at least 30° apart and 25°
+from the page's `accent-ink`, and the accent 25° from the theme's *own* four. Highlights are
+stored by meaning, so nothing on disk changes. `exam-wash` (behind problem notices) follows
+the theme's exam colour. CLAUDE.md §3 amended.
+
+**Nine themes re-coloured, nine added; twenty-four in all.** Paper, Ink and Sakura keep
+their pink, the brand's and the point of Sakura. Contrast takes cobalt, Solar Solarized's
+blue, Sepia brown ink, Contrast Dark pale cyan, Neon electric cyan, Fjord frost blue, Forest
+leaf green, Ocean sea blue, Terminal phosphor green. New: Sky, Meadow, Citrus, Lagoon, Indigo
+(light); Midnight, Emerald, Ember, Aurora (dark). The new palettes were generated from a
+hue for the grounds and a hue for the accent, with the accent's lightness moved, hue kept,
+until it read at 4.6:1 on every ground and its selected-row wash; the tests then measured
+every value. A test now says which accents may be pink, so the drift cannot come back
+quietly. The Rust `Theme` names gained the nine; a test that used `"midnight"` as an
+unknown name now uses `"twilight"`. The Settings box is wider with three columns, since
+twenty-four in two ran it down the whole window.
+
+**Highlight marks in the notes are hidden on the cursor's line too.** The hidden-Markdown
+change earlier today missed them: `noteMarks.ts` kept the old line-level reveal.
+
+Verified: gate green. Theme tests 366; the journey that Sky's question highlight turns
+violet and Paper's back to blue; the note-highlight journey checks the cursor's line.
+Sabotage: Sky's swap removed failed the accent test and the token test; the line reveal
+restored failed the journey.
+
 **2026-11-07 · Notes as Notion writes them: hidden Markdown, elements, room, a block menu**
 The user: *"i am not liking the md things that are visible on the line we are on … if we
 type # somthing, it become heading but # is not visible. when we copy, it might become

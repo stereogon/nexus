@@ -39,7 +39,7 @@ describe("the foot of the sidebar", () => {
 
     const settings = screen.getByRole("dialog", { name: "Settings" });
     expect(screen.getByRole("radio", { name: /Neon/u }).getAttribute("aria-checked")).toBe("true");
-    expect(screen.getAllByRole("radio")).toHaveLength(16);
+    expect(screen.getAllByRole("radio")).toHaveLength(25);
     expect(settings.textContent).toContain("/Users/me/NexusVault");
 
     fireEvent.click(screen.getByRole("radio", { name: /Sepia/u }));

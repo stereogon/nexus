@@ -3,6 +3,7 @@
  * is in `./index.ts`.
  */
 import type { Theme } from "./index";
+import { LIME_DEFINITION, TEAL_DEFINITION, VIOLET_QUESTION } from "./highlights";
 
 export const DARK_THEMES: Readonly<Record<"ink" | "graphite" | "contrast-dark" | "neon" | "fjord" | "forest" | "ocean" | "terminal", Theme>> = {
   ink: {
@@ -66,12 +67,13 @@ export const DARK_THEMES: Readonly<Record<"ink" | "graphite" | "contrast-dark" |
   "contrast-dark": {
     label: "Contrast Dark",
     scheme: "dark",
-    mood: "White on black, white rules. For tired eyes.",
+    mood: "White on black, white rules, a pale cyan. For tired eyes.",
+    highlights: { question: VIOLET_QUESTION },
     palette: {
-      accent: "#ffc4e6",
-      "on-accent": "#000000",
-      "accent-soft": "rgba(255, 196, 230, 0.16)",
-      "accent-wash": "rgba(255, 196, 230, 0.1)",
+      accent: "#b2f0ff",
+      "on-accent": "#091f25",
+      "accent-soft": "rgba(178, 240, 255, 0.16)",
+      "accent-wash": "rgba(178, 240, 255, 0.1)",
       scrim: "rgba(0, 0, 0, 0.9)",
       chrome: "#000000",
       surface: "#000000",
@@ -95,12 +97,13 @@ export const DARK_THEMES: Readonly<Record<"ink" | "graphite" | "contrast-dark" |
   neon: {
     label: "Neon",
     scheme: "dark",
-    mood: "Midnight violet and a magenta that glows. Loud on purpose.",
+    mood: "Midnight violet and an electric cyan that glows. Loud on purpose.",
+    highlights: { definition: LIME_DEFINITION, question: VIOLET_QUESTION },
     palette: {
-      accent: "#ff4fdc",
-      "on-accent": "#16021a",
-      "accent-soft": "rgba(255, 79, 220, 0.16)",
-      "accent-wash": "rgba(255, 79, 220, 0.11)",
+      accent: "#1af0ff",
+      "on-accent": "#092325",
+      "accent-soft": "rgba(26, 240, 255, 0.16)",
+      "accent-wash": "rgba(26, 240, 255, 0.1)",
       scrim: "rgba(11, 10, 18, 0.88)",
       chrome: "#0b0a12",
       surface: "#110f1c",
@@ -124,12 +127,13 @@ export const DARK_THEMES: Readonly<Record<"ink" | "graphite" | "contrast-dark" |
   fjord: {
     label: "Fjord",
     scheme: "dark",
-    mood: "Arctic slate blues and a soft pink. Calm and cool.",
+    mood: "Arctic slate and frost blue. Calm and cool.",
+    highlights: { question: VIOLET_QUESTION },
     palette: {
-      accent: "#f0a3d4",
-      "on-accent": "#2e1a28",
-      "accent-soft": "rgba(240, 163, 212, 0.16)",
-      "accent-wash": "rgba(240, 163, 212, 0.1)",
+      accent: "#8cc2d1",
+      "on-accent": "#091f25",
+      "accent-soft": "rgba(140, 194, 209, 0.16)",
+      "accent-wash": "rgba(140, 194, 209, 0.1)",
       scrim: "rgba(46, 52, 64, 0.88)",
       chrome: "#2e3440",
       surface: "#353c4a",
@@ -153,12 +157,12 @@ export const DARK_THEMES: Readonly<Record<"ink" | "graphite" | "contrast-dark" |
   forest: {
     label: "Forest",
     scheme: "dark",
-    mood: "Deep pine and blossom, for long evenings.",
+    mood: "Deep pine and fresh leaf green, for long evenings.",
     palette: {
-      accent: "#f29ac4",
-      "on-accent": "#2a0f1d",
-      "accent-soft": "rgba(242, 154, 196, 0.15)",
-      "accent-wash": "rgba(242, 154, 196, 0.1)",
+      accent: "#7dd483",
+      "on-accent": "#09250b",
+      "accent-soft": "rgba(125, 212, 131, 0.16)",
+      "accent-wash": "rgba(125, 212, 131, 0.1)",
       scrim: "rgba(20, 28, 23, 0.88)",
       chrome: "#141c17",
       surface: "#1a241e",
@@ -182,12 +186,13 @@ export const DARK_THEMES: Readonly<Record<"ink" | "graphite" | "contrast-dark" |
   ocean: {
     label: "Ocean",
     scheme: "dark",
-    mood: "Navy depths and coral. Rich, not loud.",
+    mood: "Navy depths and a bright sea blue. Rich, not loud.",
+    highlights: { question: VIOLET_QUESTION },
     palette: {
-      accent: "#ff8fb8",
-      "on-accent": "#2b0a17",
-      "accent-soft": "rgba(255, 143, 184, 0.15)",
-      "accent-wash": "rgba(255, 143, 184, 0.1)",
+      accent: "#52b1ff",
+      "on-accent": "#091825",
+      "accent-soft": "rgba(82, 177, 255, 0.16)",
+      "accent-wash": "rgba(82, 177, 255, 0.1)",
       scrim: "rgba(14, 26, 43, 0.88)",
       chrome: "#0e1a2b",
       surface: "#132236",
@@ -212,11 +217,12 @@ export const DARK_THEMES: Readonly<Record<"ink" | "graphite" | "contrast-dark" |
     label: "Terminal",
     scheme: "dark",
     mood: "Phosphor green on black.",
+    highlights: { definition: TEAL_DEFINITION, question: VIOLET_QUESTION },
     palette: {
-      accent: "#e98bff",
-      "on-accent": "#1f0626",
-      "accent-soft": "rgba(233, 139, 255, 0.15)",
-      "accent-wash": "rgba(233, 139, 255, 0.1)",
+      accent: "#1aff62",
+      "on-accent": "#092512",
+      "accent-soft": "rgba(26, 255, 98, 0.16)",
+      "accent-wash": "rgba(26, 255, 98, 0.1)",
       scrim: "rgba(12, 12, 12, 0.9)",
       chrome: "#0c0c0c",
       surface: "#111111",

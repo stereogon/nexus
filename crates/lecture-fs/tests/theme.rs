@@ -55,7 +55,7 @@ fn a_hand_edited_file_follows_the_system() {
     for junk in [
         "",
         "  ",
-        "midnight",
+        "twilight",
         "DARK",
         "{\"theme\":\"dark\"}",
         "\u{0}",
@@ -133,6 +133,15 @@ fn every_theme_is_written_and_read_back_as_itself() {
         "ocean",
         "terminal",
         "sepia",
+        "sky",
+        "meadow",
+        "citrus",
+        "lagoon",
+        "indigo",
+        "midnight",
+        "emerald",
+        "ember",
+        "aurora",
     ] {
         let theme: Theme = name.parse().unwrap();
 

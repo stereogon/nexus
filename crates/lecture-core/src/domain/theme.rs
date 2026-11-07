@@ -14,7 +14,7 @@ use crate::CoreError;
 /// never having picked. It is stored like the others so that someone who turns the
 /// override off gets the system theme back on the next launch.
 ///
-/// The fifteen palettes themselves are the window's business (`src/ui/themes/`); this
+/// The palettes themselves are the window's business (`src/ui/themes/`); this
 /// crate knows only their names, so a hand-edited preference file is refused at the
 /// boundary rather than reaching the window as something it cannot draw.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -35,29 +35,47 @@ pub enum Theme {
     Contrast,
     /// White on black, for the most contrast.
     ContrastDark,
-    /// Midnight violet with a glowing magenta.
+    /// Midnight violet with an electric cyan.
     Neon,
     /// Butter yellow and electric violet.
     Funky,
     /// Solarized cream and slate.
     Solar,
-    /// Arctic slate blues.
+    /// Arctic slate and frost blue.
     Fjord,
     /// Deep pine.
     Forest,
     /// Pale cherry blossom.
     Sakura,
-    /// Navy and coral.
+    /// Navy and sea blue.
     Ocean,
     /// Phosphor green on black.
     Terminal,
     /// Old paper and brown ink.
     Sepia,
+    /// Cool white and morning blue.
+    Sky,
+    /// Sage and grass green.
+    Meadow,
+    /// Cream and tangerine.
+    Citrus,
+    /// Pale aqua and deep teal.
+    Lagoon,
+    /// Lavender greys and indigo.
+    Indigo,
+    /// Deep navy and a bright blue.
+    Midnight,
+    /// Dark green and emerald.
+    Emerald,
+    /// Warm dark brown and orange.
+    Ember,
+    /// Polar night and a teal glow.
+    Aurora,
 }
 
 /// Every theme and its stored spelling, which is also what the UI sends. One table, so
 /// the two directions cannot disagree.
-const NAMES: [(Theme, &str); 16] = [
+const NAMES: [(Theme, &str); 25] = [
     (Theme::System, "system"),
     (Theme::Paper, "paper"),
     (Theme::Ink, "ink"),
@@ -74,6 +92,15 @@ const NAMES: [(Theme, &str); 16] = [
     (Theme::Ocean, "ocean"),
     (Theme::Terminal, "terminal"),
     (Theme::Sepia, "sepia"),
+    (Theme::Sky, "sky"),
+    (Theme::Meadow, "meadow"),
+    (Theme::Citrus, "citrus"),
+    (Theme::Lagoon, "lagoon"),
+    (Theme::Indigo, "indigo"),
+    (Theme::Midnight, "midnight"),
+    (Theme::Emerald, "emerald"),
+    (Theme::Ember, "ember"),
+    (Theme::Aurora, "aurora"),
 ];
 
 impl Theme {

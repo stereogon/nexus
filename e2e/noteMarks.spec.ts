@@ -4,7 +4,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { READING, standardFixture } from "./fixture";
-import { openLecture, openNexus } from "./nexus";
+import { openLecture, openNexus, saved } from "./nexus";
 
 const NOTES = ["Raft elects a leader by majority.", "Use `==x==` in code.", "", "The end."].join("\n");
 
@@ -33,14 +33,14 @@ test("selecting words offers the four meanings, and choosing one highlights them
 
   await expect(line(page, "Raft elects").locator('.md-mark[data-semantic="exam"]')).toHaveText("majority");
 
-  // Off the line, the markup is hidden and only the colour remains.
-  await line(page, "The end.").click();
-  await expect(line(page, "Raft elects")).not.toContainText("==");
-  await expect(line(page, "Raft elects")).not.toContainText("{exam}");
+  // The markup is hidden and only the colour remains, on the cursor's line and off it.
+  for (const where of ["Raft elects", "The end."]) {
+    await line(page, where).click();
+    await expect(line(page, "Raft elects")).toHaveText("Raft elects a leader by majority.");
+  }
 
   // Underneath, the form the notes store.
-  await line(page, "Raft elects").click();
-  await expect(line(page, "Raft elects")).toContainText("==majority=={exam}");
+  await expect.poll(() => saved(page)).toContain("==majority=={exam}");
 });
 
 test("a highlight can be recoloured and removed from the same bar", async ({ page }) => {

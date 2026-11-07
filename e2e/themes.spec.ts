@@ -1,5 +1,5 @@
 /**
- * Themes (2026-11-07): fifteen of them, chosen in Settings, applied at once, with the
+ * Themes (2026-11-07): twenty-four of them, chosen in Settings, applied at once, with the
  * page left white in every one (CLAUDE.md §3: no inverted documents).
  */
 import { expect, test, type Page } from "@playwright/test";

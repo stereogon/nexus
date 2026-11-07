@@ -23,7 +23,7 @@ import { SpacedWidget } from "./widgets";
 const hidden = Decoration.replace({});
 
 /** The lines any cursor or selection touches. */
-export function activeLines(state: EditorState): Set<number> {
+function activeLines(state: EditorState): Set<number> {
   const lines = new Set<number>();
 
   for (const range of state.selection.ranges) {

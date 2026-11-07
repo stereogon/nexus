@@ -257,6 +257,14 @@ and explain why. Rationale is recorded in `PROGRESS.md`.
 - Highlight semantics: amber `#F2B63C` key, green `#2EA37A` definition, red `#E0523C` exam,
   blue `#2E86DE` question — each also carrying a letter glyph (K/D/E/Q) so the set does not
   rely on hue alone.
+  *(Amended 2026-11-07 at the user's request: these are now the **standard** four. A theme
+  whose accent would sit within 25° of hue of one swaps that one for an alternative — a
+  blue-accented theme gets a violet question — from `src/ui/themes/highlights.ts`. The
+  meanings and letters never change, and highlights are stored by meaning, never colour, so
+  nothing on disk is affected. Pink accents had crowded twelve of fifteen themes because the
+  fixed highlights left no room for blue, green, teal or orange; the user preferred themes in
+  any colour, with the highlights moving aside. `themes.test.ts` holds every swap to the bar
+  the standard four set.)*
 - Type: Bricolage Grotesque (brand/headings), IBM Plex Sans (UI), Literata (notes prose),
   IBM Plex Mono (paths, keys, code). All OFL, all bundled as local woff2 — no network font
   requests in the shipped app.

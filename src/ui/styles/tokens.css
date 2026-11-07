@@ -3,7 +3,7 @@
  *
  * Imported first, because everything below is written in terms of these names. The values
  * here are the **Paper** theme's, the default and what the window paints before a choice
- * is read. The fifteen themes live as data in `src/ui/themes/`, which `useTheme` writes
+ * is read. The themes live as data in `src/ui/themes/`, which `useTheme` writes
  * onto the document over these, and which `themes.test.ts` measures for contrast; only
  * what every dark theme shares (code colours, the exam wash) is declared below, under
  * `[data-scheme="dark"]`. (Redesigned 2026-11-07; before that this file held one light and
@@ -93,7 +93,8 @@
   --exam-wash: rgba(224, 82, 60, 0.12);
 
   /* The four highlight semantics. Each also carries a letter glyph (K/D/E/Q), so the set
-     never relies on hue alone. */
+     never relies on hue alone. These are the standard colours; a theme whose accent would
+     clash swaps one (`src/ui/themes/highlights.ts`). */
   /* The four highlights as washes over a page. Explicit rgba per semantic rather than a
      `color-mix`, as with `accent-wash` above: `color-mix` arrived in Safari 16.2 and this
      build targets Safari 15.

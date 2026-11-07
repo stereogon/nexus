@@ -1,9 +1,9 @@
 /**
  * Highlights in the notes, drawn: the words coloured in their meaning, and the `==` and
- * `{…}` around them hidden on every line but the cursor's.
- *
- * The words stay coloured on the cursor's line too, so a highlight being edited still
- * reads as one. Marks inside code — a fenced block or an inline span — are examples, not
+ * `{…}` around them hidden — on the cursor's line too, as every other mark is since
+ * 2026-11-07 (reported the same day: `==ijjojok=={exam}` still showed there). The meaning is
+ * changed or removed from the format bar, so the marks never need to be typed into. Marks
+ * inside code — a fenced block or an inline span — are examples, not
  * highlights, and the syntax tree says which those are.
  */
 import { syntaxTree } from "@codemirror/language";
@@ -35,7 +35,6 @@ function inCode(state: EditorState, at: number): boolean {
 
 export function noteMarkDecorations(
   state: EditorState,
-  active: ReadonlySet<number>,
   claimed: (from: number, to: number) => boolean,
 ): Range<Decoration>[] {
   const out: Range<Decoration>[] = [];
@@ -55,10 +54,8 @@ export function noteMarkDecorations(
         ),
       );
 
-      if (!active.has(number)) {
-        out.push(Decoration.replace({}).range(mark.from, mark.innerFrom));
-        out.push(Decoration.replace({}).range(mark.innerTo, mark.to));
-      }
+      out.push(Decoration.replace({}).range(mark.from, mark.innerFrom));
+      out.push(Decoration.replace({}).range(mark.innerTo, mark.to));
     }
   }
 

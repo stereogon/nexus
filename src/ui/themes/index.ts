@@ -1,15 +1,17 @@
 /**
- * The fifteen themes, as data.
+ * The themes, as data.
  *
  * From the redesign canvas (<https://claude.ai/artifact/DqL93ozsfahcZsqKXzE4fT>, 2026-11-07),
  * where the user asked for "at least 10-15 different color theme styles … funky, plain
  * modern, neon, dark contrast". Each theme sets the window's own colours: grounds, text,
- * borders and one accent. Three things are the same in every theme, because they carry
- * meaning rather than mood: the page stays white (no inverted documents, CLAUDE.md §3), the
- * four highlight meanings keep their colours and letters, and `accent-ink`, which is drawn
- * on that white page, stays the one value sized for white.
+ * borders and one accent. The page stays white in every theme (no inverted documents,
+ * CLAUDE.md §3), and `accent-ink`, which is drawn on that white page, stays the one value
+ * sized for white. The four highlight meanings keep their letters everywhere; their colours
+ * move aside in a theme whose accent would clash (`./highlights`). Fifteen at first, all but
+ * three of the accents pink; the user asked for blues, greens and more (2026-11-07), and
+ * the set grew to twenty-four.
  *
- * Kept here rather than as fifteen stylesheet blocks so the colours exist once: `useTheme`
+ * Kept here rather than as stylesheet blocks so the colours exist once: `useTheme`
  * writes the chosen palette onto the document, and `themes.test.ts` measures the same
  * values — every text colour against the grounds it sits on — so a theme cannot ship
  * unreadable. `tokens.css` keeps Paper's values as the starting point, and the colours
@@ -17,7 +19,10 @@
  */
 
 import { DARK_THEMES } from "./dark";
+import { DARK_COLOUR_THEMES } from "./darkColours";
+import { highlightsOf, highlightTokens, type HighlightSet } from "./highlights";
 import { LIGHT_THEMES } from "./light";
+import { LIGHT_COLOUR_THEMES } from "./lightColours";
 
 /** Every theme that can be chosen, plus following macOS between Paper and Ink. */
 export const THEME_NAMES = [
@@ -37,6 +42,15 @@ export const THEME_NAMES = [
   "ocean",
   "terminal",
   "sepia",
+  "sky",
+  "meadow",
+  "citrus",
+  "lagoon",
+  "indigo",
+  "midnight",
+  "emerald",
+  "ember",
+  "aurora",
 ] as const;
 
 export type ThemeName = (typeof THEME_NAMES)[number];
@@ -78,9 +92,16 @@ export interface Theme {
   /** One line for the picker. */
   readonly mood: string;
   readonly palette: Palette;
+  /** Highlight colours swapped for this theme, where its accent would clash (`./highlights`). */
+  readonly highlights?: Partial<HighlightSet>;
 }
 
-export const THEMES: Readonly<Record<PaletteName, Theme>> = { ...LIGHT_THEMES, ...DARK_THEMES };
+export const THEMES: Readonly<Record<PaletteName, Theme>> = {
+  ...LIGHT_THEMES,
+  ...LIGHT_COLOUR_THEMES,
+  ...DARK_THEMES,
+  ...DARK_COLOUR_THEMES,
+};
 
 /** The palette names in the picker's order: the defaults first, then light, then dark. */
 export const PALETTE_ORDER: readonly PaletteName[] = [
@@ -94,11 +115,20 @@ export const PALETTE_ORDER: readonly PaletteName[] = [
   "solar",
   "sakura",
   "sepia",
+  "sky",
+  "meadow",
+  "citrus",
+  "lagoon",
+  "indigo",
   "neon",
   "fjord",
   "forest",
   "ocean",
   "terminal",
+  "midnight",
+  "emerald",
+  "ember",
+  "aurora",
 ];
 
 /** The palette a theme name stands for, given whether macOS is in dark mode. */
@@ -111,13 +141,17 @@ export function resolve(name: ThemeName, systemDark: boolean): PaletteName {
 }
 
 /**
- * Puts a theme on the document: its palette as custom properties on the root, which win
- * over `tokens.css`, and `data-scheme` for the colours shared by every dark theme.
+ * Puts a theme on the document: its palette and its highlight colours as custom properties
+ * on the root, which win over `tokens.css`, and `data-scheme` for the colours shared by
+ * every dark theme.
  */
 export function applyTheme(root: HTMLElement, name: PaletteName): void {
   const theme = THEMES[name];
 
-  for (const [token, value] of Object.entries<string>(theme.palette)) {
+  // Every highlight token is written, swapped or not, so one theme's swap never outlives it.
+  const tokens = { ...theme.palette, ...highlightTokens(highlightsOf(theme.highlights), theme.scheme) };
+
+  for (const [token, value] of Object.entries<string>(tokens)) {
     root.style.setProperty(`--${token}`, value);
   }
 
