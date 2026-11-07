@@ -463,6 +463,22 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-07 · Deleting all of a formatted text takes its marks too**
+The user: *"when i write something, hightlight it, then select it and delte it, i am left
+with =="*. With the marks hidden, selecting the words one can see selects only what is
+between the marks, so deleting them left `===={exam}`: no longer a highlight, shown as
+stray text. Bold had the same hole, with a worse result: emptied, `****` reads as a divider.
+
+`notes/emptiedMarks.ts` widens a pure deletion over every construct whose words it removes
+entirely: highlights (`marksIn`), and from the syntax tree emphasis, strong emphasis,
+strikethrough, inline code and links. It widens again after each pass, so emptied bold
+inside an emptied highlight goes too. As in Notion, typing over the words keeps the
+formatting, and deleting part of them leaves the marks.
+
+Verified: gate green. `emptiedMarks.test.ts` (5) and the journey of highlighting, selecting
+the coloured words and deleting them. Without the filter the journey fails with the user's
+exact result, `Raft elects a leader by ===={exam}.`.
+
 **2026-11-07 · A cursor on every line; the page's chrome in the theme; a funkier Funky; Turn into only where it can**
 The user: *"the first two lines don't show the cursor … sometimes when i click on the first
 line, no cursor is visible, but typing is happening"*; *"the icon colors for link to citation

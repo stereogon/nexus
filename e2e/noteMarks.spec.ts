@@ -74,3 +74,16 @@ test("== inside code stays code", async ({ page }) => {
 
   await expect(line(page, "in code").locator(".md-mark")).toHaveCount(0);
 });
+
+test("deleting all of a highlight's words takes the highlight with them, leaving no ==", async ({ page }) => {
+  await selectLastWord(page);
+  await bar(page).getByRole("button", { name: "Exam / important" }).click({ delay: 150 });
+  await expect.poll(() => saved(page)).toContain("==majority=={exam}");
+
+  // The words as they are seen, selected and deleted.
+  await line(page, "Raft elects").locator('.md-mark[data-semantic="exam"]').dblclick();
+  await page.keyboard.press("Backspace");
+
+  // The first line only: the second rightly keeps its `==x==`, inside code.
+  await expect.poll(async () => (await saved(page)).split("\n")[0]).toBe("Raft elects a leader by .");
+});

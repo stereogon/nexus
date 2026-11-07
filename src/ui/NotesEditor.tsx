@@ -30,6 +30,7 @@ import { flashLine, lineFlash } from "../notes/flash";
 import { citationAt } from "../notes/insert";
 import { livePreview } from "../notes/preview/field";
 import { blockKeys } from "../notes/blockKeys";
+import { dropEmptiedMarks } from "../notes/emptiedMarks";
 import { pageHeading, setHeading, type PageHeading } from "../notes/pageHeading";
 import { pasteImages } from "../notes/pasteImage";
 import { notePage, notesAppearance } from "../notes/theme";
@@ -140,8 +141,7 @@ export function NotesEditor({
           // does not have. Without it a table was not even recognised (2026-11-05).
           markdown({ base: markdownLanguage, codeLanguages }),
           EditorView.lineWrapping,
-          // The cursor drawn by the editor: WebKit's own was not painted below the page's
-          // title, a widget it cannot edit (reported 2026-11-07).
+          // Drawn by the editor: WebKit did not paint its caret below the title (2026-11-07).
           drawSelection(),
           notesAppearance,
           page ? notePage : [],
@@ -159,6 +159,7 @@ export function NotesEditor({
           }),
           pasteImages(() => pasted.current),
           blockKeys,
+          dropEmptiedMarks,
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
               changed.current(update.state.doc.toString());
