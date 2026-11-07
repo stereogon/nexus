@@ -4,8 +4,12 @@ Read this fully before acting. It is binding on every Claude instance working in
 repository, in every session. If anything here conflicts with a request, say so and ask
 rather than quietly picking one.
 
-**Nexus** is a 100% offline, local-first macOS app for studying lecture documents (PDF /
-PPT / PPTX / DOC / DOCX) beside deeply linked Markdown notes. Full requirements live in
+**Nexus** is a 100% offline, local-first macOS app for notes — plain notes, and notes
+deeply linked to documents (PDF / PPT / PPTX / DOC / DOCX) studied beside them. *(Amended
+2026-11-06 at the user's request: this read "for studying lecture documents". Nexus is a
+general-purpose note-taker now, and the window says document, note and item rather than
+lecture. The crates and types keep their `lecture` names; nobody reads them.)* Full
+requirements live in
 [`claude-spec.md`](./claude-spec.md). Current state and decision history live in
 [`PROGRESS.md`](./PROGRESS.md).
 
@@ -183,7 +187,12 @@ and explain why. Rationale is recorded in `PROGRESS.md`.
   `manifest.json`**; the vault walk prunes at the first one it finds.
 - Taxonomy lives in each bundle's `manifest.json` as facets (`course`, `module`, `week`,
   `tags`, plus an open `custom` map). The sidebar groups on facets at runtime, so one
-  physical layout serves many logical views.
+  physical layout serves many logical views. *(Amended 2026-11-06 at the user's request:
+  the sidebar now steps into the vault's real folders one at a time, and the folder an
+  item is in is how it is organised — typing a course and module into every item was the
+  chore to remove. Facets stay in the manifest, are carried through every edit unchanged,
+  and are still searched; they are no longer asked for or grouped on. A bundle may now
+  have no document — a plain note, manifest version 4.)*
 - **`sequence` (a fractional/LexoRank-style string key) is the authoritative order.**
   `01-` folder-name prefixes are a *derived projection* of it, maintained for Finder and
   Files-app legibility. **If a prefix disagrees with `sequence`, `sequence` wins**, and the

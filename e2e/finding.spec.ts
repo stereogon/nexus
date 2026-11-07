@@ -92,7 +92,7 @@ test("a line of notes found by search opens its lecture with the notes at that l
   await expect(line).toBeInViewport();
 });
 
-test("the library lists every highlight, and filters by meaning and by week", async ({ page }) => {
+test("the library lists every highlight, and filters by meaning and by folder", async ({ page }) => {
   await page.getByRole("button", { name: "Highlights library" }).click();
 
   await expect(library(page).locator(".library-mark")).toHaveCount(3);
@@ -101,7 +101,7 @@ test("the library lists every highlight, and filters by meaning and by week", as
   await library(page).getByRole("button", { name: "Exam / important" }).click();
   await expect(library(page).locator(".library-mark")).toHaveCount(2);
 
-  await library(page).getByRole("combobox").nth(2).selectOption("Week 2");
+  await library(page).getByLabel("Folder").selectOption("week-2");
   await expect(library(page).locator(".library-mark")).toHaveCount(1);
   await expect(library(page).locator(".library-mark")).toContainText("Every quorum overlaps");
 });

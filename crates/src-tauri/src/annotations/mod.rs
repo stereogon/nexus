@@ -59,8 +59,8 @@ pub async fn load_annotations(
         .await
         .map_err(|_| CommandError {
             code: "ERR_ANNOTATIONS_INTERRUPTED",
-            remediation: "Reading the highlights stopped before it finished. Nothing was \
-                          changed; try opening the lecture again.",
+            remediation: "Reading the highlights stopped before it finished. Nothing was changed; try \
+                          opening the document again.",
         })?
 }
 
@@ -84,8 +84,8 @@ pub async fn remove_annotation(
         .await
         .map_err(|_| CommandError {
             code: "ERR_HIGHLIGHT_INTERRUPTED",
-            remediation: "Removing the highlight stopped before it finished. The lecture's \
-                          other highlights are unchanged; try again.",
+            remediation: "Removing the highlight stopped before it finished. The document's other \
+                          highlights are unchanged; try again.",
         })?
 }
 
@@ -117,8 +117,8 @@ pub async fn retag_annotation(
     .await
     .map_err(|_| CommandError {
         code: "ERR_HIGHLIGHT_INTERRUPTED",
-        remediation: "Changing the highlight stopped before it finished. It still has its \
-                      old colour, and the lecture's other highlights are unchanged; try again.",
+        remediation: "Changing the highlight stopped before it finished. It still has its old \
+                      colour, and the document's other highlights are unchanged; try again.",
     })?
 }
 

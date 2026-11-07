@@ -86,23 +86,29 @@ pub fn prepare_document(vault: &str, directory: &str) -> Result<OpenedDocument, 
     let manifests = ManifestStore::new(AtomicFsStorage::new(root.clone()), SystemClock);
     let manifest = manifests.load(&bundle)?;
 
-    if !manifest.source().document_is_ready() {
+    let Some(source) = manifest.source() else {
+        return Err(no_document());
+    };
+
+    if !source.document_is_ready() {
         return Err(CommandError {
             code: "ERR_DOCUMENT_NOT_READY",
-            remediation: "This lecture has no PDF yet. Convert it first; the file you \
+            remediation: "This document has no PDF yet. Convert it first; the file you \
                           imported is still kept beside it.",
         });
     }
 
-    let document = LectureBundle::new(bundle, manifest).document_path()?;
+    let document = LectureBundle::new(bundle, manifest)
+        .document_path()?
+        .ok_or_else(no_document)?;
     let resolved = root.resolve(&document)?;
     let inspection = document_scan::inspect(resolved.as_path())?;
 
     if !inspection.is_pdf {
         return Err(CommandError {
             code: "ERR_NOT_A_PDF",
-            remediation: "This lecture's PDF is not a PDF file. Re-import the original to \
-                          rebuild it; the original is still in the lecture's folder.",
+            remediation: "This document's PDF is not a PDF file. Re-import the original to \
+                          rebuild it; the original is still in its folder.",
         });
     }
 
@@ -164,4 +170,14 @@ pub fn warrants_a_warning(risks: &[DocumentRisk]) -> bool {
     risks
         .iter()
         .any(|risk| risk.severity() == RiskSeverity::Notable)
+}
+
+/// Asked to open the document of a plain note, which has none. The window never asks, so
+/// reaching this means a stale row; the sentence still says what is true.
+const fn no_document() -> CommandError {
+    CommandError {
+        code: "ERR_NOTE_HAS_NO_DOCUMENT",
+        remediation: "This is a plain note, so there is no document to open beside it. Its \
+                      notes open on their own.",
+    }
 }

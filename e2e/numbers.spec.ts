@@ -1,14 +1,15 @@
 /**
- * A lecture's number: shown in the sidebar, and edited in the lecture's panel.
+ * An item's number: shown in the sidebar, and edited in the item's panel.
  */
 import { expect, test, type Page } from "@playwright/test";
 
 import { READING } from "./fixture";
-import { openNexus } from "./nexus";
+import { openNexus, showFolderOf } from "./nexus";
 
-const panel = (page: Page) => page.getByRole("complementary", { name: "Edit lecture" });
+const panel = (page: Page) => page.getByRole("complementary", { name: "Edit document" });
 
 async function edit(page: Page, title: string): Promise<void> {
+  await showFolderOf(page, title);
   await page.getByRole("button", { name: `Edit ${title}` }).click();
   await expect(panel(page)).toBeVisible();
 }

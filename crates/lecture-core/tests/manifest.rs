@@ -75,7 +75,7 @@ fn refuses_to_be_changed_before_it_was_created() {
 fn serialises_the_shape_the_schema_describes() {
     let json = serde_json::to_string_pretty(&manifest()).unwrap();
 
-    assert!(json.contains(r#""schemaVersion": 3"#), "got: {json}");
+    assert!(json.contains(r#""schemaVersion": 4"#), "got: {json}");
     assert!(json.contains(r#""title": "Distributed Consensus""#));
     assert!(json.contains(r#""sequence": "a0""#));
     assert!(json.contains(r#""document": "source/document.pdf""#));
@@ -141,8 +141,8 @@ fn reads_a_version_1_manifest_and_upgrades_it_on_the_way_in() {
     let parsed: Manifest = serde_json::from_str(v1).expect("version 1 must still be readable");
 
     // Absent is what version 1 meant, and it must not be confused with "unchanged".
-    assert_eq!(parsed.source().document_fingerprint(), None);
-    assert_eq!(parsed.source().original_fingerprint(), None);
+    assert_eq!(parsed.source().unwrap().document_fingerprint(), None);
+    assert_eq!(parsed.source().unwrap().original_fingerprint(), None);
     assert_eq!(parsed.title().as_str(), "Distributed Consensus");
 
     // Reading did not rewrite anything; saving is what migrates the file.
@@ -214,4 +214,38 @@ fn corrects_a_hand_edited_tag_order_on_read() {
 
     let tags: Vec<&str> = parsed.facets().tags().iter().map(Label::as_str).collect();
     assert_eq!(tags, ["consensus", "raft"], "order fixed, nothing lost");
+}
+
+#[test]
+fn a_plain_note_is_written_with_no_source_and_read_back_as_one() {
+    let note = Manifest::note(
+        label("Ideas"),
+        OrderKey::first(),
+        at("2026-11-06T09:00:00Z"),
+    );
+
+    let written = serde_json::to_value(&note).unwrap();
+    assert!(
+        written.get("source").is_none(),
+        "absent, not null: {written}"
+    );
+    assert_eq!(
+        written
+            .get("schemaVersion")
+            .and_then(serde_json::Value::as_u64),
+        Some(4)
+    );
+
+    let read: Manifest = serde_json::from_value(written).unwrap();
+    assert!(read.source().is_none());
+    assert_eq!(read, note);
+}
+
+#[test]
+fn an_older_manifest_with_no_source_is_refused_rather_than_read_as_a_note() {
+    // Every bundle before version 4 was an imported document, so a missing source there
+    // means a damaged file; showing it as an empty note would hide what it lost.
+    let v3 = r#"{"schemaVersion":3,"title":"T","sequence":"a0","createdAt":"2026-10-27T16:00:00Z","updatedAt":"2026-10-27T16:00:00Z"}"#;
+
+    assert!(serde_json::from_str::<Manifest>(v3).is_err());
 }

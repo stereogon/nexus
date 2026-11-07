@@ -27,7 +27,7 @@ fn a_deck_with_no_converter_waits_rather_than_failing() {
     let file = fixture.waiting("week3.pptx", b"PK\x03\x04 a slide deck");
 
     let outcome = fixture.importer().import(&request(&file), None).unwrap();
-    let source = outcome.manifest.source();
+    let source = outcome.manifest.source().unwrap();
 
     assert_eq!(source.conversion().state(), ConversionState::Queued);
     assert!(!source.document_is_ready());
@@ -58,7 +58,7 @@ fn a_converter_that_handles_other_formats_leaves_it_queued_not_failed() {
         .unwrap();
 
     assert_eq!(
-        outcome.manifest.source().conversion().state(),
+        outcome.manifest.source().unwrap().conversion().state(),
         ConversionState::Queued
     );
     assert!(outcome.conversion_error.is_none());
@@ -75,7 +75,7 @@ fn a_converted_deck_records_the_converter_the_time_and_both_fingerprints() {
         .importer()
         .import(&request(&file), Some(&stub))
         .unwrap();
-    let source = outcome.manifest.source();
+    let source = outcome.manifest.source().unwrap();
 
     assert_eq!(source.conversion().state(), ConversionState::Ready);
     assert!(source.document_is_ready());
@@ -111,7 +111,7 @@ fn a_failed_conversion_keeps_the_file_and_says_why() {
         .unwrap();
 
     assert_eq!(
-        outcome.manifest.source().conversion().state(),
+        outcome.manifest.source().unwrap().conversion().state(),
         ConversionState::Failed
     );
     assert!(
@@ -143,7 +143,7 @@ fn the_manifest_is_on_disk_and_reads_back_the_same() {
         .load(&RelativePath::parse("cs454/raft").unwrap())
         .unwrap();
 
-    assert_eq!(read.source(), outcome.manifest.source());
+    assert_eq!(read.source().unwrap(), outcome.manifest.source().unwrap());
     assert_eq!(read.title().as_str(), "Raft and consensus");
 }
 
@@ -171,7 +171,7 @@ fn the_manifest_already_says_converting_while_the_converter_is_running() {
         "an interrupted conversion is only detectable if this is already on disk"
     );
     assert_eq!(
-        outcome.manifest.source().conversion().state(),
+        outcome.manifest.source().unwrap().conversion().state(),
         ConversionState::Ready,
         "and it must not stay that way once the conversion finishes"
     );
@@ -218,13 +218,13 @@ fn a_manifest_left_mid_conversion_is_recognised_as_interrupted() {
     let found = store.load(&bundle).unwrap();
 
     assert_eq!(
-        found.source().conversion().state(),
+        found.source().unwrap().conversion().state(),
         ConversionState::Converting,
         "the state must survive a round trip, or it cannot be detected at all"
     );
     assert!(
-        found.source().conversion().was_interrupted(),
+        found.source().unwrap().conversion().was_interrupted(),
         "a conversion recorded as running, with no process running, is interrupted"
     );
-    assert!(!found.source().document_is_ready());
+    assert!(!found.source().unwrap().document_is_ready());
 }

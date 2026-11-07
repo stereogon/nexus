@@ -164,7 +164,7 @@ export function PdfViewer({
       {highlights.failure !== null && <Failure error={highlights.failure} />}
       {jumped.missing && (
         <p className="note">
-          That citation points at a highlight this lecture no longer has — it was removed after
+          That citation points at a highlight this document no longer has — it was removed after
           it was cited. The citation in your notes is unchanged.
         </p>
       )}

@@ -19,12 +19,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { ConversionState, LectureRow } from "../ipc/vault";
 import { Sidebar } from "./Sidebar";
-import { sidebarRows } from "./sidebarRows";
+import { sidebarRows, type Listing } from "./sidebarRows";
 
 afterEach(cleanup);
 
 function lecture(over: Partial<LectureRow> & { directory: string }): LectureRow {
   return {
+    kind: "document",
     title: "Raft Consensus",
     number: null,
     numberInTitle: null,
@@ -39,22 +40,27 @@ function lecture(over: Partial<LectureRow> & { directory: string }): LectureRow 
   };
 }
 
-function show(lectures: readonly LectureRow[], over: Partial<Parameters<typeof Sidebar>[0]> = {}) {
+function show(
+  listing: Listing,
+  over: Partial<Parameters<typeof Sidebar>[0]> = {},
+) {
+  const folder = over.folder ?? "";
+  const query = over.query ?? "";
   const props = {
-    rows: sidebarRows(lectures, "folder", "none", ""),
+    rows: sidebarRows(listing, folder, query),
     root: "/Users/me/NexusVault",
-    groupBy: "folder" as const,
-    thenBy: "none" as const,
-    query: "",
+    folder,
+    query,
     busy: false,
     openDirectory: null,
     skipped: [],
     unloadable: [],
-    onGroupBy: vi.fn(),
-    onThenBy: vi.fn(),
+    onFolder: vi.fn(),
     onQuery: vi.fn(),
     onOpen: vi.fn(),
     onEdit: vi.fn(),
+    onMake: vi.fn(),
+    onImport: vi.fn(),
     hits: null,
     ...over,
   };
@@ -64,156 +70,168 @@ function show(lectures: readonly LectureRow[], over: Partial<Parameters<typeof S
   return props;
 }
 
-describe("what the sidebar shows", () => {
-  it("lists a lecture under its folder", () => {
-    show([lecture({ directory: "CS454/Week 03/01-raft", title: "Raft" })]);
+const VAULT: Listing = {
+  folders: ["CS454", "CS454/Week 3"],
+  lectures: [
+    lecture({ directory: "CS454/Week 3/raft", title: "Raft" }),
+    lecture({ directory: "loose", title: "Loose notes", kind: "note", documentReady: false }),
+  ],
+};
 
-    expect(screen.getByText("CS454")).toBeDefined();
-    expect(screen.getByText("Week 03")).toBeDefined();
-    expect(screen.getByRole("button", { name: "Raft" })).toBeDefined();
+describe("what the sidebar shows", () => {
+  it("shows only what is in the folder showing", () => {
+    show(VAULT);
+
+    expect(screen.getByRole("button", { name: "Folder CS454" })).not.toBeNull();
+    expect(screen.getByRole("button", { name: "Loose notes" })).not.toBeNull();
+    expect(screen.queryByRole("button", { name: "Raft" })).toBeNull();
   });
 
-  it("says the vault is empty rather than showing nothing at all", () => {
-    show([]);
+  it("names where it is: the vault, then each folder down", () => {
+    show(VAULT, { folder: "CS454/Week 3" });
 
-    expect(screen.getByText(/Drop a PDF/u)).toBeDefined();
+    const crumbs = screen.getByRole("navigation", { name: "Folder" });
+
+    expect(crumbs.textContent).toContain("NexusVault");
+    expect(screen.getByRole("button", { name: "Week 3" }).getAttribute("aria-current")).toBe("location");
+    expect(screen.getByRole("button", { name: "Raft" })).not.toBeNull();
+  });
+
+  it("says a folder is empty, and how to fill it", () => {
+    show({ folders: ["Empty"], lectures: [] }, { folder: "Empty" });
+
+    expect(screen.getByText(/Nothing here yet/)).not.toBeNull();
   });
 
   it("says what was searched for when nothing matches", () => {
-    // A different message from an empty vault: one means "add something", the other means
-    // "try different words", and showing the first for the second is misleading.
-    show([lecture({ directory: "a" })], {
-      rows: [],
-      query: "thermodynamics",
-    });
+    show(VAULT, { query: "thermodynamics" });
 
-    expect(screen.getByText(/thermodynamics/u)).toBeDefined();
+    expect(screen.getByText("Nothing matches “thermodynamics”.")).not.toBeNull();
+  });
+
+  it("searches the whole vault, and says where each result is", () => {
+    show(VAULT, { query: "raft" });
+
+    expect(screen.getByRole("button", { name: "Raft, in CS454 / Week 3" })).not.toBeNull();
+    expect(screen.queryByRole("navigation", { name: "Folder" })).toBeNull();
   });
 
   it("shortens the vault path and keeps the whole one available", () => {
-    show([]);
+    show(VAULT);
 
-    const path = screen.getByTitle("/Users/me/NexusVault");
-
-    expect(path.textContent).toBe("…/me/NexusVault");
+    expect(screen.getByTitle("/Users/me/NexusVault").textContent).toBe("…/me/NexusVault");
   });
 
-  it("shows folders the walk skipped, which have no artboard but must not vanish", () => {
-    show([], {
-      skipped: [{ directory: "odd", remediation: "That folder has no manifest." }],
-    });
+  it("shows folders the walk skipped, which must not vanish", () => {
+    show(VAULT, { skipped: [{ directory: "bad:name", remediation: "Rename this folder." }] });
 
-    expect(screen.getByText("That folder has no manifest.")).toBeDefined();
+    expect(screen.getByText("Rename this folder.")).not.toBeNull();
   });
 });
 
 describe("what the sidebar refuses", () => {
-  it("will not open a lecture whose PDF is not ready", () => {
-    show([
-      lecture({ directory: "a", title: "Waiting", documentReady: false, conversion: "queued" }),
-    ]);
+  it("will not open a document whose PDF is not ready, and says why", () => {
+    show({ folders: [], lectures: [lecture({ directory: "waiting", title: "Waiting", conversion: "queued", documentReady: false })] });
 
-    // Named "Waiting, Queued": the state is part of the name, so a screen reader is told
-    // why the control is disabled instead of meeting a dead button.
-    expect(
-      screen.getByRole("button", { name: "Waiting, Queued" }).hasAttribute("disabled"),
-    ).toBe(true);
+    const row = screen.getByRole("button", { name: "Waiting, Queued" });
+
+    expect(row).toHaveProperty("disabled", true);
+    expect(row.getAttribute("title")).toContain("no PDF yet");
   });
 
-  it("explains why, rather than just being dead", () => {
-    show([lecture({ directory: "a", title: "Waiting", documentReady: false })]);
+  it("opens a note, which has no document to wait for", () => {
+    const props = show(VAULT);
 
-    expect(screen.getByRole("button", { name: "Waiting" }).title).toMatch(/no PDF yet/u);
+    fireEvent.click(screen.getByRole("button", { name: "Loose notes" }));
 
-    // And the number is not read out: it is the folder's prefix, the rows are already in
-    // that order, and announcing it on every row is noise.
-    expect(screen.queryByRole("button", { name: /01/u })).toBeNull();
+    expect(props.onOpen).toHaveBeenCalledWith(expect.objectContaining({ directory: "loose" }));
   });
 
   it("disables everything while the vault is busy", () => {
-    show([lecture({ directory: "a", title: "Raft" })], { busy: true });
+    show(VAULT, { busy: true });
 
-    expect(screen.getByRole("button", { name: "Raft" }).hasAttribute("disabled")).toBe(true);
-    expect(
-      screen.getByRole("button", { name: "Edit Raft" }).hasAttribute("disabled"),
-    ).toBe(true);
+    for (const name of ["Folder CS454", "Loose notes", "+ Note", "+ Folder", "Import…"]) {
+      expect(screen.getByRole("button", { name })).toHaveProperty("disabled", true);
+    }
   });
 });
 
 describe("what the sidebar calls", () => {
-  it("opens the lecture that was clicked, not the first one", () => {
-    const wanted = lecture({ directory: "b", title: "Second", sequence: "a1" });
-    const props = show([lecture({ directory: "a", title: "First" }), wanted]);
+  it("steps into a folder, and back out to the one above", () => {
+    const props = show(VAULT, { folder: "CS454" });
 
-    fireEvent.click(screen.getByRole("button", { name: "Second" }));
+    fireEvent.click(screen.getByRole("button", { name: "Folder Week 3" }));
+    expect(props.onFolder).toHaveBeenLastCalledWith("CS454/Week 3");
 
-    expect(props.onOpen).toHaveBeenCalledWith(wanted);
+    fireEvent.click(screen.getByRole("button", { name: "Back to the folder above" }));
+    expect(props.onFolder).toHaveBeenLastCalledWith("");
+  });
+
+  it("cannot go back from the top of the vault", () => {
+    show(VAULT);
+
+    expect(screen.getByRole("button", { name: "Back to the folder above" })).toHaveProperty("disabled", true);
+  });
+
+  it("makes a note with the name typed, and nothing for a blank one", () => {
+    const props = show(VAULT);
+
+    fireEvent.click(screen.getByRole("button", { name: "+ Note" }));
+    fireEvent.submit(screen.getByLabelText("Name of the new note"));
+    expect(props.onMake).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "+ Note" }));
+    fireEvent.change(screen.getByLabelText("Name of the new note"), { target: { value: "  Plans  " } });
+    fireEvent.submit(screen.getByLabelText("Name of the new note"));
+    expect(props.onMake).toHaveBeenCalledWith("note", "Plans");
+  });
+
+  it("forgets a new folder's name on Escape", () => {
+    const props = show(VAULT);
+
+    fireEvent.click(screen.getByRole("button", { name: "+ Folder" }));
+    fireEvent.change(screen.getByLabelText("Name of the new folder"), { target: { value: "Week 4" } });
+    fireEvent.keyDown(screen.getByLabelText("Name of the new folder"), { key: "Escape" });
+
+    expect(screen.queryByLabelText("Name of the new folder")).toBeNull();
+    expect(props.onMake).not.toHaveBeenCalled();
+  });
+
+  it("imports into the folder showing", () => {
+    const props = show(VAULT);
+
+    fireEvent.click(screen.getByRole("button", { name: "Import…" }));
+
+    expect(props.onImport).toHaveBeenCalledOnce();
   });
 
   it("edits from the row's own control", () => {
-    const only = lecture({ directory: "a", title: "Raft" });
-    const props = show([only]);
+    const props = show(VAULT);
 
-    fireEvent.click(screen.getByRole("button", { name: "Edit Raft" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit Loose notes" }));
 
-    expect(props.onEdit).toHaveBeenCalledWith(only);
-  });
-
-  it("reports a change of grouping", () => {
-    const props = show([]);
-
-    fireEvent.click(screen.getByRole("button", { name: "Week" }));
-
-    expect(props.onGroupBy).toHaveBeenCalledWith("week");
+    expect(props.onEdit).toHaveBeenCalledWith(expect.objectContaining({ directory: "loose" }));
   });
 
   it("reports typing, letting the shell hold the query", () => {
-    const props = show([]);
+    const props = show(VAULT);
 
-    fireEvent.change(screen.getByLabelText("Search vault"), {
-      target: { value: "raft" },
-    });
+    fireEvent.change(screen.getByLabelText("Search vault"), { target: { value: "raft" } });
 
     expect(props.onQuery).toHaveBeenCalledWith("raft");
   });
 });
 
 describe("what the sidebar tells assistive technology", () => {
-  it("marks the chosen grouping as pressed, and only that one", () => {
-    show([], { groupBy: "tag" });
-
-    expect(screen.getByRole("button", { name: "Tag" }).getAttribute("aria-pressed")).toBe(
-      "true",
-    );
-    expect(screen.getByRole("button", { name: "Folder" }).getAttribute("aria-pressed")).toBe(
-      "false",
-    );
-  });
-
   it("gives the search field a label, since its placeholder is not one", () => {
-    show([]);
+    show(VAULT);
 
-    expect(screen.getByLabelText("Search vault")).toBeDefined();
+    expect(screen.getByLabelText("Search vault")).not.toBeNull();
   });
 
-  it("names each edit control by the lecture it edits", () => {
-    // "Edit" three times over tells a screen-reader user nothing about which is which.
-    show([
-      lecture({ directory: "a", title: "Raft" }),
-      lecture({ directory: "b", title: "Paxos", sequence: "a1" }),
-    ]);
+  it("marks the item being read", () => {
+    show(VAULT, { openDirectory: "loose" });
 
-    expect(screen.getByRole("button", { name: "Edit Raft" })).toBeDefined();
-    expect(screen.getByRole("button", { name: "Edit Paxos" })).toBeDefined();
-  });
-
-  it("marks the lecture being read", () => {
-    show([lecture({ directory: "CS454/01-raft", title: "Raft" })], {
-      openDirectory: "CS454/01-raft",
-    });
-
-    const row = screen.getByRole("button", { name: "Raft" }).closest(".lecture-row");
-
-    expect(row?.getAttribute("data-open")).toBe("true");
+    expect(screen.getByRole("button", { name: "Loose notes" }).closest(".lecture-row")?.getAttribute("data-open")).toBe("true");
   });
 });

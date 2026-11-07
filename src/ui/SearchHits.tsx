@@ -99,7 +99,7 @@ export function SearchHits({
 
       {found.unreadable > 0 && (
         <p className="note">
-          {found.unreadable === 1 ? "One lecture" : `${String(found.unreadable)} lectures`} could not be searched, because
+          {found.unreadable === 1 ? "One item" : `${String(found.unreadable)} items`} could not be searched, because
           its notes or highlights could not be read. Opening it shows why.
         </p>
       )}

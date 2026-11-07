@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import type { ConversionState, LectureRow } from "../ipc/vault";
-import { groupingFrom, sidebarRows, type SidebarRow } from "./sidebarRows";
+import { existingFolder, sidebarRows, type Listing, type SidebarRow } from "./sidebarRows";
 
 function lecture(over: Partial<LectureRow> & { directory: string }): LectureRow {
   return {
+    kind: "document",
     title: "Raft Consensus",
     number: null,
     numberInTitle: null,
@@ -19,101 +20,65 @@ function lecture(over: Partial<LectureRow> & { directory: string }): LectureRow 
   };
 }
 
-/** The shape of the list, as `depth:label` per row, which is what the eye sees. */
+/** The list as the eye reads it: `▸ name` for a folder, `· title` for an item. */
 function shape(rows: readonly SidebarRow[]): string[] {
-  return rows.map((row) =>
-    row.kind === "group"
-      ? `${String(row.depth)}:${row.label}`
-      : `${String(row.depth)}:· ${row.lecture.title}`,
-  );
+  return rows.map((row) => (row.kind === "folder" ? `▸ ${row.name}` : `· ${row.lecture.title}`));
 }
 
-describe("grouping by folder", () => {
-  it("nests a heading per folder and puts lectures under them", () => {
-    const rows = sidebarRows([
-        lecture({ directory: "CS454/Week 03/01-raft", title: "Raft", sequence: "a0" }),
-        lecture({ directory: "CS454/Week 03/02-elect", title: "Election", sequence: "a1" }),
-        lecture({ directory: "CS454/Week 04/01-clocks", title: "Clocks", sequence: "a2" }),
-      ],
-      "folder",
-      "none",
-      "",
-    );
+const VAULT: Listing = {
+  folders: ["CS454", "CS454/Week 10", "CS454/Week 9", "Reading"],
+  lectures: [
+    lecture({ directory: "CS454/Week 9/raft", title: "Raft", sequence: "a1" }),
+    lecture({ directory: "CS454/Week 9/elect", title: "Election", sequence: "a0" }),
+    lecture({ directory: "CS454/overview", title: "Overview", sequence: "a2" }),
+    lecture({ directory: "plans", title: "Plans", kind: "note", sequence: "a3" }),
+  ],
+};
 
-    expect(shape(rows)).toEqual([
-      "0:CS454",
-      "1:Week 03",
-      "2:· Raft",
-      "2:· Election",
-      "1:Week 04",
-      "2:· Clocks",
-    ]);
+describe("one folder at a time", () => {
+  it("lists the folders inside it, then the items inside it, and nothing deeper", () => {
+    expect(shape(sidebarRows(VAULT, "", ""))).toEqual(["▸ CS454", "▸ Reading", "· Plans"]);
+    expect(shape(sidebarRows(VAULT, "CS454", ""))).toEqual(["▸ Week 9", "▸ Week 10", "· Overview"]);
   });
 
-  it("does not repeat a heading for a run of lectures in one folder", () => {
-    // The reason headings are emitted on divergence rather than per lecture.
-    const rows = sidebarRows(
-      [
-        lecture({ directory: "CS454/01-a", title: "A", sequence: "a0" }),
-        lecture({ directory: "CS454/02-b", title: "B", sequence: "a1" }),
-      ],
-      "folder",
-      "none",
-      "",
-    );
-
-    expect(rows.filter((row) => row.kind === "group")).toHaveLength(1);
+  it("orders items by sequence, which is authoritative, not by name", () => {
+    expect(shape(sidebarRows(VAULT, "CS454/Week 9", ""))).toEqual(["· Election", "· Raft"]);
   });
 
-  it("re-opens a heading when a later lecture returns to that folder", () => {
-    // Out of sequence order on purpose: `sequence` decides, so the Week 03 lectures are
-    // not adjacent in the input and must still end up under one heading each.
-    const rows = sidebarRows(
-      [
-        lecture({ directory: "CS454/Week 04/01-c", title: "C", sequence: "a2" }),
-        lecture({ directory: "CS454/Week 03/01-a", title: "A", sequence: "a0" }),
-        lecture({ directory: "CS454/Week 03/02-b", title: "B", sequence: "a1" }),
-      ],
-      "folder",
-      "none",
-      "",
-    );
+  it("orders folders by name with numbers read as numbers", () => {
+    // "Week 10" after "Week 9", or ten weeks of folders reads as broken.
+    const names = sidebarRows(VAULT, "CS454", "").flatMap((row) => (row.kind === "folder" ? [row.name] : []));
 
-    expect(shape(rows)).toEqual([
-      "0:CS454",
-      "1:Week 03",
-      "2:· A",
-      "2:· B",
-      "1:Week 04",
-      "2:· C",
-    ]);
+    expect(names).toEqual(["Week 9", "Week 10"]);
   });
 
-  it("puts a lecture at the vault root at depth zero with no heading", () => {
-    const rows = sidebarRows([lecture({ directory: "loose" })], "folder", "none", "");
+  it("counts what is directly inside a folder", () => {
+    const cs454 = sidebarRows(VAULT, "", "").find((row) => row.kind === "folder" && row.name === "CS454");
 
-    expect(shape(rows)).toEqual(["0:· Raft Consensus"]);
+    expect(cs454?.kind === "folder" && cs454.count).toBe(3);
+  });
+
+  it("shows an empty folder as empty, not as missing", () => {
+    expect(sidebarRows(VAULT, "Reading", "")).toEqual([]);
+  });
+
+  it("gives a row no location while browsing, since the list says where it is", () => {
+    expect(sidebarRows(VAULT, "CS454", "").every((row) => row.location === "")).toBe(true);
   });
 });
 
 describe("the row's own columns", () => {
-  it("shows the lecture's number", () => {
-    const rows = sidebarRows([lecture({ directory: "w3/raft", number: "3a" })], "folder", "none", "");
-    const row = rows.find((candidate) => candidate.kind === "lecture");
+  it("shows the item's number, and none read off its folder's name", () => {
+    const rows = sidebarRows(
+      { folders: [], lectures: [lecture({ directory: "01-raft", number: "3a" }), lecture({ directory: "02-x", sequence: "a1" })] },
+      "",
+      "",
+    );
 
-    expect(row?.kind === "lecture" && row.num).toBe("3a");
+    expect(rows.map((row) => row.kind === "lecture" && row.num)).toEqual(["3a", ""]);
   });
 
-  it("does not read a number off the folder's name", () => {
-    // What it did until 2026-11-05: the number came from the file name and could not be
-    // edited, so a renamed lecture kept showing the old one.
-    const rows = sidebarRows([lecture({ directory: "w3/01-raft", number: null })], "folder", "none", "");
-    const row = rows.find((candidate) => candidate.kind === "lecture");
-
-    expect(row?.kind === "lecture" && row.num).toBe("");
-  });
-
-  it("says what a lecture is waiting for, and nothing when it is ready", () => {
+  it("says what a document is waiting for, and nothing when it is ready", () => {
     const states: readonly (readonly [ConversionState, string])[] = [
       ["converting", "Converting"],
       ["queued", "Queued"],
@@ -123,8 +88,7 @@ describe("the row's own columns", () => {
     ];
 
     for (const [conversion, expected] of states) {
-      const rows = sidebarRows([lecture({ directory: "a", conversion })], "folder", "none", "");
-      const row = rows.find((candidate) => candidate.kind === "lecture");
+      const [row] = sidebarRows({ folders: [], lectures: [lecture({ directory: "a", conversion })] }, "", "");
 
       expect(row?.kind === "lecture" && row.meta).toBe(expected);
     }
@@ -132,50 +96,40 @@ describe("the row's own columns", () => {
 });
 
 describe("searching", () => {
-  const vault = [
-    lecture({ directory: "cs454/01-raft", title: "Raft Consensus", course: "CS454" }),
-    lecture({ directory: "cs454/02-paxos", title: "Paxos", course: "CS454", sequence: "a1" }),
-    lecture({ directory: "bio/01-cells", title: "Cells", course: "BIO101", sequence: "a2" }),
-  ];
-
-  it("keeps the lectures that match and drops the headings left empty", () => {
-    const rows = sidebarRows(vault, "folder", "none", "paxos");
-
-    expect(shape(rows)).toEqual(["0:cs454", "1:· Paxos"]);
+  it("looks through the whole vault, whatever folder is showing", () => {
+    expect(shape(sidebarRows(VAULT, "Reading", "raft"))).toEqual(["· Raft"]);
   });
 
-  it("ignores case and matches on a facet or a path, not only the title", () => {
-    expect(sidebarRows(vault, "folder", "none", "BIO").length).toBeGreaterThan(0);
-    expect(sidebarRows(vault, "folder", "none", "bio101")).toHaveLength(2);
-    expect(sidebarRows(vault, "folder", "none", "02-paxos")).toHaveLength(2);
+  it("finds folders by name as well as items", () => {
+    expect(shape(sidebarRows(VAULT, "", "week"))).toEqual(["▸ Week 9", "▸ Week 10"]);
   });
 
-  it("returns nothing when nothing matches, rather than everything", () => {
-    expect(sidebarRows(vault, "folder", "none", "thermodynamics")).toEqual([]);
+  it("says where each result is, since the list no longer does", () => {
+    const [row] = sidebarRows(VAULT, "", "election");
+
+    expect(row?.location).toBe("CS454 / Week 9");
   });
 
-  it("treats blank typing as no search at all", () => {
-    expect(sidebarRows(vault, "folder", "none", "   ")).toHaveLength(sidebarRows(vault, "folder", "none", "").length);
+  it("ignores case and matches a tag or an older file's facets", () => {
+    const tagged: Listing = {
+      folders: [],
+      lectures: [lecture({ directory: "a", tags: ["exam-2"] }), lecture({ directory: "b", course: "BIO101" })],
+    };
+
+    expect(sidebarRows(tagged, "", "EXAM")).toHaveLength(1);
+    expect(sidebarRows(tagged, "", "bio101")).toHaveLength(1);
   });
 
-  it("matches a tag, which is how a tag search is meant to work", () => {
-    const tagged = [lecture({ directory: "a", tags: ["exam-2"] })];
-
-    expect(sidebarRows(tagged, "folder", "none", "exam")).toHaveLength(1);
+  it("returns nothing when nothing matches, and treats blank typing as no search", () => {
+    expect(sidebarRows(VAULT, "", "thermodynamics")).toEqual([]);
+    expect(sidebarRows(VAULT, "", "   ")).toEqual(sidebarRows(VAULT, "", ""));
   });
 });
 
-describe("the grouping a stored value names", () => {
-  it("takes the canvas's four", () => {
-    expect(groupingFrom("folder")).toBe("folder");
-    expect(groupingFrom("week")).toBe("week");
-    expect(groupingFrom("module")).toBe("module");
-    expect(groupingFrom("tag")).toBe("tag");
-  });
-
-  it("falls back to Folder rather than throwing on anything else", () => {
-    // The value can come from a hand-edited settings file, so it is not to be trusted.
-    expect(groupingFrom("none")).toBe("folder");
-    expect(groupingFrom("")).toBe("folder");
+describe("a folder that has gone", () => {
+  it("steps up to the nearest folder the vault still has", () => {
+    expect(existingFolder(VAULT, "CS454/Week 9")).toBe("CS454/Week 9");
+    expect(existingFolder(VAULT, "CS454/Renamed/Deeper")).toBe("CS454");
+    expect(existingFolder(VAULT, "Gone")).toBe("");
   });
 });

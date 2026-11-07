@@ -105,7 +105,7 @@ fn derives_the_real_paths_of_a_loaded_bundle() {
         "cs454/raft/manifest.json"
     );
     assert_eq!(
-        bundle.document_path().unwrap().to_string(),
+        bundle.document_path().unwrap().unwrap().to_string(),
         "cs454/raft/source/document.pdf"
     );
 }

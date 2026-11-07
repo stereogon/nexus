@@ -24,7 +24,9 @@ describe("the vault summary contract", () => {
   it("accepts the summary the Rust command actually produces", () => {
     const parsed = VaultSummarySchema.parse(summaryFixture);
 
-    expect(parsed.lectures).toHaveLength(2);
+    // Two documents and a plain note, and an empty folder listed beside them.
+    expect(parsed.lectures.map((lecture) => lecture.kind)).toEqual(["document", "document", "note"]);
+    expect(parsed.folders).toEqual(["cs454", "cs454/reading"]);
     expect(parsed.unloadable).toHaveLength(1);
   });
 

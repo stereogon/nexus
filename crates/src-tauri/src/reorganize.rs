@@ -214,7 +214,7 @@ pub fn apply_under(
 /// Not swallowed either. It is logged on the way past and handed back as
 /// [`ReorganizeResult::positions_lost`], because §1.4 counts the page someone had open as
 /// work even though it is only a scroll position.
-fn follow_the_moves(
+pub(crate) fn follow_the_moves(
     base: &Path,
     root: &VaultRoot,
     moved: &[(RelativePath, RelativePath)],

@@ -63,7 +63,7 @@ export function DropOverlay({
     <div aria-hidden="true" className="drop-overlay">
       <div className="drop-zone">
         <DropArrow />
-        <div className="drop-title">Drop to add a lecture</div>
+        <div className="drop-title">Drop to add a document</div>
         <div className="drop-detail">
           Files are copied into the vault, never moved
         </div>

@@ -63,7 +63,7 @@ impl DocumentConverterPort for Stub {
                     let manifest: Manifest = serde_json::from_slice(&on_disk)
                         .expect("and must be readable while the conversion runs");
 
-                    *self.seen.borrow_mut() = Some(manifest.source().conversion().state());
+                    *self.seen.borrow_mut() = Some(manifest.source().unwrap().conversion().state());
                 }
 
                 let at = request.document().join_onto(&self.vault);

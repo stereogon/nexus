@@ -13,6 +13,7 @@ import { importEach, noteFor, noteForDrop, type DropOutcome } from "./dropped";
 function lecture(title: string, conversion: ConversionState): LectureRow {
   return {
     directory: title.toLowerCase(),
+    kind: "document",
     title,
     number: null,
     numberInTitle: null,
@@ -89,7 +90,7 @@ describe("the note for a whole drop", () => {
 
   it("counts them when several arrive together", () => {
     expect(noteForDrop([added("One"), added("Two"), added("Three")])).toBe(
-      "Added 3 lectures.",
+      "Added 3 documents.",
     );
   });
 
@@ -100,7 +101,7 @@ describe("the note for a whole drop", () => {
       added("Three", "failed"),
     ]);
 
-    expect(note).toContain("Added 3 lectures.");
+    expect(note).toContain("Added 3 documents.");
     expect(note).toContain("2 of them could not be converted");
   });
 
@@ -113,7 +114,7 @@ describe("the note for a whole drop", () => {
       added("Two"),
     ]);
 
-    expect(note).toContain("Added 2 lectures.");
+    expect(note).toContain("Added 2 documents.");
     expect(note).toContain("1 file could not be added.");
     expect(note).toContain("Nexus imports PDF");
   });
@@ -147,6 +148,7 @@ describe("the note for a whole drop", () => {
 describe("importing a drop", () => {
   const lecture = (title: string): LectureRow => ({
     directory: title.toLowerCase(),
+    kind: "document",
     title,
     number: null,
     numberInTitle: null,
@@ -206,7 +208,7 @@ describe("importing a drop", () => {
       asError,
     );
 
-    expect(note).toContain("Added 2 lectures.");
+    expect(note).toContain("Added 2 documents.");
     expect(note).toContain("1 file could not be added.");
   });
 

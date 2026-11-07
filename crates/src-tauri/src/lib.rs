@@ -12,6 +12,7 @@ pub mod assets;
 pub mod document;
 pub mod dropped_image;
 pub mod edit;
+pub mod folders;
 pub mod import;
 pub mod layout;
 pub mod notes;
@@ -79,6 +80,9 @@ pub fn run() -> Result<(), tauri::Error> {
             import_document,
             importable_formats,
             edit_lecture,
+            folders::create_folder,
+            folders::create_note,
+            folders::move_item,
             preview_reorganize,
             apply_reorganize,
             search::search_vault,

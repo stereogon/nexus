@@ -21,7 +21,7 @@ export function Welcome({
     <main className="content">
       <h1>Nexus</h1>
       <p className="subtitle">
-        Study your lectures beside your notes, entirely offline.
+        Your documents and notes, side by side, entirely offline.
       </p>
 
       <div className="actions">

@@ -12,21 +12,14 @@
  * `noImplicitReturns` are both on, so a state added later without a branch is a compile
  * error rather than a blank window.
  *
- * `busy`, `groupBy` and `editing` sit outside that union on purpose. Each is orthogonal to
+ * `busy`, `folder` and `editing` sit outside that union on purpose. Each is orthogonal to
  * which vault is open, and folding them in would mean enumerating combinations that cannot
- * actually occur — an editing-with-no-vault state, a grouped-but-failed one.
+ * actually occur — an editing-with-no-vault state, a folder-in-a-failed-vault one.
  */
 import { useCallback, useEffect, useState } from "react";
 
 import { pickVaultDirectory } from "./ipc/picker";
-import {
-  asCommandError,
-  editLecture,
-  openVault,
-  rememberVault,
-  type LectureEdit,
-  type LectureRow,
-} from "./ipc/vault";
+import { asCommandError, openVault, rememberVault, type LectureRow } from "./ipc/vault";
 import { DropOverlay } from "./ui/DropOverlay";
 import { EmptyPane } from "./ui/EmptyPane";
 import { Failure } from "./ui/Failure";
@@ -37,11 +30,13 @@ import { ErrorPanel } from "./ui/ErrorPanel";
 import { Reading } from "./ui/Reading";
 import { SearchHits } from "./ui/SearchHits";
 import { Sidebar } from "./ui/Sidebar";
-import { sidebarRows, type GroupBy, type ThenBy } from "./ui/sidebarRows";
+import { parentOf, vaultNameOf } from "./ui/folders";
+import { existingFolder, sidebarRows } from "./ui/sidebarRows";
 import { TitleBar } from "./ui/TitleBar";
 import { useAddDocuments } from "./ui/useAddDocuments";
 import { useErrorPanel } from "./ui/useErrorPanel";
 import { useFinding } from "./ui/useFinding";
+import { useItemActions } from "./ui/useItemActions";
 import { useResumeLecture } from "./ui/useResumeLecture";
 import { useNotice } from "./ui/useNotice";
 import { useOpenLecture } from "./ui/useOpenLecture";
@@ -54,8 +49,8 @@ import { Welcome } from "./ui/Welcome";
 export function App() {
   const [state, setState] = useState<VaultState>({ kind: "idle" });
   const [busy, setBusy] = useState(false);
-  const [groupBy, setGroupBy] = useState<GroupBy>("folder");
-  const [thenBy, setThenBy] = useState<ThenBy>("none");
+  // The folder the sidebar shows; `""` is the top of the vault.
+  const [folder, setFolder] = useState("");
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState<LectureRow | null>(null);
   const remembered = useRememberedVault();
@@ -67,6 +62,20 @@ export function App() {
   const root = rootOf(state);
   useResumeLecture(root, lecturesOf(state), reading.lecture?.lecture.directory ?? null, reading.open);
   const finding = useFinding(root, lecturesOf(state), query, reading);
+  const openDirectory = reading.lecture?.lecture.directory ?? null;
+
+  // Whatever opens — from the sidebar, a search, or on launch — the sidebar shows the
+  // folder it is in, so the open item is always in the list beside it.
+  useEffect(() => {
+    if (openDirectory !== null) {
+      setFolder(parentOf(openDirectory));
+    }
+  }, [openDirectory]);
+
+  const goToFolder = useCallback((path: string) => {
+    setFolder(path);
+    setQuery("");
+  }, []);
 
   // Folded into `state` once it arrives, rather than rendering from two sources. The
   // functional update is what makes that safe: it fills an *idle* shell and leaves any
@@ -138,35 +147,8 @@ export function App() {
     })();
   }, [notice]);
 
-  const save = useCallback(
-    (edit: LectureEdit) => {
-      if (state.kind !== "open" || editing === null) {
-        return;
-      }
-
-      const vault = state.summary.root;
-      const lecture = editing;
-
-      setEditing(null);
-      against(vault, async () => {
-        const saved = await editLecture(vault, lecture.directory, edit);
-
-        // The open lecture holds its own copy of the row, so renaming the lecture that is
-        // on screen has to refresh it -- otherwise the breadcrumb and the viewer's title
-        // keep the old name until it is closed and opened again.
-        reading.refile(lecture.directory, saved);
-
-        // Named after what changed, since one command does both. "Filed" in front of
-        // someone who only corrected a title would read as though it had moved.
-        return saved.title === lecture.title
-          ? `Filed "${saved.title}".`
-          : `Renamed to "${saved.title}".`;
-      });
-    },
-    [against, editing, reading, state],
-  );
-
-  const { add, zone } = useAddDocuments(state.kind === "open" ? state.summary.root : null, busy, against);
+  const actions = useItemActions({ vault: root, folder, reading, against, onFolder: goToFolder });
+  const { add, zone } = useAddDocuments(root, folder, busy, against);
 
   // One file read, so this is imperceptible -- and painting the empty state first would
   // read as the app having forgotten the vault and then remembered it.
@@ -196,6 +178,8 @@ export function App() {
 
   const summary = state.summary;
   const open = reading.lecture;
+  // Held to what the vault still has, so a folder removed in Finder steps up, not to nothing.
+  const showing = existingFolder(summary, folder);
 
   return (
     <div className="app">
@@ -215,9 +199,11 @@ export function App() {
         {sidebar.shown && (
           <Sidebar
             busy={busy || reading.opening}
-            groupBy={groupBy}
+            folder={showing}
             onEdit={setEditing}
-            onGroupBy={setGroupBy}
+            onFolder={goToFolder}
+            onImport={add}
+            onMake={actions.make}
             hits={
               finding.search.failure !== null ? (
                 <Failure error={finding.search.failure} />
@@ -229,12 +215,10 @@ export function App() {
               reading.open(summary.root, lecture);
             }}
             onQuery={setQuery}
-            onThenBy={setThenBy}
-            openDirectory={open?.lecture.directory ?? null}
+            openDirectory={openDirectory}
             query={query}
             root={summary.root}
-            thenBy={thenBy}
-            rows={sidebarRows(summary.lectures, groupBy, thenBy, query)}
+            rows={sidebarRows(summary, showing, query)}
             skipped={summary.skipped}
             unloadable={summary.unloadable}
           />
@@ -271,11 +255,16 @@ export function App() {
         {editing !== null && (
           <EditorPanel
             busy={busy}
+            folders={summary.folders}
             lecture={editing}
             onCancel={() => {
               setEditing(null);
             }}
-            onSave={save}
+            onSave={(edit, into) => {
+              setEditing(null);
+              actions.save(editing, edit, into);
+            }}
+            vaultName={vaultNameOf(summary.root)}
           />
         )}
         {errorPanel.open && <ErrorPanel onClose={errorPanel.close} />}

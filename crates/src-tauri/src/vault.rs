@@ -63,6 +63,8 @@ pub struct NumberInTitle {
 pub struct LectureRow {
     /// The bundle directory, relative to the vault root.
     pub directory: String,
+    /// `document` for something imported, `note` for a plain note made in Nexus.
+    pub kind: &'static str,
     /// What the person knows it by.
     pub title: String,
     /// Its number in the course, if it has one.
@@ -112,6 +114,9 @@ pub struct VaultSummary {
     pub root: String,
     /// The lectures that loaded, in path order.
     pub lectures: Vec<LectureRow>,
+    /// The folders that hold items rather than being one, in path order. Listed apart so
+    /// an empty folder still shows.
+    pub folders: Vec<String>,
     /// Directories the walk declined to enter.
     pub skipped: Vec<ProblemRow>,
     /// Lectures found but not loadable.
@@ -151,6 +156,7 @@ fn summarise(root: String, loaded: &LoadedVault) -> VaultSummary {
     VaultSummary {
         root,
         lectures: loaded.bundles.iter().map(row).collect(),
+        folders: loaded.folders.iter().map(ToString::to_string).collect(),
         skipped: loaded
             .skipped
             .iter()
@@ -177,6 +183,7 @@ pub(crate) fn row(bundle: &lecture_core::LectureBundle) -> LectureRow {
 
     LectureRow {
         directory: bundle.directory().to_string(),
+        kind: if source.is_some() { "document" } else { "note" },
         title: manifest.title().as_str().to_owned(),
         number: manifest.number().map(|number| number.as_str().to_owned()),
         number_in_title: number_in_title(manifest),
@@ -185,8 +192,9 @@ pub(crate) fn row(bundle: &lecture_core::LectureBundle) -> LectureRow {
         module: facets.module().map(label),
         week: facets.week().map(label),
         tags: facets.tags().iter().map(label).collect(),
-        conversion: name_of(source.conversion().state()),
-        document_ready: source.document_is_ready(),
+        // A note has nothing to convert and nothing to render, which is what these say.
+        conversion: source.map_or("notRequired", |held| name_of(held.conversion().state())),
+        document_ready: source.is_some_and(lecture_core::Source::document_is_ready),
     }
 }
 

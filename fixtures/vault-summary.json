@@ -1,10 +1,15 @@
 {
+  "folders": [
+    "cs454",
+    "cs454/reading"
+  ],
   "lectures": [
     {
       "conversion": "ready",
       "course": "CS454 Distributed Systems",
       "directory": "cs454/01-raft",
       "documentReady": true,
+      "kind": "document",
       "module": "Consensus",
       "number": null,
       "numberInTitle": null,
@@ -21,12 +26,27 @@
       "course": null,
       "directory": "cs454/02-paxos",
       "documentReady": true,
+      "kind": "document",
       "module": null,
       "number": null,
       "numberInTitle": null,
       "sequence": "a1",
       "tags": [],
       "title": "Paxos Made Simple",
+      "week": null
+    },
+    {
+      "conversion": "notRequired",
+      "course": null,
+      "directory": "cs454/summary",
+      "documentReady": false,
+      "kind": "note",
+      "module": null,
+      "number": null,
+      "numberInTitle": null,
+      "sequence": "a2",
+      "tags": [],
+      "title": "Summary",
       "week": null
     }
   ],

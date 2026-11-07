@@ -11,9 +11,10 @@ import { useCallback, useState } from "react";
 import { openDocument, type OpenedDocument } from "../ipc/document";
 import { asCommandError, type CommandError, type LectureRow } from "../ipc/vault";
 
-/** A lecture on screen: the screened document, and the row it came from. */
+/** An item on screen: the screened document, and the row it came from. */
 export interface OpenLecture {
-  readonly document: OpenedDocument;
+  /** `null` for a plain note, which has only its notes. */
+  readonly document: OpenedDocument | null;
   /**
    * The row itself, not just its title.
    *
@@ -73,7 +74,8 @@ export function useOpenLecture(): Opening {
 
       try {
         setLecture({
-          document: await openDocument(vault, row.directory),
+          // A note has nothing to locate or screen: its notes load themselves.
+          document: row.kind === "note" ? null : await openDocument(vault, row.directory),
           lecture: row,
         });
       } catch (thrown: unknown) {

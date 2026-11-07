@@ -25,7 +25,7 @@ import { PixelGhost } from "./PixelGhost";
 /**
  * The lines the pane greets you with, one picked per visit.
  *
- * Several rather than one because the pane is seen every time a lecture is closed, and a
+ * Several rather than one because the pane is seen every time something is closed, and a
  * fixed joke stops being one by the third reading. Mild on purpose: this sits in front of
  * someone revising, and a pane that is trying too hard is worse than a plain one.
  */
@@ -33,7 +33,7 @@ export const EMPTY_LINES = [
   "Nothing open.",
   "A ghost town in here.",
   "Quiet. Suspiciously quiet.",
-  "No lecture open.",
+  "Nothing on the desk.",
   "Empty. The ghost does not mind.",
 ] as const;
 
@@ -73,13 +73,13 @@ export function EmptyPane({
           what it offers. This keeps both reachable with a mouse, and says so, because a
           shortcut nobody is told about is a shortcut nobody has. */}
       <p>
-        Choose a lecture from the sidebar, drop a PDF on the window, or press{" "}
+        Choose something from the sidebar, make a note there, drop a PDF on the window, or press{" "}
         <span className="kbd">⌘O</span>.
       </p>
 
       <div className="pane-empty-actions">
         <button className="secondary" disabled={busy} onClick={onAdd} type="button">
-          Add a lecture
+          Import a document
         </button>
         <button className="quiet" disabled={busy} onClick={onChooseVault} type="button">
           Open another vault

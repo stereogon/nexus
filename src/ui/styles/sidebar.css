@@ -1,5 +1,5 @@
 /**
- * The sidebar: search, grouping, and the lecture rows.
+ * The sidebar: search, the folder breadcrumb, the rows, and the buttons that add to it.
  *
  * The largest single pane, and the one that changed most often -- its own file means a row
  * tweak no longer involves opening a stylesheet that also knows about PDF text layers.
@@ -49,11 +49,6 @@
   top: 20px;
 }
 
-.sidebar-group-by {
-  flex: 0 0 auto;
-  padding: 4px 12px 10px;
-}
-
 .sidebar-list {
   flex: 1 1 auto;
   min-height: 0;
@@ -64,6 +59,41 @@
 .sidebar-list .overline {
   margin: 14px 0 5px;
   padding: 0 8px;
+}
+
+/* What kind of row it is: a folder, a document or a note. Faint, so the names lead. */
+.row-kind {
+  flex: 0 0 auto;
+  color: var(--text-faint);
+}
+
+.lecture-row[data-open="true"] .row-kind {
+  color: var(--accent);
+}
+
+/* Which folder a search result is in, since the list no longer says so by where it is. */
+.row-where {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
+.row-count {
+  flex: 0 0 auto;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.row-step {
+  flex: 0 0 auto;
+  color: var(--text-faint);
+  font-size: 14px;
 }
 
 .sidebar-list .overline:first-child {
@@ -200,24 +230,4 @@ button.row-edit:focus-visible {
   padding: 12px 10px;
   color: var(--text-meta);
   font-size: 12px;
-}
-
-/* The second grouping level. Not on the canvas -- see `sidebarRows.ts`. Its own row under
-   the primary control, and the label sits beside it rather than above so the pair reads
-   as one sentence: group by Module, then by Week. */
-.then-by {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.then-by .overline {
-  margin: 0;
-  flex: 0 0 auto;
-}
-
-.then-by .segmented {
-  flex: 1 1 auto;
-  min-width: 0;
 }

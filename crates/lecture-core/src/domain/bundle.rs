@@ -20,7 +20,7 @@
 use crate::domain::{ANNOTATIONS_FILE_NAME, MANIFEST_FILE_NAME};
 use serde::{Deserialize, Serialize};
 
-use crate::domain::{Facets, Label, Manifest, OrderKey, RelativePath, Slug};
+use crate::domain::{Facets, Label, Manifest, OrderKey, RelativePath, Slug, Source};
 use crate::error::CoreError;
 
 /// The notes file every bundle has.
@@ -94,7 +94,7 @@ impl LectureBundle {
         self.child(ANNOTATIONS_FILE_NAME)
     }
 
-    /// The PDF the viewer renders.
+    /// The PDF the viewer renders, or `None` for a plain note, which has none.
     ///
     /// Taken from the manifest rather than assumed, because the file name inside
     /// `source/` is recorded there and a reconversion may change it.
@@ -102,8 +102,11 @@ impl LectureBundle {
     /// # Errors
     ///
     /// As [`Self::manifest_path`].
-    pub fn document_path(&self) -> Result<RelativePath, CoreError> {
-        self.directory.join(self.manifest.source().document())
+    pub fn document_path(&self) -> Result<Option<RelativePath>, CoreError> {
+        self.manifest
+            .source()
+            .map(|source| self.directory.join(source.document()))
+            .transpose()
     }
 
     /// The file as imported, if one was kept.
@@ -117,7 +120,7 @@ impl LectureBundle {
     pub fn original_path(&self) -> Result<Option<RelativePath>, CoreError> {
         self.manifest
             .source()
-            .original()
+            .and_then(Source::original)
             .map(|original| self.directory.join(original))
             .transpose()
     }

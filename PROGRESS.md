@@ -463,6 +463,71 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-06 · Folders you step into, plain notes, and no more "lecture"**
+Asked for by the user: *"a simple folder like structure like in notion … i don't want any
+complex notion features … i should be able to create a simple non pdfs note … current one
+is a bit cluttery and too manual. i mean i have to put course and module everytime"*, and
+then *"lets remove the word lecture … it can be a bit general purpose note taker as well."*
+Three choices were put to the user and settled: step into folders (not an expandable
+tree), take course/module/week off the screen, and store a note as a bundle without a
+document (not a bare `.md`).
+
+**The sidebar shows one folder at a time.** Its folders by name (numbers read as numbers),
+then its items in `sequence` order, a breadcrumb from the vault down, a back arrow, and
+`+ Note`, `+ Folder` and `Import…` along the bottom. Anything added goes into the folder
+showing — imports, drops and ⌘O included — so nothing is filed afterwards. Search still
+covers the whole vault and says which folder each result is in; an item now matches on its
+own name and not its whole path, because folders are found as folders and a search for
+"week" otherwise listed everything in every week. Opening anything (sidebar, search,
+resume) shows its folder; a folder that has vanished steps up to the nearest one left
+(`existingFolder`). The Folder/Week/Module/Tag control and its second level are gone, and
+`sidebarRows.nesting.test.ts`, which tested only that two-level grouping, was deleted
+with it.
+
+**This retires a locked decision's consequence, not the facets.** `CLAUDE.md` §3 says the
+sidebar groups on facets at runtime. It no longer does: the folder an item is in is where
+it belongs. Facets stay in the manifest and are carried through every edit unchanged —
+the editor sends back what it was given — so nothing in an existing file is lost, search
+still matches them, and they can come back as filters if wanted. §3 and the spec are
+amended with dated notes. The canvas's sidebar artboard no longer matches and is recorded
+below as owing a pass.
+
+**A plain note is a bundle with no document: manifest version 4** makes `source`
+optional (`Manifest::note`). It gets its own folder with `manifest.json`, `notes.md` and
+`assets/`, so order, number, tags, pasted images, search and a remembered place all work
+without a second set of rules. A version 1–3 manifest with no source is refused rather
+than read as an empty note, because before version 4 every bundle had a document and one
+without is a damaged file hiding what it lost. `Bundle::document_path` is now an
+`Option`; `open_document` on a note answers `ERR_NOTE_HAS_NO_DOCUMENT`, which the window
+never asks for. A note opens as the notes pane alone, full width, headed by its name.
+Older Nexus builds cannot read a version 4 manifest; this build reads 1–4.
+
+**New commands** in `src-tauri/src/folders.rs`: `create_folder`, `create_note` and
+`move_item`; `import_document` takes a `folder`. Which directories are folders is the
+vault walk's answer (`VaultScan::folders`, now listed so an empty folder shows), so the
+inside of a bundle can never be chosen. A move is `AtomicFsStorage::rename`, which refuses
+an occupied target, and the remembered place follows it through the reorganize's
+`follow_the_moves`; a place that cannot follow is reported beside the move, not raised.
+A moved document that is open is reopened from where it now is. Numbers now place an item
+among its own folder's items only (`order_of` takes the folder). New errors are
+`CommandError`s at the command layer, as before, because `core_error.rs` is at 299 lines.
+
+**"Lecture" is out of everything a person reads**: a *document* is imported, a *note* is
+made, and *item* means either. Window text, error sentences that reach the window, the
+skipped-folder notices and the file picker were reworded; the crate names, type names and
+log action labels were not, because nobody reads them and renaming them is churn. The
+README, the spec's opening and `CLAUDE.md`'s description say general-purpose now.
+
+**Not done:** renaming or deleting a folder (Finder does both, and the vault rescans),
+dragging items between folders, moving a folder, and an artboard for any of it. The
+Reorganize engine, which files by facets, is left unwired and now fits the product less.
+
+Verified: gate green — cargo fmt/test/clippy, iOS check, typecheck, lint, vitest, build,
+Playwright, line limits. New Rust tests in `tests/folders.rs` (8) and `manifest.rs` (2);
+`fixtures/vault-summary.json` and `manifest.json` regenerated with a note and an empty
+folder in them; a `folders.spec.ts` journey (5), proved by making notes at the top
+of the vault and dropping the move, each of which failed it. 608 vitest, 134 Playwright.
+
 **2026-11-05 · Reopening where you left off**
 The first of the remaining items. A lecture now reopens at the page and the place on it this
 device left, and starting Nexus reopens the last lecture this device had open. The store
@@ -2045,6 +2110,11 @@ rather than 153, and that drop is those five and nothing else.
 
 ### Not on the canvas, and needing an artboard
 Each is marked in the code where it appears:
+- **The folder sidebar (2026-11-06).** The canvas's sidebar groups by Folder/Week/Module/
+  Tag; it now steps into one folder at a time, with a breadcrumb, kind icons per row, the
+  field naming a new note or folder, and `+ Note` / `+ Folder` / `Import…` along the
+  bottom. Styled to sit with the rest of the window, in `styles/folders.css`. A plain
+  note's full-width pane needs one too.
 - **The per-row edit control.** The canvas's row is a single button with number, title and
   metadata, and offers no way to change a title or its facets. That has to stay reachable,
   and the row is where it belongs. It is a 26px icon button revealed on hover **and on

@@ -25,7 +25,7 @@ import {
  * never reads a bundle off disk, so accepting an older one here would only hide a bug in
  * the layer that should have upgraded it.
  */
-export const MANIFEST_SCHEMA_VERSION = 3;
+export const MANIFEST_SCHEMA_VERSION = 4;
 
 /** Keys the facet map reserves for its named facets. */
 const RESERVED_FACET_KEYS = new Set(["course", "module", "week", "tags"]);
@@ -117,7 +117,8 @@ export const ManifestSchema = z
     /** The authoritative order. A `01-` folder prefix is only a projection of this. */
     sequence: OrderKeySchema,
     facets: FacetsSchema,
-    source: SourceSchema,
+    /** Absent for a plain note (version 4), which has no document beside its notes. */
+    source: SourceSchema.optional(),
     createdAt: TimestampSchema,
     updatedAt: TimestampSchema,
   })

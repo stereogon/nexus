@@ -133,7 +133,7 @@ export function NotesEditor({
             },
             imageUrl: (src) => images.current(src),
           }),
-          placeholder("Notes for this lecture. Select text in the document and choose “Link to notes” to cite it here."),
+          placeholder("Start writing. Beside a document, select text in it and choose “Link to notes” to cite it here."),
           citeLinks((id) => {
             cited.current(id);
           }),

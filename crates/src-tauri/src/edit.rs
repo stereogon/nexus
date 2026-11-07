@@ -121,7 +121,10 @@ pub fn apply_edit(
             .filter(|held| held.directory() != &bundle)
             .collect::<Vec<_>>();
 
-            Some(placed_by_number(&order_of(&others), new)?)
+            Some(placed_by_number(
+                &order_of(&others, bundle.parent().as_ref()),
+                new,
+            )?)
         }
         _ => None,
     };
@@ -160,9 +163,8 @@ fn renumbered(edit: &LectureEdit) -> Result<NumberChange, CommandError> {
             .map(NumberChange::Set)
             .ok_or(CommandError {
                 code: "ERR_LECTURE_NUMBER_UNUSABLE",
-                remediation: "A lecture number is a short run of letters and digits, such as 3, \
-                          3a, 3.1 or IV. Nothing was changed; try one of those forms, or leave \
-                          it empty for no number.",
+                remediation: "A number is a short run of letters and digits, such as 3, 3a, 3.1 or IV. \
+                          Nothing was changed; try one of those forms, or leave it empty for no number.",
             }),
     }
 }
@@ -177,8 +179,7 @@ fn retitled(edit: &LectureEdit, manifest: Manifest) -> Result<Manifest, CommandE
         None => Ok(manifest),
         Some("") => Err(CommandError {
             code: "ERR_LECTURE_NEEDS_A_NAME",
-            remediation: "A lecture needs a name. Type a title, or press Cancel to keep the \
-                          one it has.",
+            remediation: "Everything needs a name. Type a title, or press Cancel to keep the one it has.",
         }),
         Some(text) => Ok(manifest.with_title(Label::parse(text)?)),
     }

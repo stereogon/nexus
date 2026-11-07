@@ -60,14 +60,13 @@ impl SkipReason {
     pub const fn remediation(self) -> &'static str {
         match self {
             Self::UnusableName => {
-                "This folder's name cannot be used on every device a vault syncs to, so \
-                 the lecture inside it was left out. Renaming the folder will make it \
-                 appear. Nothing was changed."
+                "This folder's name cannot be used on every device a vault syncs to, so the \
+                 item inside it was left out. Renaming the folder will make it appear. Nothing \
+                 was changed."
             }
             Self::TooDeeplyNested => {
-                "This folder is nested too deeply for Nexus to reach. Moving it closer \
-                 to the top of the vault will make the lecture inside it appear. Nothing \
-                 was changed."
+                "This folder is nested too deeply for Nexus to reach. Moving it closer to the \
+                 top of the vault will make the item inside it appear. Nothing was changed."
             }
             Self::Unreadable => {
                 "This folder could not be read, so anything inside it was left out. It \
@@ -75,15 +74,15 @@ impl SkipReason {
                  changed, and trying again later usually works."
             }
             Self::SymlinkRefused => {
-                "This folder is a link to somewhere else, and Nexus does not follow \
-                 links inside a vault — the place it points at will not exist on your \
-                 other devices. Moving the real folder into the vault will make the \
-                 lecture appear. Nothing was changed."
+                "This folder is a link to somewhere else, and Nexus does not follow links \
+                 inside a vault — the place it points at will not exist on your other devices. \
+                 Moving the real folder into the vault will make the item appear. Nothing was \
+                 changed."
             }
             Self::LectureInsideLecture => {
-                "There is a lecture inside another lecture. Only the outer one is shown, \
-                 because the inner one cannot be addressed separately. Moving the inner \
-                 folder out of the outer one will make both appear. Nothing was changed."
+                "There is an item inside another item. Only the outer one is shown, because the \
+                 inner one cannot be addressed separately. Moving the inner folder out of the \
+                 outer one will make both appear. Nothing was changed."
             }
         }
     }
@@ -103,6 +102,7 @@ pub struct SkippedDirectory {
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct VaultScan {
     lectures: Vec<RelativePath>,
+    folders: Vec<RelativePath>,
     skipped: Vec<SkippedDirectory>,
 }
 
@@ -111,6 +111,15 @@ impl VaultScan {
     #[must_use]
     pub fn lectures(&self) -> &[RelativePath] {
         &self.lectures
+    }
+
+    /// Every directory that holds lectures rather than being one, in path order.
+    ///
+    /// Listed so that a folder shows before anything is in it: the sidebar steps through
+    /// folders, and one made a moment ago must be there to step into.
+    #[must_use]
+    pub fn folders(&self) -> &[RelativePath] {
+        &self.folders
     }
 
     /// How many lectures were found.
@@ -194,6 +203,8 @@ pub fn scan_vault(directory: &impl VaultDirectory) -> Result<VaultScan, CoreErro
                 continue;
             }
 
+            scan.folders.push(path.clone());
+
             if path.depth() >= MAX_BUNDLE_DEPTH {
                 // Only worth reporting if something is actually down there to lose.
                 if children
@@ -213,6 +224,7 @@ pub fn scan_vault(directory: &impl VaultDirectory) -> Result<VaultScan, CoreErro
     }
 
     scan.lectures.sort();
+    scan.folders.sort();
     scan.skipped.sort_by(|a, b| a.shown_path.cmp(&b.shown_path));
 
     Ok(scan)

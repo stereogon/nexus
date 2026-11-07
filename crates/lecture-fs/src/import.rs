@@ -123,10 +123,11 @@ impl<C: Clock + Clone> Importer<C> {
         // One pass over the bytes: copied in and fingerprinted together.
         let imported = self.storage().copy_in(request.file, &plan.destination()?)?;
 
+        let source = plan.source(imported)?;
         let manifest = Manifest::new(
             request.title.clone(),
             request.sequence.clone(),
-            plan.source(imported)?,
+            source.clone(),
             self.clock.now()?,
         )
         .with_facets(request.facets.clone())
@@ -135,15 +136,25 @@ impl<C: Clock + Clone> Importer<C> {
         // Save 1: the bundle becomes a lecture the vault walk can see.
         let manifest = self.manifests.save(&request.bundle, &manifest)?;
 
-        self.convert(&request.bundle, &plan, manifest, converter, imported)
+        self.convert(
+            &request.bundle,
+            &plan,
+            (manifest, source),
+            converter,
+            imported,
+        )
     }
 
     /// Runs the conversion, recording each state change before and after it happens.
+    ///
+    /// The source travels beside the manifest rather than being read back out of it: an
+    /// imported lecture always has one, but a manifest's source is optional (a plain note
+    /// has none), and asking for it again would mean handling an absence that cannot occur.
     fn convert(
         &self,
         bundle: &RelativePath,
         plan: &ImportPlan,
-        manifest: Manifest,
+        (manifest, source): (Manifest, Source),
         converter: Option<&dyn DocumentConverterPort>,
         imported: lecture_core::Fingerprint,
     ) -> Result<ImportOutcome, CoreError> {
@@ -165,19 +176,19 @@ impl<C: Clock + Clone> Importer<C> {
         };
 
         // Save 2: `Converting` on disk, before a process exists that could be killed.
-        let started = advance(manifest.source(), |conversion| {
+        let started = advance(&source, |conversion| {
             conversion.started(converter.label().clone())
         })?;
         let manifest = self
             .manifests
-            .save(bundle, &manifest.with_source(started))?;
+            .save(bundle, &manifest.with_source(started.clone()))?;
 
         match converter.convert(&conversion_request) {
             Ok(()) => {
                 // The converter wrote this file directly, so it has never been streamed
                 // past a fingerprinter.
                 let document = self.storage().fingerprint_of(&plan.document_in_vault()?)?;
-                let finished = advance(manifest.source(), |conversion| {
+                let finished = advance(&started, |conversion| {
                     conversion.succeeded(self.clock.now()?)
                 })?
                 .with_fingerprints(Some(document), Some(imported))?;
@@ -188,7 +199,7 @@ impl<C: Clock + Clone> Importer<C> {
                 )
             }
             Err(error) => {
-                let stopped = advance(manifest.source(), Conversion::did_not_finish)?;
+                let stopped = advance(&started, Conversion::did_not_finish)?;
 
                 Ok(ImportOutcome {
                     manifest: self

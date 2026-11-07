@@ -20,6 +20,7 @@ use lecture_fs::{
     AtomicFsStorage, ImportRequest, Importer, ManifestStore, SystemClock, VaultLoader, VaultRoot,
 };
 
+use crate::folders::{folder_in, placed};
 use crate::vault::{CommandError, LectureRow, row};
 
 /// Every extension the importer accepts, lowercase and without a dot.
@@ -57,8 +58,12 @@ pub fn importable_formats() -> Vec<&'static str> {
 /// thread rather than relying on the macro's threading, which is the mistake that caused
 /// the picker deadlock.
 #[tauri::command]
-pub async fn import_document(vault: String, file: String) -> Result<LectureRow, CommandError> {
-    tauri::async_runtime::spawn_blocking(move || bring_in(&vault, &file))
+pub async fn import_document(
+    vault: String,
+    folder: String,
+    file: String,
+) -> Result<LectureRow, CommandError> {
+    tauri::async_runtime::spawn_blocking(move || bring_in_to(&vault, &folder, &file))
         .await
         .map_err(|_| CommandError {
             code: "ERR_IMPORT_INTERRUPTED",
@@ -77,12 +82,18 @@ pub async fn import_document(vault: String, file: String) -> Result<LectureRow, 
 ///
 /// See [`import_document`], which is this with a thread chosen for it.
 pub fn bring_in(vault: &str, file: &str) -> Result<LectureRow, CommandError> {
+    bring_in_to(vault, "", file)
+}
+
+/// [`bring_in`], into `folder` (`""` for the top of the vault) rather than the top.
+///
+/// # Errors
+///
+/// As [`bring_in`], and if `folder` is not one of the vault's folders.
+pub fn bring_in_to(vault: &str, folder: &str, file: &str) -> Result<LectureRow, CommandError> {
     let root = VaultRoot::open(Path::new(vault))?;
     let source = Path::new(file);
     let stem = stem_of(source)?;
-    // The folder is named from the whole file name, number included, so `Week 1 Lecture 1`
-    // and `Week 1 Lecture 2` cannot collide over the title they share once it is taken out.
-    let bundle = RelativePath::root_level(Slug::from_title(stem)?);
     let named = split_number(stem);
     let title = Label::parse(&named.title)?;
 
@@ -91,6 +102,10 @@ pub fn bring_in(vault: &str, file: &str) -> Result<LectureRow, CommandError> {
         SystemClock,
     ))
     .load()?;
+    let parent = folder_in(&loaded, folder)?;
+    // The folder is named from the whole file name, number included, so `Week 1 Lecture 1`
+    // and `Week 1 Lecture 2` cannot collide over the title they share once it is taken out.
+    let bundle = placed(parent.as_ref(), Slug::from_title(stem)?)?;
 
     if loaded
         .bundles
@@ -99,8 +114,8 @@ pub fn bring_in(vault: &str, file: &str) -> Result<LectureRow, CommandError> {
     {
         return Err(CommandError {
             code: "ERR_LECTURE_ALREADY_HERE",
-            remediation: "A lecture with this name is already in the vault. Rename the file \
-                          you are adding, or open the lecture that is already there.",
+            remediation: "Something with this name is already in this folder. Rename the \
+                          file you are adding, or open the one that is already there.",
         });
     }
 
@@ -108,7 +123,7 @@ pub fn bring_in(vault: &str, file: &str) -> Result<LectureRow, CommandError> {
     // appears: placed by its number among the numbered lectures, or after the last lecture
     // when its name had none.
     let sequence = match &named.number {
-        Some(number) => placed_by_number(&order_of(&loaded.bundles), number)?,
+        Some(number) => placed_by_number(&order_of(&loaded.bundles, parent.as_ref()), number)?,
         None => OrderKey::between(
             loaded
                 .bundles
@@ -151,15 +166,22 @@ fn stem_of(file: &Path) -> Result<&str, CommandError> {
         .and_then(|name| name.to_str())
         .ok_or(CommandError {
             code: "ERR_UNUSABLE_FILE_NAME",
-            remediation: "That file's name cannot be used as a lecture title. Rename the \
-                          file so it has a plain name, then add it again.",
+            remediation: "That file's name cannot be used as a title. Rename the file so it \
+                          has a plain name, then add it again.",
         })
 }
 
-/// Every lecture's place and number, for placing a numbered one among them.
-pub(crate) fn order_of(bundles: &[LectureBundle]) -> Vec<(OrderKey, Option<LectureNumber>)> {
+/// The place and number of every item in `folder`, for placing a numbered one among them.
+///
+/// Only that folder's: numbers order the items beside each other, and a "2" in another
+/// folder says nothing about where a "3" here belongs.
+pub(crate) fn order_of(
+    bundles: &[LectureBundle],
+    folder: Option<&RelativePath>,
+) -> Vec<(OrderKey, Option<LectureNumber>)> {
     bundles
         .iter()
+        .filter(|held| held.directory().parent().as_ref() == folder)
         .map(|held| {
             (
                 held.manifest().sequence().clone(),

@@ -35,8 +35,8 @@ pub async fn restore_annotation(
         .await
         .map_err(|_| CommandError {
             code: "ERR_HIGHLIGHT_INTERRUPTED",
-            remediation: "Bringing the highlight back stopped before it finished. The \
-                          lecture's highlights are as they were; try undoing again.",
+            remediation: "Bringing the highlight back stopped before it finished. The document's \
+                          highlights are as they were; try undoing again.",
         })?
 }
 

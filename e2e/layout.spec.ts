@@ -8,7 +8,7 @@
 import { expect, test } from "@playwright/test";
 
 import { READING } from "./fixture";
-import { bed, openLecture, openNexus, pageField } from "./nexus";
+import { bed, openLecture, openNexus, pageField, showFolderOf } from "./nexus";
 
 test.beforeEach(async ({ page }) => {
   await openNexus(page);
@@ -76,9 +76,10 @@ test("Escape in the page field goes back to where you were", async ({ page }) =>
 
 test("the editor opens beside the document rather than instead of it", async ({ page }) => {
   // Reported 2026-10-29: with a lecture open, Edit showed nothing at all.
+  await showFolderOf(page, "1. Foundations");
   await page.getByRole("button", { name: "Edit 1. Foundations" }).click();
 
-  const panel = page.getByRole("complementary", { name: "Edit lecture" });
+  const panel = page.getByRole("complementary", { name: "Edit document" });
 
   await expect(panel).toBeVisible();
   await expect(page.getByLabel("Page 1", { exact: true })).toBeVisible();

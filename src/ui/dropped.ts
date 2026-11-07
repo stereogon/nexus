@@ -77,8 +77,8 @@ export function noteForDrop(outcomes: readonly DropOutcome[]): string | null {
   if (added.length > 0) {
     parts.push(
       added.length === 1
-        ? "Added 1 lecture."
-        : `Added ${String(added.length)} lectures.`,
+        ? "Added 1 document."
+        : `Added ${String(added.length)} documents.`,
     );
   }
 

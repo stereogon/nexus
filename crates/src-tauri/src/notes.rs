@@ -34,8 +34,8 @@ pub async fn load_notes(
         .await
         .map_err(|_| CommandError {
             code: "ERR_NOTES_INTERRUPTED",
-            remediation: "Reading the notes stopped before it finished. Nothing was changed; \
-                          try opening the lecture again.",
+            remediation: "Reading the notes stopped before it finished. Nothing was changed; try opening \
+                          it again.",
         })??;
 
     allow_assets(&app, &vault, &directory)?;

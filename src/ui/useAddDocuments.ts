@@ -16,6 +16,8 @@ import { useMetaShortcut } from "./useMetaShortcut";
 
 export function useAddDocuments(
   vault: string | null,
+  /** The folder showing in the sidebar, which is where anything added goes. */
+  folder: string,
   busy: boolean,
   against: (vault: string, act: () => Promise<string | null>) => void,
 ): { readonly add: () => void; readonly zone: DropZone } {
@@ -27,17 +29,19 @@ export function useAddDocuments(
     against(vault, async () => {
       const file = await pickDocument();
 
-      return file === null ? null : noteFor(await importDocument(vault, file));
+      return file === null ? null : noteFor(await importDocument(vault, folder, file));
     });
-  }, [against, vault]);
+  }, [against, folder, vault]);
 
   const dropped = useCallback(
     (paths: readonly string[]) => {
       if (vault !== null) {
-        against(vault, () => importEach(vault, paths, importDocument, asCommandError));
+        against(vault, () =>
+          importEach(vault, paths, (into, path) => importDocument(into, folder, path), asCommandError),
+        );
       }
     },
-    [against, vault],
+    [against, folder, vault],
   );
 
   const zone = useDropZone(dropped);

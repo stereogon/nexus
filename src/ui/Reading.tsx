@@ -32,7 +32,8 @@ export function Reading({
   onClose,
   arrival,
 }: {
-  readonly document: OpenedDocument;
+  /** `null` for a plain note: its notes are then the whole pane. */
+  readonly document: OpenedDocument | null;
   readonly title: string;
   readonly vault: string;
   readonly directory: string;
@@ -135,7 +136,28 @@ export function Reading({
     setNotesOpen((open) => !open);
   }, []);
 
-  useMetaShortcut("\\", true, toggleNotes);
+  // Nothing to hide the notes beside when they are all there is.
+  useMetaShortcut("\\", document !== null, toggleNotes);
+
+  if (document === null) {
+    return (
+      <div className="reading" ref={area}>
+        <NotesPane
+          alone={{ title, onClose }}
+          directory={directory}
+          handle={notes}
+          hidden={false}
+          onCite={cite}
+          onCited={setCited}
+          onHide={onClose}
+          onReady={ready}
+          reveal={reveal}
+          vault={vault}
+          width={null}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="reading" ref={area}>
@@ -165,6 +187,7 @@ export function Reading({
         reveal={reveal}
         vault={vault}
         width={sizing.width}
+        alone={null}
       />
     </div>
   );

@@ -6,7 +6,11 @@ import { expect, type Locator, type Page } from "@playwright/test";
 import { standardFixture, type Fixture } from "./fixture";
 import { pdfOf } from "./pdf";
 
+/** Each page's fixture, so a journey can open an item by title without saying where it is. */
+const opened = new WeakMap<Page, Fixture>();
+
 export async function openNexus(page: Page, fixture: Fixture = standardFixture()): Promise<void> {
+  opened.set(page, fixture);
   await page.addInitScript((data) => {
     window.__NEXUS_E2E__ = data;
   }, fixture);
@@ -49,8 +53,30 @@ export async function openNexus(page: Page, fixture: Fixture = standardFixture()
   await page.goto("/e2e/harness.html");
 }
 
-/** Opens a lecture from the sidebar and waits for its first page to draw. */
+/**
+ * Steps the sidebar into the folder holding the item titled `title`, as a person would:
+ * from the top of the vault, one folder at a time.
+ */
+export async function showFolderOf(page: Page, title: string): Promise<void> {
+  const item = opened.get(page)?.lectures.find((lecture) => lecture.title === title);
+
+  if (item === undefined) {
+    throw new Error(`The fixture has no item titled "${title}".`);
+  }
+
+  const folders = item.directory.split("/").slice(0, -1);
+
+  // The vault's own crumb, first in the trail; the Back arrow before it is disabled at the top.
+  await page.getByRole("navigation", { name: "Folder" }).getByRole("listitem").first().getByRole("button").click();
+
+  for (const name of folders) {
+    await page.getByRole("button", { name: `Folder ${name}`, exact: true }).click();
+  }
+}
+
+/** Opens a document from the sidebar and waits for its first page to draw. */
 export async function openLecture(page: Page, title: string): Promise<void> {
+  await showFolderOf(page, title);
   await page.getByRole("button", { name: title, exact: true }).click();
   await expect(page.getByLabel("Page 1", { exact: true })).toBeVisible();
   await expect(textOn(page, 1).first()).toBeVisible();

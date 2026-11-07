@@ -1,17 +1,19 @@
 /**
- * Every highlight in the vault, filterable — for revision: "every exam point in week 3".
+ * Every highlight in the vault, filterable — for revision: "every exam point in Week 3",
+ * where Week 3 is a folder.
  *
- * Takes the document pane's place while open; choosing a highlight opens its lecture at it
- * and closes the library. Read fresh each time it opens, from the lectures' own files, so
- * it can never disagree with what the lectures show.
+ * Takes the document pane's place while open; choosing a highlight opens its document at
+ * it and closes the library. Read fresh each time it opens, from the documents' own files,
+ * so it can never disagree with what they show.
  */
 import { useEffect, useState } from "react";
 
 import { vaultHighlights, type VaultMarks } from "../ipc/search";
 import { asCommandError, type CommandError, type LectureRow } from "../ipc/vault";
 import { Failure } from "./Failure";
+import { parentOf, spoken } from "./folders";
 import {
-  facetChoices,
+  folderChoices,
   kindOf,
   libraryGroups,
   MARK_KINDS,
@@ -25,40 +27,6 @@ import type { ArrivalTarget } from "./useArrival";
 
 const KIND_LABEL: Record<MarkKind, string> = { ...SEMANTIC_LABEL, sticky: "Sticky notes" };
 const KIND_GLYPH: Record<MarkKind, string> = { ...SEMANTIC_GLYPH, sticky: "✎" };
-
-/** One facet's menu: every value, or one. */
-function FacetMenu({
-  label,
-  every,
-  values,
-  value,
-  onChange,
-}: {
-  readonly label: string;
-  readonly every: string;
-  readonly values: readonly string[];
-  readonly value: string | null;
-  readonly onChange: (value: string | null) => void;
-}) {
-  return (
-    <label className="library-facet">
-      <span className="vh">{label}</span>
-      <select
-        onChange={(event) => {
-          onChange(event.target.value === "" ? null : event.target.value);
-        }}
-        value={value ?? ""}
-      >
-        <option value="">{every}</option>
-        {values.map((each) => (
-          <option key={each} value={each}>
-            {each}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-}
 
 export function HighlightsLibrary({
   vault,
@@ -100,7 +68,7 @@ export function HighlightsLibrary({
 
   const groups = marks === null ? [] : libraryGroups(marks, lectures, filter);
   const shown = groups.reduce((count, group) => count + group.marks.length, 0);
-  const choices = marks === null ? null : facetChoices(marks, lectures);
+  const choices = marks === null ? null : folderChoices(marks, lectures);
 
   const toggle = (kind: MarkKind) => {
     setFilter((current) => {
@@ -146,35 +114,24 @@ export function HighlightsLibrary({
         </div>
 
         {choices !== null && (
-          <>
-            <FacetMenu
-              every="All courses"
-              label="Course"
-              onChange={(course) => {
-                setFilter((current) => ({ ...current, course }));
+          <label className="library-facet">
+            <span className="vh">Folder</span>
+            <select
+              onChange={(event) => {
+                const folder = event.target.value;
+
+                setFilter((current) => ({ ...current, folder: folder === "" ? null : folder }));
               }}
-              value={filter.course}
-              values={choices.courses}
-            />
-            <FacetMenu
-              every="All modules"
-              label="Module"
-              onChange={(module) => {
-                setFilter((current) => ({ ...current, module }));
-              }}
-              value={filter.module}
-              values={choices.modules}
-            />
-            <FacetMenu
-              every="All weeks"
-              label="Week"
-              onChange={(week) => {
-                setFilter((current) => ({ ...current, week }));
-              }}
-              value={filter.week}
-              values={choices.weeks}
-            />
-          </>
+              value={filter.folder ?? ""}
+            >
+              <option value="">Every folder</option>
+              {choices.map((path) => (
+                <option key={path} value={path}>
+                  {spoken(path)}
+                </option>
+              ))}
+            </select>
+          </label>
         )}
 
         <label className="library-search">
@@ -198,17 +155,15 @@ export function HighlightsLibrary({
       {marks !== null && marks.lectures.length > 0 && groups.length === 0 && <p className="empty">No highlights match these filters.</p>}
       {marks !== null && marks.unreadable > 0 && (
         <p className="note">
-          {marks.unreadable === 1 ? "One lecture's" : `${String(marks.unreadable)} lectures'`} highlights could not be read
-          and are not shown. Opening the lecture shows why.
+          {marks.unreadable === 1 ? "One document's" : `${String(marks.unreadable)} documents'`} highlights could not be read
+          and are not shown. Opening the document shows why.
         </p>
       )}
 
       {groups.map((group) => (
         <section aria-label={group.lecture.title} className="library-lecture" key={group.lecture.directory}>
           <h3>{group.lecture.title}</h3>
-          <p className="library-facets">
-            {[group.lecture.course, group.lecture.module, group.lecture.week].filter((facet) => facet !== null).join(" · ")}
-          </p>
+          <p className="library-facets">{spoken(parentOf(group.lecture.directory))}</p>
           <ul>
             {group.marks.map((mark) => (
               <li key={mark.id}>

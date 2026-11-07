@@ -1,5 +1,5 @@
 /**
- * The lecture editor, as a panel beside whatever is open.
+ * The item editor, as a panel beside whatever is open.
  *
  * # Why a panel and not an overlay
  *
@@ -8,8 +8,8 @@
  * back to the vault to find the form you had already asked for.
  *
  * Either an overlay or a panel fixes that. A panel wins because of *what* this form is
- * for: the fields are the lecture's title, course, module and week, and the thing that
- * tells you what they should be is usually the title slide. An overlay would cover the
+ * for: the fields are the item's title and number, and the thing that tells you what they
+ * should be is usually the title slide. An overlay would cover the
  * one document you are reading the answers off. The panel is a flex sibling of the
  * viewer rather than floating above it, so the page narrows and re-fits instead of being
  * hidden — the viewer already observes its own width, so nothing there had to change.
@@ -31,13 +31,17 @@ import { LectureEditor } from "./LectureEditor";
 export function EditorPanel({
   busy,
   lecture,
+  folders,
+  vaultName,
   onCancel,
   onSave,
 }: {
   readonly busy: boolean;
   readonly lecture: LectureRow;
+  readonly folders: readonly string[];
+  readonly vaultName: string;
   readonly onCancel: () => void;
-  readonly onSave: (edit: LectureEdit) => void;
+  readonly onSave: (edit: LectureEdit, folder: string) => void;
 }) {
   const panel = useRef<HTMLElement | null>(null);
 
@@ -74,14 +78,14 @@ export function EditorPanel({
         came.focus();
       }
     };
-    // Once per lecture: re-running on every render would steal the caret back to the
+    // Once per item: re-running on every render would steal the caret back to the
     // title field on every keystroke, and re-running on `busy` would do it on every save.
   }, [lecture.directory]);
 
   return (
     <aside aria-labelledby="editor-panel-heading" className="side-panel" ref={panel}>
       <header className="side-panel-head">
-        <h2 id="editor-panel-heading">Edit lecture</h2>
+        <h2 id="editor-panel-heading">{lecture.kind === "note" ? "Edit note" : "Edit document"}</h2>
         <button
           aria-label="Close the editor"
           className="side-panel-close"
@@ -93,14 +97,16 @@ export function EditorPanel({
         </button>
       </header>
 
-      {/* The title is shown rather than assumed: with a document open, the lecture being
+      {/* The title is shown rather than assumed: with a document open, the item being
           edited is often not the one on screen. */}
       <p className="editor-panel-subject">{lecture.title}</p>
 
       <LectureEditor
         busy={busy}
+        folders={folders}
         key={lecture.directory}
         lecture={lecture}
+        vaultName={vaultName}
         onCancel={onCancel}
         onSave={onSave}
       />

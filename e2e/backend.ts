@@ -17,6 +17,7 @@ import { z } from "zod";
 
 import type { LectureRow } from "../src/ipc/vault";
 import { annotationHandlers } from "./answers/annotations";
+import { folderHandlers, foldersOf, type Held } from "./answers/folders";
 import { notesHandlers } from "./answers/notes";
 import { searchHandlers } from "./answers/search";
 import { CommandFailure, InLecture, type Handlers } from "./answers/shared";
@@ -43,7 +44,11 @@ function facet(value: string): string | null {
 }
 
 export function backend(fixture: Fixture): (command: string, args?: InvokeArgs) => unknown {
-  let lectures: LectureRow[] = [...fixture.lectures];
+  const held: Held = {
+    lectures: [...fixture.lectures],
+    folders: foldersOf(fixture.lectures, fixture.folders ?? []),
+    movedFrom: new Map(),
+  };
   // Per-device, so kept for the page's life like the real file is kept between launches.
   let notesWidth: number | null = null;
   const positions = new Map(Object.entries(fixture.positions ?? {}));
@@ -75,17 +80,23 @@ export function backend(fixture: Fixture): (command: string, args?: InvokeArgs) 
       return null;
     },
     importable_formats: () => ["pdf"],
-    open_vault: () => ({ root: fixture.vault, lectures, skipped: [], unloadable: [] }),
+    open_vault: () => ({
+      root: fixture.vault,
+      lectures: held.lectures,
+      folders: held.folders,
+      skipped: [],
+      unloadable: [],
+    }),
     open_document: (args) => {
       const { directory } = InLecture.parse(args);
 
-      // The path is the directory itself. The harness turns it into a URL that the
-      // Playwright route answers with the generated PDF for that lecture.
-      return { path: directory, bytes: 1, risks: [], needsAttention: false };
+      // The path is the directory the fixture gave it, moved or not. The harness turns it
+      // into a URL that the Playwright route answers with the generated PDF for it.
+      return { path: held.movedFrom.get(directory) ?? directory, bytes: 1, risks: [], needsAttention: false };
     },
     edit_lecture: (args) => {
       const { directory, edit } = EditLecture.parse(args);
-      const before = lectures.find((lecture) => lecture.directory === directory);
+      const before = held.lectures.find((lecture) => lecture.directory === directory);
 
       if (before === undefined) {
         throw new CommandFailure("ERR_E2E_NO_LECTURE", `No lecture at ${directory}.`);
@@ -105,13 +116,19 @@ export function backend(fixture: Fixture): (command: string, args?: InvokeArgs) 
         tags: edit.tags,
       };
 
-      lectures = lectures.map((lecture) => (lecture === before ? after : lecture));
+      held.lectures = held.lectures.map((lecture) => (lecture === before ? after : lecture));
 
       return after;
     },
   };
 
-  const answers: Handlers = { ...vault, ...annotationHandlers(fixture), ...notesHandlers(fixture), ...searchHandlers(fixture) };
+  const answers: Handlers = {
+    ...vault,
+    ...folderHandlers(held),
+    ...annotationHandlers(fixture),
+    ...notesHandlers(fixture),
+    ...searchHandlers(fixture),
+  };
 
   return (command, args) => {
     if (fixture.failing?.includes(command) === true) {

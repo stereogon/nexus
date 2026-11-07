@@ -25,12 +25,17 @@ use crate::error::CoreError;
 /// dropping a newer device's data on the next save.
 ///
 /// Version 3 (2026-11-05) added the lecture's `number`, optional; see `lecture_number`.
-pub const CURRENT_SCHEMA_VERSION: u32 = 3;
+/// Version 4 (2026-11-06) made `source` optional: a bundle without one is a plain note,
+/// made in Nexus rather than imported, with nothing beside its `notes.md` to render.
+pub const CURRENT_SCHEMA_VERSION: u32 = 4;
+
+/// The first version whose bundles may have no source: plain notes.
+const FIRST_VERSION_WITH_NOTES: u32 = 4;
 
 /// The oldest manifest version this build can still read.
 ///
-/// Version 1 did not record source fingerprints, and versions 1 and 2 had no lecture
-/// number. Nothing else about the format changed, so an older manifest is read with those
+/// Version 1 did not record source fingerprints, versions 1 and 2 had no lecture number,
+/// and versions 1 to 3 always had a source. Nothing else about the format changed, so an older manifest is read with those
 /// absent — which is exactly what it meant — and rewritten as the current version by the
 /// next save. Reading never writes.
 ///
@@ -54,7 +59,7 @@ pub struct Manifest {
     number: Option<LectureNumber>,
     sequence: OrderKey,
     facets: Facets,
-    source: Source,
+    source: Option<Source>,
     created_at: Timestamp,
     updated_at: Timestamp,
 }
@@ -70,7 +75,8 @@ struct RawManifest {
     sequence: OrderKey,
     #[serde(default)]
     facets: Facets,
-    source: Source,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    source: Option<Source>,
     created_at: Timestamp,
     updated_at: Timestamp,
 }
@@ -84,6 +90,14 @@ impl TryFrom<RawManifest> for Manifest {
         }
 
         raw.facets.validate()?;
+
+        // Before version 4 every bundle was an imported document. One with no source is a
+        // damaged file, and reading it as an empty note would hide the document it lost.
+        if raw.source.is_none() && raw.schema_version < FIRST_VERSION_WITH_NOTES {
+            return Err(CoreError::InvalidManifest {
+                reason: "it names no document, which every lecture saved before version 4 had",
+            });
+        }
 
         if raw.created_at > raw.updated_at {
             return Err(CoreError::InvalidManifest {
@@ -127,11 +141,24 @@ impl Manifest {
     #[must_use]
     pub fn new(title: Label, sequence: OrderKey, source: Source, at: Timestamp) -> Self {
         Self {
+            source: Some(source),
+            ..Self::note(title, sequence, at)
+        }
+    }
+
+    /// A manifest for a plain note: made in Nexus, with no document beside it.
+    ///
+    /// Still a bundle with a manifest rather than a bare `.md` file, so everything a lecture
+    /// has that is not its document -- order, number, tags, `assets/` for pasted images, a
+    /// remembered place -- works for a note without a second set of rules.
+    #[must_use]
+    pub fn note(title: Label, sequence: OrderKey, at: Timestamp) -> Self {
+        Self {
             title,
             number: None,
             sequence,
             facets: Facets::empty(),
-            source,
+            source: None,
             created_at: at.clone(),
             updated_at: at,
         }
@@ -198,7 +225,7 @@ impl Manifest {
     /// cannot forget to.
     #[must_use]
     pub fn with_source(mut self, source: Source) -> Self {
-        self.source = source;
+        self.source = Some(source);
         self
     }
 
@@ -230,10 +257,10 @@ impl Manifest {
         &self.facets
     }
 
-    /// Where the document came from.
+    /// Where the document came from, or `None` for a plain note, which has none.
     #[must_use]
-    pub fn source(&self) -> &Source {
-        &self.source
+    pub fn source(&self) -> Option<&Source> {
+        self.source.as_ref()
     }
 
     /// When the bundle was created.

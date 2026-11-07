@@ -219,6 +219,7 @@ fn the_manifest_travels_unchanged_so_a_moved_bundle_needs_no_rewriting() {
         load(dir.path()).bundles[0]
             .document_path()
             .unwrap()
+            .unwrap()
             .to_string(),
         "cs454/week-3-raft/source/document.pdf",
         "and the document still resolves from its new home"

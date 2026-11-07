@@ -1,20 +1,20 @@
 /**
- * The form for naming a lecture and filing it under a course, module, week and tags.
- *
- * Deliberately plain fields and no autocomplete over existing values. The vault is the only
- * source of truth for what courses exist, and offering a list built from it would quietly
- * discourage creating the first lecture of a new course — which is exactly the moment
- * someone needs to.
+ * The form for renaming an item, numbering and tagging it, and moving it to a folder.
  *
  * The title and the number sit first because they are the fields most likely to need
- * fixing: both are taken from the name of the file a lecture was imported from, and a
- * university download is called something like `TMSCOMSSAD18~TMSCOMSSSE01~2026~1`, or
- * numbers its slides the professor's own way. The number is what orders the lectures, so
- * changing it moves the lecture.
+ * fixing: for a document both are taken from the name of the file it was imported from,
+ * which is often something like `TMSCOMSSAD18~TMSCOMSSSE01~2026~1`, or numbered someone
+ * else's way. The number orders the items in a folder, so changing it moves the item.
+ *
+ * Course, module and week are no longer asked for (2026-11-06): the folder an item is in
+ * says where it belongs, and typing it again into every item was the chore the user
+ * wanted gone. Values already saved are sent back unchanged rather than cleared, so
+ * nothing in an older file is lost by editing it here.
  */
 import { useState } from "react";
 
 import type { LectureEdit, LectureRow } from "../ipc/vault";
+import { parentOf, spoken } from "./folders";
 
 /** A blank field clears the facet, so these start as whatever the lecture already has. */
 function startingFrom(lecture: LectureRow): LectureEdit {
@@ -56,16 +56,24 @@ function Field({
 
 export function LectureEditor({
   lecture,
+  folders,
+  vaultName,
   busy,
   onSave,
   onCancel,
 }: {
   readonly lecture: LectureRow;
+  /** Every folder it could be moved to. */
+  readonly folders: readonly string[];
+  /** What the top of the vault is called in the folder menu. */
+  readonly vaultName: string;
   readonly busy: boolean;
-  readonly onSave: (edit: LectureEdit) => void;
+  /** The edit, and the folder it should be in (`""` for the top of the vault). */
+  readonly onSave: (edit: LectureEdit, folder: string) => void;
   readonly onCancel: () => void;
 }) {
   const [draft, setDraft] = useState<LectureEdit>(() => startingFrom(lecture));
+  const [folder, setFolder] = useState(() => parentOf(lecture.directory));
   // Imported before numbers were their own field, the number may still be in the title.
   const offer = lecture.numberInTitle;
   const offering = offer !== null && draft.number.trim() === "" && draft.title === lecture.title;
@@ -75,7 +83,7 @@ export function LectureEditor({
       className="editor"
       onSubmit={(event) => {
         event.preventDefault();
-        onSave(draft);
+        onSave(draft, folder);
       }}
     >
       <Field
@@ -83,7 +91,7 @@ export function LectureEditor({
         onChange={(title) => {
           setDraft({ ...draft, title });
         }}
-        placeholder="Raft Consensus"
+        placeholder="Raft consensus"
         value={draft.title}
       />
       <Field
@@ -105,30 +113,22 @@ export function LectureEditor({
           Take “{offer.number}” out of the title
         </button>
       )}
-      <Field
-        label="Course"
-        onChange={(course) => {
-          setDraft({ ...draft, course });
-        }}
-        placeholder="CS454 Distributed Systems"
-        value={draft.course}
-      />
-      <Field
-        label="Module"
-        onChange={(module) => {
-          setDraft({ ...draft, module });
-        }}
-        placeholder="Consensus"
-        value={draft.module}
-      />
-      <Field
-        label="Week"
-        onChange={(week) => {
-          setDraft({ ...draft, week });
-        }}
-        placeholder="Week 3"
-        value={draft.week}
-      />
+      <label className="field">
+        <span>Folder</span>
+        <select
+          onChange={(event) => {
+            setFolder(event.target.value);
+          }}
+          value={folder}
+        >
+          <option value="">{vaultName}</option>
+          {folders.map((path) => (
+            <option key={path} value={path}>
+              {spoken(path)}
+            </option>
+          ))}
+        </select>
+      </label>
       <Field
         label="Tags"
         onChange={(tags) => {
@@ -159,8 +159,8 @@ export function LectureEditor({
           Cancel
         </button>
         <span className="hint">
-          Leave a field empty to clear it. A new number moves the lecture to its place; renaming
-          does not move the folder.
+          Leave a field empty to clear it. A number orders the items in a folder; moving an item
+          takes its notes and highlights with it.
         </span>
       </div>
     </form>

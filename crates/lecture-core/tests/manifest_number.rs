@@ -8,8 +8,9 @@ use lecture_core::{CURRENT_SCHEMA_VERSION, LectureNumber, Manifest};
 const V2: &str = r#"{"schemaVersion":2,"title":"Process Overview","sequence":"a1","facets":{},"source":{"document":"source/document.pdf","conversion":{"state":"notRequired"}},"createdAt":"2026-10-27T16:00:00Z","updatedAt":"2026-10-27T16:00:00Z"}"#;
 
 #[test]
-fn the_current_version_is_3() {
-    assert_eq!(CURRENT_SCHEMA_VERSION, 3);
+fn the_current_version_is_4() {
+    // 3 added the number; 4 (2026-11-06) made the source optional, for plain notes.
+    assert_eq!(CURRENT_SCHEMA_VERSION, 4);
 }
 
 #[test]
@@ -27,7 +28,7 @@ fn a_manifest_without_a_number_is_written_without_the_field() {
     let written = serde_json::to_string(&parsed).unwrap();
 
     assert!(!written.contains("number"), "{written}");
-    assert!(written.contains(r#""schemaVersion":3"#), "{written}");
+    assert!(written.contains(r#""schemaVersion":4"#), "{written}");
 }
 
 #[test]

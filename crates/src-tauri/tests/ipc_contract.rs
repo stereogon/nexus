@@ -134,7 +134,7 @@ fn vault() -> TempDir {
 
     // `ManifestStore::save` writes atomically *into* a directory and does not create one:
     // making the bundle layout is the importer's job, not the store's.
-    for bundle in ["cs454/01-raft", "cs454/02-paxos"] {
+    for bundle in ["cs454/01-raft", "cs454/02-paxos", "cs454/summary"] {
         fs::create_dir_all(root.join(bundle)).unwrap();
     }
 
@@ -151,6 +151,24 @@ fn vault() -> TempDir {
             &plain_manifest(),
         )
         .unwrap();
+
+    // A plain note, so the fixture carries `kind: "note"` and a row with no document.
+    manifests
+        .save(
+            &RelativePath::parse("cs454/summary").unwrap(),
+            &Manifest::note(
+                label("Summary"),
+                OrderKey::between(Some(&OrderKey::first()), None)
+                    .and_then(|after| OrderKey::between(Some(&after), None))
+                    .unwrap(),
+                at(CREATED),
+            ),
+        )
+        .unwrap();
+
+    // An empty folder, which must still be listed: the sidebar steps into folders, and one
+    // made a moment ago has nothing in it yet.
+    fs::create_dir_all(root.join("cs454").join("reading")).unwrap();
 
     // A lecture by the one rule that defines one -- a directory holding `manifest.json` --
     // whose manifest is not readable. It must land in `unloadable` and cost the vault
@@ -207,7 +225,8 @@ fn one_unreadable_manifest_does_not_cost_the_vault_its_other_lectures() {
     let held = vault();
     let summary = open_vault(&held.path().join("vault").display().to_string()).unwrap();
 
-    assert_eq!(summary.lectures.len(), 2);
+    // Two documents and a note.
+    assert_eq!(summary.lectures.len(), 3);
     assert_eq!(summary.unloadable.len(), 1);
     assert!(
         summary.unloadable[0].directory.contains("03-truncated"),

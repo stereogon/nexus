@@ -161,13 +161,13 @@ mod wording {
          wrong place. Your notes and your other highlights are untouched, and a backup \
          of the file is beside it.";
 
-    pub(super) const HIGHLIGHT_DUPLICATE_ID: &str = "Two highlights in this lecture share an identifier, so a link in your notes \
+    pub(super) const HIGHLIGHT_DUPLICATE_ID: &str = "Two highlights in this document share an identifier, so a link in your notes \
          could point at either. Nothing was deleted, and a backup is beside the file.";
 
     pub(super) const HIGHLIGHT_IMPOSSIBLE_PAGE: &str = "A highlight recorded a page that cannot exist, so it was left out rather than \
          drawn on the wrong page. Nothing was deleted, and a backup is beside the file.";
 
-    pub(super) const MANIFEST_INCONSISTENT: &str = "This lecture's details contradict each other, so it was left alone rather than \
+    pub(super) const MANIFEST_INCONSISTENT: &str = "This item's details contradict each other, so it was left alone rather than \
          loaded wrongly. Nothing was deleted. The message above says which detail does \
          not add up.";
 
@@ -179,8 +179,8 @@ mod wording {
          left completely untouched rather than rewritten. If it was written by a newer \
          version of Nexus, updating will open it normally.";
 
-    pub(super) const DATE_UNREADABLE: &str = "A date recorded in this lecture could not be read, so it has been left out \
-         rather than shown wrongly. Nothing was deleted. If you edited a file by hand, a \
+    pub(super) const DATE_UNREADABLE: &str = "A date recorded in this item could not be read, so it has been left out rather \
+         than shown wrongly. Nothing was deleted. If you edited a file by hand, a \
          backup is beside it.";
 
     pub(super) const NAME_UNUSABLE: &str = "That name cannot be used for a folder on disk. Nothing was created or renamed. \
@@ -231,25 +231,27 @@ mod wording {
          them. Nothing was imported or changed, and the file is where you left it. \
          Exporting it as a PDF first will import it fine.";
 
-    pub(super) const CONVERSION_DID_NOT_PRODUCE_A_PDF: &str = "The converter could not turn this document into a PDF, so the lecture is there \
-         with its original file and nothing to show yet. Nothing was lost. You can try \
-         the conversion again, and the diagnostic log records what the converter said.";
+    pub(super) const CONVERSION_DID_NOT_PRODUCE_A_PDF: &str = "The converter could not turn this document into a PDF, so the document is \
+         there with its original file and nothing to show yet. Nothing was lost. You \
+         can try the conversion again, and the diagnostic log records what the \
+         converter said.";
 
-    pub(super) const CONVERSION_STUCK: &str = "This lecture's conversion could not continue from where it had got to, so it \
-         was left exactly as it was. Your original file is still in the lecture folder. \
-         Importing the lecture again will start the conversion cleanly.";
+    pub(super) const CONVERSION_STUCK: &str = "This document's conversion could not continue from where it had got to, so it \
+         was left exactly as it was. Your original file is still in its folder. \
+         Importing it again will start the conversion cleanly.";
 
-    pub(super) const FINGERPRINT_UNREADABLE: &str = "Nexus could not read the record of which document this lecture was built from, \
-         so it cannot tell whether that document has changed. Your notes, highlights and \
-         the document itself are untouched. Re-importing the lecture will record it again.";
+    pub(super) const FINGERPRINT_UNREADABLE: &str = "Nexus could not read the record of which file this document was built from, so \
+         it cannot tell whether that document has changed. Your notes, highlights and \
+         the document itself are untouched. Re-importing the document will record it \
+         again.";
 
-    pub(super) const READING_PLACE_LOST: &str = "The app could not restore where you were last reading, so this lecture opened \
-         at the first page. Your notes and highlights are untouched.";
+    pub(super) const READING_PLACE_LOST: &str = "The app could not restore where you were last reading, so it opened at the \
+         first page. Your notes and highlights are untouched.";
 
-    pub(super) const POSITION_UNREADABLE: &str = "One lecture's saved position could not be read, so it has been sorted to the \
-         end rather than hidden. Nothing was deleted. Use Renumber Folders to give it a \
+    pub(super) const POSITION_UNREADABLE: &str = "One item's saved position could not be read, so it has been sorted to the end \
+         rather than hidden. Nothing was deleted. Use Renumber Folders to give it a \
          fresh position.";
 
-    pub(super) const POSITION_UNAVAILABLE: &str = "This lecture could not be slotted into that position. Nothing was moved or \
-         lost. Use Renumber Folders to space the list out evenly, then try again.";
+    pub(super) const POSITION_UNAVAILABLE: &str = "This item could not be slotted into that position. Nothing was moved or lost. \
+         Use Renumber Folders to space the list out evenly, then try again.";
 }

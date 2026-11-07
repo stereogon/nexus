@@ -30,9 +30,17 @@ export const ConversionStateSchema = z.enum([
   "failed",
 ]);
 
-/** One lecture, as a sidebar row. */
+/**
+ * One item in the vault, as a sidebar row: a `document` imported from a file, or a plain
+ * `note` made in Nexus with nothing beside its notes.
+ *
+ * Still named for lectures, as the Rust crates are: the word left the window on 2026-11-06,
+ * when Nexus stopped being only for coursework, and renaming every type that carries it
+ * would be churn no reader of the window ever sees.
+ */
 export const LectureRowSchema = z.object({
   directory: z.string(),
+  kind: z.enum(["document", "note"]),
   title: z.string(),
   /** Its number in the course, if it has one. */
   number: z.string().nullable(),
@@ -65,6 +73,8 @@ export const ProblemRowSchema = z.object({
 export const VaultSummarySchema = z.object({
   root: z.string(),
   lectures: z.array(LectureRowSchema),
+  /** Every folder that holds items rather than being one, so an empty folder still shows. */
+  folders: z.array(z.string()),
   skipped: z.array(ProblemRowSchema),
   unloadable: z.array(ProblemRowSchema),
 });
@@ -162,10 +172,53 @@ export async function editLecture(
  * @throws {CommandError} if the vault cannot be opened, the file is not an importable
  * format, or a lecture of that name is already there.
  */
-export async function importDocument(vault: string, file: string): Promise<LectureRow> {
-  const payload: unknown = await invoke("import_document", { vault, file });
+export async function importDocument(vault: string, folder: string, file: string): Promise<LectureRow> {
+  const payload: unknown = await invoke("import_document", { vault, folder, file });
 
   return LectureRowSchema.parse(payload);
+}
+
+/**
+ * Makes an empty folder called `name` inside `parent` (`""` for the top of the vault).
+ * Resolves to the new folder's path.
+ *
+ * @throws {CommandError} if the name is not usable or something of that name is there.
+ */
+export async function createFolder(vault: string, parent: string, name: string): Promise<string> {
+  const payload: unknown = await invoke("create_folder", { vault, parent, name });
+
+  return z.string().parse(payload);
+}
+
+/**
+ * Makes a plain note titled `title` inside `parent`.
+ *
+ * @throws {CommandError} as {@link createFolder}.
+ */
+export async function createNote(vault: string, parent: string, title: string): Promise<LectureRow> {
+  const payload: unknown = await invoke("create_note", { vault, parent, title });
+
+  return LectureRowSchema.parse(payload);
+}
+
+/** An item after a move, and why its remembered place could not follow it, if it could not. */
+export const MovedItemSchema = z.object({
+  item: LectureRowSchema,
+  placeLost: CommandErrorSchema.nullable(),
+});
+
+export type MovedItem = z.infer<typeof MovedItemSchema>;
+
+/**
+ * Moves the item at `directory` into `folder` (`""` for the top of the vault).
+ *
+ * @throws {CommandError} if the item or folder is gone, or the folder already holds
+ * something of that name — never by writing over it.
+ */
+export async function moveItem(vault: string, directory: string, folder: string): Promise<MovedItem> {
+  const payload: unknown = await invoke("move_item", { vault, directory, folder });
+
+  return MovedItemSchema.parse(payload);
 }
 
 /**

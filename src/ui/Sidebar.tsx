@@ -1,24 +1,24 @@
 /**
- * The vault, as the canvas's Workspace artboards draw it.
+ * The vault, one folder at a time.
  *
- * Search, the Folder/Week/Module/Tag segmented control, one flat scroller of indented
- * rows, and the vault path along the bottom. What goes in the scroller is decided in
- * `sidebarRows.ts`, which is tested on its own; this file draws the result.
+ * Search across the whole vault, a breadcrumb saying which folder is showing, its folders
+ * and items, and the three ways to add something here: a note, a folder, or a document.
+ * Whatever is added goes into the folder on screen, so nothing has to be filed afterwards.
+ * What goes in the list is decided in `sidebarRows.ts`, tested on its own; this file draws
+ * the result.
  *
- * Two things here are **not** on the canvas, and are marked where they appear: the per-row
- * edit control, and the two problem lists. Both are recorded in `PROGRESS.md` as states
- * the canvas should gain, rather than left as quiet differences.
+ * The canvas's sidebar groups by Folder/Week/Module/Tag instead. Stepping into folders was
+ * chosen with the user on 2026-11-06 (`sidebarRows.ts` says why), so this is designed here
+ * to sit with the rest of the window and is recorded in `PROGRESS.md` as owing an artboard.
  */
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 import type { LectureRow, ProblemRow } from "../ipc/vault";
+import { nameOf, trail, vaultNameOf } from "./folders";
 import { shortPath } from "./path";
-import { Lecture, Problems } from "./SidebarLecture";
-import { GROUPINGS, secondaryFacets, type GroupBy, type SidebarRow, type ThenBy } from "./sidebarRows";
+import { Folder, Lecture, NameField, Problems } from "./SidebarLecture";
+import type { Making, SidebarRow } from "./sidebarRows";
 import { SEARCH_ID } from "./useSidebar";
-
-/** What each facet is called in the second row of controls. */
-const FACET_LABEL = { week: "Week", module: "Module", tag: "Tag" } as const;
 
 function SearchIcon() {
   return (
@@ -42,41 +42,102 @@ function FolderIcon() {
   );
 }
 
+/** Where the list is: the vault, then each folder down to the one showing. */
+function Crumbs({
+  root,
+  folder,
+  onFolder,
+}: {
+  readonly root: string;
+  readonly folder: string;
+  readonly onFolder: (path: string) => void;
+}) {
+  const steps = trail(folder);
+  const up = steps.at(-2) ?? "";
+
+  return (
+    <nav aria-label="Folder" className="sidebar-crumbs">
+      <button
+        aria-label="Back to the folder above"
+        className="crumb-back"
+        disabled={folder === ""}
+        onClick={() => {
+          onFolder(up);
+        }}
+        title="Back"
+        type="button"
+      >
+        ‹
+      </button>
+      <ol>
+        <li>
+          <button
+            aria-current={folder === "" ? "location" : undefined}
+            onClick={() => {
+              onFolder("");
+            }}
+            type="button"
+          >
+            {vaultNameOf(root)}
+          </button>
+        </li>
+        {steps.map((path) => (
+          <li key={path}>
+            <button
+              aria-current={path === folder ? "location" : undefined}
+              onClick={() => {
+                onFolder(path);
+              }}
+              type="button"
+            >
+              {nameOf(path)}
+            </button>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  );
+}
+
 export function Sidebar({
   rows,
   root,
-  groupBy,
-  thenBy,
+  folder,
   query,
   busy,
   openDirectory,
   skipped,
   unloadable,
-  onGroupBy,
-  onThenBy,
+  onFolder,
   onQuery,
   onOpen,
   onEdit,
+  onMake,
+  onImport,
   hits,
 }: {
   readonly rows: readonly SidebarRow[];
   readonly root: string;
-  readonly groupBy: GroupBy;
-  readonly thenBy: ThenBy;
+  /** The folder showing; `""` is the top of the vault. */
+  readonly folder: string;
   readonly query: string;
   readonly busy: boolean;
   readonly openDirectory: string | null;
   readonly skipped: readonly ProblemRow[];
   readonly unloadable: readonly ProblemRow[];
-  readonly onGroupBy: (grouping: GroupBy) => void;
-  readonly onThenBy: (grouping: ThenBy) => void;
+  readonly onFolder: (path: string) => void;
   readonly onQuery: (text: string) => void;
   readonly onOpen: (lecture: LectureRow) => void;
   readonly onEdit: (lecture: LectureRow) => void;
-  /** What the search found inside lectures, below the matching titles; `null` when not searching. */
+  /** Makes a note or folder of that name in the folder showing. */
+  readonly onMake: (making: Making, name: string) => void;
+  /** Picks documents to import into the folder showing. */
+  readonly onImport: () => void;
+  /** What the search found inside items, below the matching names; `null` when not searching. */
   readonly hits: ReactNode;
 }) {
-  const secondary = secondaryFacets(groupBy);
+  const [making, setMaking] = useState<Making | null>(null);
+  const searching = query.trim() !== "";
 
   return (
     <aside className="sidebar">
@@ -90,83 +151,40 @@ export function Sidebar({
           onChange={(event) => {
             onQuery(event.target.value);
           }}
-          placeholder="Search lectures"
+          placeholder="Search everything"
           type="search"
           value={query}
         />
         <span className="kbd">⌘P</span>
       </div>
 
-      <div className="sidebar-group-by">
-        <p className="overline">Group by</p>
-        <div aria-label="Group lectures by" className="segmented" role="group">
-          {GROUPINGS.map(([name, label]) => (
-            <button
-              aria-pressed={groupBy === name}
-              key={name}
-              onClick={() => {
-                onGroupBy(name);
-              }}
-              type="button"
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {/* Not on the canvas, whose control picks exactly one grouping. Asking for
-            lectures by module then gets every lecture of that module in one flat pile,
-            which on a real course is thirty rows with no structure. Teaching material is
-            organised on two axes at once. Hidden for Folder, which already nests as
-            deeply as the directories do. */}
-        {secondary.length > 0 && (
-          <div className="then-by">
-            <span className="overline">Then by</span>
-            <div aria-label="Then group by" className="segmented" role="group">
-              <button
-                aria-pressed={thenBy === "none"}
-                onClick={() => {
-                  onThenBy("none");
-                }}
-                type="button"
-              >
-                None
-              </button>
-              {secondary.map((facet) => (
-                <button
-                  aria-pressed={thenBy === facet}
-                  key={facet}
-                  onClick={() => {
-                    onThenBy(facet);
-                  }}
-                  type="button"
-                >
-                  {FACET_LABEL[facet]}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+      {!searching && <Crumbs folder={folder} onFolder={onFolder} root={root} />}
 
       <div className="sidebar-list">
-        {rows.length === 0 && hits === null && (
+        {making !== null && (
+          <NameField
+            making={making}
+            onCancel={() => {
+              setMaking(null);
+            }}
+            onDone={(name) => {
+              setMaking(null);
+              onMake(making, name);
+            }}
+          />
+        )}
+
+        {rows.length === 0 && hits === null && making === null && (
           <p className="sidebar-empty">
-            {query.trim() === ""
-              ? "No lectures yet. Drop a PDF, PowerPoint or Word file on the window."
-              : `Nothing matches “${query.trim()}”.`}
+            {searching
+              ? `Nothing matches “${query.trim()}”.`
+              : "Nothing here yet. Make a note or a folder below, or drop a PDF, PowerPoint or Word file on the window."}
           </p>
         )}
 
         {rows.map((row) =>
-          row.kind === "group" ? (
-            <p
-              className="overline"
-              key={row.key}
-              style={{ paddingLeft: `${String(8 + row.depth * 13)}px` }}
-            >
-              {row.label}
-            </p>
+          row.kind === "folder" ? (
+            <Folder busy={busy} key={row.key} onFolder={onFolder} row={row} />
           ) : (
             <Lecture
               busy={busy}
@@ -183,6 +201,32 @@ export function Sidebar({
 
         <Problems problems={skipped} title="Folders skipped" />
         <Problems problems={unloadable} title="Could not be read" />
+      </div>
+
+      <div aria-label="Add to this folder" className="sidebar-add" role="group">
+        <button
+          className="quiet"
+          disabled={busy}
+          onClick={() => {
+            setMaking("note");
+          }}
+          type="button"
+        >
+          + Note
+        </button>
+        <button
+          className="quiet"
+          disabled={busy}
+          onClick={() => {
+            setMaking("folder");
+          }}
+          type="button"
+        >
+          + Folder
+        </button>
+        <button className="quiet" disabled={busy} onClick={onImport} title="Import a document (⌘O)" type="button">
+          Import…
+        </button>
       </div>
 
       <div className="sidebar-foot">

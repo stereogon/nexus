@@ -33,8 +33,8 @@ describe("the committed wire format", () => {
     // Written as a sorted set, so two devices adding the same tags produce one file.
     expect(manifest.facets.tags).toEqual(["consensus", "exam"]);
     expect(manifest.facets.custom).toEqual({ lecturer: "Dr Ada Lovelace" });
-    expect(manifest.source.conversion.state).toBe("ready");
-    expect(manifest.source.original).toBe("source/original.pptx");
+    expect(manifest.source?.conversion.state).toBe("ready");
+    expect(manifest.source?.original).toBe("source/original.pptx");
   });
 
   it("is accepted by the annotation schema exactly as Rust wrote it", () => {

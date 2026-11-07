@@ -41,6 +41,8 @@ export interface Fixture {
   readonly positions?: Readonly<Record<string, { readonly page: number; readonly offset: number }>>;
   /** The lecture this device last had open, as a previous session left it. */
   readonly lastLecture?: string;
+  /** Folders with nothing in them; those holding an item are listed from its path. */
+  readonly folders?: readonly string[];
 }
 
 /** Slide-shaped, because most of what this app opens is a lecture deck. */
@@ -49,6 +51,7 @@ export const PAGE = { width: 720, height: 405 } as const;
 function row(directory: string, title: string, week: string): LectureRow {
   return {
     directory,
+    kind: "document",
     title,
     number: null,
     numberInTitle: null,

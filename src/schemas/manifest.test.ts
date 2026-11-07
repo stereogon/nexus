@@ -10,7 +10,16 @@ import { describe, expect, it } from "vitest";
 
 import manifestFixture from "../../fixtures/manifest.json";
 
-import { documentIsReady, ManifestSchema } from "./manifest.js";
+import { documentIsReady, ManifestSchema, type Manifest, type Source } from "./manifest.js";
+
+/** The manifest's source, which every manifest here has: only a plain note lacks one. */
+function sourceOf(manifest: Manifest): Source {
+  if (manifest.source === undefined) {
+    throw new Error("expected a manifest with a document");
+  }
+
+  return manifest.source;
+}
 
 /** Replaces one key of a parsed fixture, leaving the rest intact. */
 function withChange(
@@ -22,11 +31,11 @@ function withChange(
 
 describe("the manifest schema", () => {
   it("refuses a file from another schema version", () => {
-    // Version 3 is now current, so the rejected cases are either side of it. The UI only
+    // Version 4 is now current, so the rejected cases are either side of it. The UI only
     // ever sees manifests that Rust has already brought to the current version, so
     // accepting an older one here would hide a bug in the layer that should have
     // upgraded it.
-    for (const schemaVersion of [2, 4, 0]) {
+    for (const schemaVersion of [3, 5, 0]) {
       const other = withChange(manifestFixture, { schemaVersion });
 
       expect(ManifestSchema.safeParse(other).success).toBe(false);
@@ -36,8 +45,8 @@ describe("the manifest schema", () => {
   it("reads the fingerprints the fixture records", () => {
     const parsed = ManifestSchema.parse(manifestFixture);
 
-    expect(parsed.source.documentFingerprint).toBe("f3bd4bed30facb27");
-    expect(parsed.source.originalFingerprint).toBe("d56fdfd66303cc7c");
+    expect(parsed.source?.documentFingerprint).toBe("f3bd4bed30facb27");
+    expect(parsed.source?.originalFingerprint).toBe("d56fdfd66303cc7c");
   });
 
   it("accepts a source with no fingerprints yet", () => {
@@ -58,8 +67,8 @@ describe("the manifest schema", () => {
 
     const parsed = ManifestSchema.parse(unread);
 
-    expect(parsed.source.documentFingerprint).toBeUndefined();
-    expect(parsed.source.originalFingerprint).toBeUndefined();
+    expect(parsed.source?.documentFingerprint).toBeUndefined();
+    expect(parsed.source?.originalFingerprint).toBeUndefined();
   });
 
   it("refuses a fingerprint that is not one", () => {
@@ -173,7 +182,7 @@ describe("whether the document can be opened yet", () => {
     for (const [state, expected] of Object.entries(ready)) {
       const parsed = ManifestSchema.parse(inState(state));
 
-      expect(documentIsReady(parsed.source)).toBe(expected);
+      expect(documentIsReady(sourceOf(parsed))).toBe(expected);
     }
   });
 
@@ -185,6 +194,15 @@ describe("whether the document can be opened yet", () => {
       },
     });
 
-    expect(documentIsReady(ManifestSchema.parse(native).source)).toBe(true);
+    expect(documentIsReady(sourceOf(ManifestSchema.parse(native)))).toBe(true);
+  });
+});
+
+describe("a plain note", () => {
+  it("is a manifest with no source at all (version 4)", () => {
+    const note = Object.fromEntries(Object.entries(manifestFixture).filter(([key]) => key !== "source"));
+    const parsed = ManifestSchema.parse(note);
+
+    expect(parsed.source).toBeUndefined();
   });
 });

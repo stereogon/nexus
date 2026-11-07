@@ -60,6 +60,6 @@ test("an image path outside the lecture is not loaded", async ({ page }) => {
   await page.keyboard.type("![x](../../secret.png)");
   await page.keyboard.press("Enter");
 
-  await expect(notes(page).getByText(/Only images in this lecture's assets folder are shown/)).toBeVisible();
+  await expect(notes(page).getByText(/Only images in these notes' assets folder are shown/)).toBeVisible();
   await expect(notes(page).locator("img.md-image")).toHaveCount(0);
 });

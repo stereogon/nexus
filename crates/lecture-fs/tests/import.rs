@@ -30,7 +30,7 @@ fn a_pdf_lands_as_the_document_and_is_ready_at_once() {
         "a PDF is stored once, not twice"
     );
 
-    let source = outcome.manifest.source();
+    let source = outcome.manifest.source().unwrap();
     assert_eq!(source.conversion().state(), ConversionState::NotRequired);
     assert!(source.document_is_ready());
     assert_eq!(source.original(), None);
@@ -49,6 +49,7 @@ fn the_fingerprint_recorded_is_the_fingerprint_of_what_landed() {
         outcome
             .manifest
             .source()
+            .unwrap()
             .document_fingerprint()
             .map(Fingerprint::as_hex),
         Some(fingerprint_hex(bytes))
@@ -70,6 +71,7 @@ fn a_file_larger_than_one_chunk_copies_and_fingerprints_identically() {
         outcome
             .manifest
             .source()
+            .unwrap()
             .document_fingerprint()
             .map(Fingerprint::as_hex),
         Some(fingerprint_hex(&bytes)),

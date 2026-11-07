@@ -92,6 +92,6 @@ test("a document dropped on the notes says where to drop it instead", async ({ p
   await drag(page, "enter", over, ["/Users/me/Downloads/week3.pdf"]);
   await drag(page, "drop", over, ["/Users/me/Downloads/week3.pdf"]);
 
-  await expect(notes(page).getByText(/drop it on the page or the sidebar/)).toBeVisible();
+  await expect(notes(page).getByText(/drop it anywhere outside the notes/)).toBeVisible();
   await expect(notes(page).locator(".cm-content")).not.toContainText("![](");
 });

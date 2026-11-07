@@ -118,13 +118,13 @@ export class MathWidget extends WidgetType {
  * says that rather than leaving a blank where the picture would be.
  */
 export function unshownImage(src: string): string {
-  const fix = "Paste the picture into the notes to keep a copy in this lecture.";
+  const fix = "Paste the picture into the notes to keep a copy with them.";
 
   if (/^[a-z][a-z0-9+.-]*:/i.test(src)) {
-    return `Only images in this lecture's assets folder are shown, and “${src}” is on the web — Nexus never fetches anything. ${fix}`;
+    return `Only images in these notes' assets folder are shown, and “${src}” is on the web — Nexus never fetches anything. ${fix}`;
   }
 
-  return `Only images in this lecture's assets folder are shown, and “${src}” is not in it. ${fix}`;
+  return `Only images in these notes' assets folder are shown, and “${src}” is not in it. ${fix}`;
 }
 
 /**
@@ -161,7 +161,7 @@ export class ImageWidget extends WidgetType {
       view.requestMeasure();
     });
     image.addEventListener("error", () => {
-      image.replaceWith(problem(`The image “${this.src}” is not in this lecture's assets folder any more.`, true));
+      image.replaceWith(problem(`The image “${this.src}” is not in these notes' assets folder any more.`, true));
     });
 
     return image;

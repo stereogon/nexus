@@ -39,7 +39,7 @@ describe("what the pane shows", () => {
 
     // The instruction is not part of the rotation. A pane that is only witty leaves
     // someone no better off than a blank one.
-    expect(screen.getByText(/Choose a lecture from the sidebar/u)).toBeDefined();
+    expect(screen.getByText(/Choose something from the sidebar/u)).toBeDefined();
     expect(screen.getByText("⌘O")).toBeDefined();
   });
 
@@ -68,7 +68,7 @@ describe("what the pane shows", () => {
     const props = { onAdd: vi.fn(), onChooseVault: vi.fn() };
 
     render(<EmptyPane busy={false} {...props} />);
-    fireEvent.click(screen.getByRole("button", { name: "Add a lecture" }));
+    fireEvent.click(screen.getByRole("button", { name: "Import a document" }));
     fireEvent.click(screen.getByRole("button", { name: "Open another vault" }));
 
     expect(props.onAdd).toHaveBeenCalled();
@@ -77,7 +77,7 @@ describe("what the pane shows", () => {
     cleanup();
     render(<EmptyPane busy {...props} />);
 
-    for (const name of ["Add a lecture", "Open another vault"]) {
+    for (const name of ["Import a document", "Open another vault"]) {
       expect(screen.getByRole("button", { name }).hasAttribute("disabled")).toBe(true);
     }
   });

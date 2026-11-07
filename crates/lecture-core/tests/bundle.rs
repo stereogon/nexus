@@ -79,7 +79,7 @@ fn derives_every_path_inside_the_bundle() {
         path("cs454/raft-consensus/annotations.json")
     );
     assert_eq!(
-        bundle.document_path().unwrap(),
+        bundle.document_path().unwrap().unwrap(),
         path("cs454/raft-consensus/source/document.pdf")
     );
     assert_eq!(
@@ -96,7 +96,7 @@ fn relocating_a_bundle_rewrites_nothing_inside_it() {
 
     // Every derived path moved with the bundle.
     assert_eq!(
-        after.document_path().unwrap(),
+        after.document_path().unwrap().unwrap(),
         path("archive/y1/cs454/raft-consensus/source/document.pdf")
     );
     assert_eq!(
@@ -125,7 +125,7 @@ fn a_bundle_at_the_vault_root_works_the_same_way() {
     );
 
     assert_eq!(
-        bundle.document_path().unwrap(),
+        bundle.document_path().unwrap().unwrap(),
         path("one-off-lecture/source/document.pdf")
     );
 }
@@ -147,7 +147,7 @@ fn a_bundle_at_the_deepest_allowed_level_can_still_address_its_files() {
         path("y1/cs454/consensus/week-03/raft/manifest.json")
     );
     assert_eq!(
-        bundle.document_path().unwrap(),
+        bundle.document_path().unwrap().unwrap(),
         path("y1/cs454/consensus/week-03/raft/source/document.pdf")
     );
 }
@@ -202,7 +202,7 @@ fn a_document_that_needed_no_conversion_keeps_no_original() {
         "an unconverted PDF is its own original"
     );
     assert_eq!(
-        bundle.document_path().unwrap(),
+        bundle.document_path().unwrap().unwrap(),
         path("cs454/native/source/document.pdf")
     );
 }

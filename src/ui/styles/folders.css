@@ -1,0 +1,121 @@
+/**
+ * Moving through folders in the sidebar: the breadcrumb above the list, the buttons that
+ * add to the folder showing, and the field naming what is about to be added. Apart from
+ * `sidebar.css` because it is one job, added on 2026-11-06 with stepping into folders.
+ */
+
+/* Where the list is. One line, so a deep folder clips at the start of the trail rather
+   than wrapping the list down the sidebar. */
+.sidebar-crumbs {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 0 12px 8px;
+}
+
+.sidebar-crumbs ol {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  list-style: none;
+  white-space: nowrap;
+}
+
+.sidebar-crumbs li {
+  flex: 0 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.sidebar-crumbs li + li::before {
+  content: "/";
+  padding: 0 3px;
+  color: var(--text-faint);
+  font-size: 12px;
+}
+
+.sidebar-crumbs li button {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 2px 4px;
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  color: var(--text-meta);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.sidebar-crumbs li button[aria-current="location"] {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.sidebar-crumbs li button:hover,
+button.crumb-back:hover:not(:disabled) {
+  background: var(--surface);
+}
+
+button.crumb-back {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  color: var(--text-meta);
+  font-size: 16px;
+  line-height: 1;
+}
+
+button.crumb-back:disabled {
+  opacity: 0.35;
+}
+
+/* The three ways to add to the folder showing, along the bottom where the list ends. */
+.sidebar-add {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 4px;
+  padding: 6px 8px;
+  border-top: 1px solid var(--border);
+}
+
+.sidebar-add button {
+  flex: 1 1 0;
+  font-size: 12px;
+}
+
+/* The field naming a new note or folder, drawn as the row it is about to become. */
+.sidebar-name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 30px;
+  padding: 0 8px;
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text-meta);
+}
+
+.sidebar-name input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 24px;
+  padding: 0 6px;
+  background: var(--field);
+  border: 1px solid var(--accent);
+  border-radius: 5px;
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 13px;
+}

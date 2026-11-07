@@ -13,6 +13,7 @@ import { refiled } from "./useOpenLecture";
 function row(directory: string, title: string): LectureRow {
   return {
     directory,
+    kind: "document",
     title,
     number: null,
     numberInTitle: null,

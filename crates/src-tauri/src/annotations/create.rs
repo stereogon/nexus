@@ -87,7 +87,7 @@ pub async fn add_highlight(
     .await
     .map_err(|_| CommandError {
         code: "ERR_HIGHLIGHT_INTERRUPTED",
-        remediation: "Saving the highlight stopped before it finished. The lecture's other \
+        remediation: "Saving the highlight stopped before it finished. The document's other \
                       highlights are unchanged; make it again.",
     })?
 }
@@ -110,7 +110,7 @@ pub async fn add_area_highlight(
     .await
     .map_err(|_| CommandError {
         code: "ERR_HIGHLIGHT_INTERRUPTED",
-        remediation: "Saving the highlight stopped before it finished. The lecture's other \
+        remediation: "Saving the highlight stopped before it finished. The document's other \
                       highlights are unchanged; draw it again.",
     })?
 }
@@ -204,8 +204,8 @@ pub async fn add_text_box(
     .await
     .map_err(|_| CommandError {
         code: "ERR_HIGHLIGHT_INTERRUPTED",
-        remediation: "Saving the sticky note stopped before it finished. The lecture's other \
-                      notes are unchanged; write it again.",
+        remediation: "Saving the sticky note stopped before it finished. The document's other notes \
+                      are unchanged; write it again.",
     })?
 }
 

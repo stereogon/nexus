@@ -1,13 +1,13 @@
 # Nexus
 
-**A local-first macOS app for studying lecture documents beside linked Markdown notes.**
+**A local-first macOS app for Markdown notes — on their own, or beside the documents they are about.**
 
-Nexus opens a lecture's slides or handout on the left and your notes on the right, and ties
-the two together: highlight a sentence on a slide, press **Link to notes**, and a citation
-lands in your notes that jumps back to that exact spot. Everything is plain files in a folder
-you choose. Nothing leaves your Mac.
+Keep plain notes in folders, or open a PDF, slide deck or handout on the left with its notes
+on the right, tied together: highlight a sentence on a page, press **Link to notes**, and a
+citation lands in your notes that jumps back to that exact spot. Everything is plain files
+in a folder you choose. Nothing leaves your Mac.
 
-> **Status:** in active development (version 0.1.0). It is built for one person's own study
+> **Status:** in active development (version 0.1.0). It is built for one person's own use
 > and is not a released product. See [What works today](#what-works-today) and
 > [Not built yet](#not-built-yet) for an honest picture.
 
@@ -29,24 +29,27 @@ you choose. Nothing leaves your Mac.
 ## What works today
 
 **Vault**
-- Open any folder as a vault. A lecture is any folder containing a `manifest.json`, nested
-  up to five levels deep.
-- Sidebar grouped by folder, week, module or tag.
-- Search (`⌘P`) across lecture titles and facets, and inside every lecture's notes and
-  highlighted text; a result opens the lecture at that line or highlight.
-- A **Highlights library** of every highlight in the vault, filterable by meaning, course,
-  module, week and words — "every exam point in week 3".
-- Import with the file picker (`⌘O`) or by dropping files on the window. PDFs are used as
-  they are; PPT, PPTX, DOC and DOCX are converted to PDF once, at import, by LibreOffice when
-  it is installed. The original is always kept.
-- Each lecture has a **number**, taken from its file's name at import (`2. Process.pdf` is
-  lecture 2, "Process") and editable; the number orders the lectures.
-- Edit a lecture's title, number, course, module, week and tags in a side panel.
+- Open any folder as a vault. Its folders nest up to five levels deep.
+- The sidebar shows **one folder at a time**: step into a folder, back out with the arrow or
+  the breadcrumb. Whatever you add goes into the folder showing, so nothing needs filing.
+- **Plain notes**: `+ Note` makes a note with no document beside it, written full width.
+- `+ Folder` makes a folder; the edit panel moves an item to another one, taking its notes,
+  highlights and remembered place with it.
+- Search (`⌘P`) across every folder — names, and inside every item's notes and highlighted
+  text; each result says which folder it is in, and opens at that line or highlight.
+- A **Highlights library** of every highlight in the vault, filterable by meaning, folder
+  and words — "every exam point in Week 3".
+- Import with `Import…`, the file picker (`⌘O`) or by dropping files on the window. PDFs are
+  used as they are; PPT, PPTX, DOC and DOCX are converted to PDF once, at import, by
+  LibreOffice when it is installed. The original is always kept.
+- Each item can have a **number**, taken from a document's file name at import
+  (`2. Process.pdf` is number 2, "Process") and editable; numbers order a folder's items.
+- Edit an item's title, number, tags and folder in a side panel.
 
 **Reading**
 - PDF rendering with pdf.js, in continuous-scroll or one-page mode, with zoom, fit-width and
   a page field.
-- Each lecture reopens where you left it, and Nexus reopens the last lecture on launch.
+- Each document and note reopens where you left it, and Nexus reopens the last one on launch.
 - Find in the open document (`⌘F`): every match marked, Enter for the next.
 - Text highlights in four meanings: **K**ey concept (amber), **D**efinition (green),
   **E**xam (red), **Q**uestion (blue). Each carries its letter as well as its colour.
@@ -60,7 +63,7 @@ you choose. Nothing leaves your Mac.
   TypeScript, CSS, HTML and JSON.
 - LaTeX through KaTeX, `mermaid` diagrams, and declarative `chart` blocks. A broken block
   shows a hint inline and never takes the editor down.
-- Paste or drop images. They are saved into the lecture's `assets/` folder.
+- Paste or drop images. They are saved into the item's `assets/` folder.
 - A Notion-style format bar and shortcuts, plus highlighting in the notes in the same four
   meanings.
 - Saves as you type. The divider between document and notes can be dragged, and its width
@@ -80,10 +83,13 @@ you choose. Nothing leaves your Mac.
 
 Recorded in [`PROGRESS.md`](./PROGRESS.md) with the reasoning for each:
 
-- Remembering zoom per lecture (the page and position are remembered; zoom is not yet).
+- Remembering zoom per document (the page and position are remembered; zoom is not yet).
 - Page thumbnails, the document outline, Fit page, `⌘+` / `⌘−` zoom.
 - `⌘L`, `⌘B`, and `⌘\` split presets (today `⌘\` shows or hides the notes).
-- The "Reorganize vault" screen (the engine exists; the window does not call it yet).
+- Renaming, deleting or moving a folder, and dragging items between folders (Finder does
+  these meanwhile; Nexus picks the change up when the vault is next read).
+- The "Reorganize vault" screen (the engine exists; it files by course and week, which the
+  window no longer asks for).
 - The rest of the diagnostics drawer: past logs, converter output, timings.
 - Telling you when LibreOffice is missing (imports wait safely until it is installed).
 - Restyling parts of the UI from the approved design canvas.
@@ -93,7 +99,7 @@ Recorded in [`PROGRESS.md`](./PROGRESS.md) with the reasoning for each:
 | Shortcut | Action |
 |---|---|
 | `⌘O` | Import a document |
-| `⌘P` | Search lectures, notes and highlights |
+| `⌘P` | Search names, notes and highlights in every folder |
 | `⌘F` | Find in the open document |
 | `⌘\` | Show or hide the notes |
 | `⌘Z` / `⌘⇧Z` | Undo / redo highlights and sticky notes (in the notes: your typing) |
@@ -108,9 +114,14 @@ Recorded in [`PROGRESS.md`](./PROGRESS.md) with the reasoning for each:
 ```text
 StudyVault/
 ├── .nexus/                    # Derived cache only — safe to delete, rebuilt by a scan
-└── week-03/
-    └── 02-raft-consensus/
-        ├── manifest.json      # Title, facets (course, module, week, tags), order, provenance
+├── Journal/                   # An ordinary folder
+│   └── monday-plans/          # A plain note: no document beside it
+│       ├── manifest.json
+│       ├── notes.md
+│       └── assets/
+└── CS454/
+    └── 02-raft-consensus/     # A document with its notes
+        ├── manifest.json      # Title, number, tags, order, where the document came from
         ├── source/
         │   ├── original.pptx  # The file you imported, kept for reconversion
         │   └── document.pdf   # What the viewer renders
@@ -119,9 +130,11 @@ StudyVault/
         └── assets/            # Images pasted or dropped into the notes
 ```
 
+- **An item is any folder holding a `manifest.json`**; every other folder is just a folder.
+
 - **Highlight positions are fractions of the page** (`0.0`–`1.0` of the unscaled page), so
   they land in the same place at any zoom, on any screen, and on a future iPad app.
-- **Everything inside a bundle is relative**, so a lecture folder can be moved or synced
+- **Everything inside a bundle is relative**, so an item's folder can be moved or synced
   without rewriting anything.
 - **Per-device state stays off the vault.** Theme and notes width live in
   `~/Library/Application Support/Nexus/`. A sync client therefore never sees them.
@@ -157,7 +170,7 @@ build one yourself with `npm run app:build` (see below), or get one from whoever
 2. Open Nexus from Applications. The first time, macOS will refuse, saying it cannot check
    the app for malicious software. Go to **System Settings → Privacy & Security**, scroll to
    the message about Nexus, and choose **Open Anyway**. macOS remembers the choice.
-3. Choose **Open a vault** and pick a folder for your lectures. An empty folder is fine.
+3. Choose **Open a vault** and pick a folder for your notes. An empty folder is fine.
 
 The disk image is built for **Apple silicon** (M1 and later). On an Intel Mac, build from
 source instead.

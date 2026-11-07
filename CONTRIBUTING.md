@@ -227,7 +227,7 @@ Open an issue with:
 - the **error code** from the message or the error panel (`⌘0`)
 - your macOS version and how you ran Nexus (`npm run app` or a built `.app`)
 
-**Never paste the contents of your notes, highlights or lecture files into an issue**, and
-redact folder names from any path, because they often contain course titles. A minimal
+**Never paste the contents of your notes, highlights or documents into an issue**, and
+redact folder names from any path, because they often contain course or project names. A minimal
 reproduction with a made-up PDF is ideal. Logs in `~/Library/Logs/Nexus/` contain only codes,
 digests and timings by design, but read them before attaching.

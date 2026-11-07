@@ -103,5 +103,5 @@ test("the line the cursor is on shows its Markdown", async ({ page }) => {
 
 test("an image from the web is not fetched, and says why", async ({ page }) => {
   // Offline by definition: only the lecture's own assets folder is shown.
-  await expect(notes(page).getByText(/Only images in this lecture's assets folder are shown/)).toBeVisible();
+  await expect(notes(page).getByText(/Only images in these notes' assets folder are shown/)).toBeVisible();
 });

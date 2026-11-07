@@ -5,6 +5,7 @@
 import type { Annotation, HighlightSemantic } from "../ipc/annotations";
 import type { VaultMarks } from "../ipc/search";
 import type { LectureRow } from "../ipc/vault";
+import { byName, isWithin, parentOf, trail } from "./folders";
 
 /** What can be filtered on: the four meanings, and sticky notes, which have none. */
 export type MarkKind = HighlightSemantic | "sticky";
@@ -14,14 +15,13 @@ export const MARK_KINDS: readonly MarkKind[] = ["key", "definition", "exam", "qu
 export interface LibraryFilter {
   /** Which kinds to show; empty shows every kind. */
   readonly kinds: ReadonlySet<MarkKind>;
-  readonly course: string | null;
-  readonly module: string | null;
-  readonly week: string | null;
+  /** A folder to keep the highlights of, at any depth inside it; `null` keeps all. */
+  readonly folder: string | null;
   /** Words the highlighted text must contain, ignoring case; blank shows all. */
   readonly text: string;
 }
 
-export const NO_FILTER: LibraryFilter = { kinds: new Set(), course: null, module: null, week: null, text: "" };
+export const NO_FILTER: LibraryFilter = { kinds: new Set(), folder: null, text: "" };
 
 export interface LibraryGroup {
   readonly lecture: LectureRow;
@@ -57,11 +57,7 @@ function topOf(annotation: Annotation): number {
 }
 
 function lectureKept(lecture: LectureRow, filter: LibraryFilter): boolean {
-  return (
-    (filter.course === null || lecture.course === filter.course) &&
-    (filter.module === null || lecture.module === filter.module) &&
-    (filter.week === null || lecture.week === filter.week)
-  );
+  return filter.folder === null || isWithin(lecture.directory, filter.folder);
 }
 
 /**
@@ -93,22 +89,15 @@ export function libraryGroups(
   });
 }
 
-/** The values each facet takes among the lectures with highlights, sorted, for the menus. */
-export function facetChoices(marks: VaultMarks, lectures: readonly LectureRow[]): {
-  readonly courses: readonly string[];
-  readonly modules: readonly string[];
-  readonly weeks: readonly string[];
-} {
+/**
+ * The folders that hold highlights, at any depth, sorted, for the menu: each folder above
+ * an item with highlights, so "everything in CS454" and "just Week 3" are both there.
+ */
+export function folderChoices(marks: VaultMarks, lectures: readonly LectureRow[]): readonly string[] {
   const marked = new Set(marks.lectures.map((lecture) => lecture.directory));
-  const withMarks = lectures.filter((lecture) => marked.has(lecture.directory));
-  const values = (pick: (lecture: LectureRow) => string | null) =>
-    [...new Set(withMarks.map(pick).filter((value): value is string => value !== null))].sort((a, b) =>
-      a.localeCompare(b, undefined, { numeric: true }),
-    );
+  const folders = lectures
+    .filter((lecture) => marked.has(lecture.directory))
+    .flatMap((lecture) => trail(parentOf(lecture.directory)));
 
-  return {
-    courses: values((lecture) => lecture.course),
-    modules: values((lecture) => lecture.module),
-    weeks: values((lecture) => lecture.week),
-  };
+  return [...new Set(folders)].sort(byName);
 }

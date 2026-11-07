@@ -209,7 +209,10 @@ fn the_document_the_manifest_points_at_is_really_there() {
     let fixture = Fixture::new();
     bring_in(&fixture.vault(), &fixture.document("Raft.pdf")).unwrap();
 
-    let resolved = loaded(&fixture.vault, "raft").document_path().unwrap();
+    let resolved = loaded(&fixture.vault, "raft")
+        .document_path()
+        .unwrap()
+        .unwrap();
 
     assert_eq!(resolved.to_string(), "raft/source/document.pdf");
     assert!(
@@ -231,7 +234,7 @@ fn an_imported_bundle_can_be_moved_without_rewriting_anything_inside_it() {
     fs::rename(fixture.vault.join("raft"), &moved_to).unwrap();
 
     let bundle = loaded(&fixture.vault, "cs454/week-3");
-    let resolved = bundle.document_path().unwrap();
+    let resolved = bundle.document_path().unwrap().unwrap();
 
     assert_eq!(resolved.to_string(), "cs454/week-3/source/document.pdf");
     assert!(

@@ -62,6 +62,14 @@
 }
 
 /* The `hidden` attribute loses to `display: flex` above unless it is said again. */
+/* A plain note has no document beside it, so its notes are the whole reading area. The
+   editor already holds prose to a reading measure, centred, so nothing else changes. */
+.notes-pane.alone {
+  flex: 1 1 auto;
+  max-width: none;
+  border-left: none;
+}
+
 .notes-pane[hidden] {
   display: none;
 }

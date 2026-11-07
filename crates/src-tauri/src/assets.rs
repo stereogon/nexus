@@ -120,8 +120,7 @@ pub fn allow_assets(app: &AppHandle, vault: &str, directory: &str) -> Result<(),
         .allow_directory(folder.as_path(), false)
         .map_err(|_| CommandError {
             code: "ERR_IMAGES_UNREADABLE",
-            remediation: "Nexus could not give its window permission to show this lecture's \
-                          images. Your notes are unaffected; reopening the lecture usually \
-                          clears it.",
+            remediation: "Nexus could not give its window permission to show these notes' images. Your \
+                          notes are unaffected; reopening them usually clears it.",
         })
 }

@@ -13,6 +13,7 @@ afterEach(cleanup);
 function lecture(over: Partial<LectureRow> = {}): LectureRow {
   return {
     directory: "CS454/Week 03/01-raft",
+    kind: "document",
     title: "Raft Consensus",
     number: null,
     numberInTitle: null,
@@ -47,15 +48,17 @@ function show(over: Partial<Parameters<typeof TitleBar>[0]> = {}) {
 }
 
 describe("the breadcrumb", () => {
-  it("shows the facets a lecture carries, then its title", () => {
-    show();
+  it("shows the folders the item is in, then its title", () => {
+    // From where it is, not its facets: course and week are no longer typed in, and an
+    // item filed under facets that disagree with its folder would name a place it is not.
+    show({ lecture: lecture({ course: "Ignored", week: "Ignored" }) });
 
     expect(screen.getByText("CS454 / Week 03 /")).toBeDefined();
     expect(screen.getByText("Raft Consensus")).toBeDefined();
   });
 
-  it("leaves out the facets a lecture does not have", () => {
-    show({ lecture: lecture({ course: null, week: null }) });
+  it("shows no path for an item at the top of the vault", () => {
+    show({ lecture: lecture({ directory: "raft" }) });
 
     expect(screen.queryByText(/\//u)).toBeNull();
     expect(screen.getByText("Raft Consensus")).toBeDefined();

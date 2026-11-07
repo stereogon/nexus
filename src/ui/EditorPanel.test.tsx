@@ -15,6 +15,7 @@ afterEach(cleanup);
 
 const LECTURE: LectureRow = {
   directory: "week-2/process-overview",
+  kind: "document",
   title: "2. ProcessOverview",
   number: null,
   numberInTitle: null,
@@ -40,11 +41,19 @@ function field(label: string): HTMLInputElement {
 
 function panel() {
   const onCancel = vi.fn();
+  const onSave = vi.fn();
   const rendered = render(
-    <EditorPanel busy={false} lecture={LECTURE} onCancel={onCancel} onSave={vi.fn()} />,
+    <EditorPanel
+      busy={false}
+      folders={["week-1", "week-2"]}
+      lecture={LECTURE}
+      onCancel={onCancel}
+      onSave={onSave}
+      vaultName="StudyVault"
+    />,
   );
 
-  return { onCancel, unmount: rendered.unmount };
+  return { onCancel, onSave, unmount: rendered.unmount };
 }
 
 /** A button outside the panel, standing in for the sidebar's Edit control. */
@@ -58,8 +67,8 @@ function trigger(): HTMLButtonElement {
 }
 
 describe("what it says", () => {
-  it("names the lecture being edited", () => {
-    // With a document open the lecture in the panel is often not the one on screen, so it
+  it("names the item being edited", () => {
+    // With a document open the item in the panel is often not the one on screen, so it
     // says which one rather than leaving it to be inferred from the sidebar.
     panel();
 
@@ -72,14 +81,31 @@ describe("what it says", () => {
     // deliberately not there.
     panel();
 
-    expect(screen.getByRole("complementary", { name: "Edit lecture" })).not.toBeNull();
+    expect(screen.getByRole("complementary", { name: "Edit document" })).not.toBeNull();
   });
 
-  it("carries the lecture's current values into the form", () => {
+  it("carries the item's current values into the form, with the folder it is in", () => {
     panel();
 
-    expect(field("Week").value).toBe("Week 2");
     expect(field("Tags").value).toBe("exam");
+    expect(screen.getByLabelText<HTMLSelectElement>("Folder").value).toBe("week-2");
+  });
+
+  it("asks for no course, module or week, and sends back the ones already saved", () => {
+    // The folder says where an item belongs now; the values an older file holds are kept
+    // rather than cleared by an edit that never showed them.
+    const { onSave } = panel();
+
+    expect(screen.queryByLabelText("Course")).toBeNull();
+    expect(screen.queryByLabelText("Week")).toBeNull();
+
+    fireEvent.change(screen.getByLabelText("Folder"), { target: { value: "week-1" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({ course: "Software Systems Engineering", week: "Week 2" }),
+      "week-1",
+    );
   });
 });
 

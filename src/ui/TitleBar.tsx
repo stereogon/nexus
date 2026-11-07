@@ -12,6 +12,7 @@
  */
 import type { Theme } from "../ipc/theme";
 import type { LectureRow } from "../ipc/vault";
+import { parentOf, spoken } from "./folders";
 import { THEME_LABEL } from "./useTheme";
 
 /** The mark from the canvas: a path through three nodes, the middle one in ink. */
@@ -136,12 +137,8 @@ export function TitleBar({
   readonly libraryShown: boolean;
   readonly onToggleLibrary: () => void;
 }) {
-  const facets =
-    lecture === null
-      ? []
-      : [lecture.course, lecture.module, lecture.week].filter(
-          (facet): facet is string => facet !== null,
-        );
+  // The folders the open item is in: where it is, now that a folder is where it belongs.
+  const place = lecture === null ? "" : spoken(parentOf(lecture.directory));
 
   return (
     <header className="titlebar">
@@ -153,9 +150,7 @@ export function TitleBar({
       </div>
 
       <div className="crumbs">
-        {facets.length > 0 && (
-          <span className="crumbs-path">{`${facets.join(" / ")} /`}</span>
-        )}
+        {place !== "" && <span className="crumbs-path">{`${place} /`}</span>}
         {lecture !== null && <span className="crumbs-here">{lecture.title}</span>}
       </div>
 

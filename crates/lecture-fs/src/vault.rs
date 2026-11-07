@@ -112,6 +112,8 @@ pub struct UnloadableLecture {
 pub struct LoadedVault {
     /// The lectures that loaded, in path order.
     pub bundles: Vec<LectureBundle>,
+    /// The folders that hold lectures rather than being one, in path order.
+    pub folders: Vec<RelativePath>,
     /// Directories the walk could not use, each with a reason to show.
     pub skipped: Vec<SkippedDirectory>,
     /// Lectures found but not loadable.
@@ -145,6 +147,7 @@ impl<C: Clock> VaultLoader<C> {
         let scan = scan_vault(&self.directory)?;
         let mut loaded = LoadedVault {
             skipped: scan.skipped().to_vec(),
+            folders: scan.folders().to_vec(),
             ..LoadedVault::default()
         };
 

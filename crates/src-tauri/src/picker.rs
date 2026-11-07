@@ -78,8 +78,8 @@ pub async fn pick_document(app: AppHandle) -> Option<String> {
     answered(|sender| {
         app.dialog()
             .file()
-            .set_title("Choose a lecture document")
-            .add_filter("Lecture documents", &IMPORTABLE)
+            .set_title("Choose a document")
+            .add_filter("Documents", &IMPORTABLE)
             .pick_file(move |chosen| {
                 let _ = sender.blocking_send(chosen);
             });

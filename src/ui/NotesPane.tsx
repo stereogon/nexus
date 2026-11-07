@@ -31,7 +31,7 @@ const REFUSED = {
  * on the notes by a few pixels — so the sentence says where it should have gone.
  */
 const DROP_NOT_AN_IMAGE =
-  "That is not an image Nexus keeps in notes — PNG, JPEG, GIF and WebP are — so nothing was added. To import a document as a lecture, drop it on the page or the sidebar.";
+  "That is not an image Nexus keeps in notes — PNG, JPEG, GIF and WebP are — so nothing was added. To import a document, drop it anywhere outside the notes.";
 
 /** What the header says about the last save. Plain words: the reader is not a developer. */
 const STATUS_TEXT: Record<SaveStatus, string> = {
@@ -54,6 +54,7 @@ export function NotesPane({
   reveal,
   onCited,
   width,
+  alone,
 }: {
   readonly vault: string;
   readonly directory: string;
@@ -70,6 +71,11 @@ export function NotesPane({
   readonly onCited: (ids: ReadonlySet<string>) => void;
   /** The width chosen with the divider, or `null` for the stylesheet's default. */
   readonly width: number | null;
+  /**
+   * For a plain note, which has no document: the pane is then the whole reading area, its
+   * header names the note, and closing it closes the note. `null` beside a document.
+   */
+  readonly alone: { readonly title: string; readonly onClose: () => void } | null;
 }) {
   const notes = useNotes(vault, directory);
 
@@ -160,7 +166,9 @@ export function NotesPane({
   return (
     <aside
       aria-label="Notes"
-      className={dropping ? "notes-pane dropping" : "notes-pane"}
+      className={["notes-pane", alone === null ? "" : "alone", dropping ? "dropping" : ""]
+        .filter((name) => name !== "")
+        .join(" ")}
       // A chosen width replaces the default share and its cap; `useNotesWidth` has already
       // held it to what the window can give.
       data-sized={width === null ? undefined : ""}
@@ -169,13 +177,19 @@ export function NotesPane({
       style={width === null ? undefined : { flexBasis: width }}
     >
       <header className="notes-bar">
-        <span className="notes-title">Notes</span>
+        <span className="notes-title">{alone === null ? "Notes" : alone.title}</span>
         <span aria-live="polite" className={`notes-status ${notes.status}`}>
           {STATUS_TEXT[notes.status]}
         </span>
-        <button aria-label="Hide notes" className="quiet" onClick={onHide} type="button">
-          ✕
-        </button>
+        {alone === null ? (
+          <button aria-label="Hide notes" className="quiet" onClick={onHide} type="button">
+            ✕
+          </button>
+        ) : (
+          <button className="secondary" onClick={alone.onClose} type="button">
+            Close
+          </button>
+        )}
       </header>
 
       {notes.onDisk !== null && (

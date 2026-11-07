@@ -3,6 +3,12 @@
 ## Role & Execution Directive for Claude Code
 You are acting as a Principal Systems & Desktop Application Architect. Your objective is to build a blazing-fast, 100% offline, local-first macOS application for studying lecture materials (PDF, PPT, PPTX, DOC, DOCX) alongside deeply linked, rich Markdown notes.
 
+> **Amended 2026-11-06 (the user's request).** Not only for lectures: Nexus is a
+> general-purpose note-taker that is also good at studying documents. The window no longer
+> says "lecture" — a *document* is imported, a *note* is made in Nexus with no document
+> beside it, and both live in ordinary folders the sidebar steps into one at a time.
+> Reasoning in `PROGRESS.md`.
+
 You must prioritize **runtime performance, memory efficiency, strict type safety, modular architecture, observability, and automated behavioral testing** so the codebase remains effortless to debug, maintain, and extend (including a planned Phase 2 iPadOS companion app).
 
 ---
@@ -144,6 +150,13 @@ StudyVault/
     ├── annotations.json               # Viewport-independent normalized coordinates
     └── assets/                        # Local images and pasted figures
 ```
+
+> **Amended 2026-11-06 (the user's request).** From schema version 4 `source` is
+> optional. A bundle without one is a plain note: `manifest.json`, `notes.md` and `assets/`,
+> with no `source/`, no `annotations.json` and nothing to render. The bundle is still a
+> directory holding `manifest.json`, so it is found, ordered, numbered, searched and synced
+> exactly as a document is. The folder a bundle sits in is now how it is organised; the
+> taxonomy facets are kept in the manifest but no longer asked for or grouped on.
 
 > **Amended 2026-11-05 (the user's request).** `manifest.json` also holds an optional
 > `number` — the lecture's number in the course (`3`, `3a`, `IV`) — from schema version 3.
