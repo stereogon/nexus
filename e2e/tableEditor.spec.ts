@@ -73,18 +73,29 @@ test("the toolbar adds and removes rows and columns, aligns, and turns the heade
   await cell(page, "Row 1, column 2").click();
   await expect(tools(page)).toBeVisible();
 
-  await tools(page).getByRole("button", { name: "Add a row below" }).click();
+  await tools(page).getByRole("button", { name: "Row", exact: true }).click();
+  await tools(page).getByRole("menuitem", { name: "Add a row below" }).click();
   await expect.poll(async () => (await tableText(page)).length).toBe(5);
 
   await tools(page).getByRole("button", { name: "Centre the column" }).click();
   await expect.poll(async () => (await tableText(page))[1]).toBe("| ----- | :---: |");
 
-  await tools(page).getByRole("button", { name: "Delete the column" }).click();
+  await tools(page).getByRole("button", { name: "Column", exact: true }).click();
+  await tools(page).getByRole("menuitem", { name: "Delete the column" }).click();
   await expect.poll(async () => (await tableText(page))[0]).toBe("| Name  |");
 
   await tools(page).getByRole("button", { name: "Header row" }).click();
   await expect.poll(async () => (await tableText(page))[0]).toBe("|       |");
   await expect(notes(page).locator(".md-table-editable thead")).toHaveCount(0);
+});
+
+test("the toolbar is one row above the table, not covering more than a line", async ({ page }) => {
+  await cell(page, "Row 1, column 1").click();
+
+  const bar = await tools(page).boundingBox();
+
+  // One row of controls, as reported on 2026-11-08 when it wrapped onto three.
+  expect(bar?.height ?? 0).toBeLessThan(40);
 });
 
 test("⌘Z in a cell undoes what was typed there", async ({ page }) => {

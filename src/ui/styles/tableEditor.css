@@ -51,50 +51,44 @@
 
 .md-table-tools {
   position: absolute;
-  bottom: calc(100% + 4px);
+  bottom: calc(100% + 2px);
   left: 0;
   z-index: 6;
   display: none;
-  flex-wrap: wrap;
-  gap: 4px;
-  max-width: 100%;
-  padding: 4px;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
   border: 1px solid var(--border-strong);
   border-radius: 9px;
   background: var(--surface);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
   font-family: var(--font-ui);
+  white-space: nowrap;
 }
 
 .md-table-editable:focus-within .md-table-tools {
-  display: flex;
-}
-
-.md-table-tool-group {
   display: inline-flex;
-  gap: 2px;
-  padding-right: 4px;
-  border-right: 1px solid var(--border);
-}
-
-.md-table-tool-group:last-child {
-  padding-right: 0;
-  border-right: none;
 }
 
 .md-table-tools button {
-  height: 24px;
-  padding: 0 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 5px;
   border: none;
   border-radius: 6px;
   background: transparent;
   color: var(--text-secondary);
   font-family: var(--font-ui);
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 500;
 }
 
-.md-table-tools button:hover {
+.md-table-tools button:hover,
+.md-table-tools button[aria-expanded="true"] {
   background: var(--track);
   color: var(--text);
 }
@@ -102,4 +96,47 @@
 .md-table-tools button[aria-pressed="true"] {
   background: var(--accent-soft);
   color: var(--accent);
+}
+
+.md-table-menu-opener svg {
+  width: 12px;
+  height: 12px;
+}
+
+.md-table-tools-divider {
+  width: 1px;
+  height: 16px;
+  margin: 0 3px;
+  background: var(--border);
+}
+
+/* Row's and Column's menus: a short list under their button. */
+.md-table-menu-holder {
+  position: relative;
+}
+
+.md-table-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 7;
+  display: flex;
+  flex-direction: column;
+  min-width: 190px;
+  padding: 4px;
+  border: 1px solid var(--border-strong);
+  border-radius: 9px;
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+}
+
+.md-table-menu[hidden] {
+  display: none;
+}
+
+.md-table-tools .md-table-menu button {
+  justify-content: flex-start;
+  height: 28px;
+  padding: 0 9px;
+  font-weight: 400;
 }

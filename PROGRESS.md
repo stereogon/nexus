@@ -463,6 +463,14 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-08 · The table toolbar, one row**
+The user, with a screenshot of the toolbar wrapped onto three rows over the heading above
+the table: *"make this better"*. It is now one compact row: **Row ▾** and **Column ▾** each
+open a short menu (add above or below, left or right; move; delete), then three alignment
+icons, the header toggle (lit while on) and a trash icon for the table. Each has a tooltip
+and a spoken name, and none takes focus from the cell. A journey checks the bar stays
+under 40px tall. Verified: gate green (180 journeys).
+
 **2026-11-08 · Tables edited where they are drawn**
 From the to-do list: *"a proper table engine … add table, select the number of rows and
 columns we want, then we can edit it with table formatting options"*.
