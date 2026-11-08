@@ -6,13 +6,15 @@
 import type { EditorView } from "@codemirror/view";
 
 import type { Block } from "../notes/blocks";
+import { chartOpener } from "../notes/chartEditing";
 import { turnsInto, type Block as Kind } from "../notes/format";
 import { formatBlock } from "../notes/markSelection";
 import type { MenuItem } from "./PopMenu";
 
 /**
  * What `+`'s menu turns the new line into, as Notion's does: a block type from the format
- * rules, or a code block or a divider written out.
+ * rules, or a code block, a diagram or a divider written out, or a chart made in the chart
+ * form (2026-11-08: diagrams and charts had worked only for whoever knew the fence to type).
  */
 export function turnInto(editor: EditorView): MenuItem[] {
   const as = (kind: Kind) => () => {
@@ -41,6 +43,15 @@ export function turnInto(editor: EditorView): MenuItem[] {
     { label: "To-do list", onSelect: as("task") },
     { label: "Quote", onSelect: as("quote") },
     { label: "Code", onSelect: write("```\n\n```", 4) },
+    { label: "Diagram", onSelect: write("```mermaid\n\n```", 11) },
+    {
+      label: "Chart",
+      onSelect: () => {
+        const line = editor.state.doc.lineAt(editor.state.selection.main.head);
+
+        editor.state.facet(chartOpener)?.({ from: line.from, to: line.to, source: null, original: line.text });
+      },
+    },
     { label: "Divider", onSelect: write("---\n", 4) },
   ];
 }

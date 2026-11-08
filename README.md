@@ -91,8 +91,14 @@ The screenshots use the test suite's sample vault, not real notes. They are reta
 - A Markdown editor (CodeMirror 6) with live preview in the same view: headings, lists,
   tables, task lists, quotes, and code blocks with syntax colouring for JavaScript,
   TypeScript, CSS, HTML and JSON.
-- LaTeX through KaTeX, `mermaid` diagrams, and declarative `chart` blocks. A broken block
-  shows a hint inline and never takes the editor down.
+- LaTeX through KaTeX, diagrams and charts. A broken block shows a hint inline and never
+  takes the editor down.
+- **Diagram** in the `+` menu opens a block to paste [Mermaid](https://mermaid.js.org) code
+  into; the diagram is drawn below it as you type.
+- **Chart** in the `+` menu opens a small form: bar, line or pie, a title, axis names, and a
+  grid of labels and values (paste cells straight from a spreadsheet). A drawn chart has
+  an **Edit chart** button that reopens it. Underneath it is a ```` ```chart ```` block of
+  JSON, which can also be written by hand.
 - Paste or drop images. They are saved into the item's `assets/` folder.
 - A Notion-style format bar over a selection, or docked open from the notes' **Aa** button
   to choose a format before writing; shortcuts too, plus highlighting in the notes in the
@@ -145,10 +151,6 @@ Recorded in [`PROGRESS.md`](./PROGRESS.md) with the reasoning for each:
 - A table editor in the notes: insert a table by picking its rows and columns, then edit
   it in place (add, remove and move rows and columns; align a column; header row). Today
   a table is drawn from Markdown you type.
-- A Diagram block and a Chart block in `+`'s menu. Today both work only by typing a code
-  block with the language `mermaid` or `chart`; nothing offers them. The diagram block
-  takes pasted Mermaid code; the chart block will be filled in from a small form rather
-  than hand-written JSON.
 - An MCP server, so AI agents (Claude and others) can search, read and add to a vault
   directly. Planned; see `PROGRESS.md` for the questions it raises first.
 

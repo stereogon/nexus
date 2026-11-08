@@ -1,0 +1,150 @@
+/**
+ * The chart form (`ChartForm.tsx`), over the workspace like the search window, in the
+ * theme's own colours.
+ */
+
+.chart-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 10vh;
+  background: rgba(20, 16, 12, 0.32);
+}
+
+.chart-form {
+  width: min(640px, calc(100vw - 48px));
+  max-height: 80vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 18px 20px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+
+.chart-form-title {
+  margin: 0 0 12px;
+  font-family: var(--font-brand);
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.chart-kinds {
+  width: 220px;
+}
+
+.chart-form-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.chart-form-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--text-meta);
+  font-size: 11.5px;
+}
+
+.chart-form input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--field);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+
+.chart-form input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+/* The grid scrolls sideways on its own when it has many columns; the form does not. */
+.chart-grid-wrap {
+  overflow-x: auto;
+}
+
+.chart-grid {
+  border-collapse: separate;
+  border-spacing: 4px;
+}
+
+.chart-grid th,
+.chart-grid td {
+  position: relative;
+  min-width: 84px;
+  padding: 0;
+  font-weight: normal;
+}
+
+.chart-grid thead input,
+.chart-grid tbody th input {
+  font-weight: 600;
+}
+
+.chart-grid td input {
+  font-family: var(--font-mono);
+  text-align: right;
+}
+
+/* Removing a column or a series, at the cell's corner, shown on hover or focus. */
+.chart-grid-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text-meta);
+  font-size: 9px;
+  line-height: 1;
+  opacity: 0;
+}
+
+.chart-grid th:hover .chart-grid-remove,
+.chart-grid-remove:focus-visible {
+  opacity: 1;
+}
+
+.chart-add-series {
+  margin: 2px 4px 0;
+}
+
+.chart-form-note {
+  margin: 8px 4px 0;
+  color: var(--text-meta);
+  font-size: 12px;
+}
+
+.chart-form-problem {
+  margin: 10px 0 0;
+  padding: 7px 11px;
+  border-left: 3px solid var(--semantic-exam);
+  border-radius: 0 6px 6px 0;
+  background: var(--exam-wash);
+}
+
+.chart-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}

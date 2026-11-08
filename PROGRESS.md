@@ -463,6 +463,35 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-08 · Diagram and Chart blocks in the + menu**
+From the to-do list raised yesterday. `+`'s menu now offers **Diagram**, which writes an
+empty ```mermaid block with the cursor inside, and **Chart**, which opens the chart form.
+
+- **Drawn as it is typed.** While the cursor is in a diagram or chart block, the drawing is
+  shown below its code (`field.ts`, a block widget after the closing fence). Before, it
+  appeared only once the cursor left. An empty diagram block says what to paste instead
+  of reporting a failure.
+- **The chart form** (`ChartForm.tsx`; the model is `notes/chartForm.ts`) edits a chart as a
+  table: bar, line or pie, a title, axis names (not for a pie), labels across and one row
+  per series. A grid pasted into any cell, tab- or comma-separated, fills the table. Values
+  stay text until saved, then must all be numbers; the form says which one is not and
+  writes nothing. It writes the same JSON a hand-written block uses and checks it with
+  `readChart` first. A scatter chart has no place in the table, so its form says so and the
+  chart gets no Edit button.
+- **Reaching the form from inside CodeMirror.** `chartOpener` is a facet the editor is built
+  with (`notes/chartEditing.ts`), read by the + menu and by the chart widget's Edit button,
+  rather than a callback threaded through each. A save checks that the block's text is
+  still what the form opened on; if the notes changed underneath, it writes nothing and
+  says so, rather than replacing the wrong text.
+- `NotesEditor`'s imperative handle moved, unchanged, into `useNotesHandle.ts` to make room.
+
+Not done: the format bar does not offer Diagram or Chart; the + menu does.
+
+Verified: gate green. `chartForm.test.ts` (7); four journeys in `diagramChart.spec.ts`
+(diagram typed and drawn live; chart from a pasted grid; a non-number refused; Edit chart
+rewriting a block). Sabotage: without the live widget the diagram journey fails, and
+without the Edit button the edit journey fails.
+
 **2026-11-07 · Screenshots in the README; a new app icon; the DMG rebuilt**
 The user: *"can you add some screenshot in the readme … please build the dmg again … change
 the logo of the app to something better, pink background does not look good … a doodle

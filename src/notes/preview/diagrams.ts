@@ -12,6 +12,7 @@
  */
 import { WidgetType, type EditorView } from "@codemirror/view";
 
+import { chartBlockAt, chartOpener } from "../chartEditing";
 import { readChart, type ChartSpec } from "./chartSpec";
 import { problem } from "./widgets";
 
@@ -38,6 +39,13 @@ export class MermaidWidget extends WidgetType {
     const ready = drawn.get(this.source);
 
     host.className = "md-diagram";
+
+    // A new Diagram block, before anything is pasted into it.
+    if (this.source.trim() === "") {
+      host.classList.add("md-diagram-empty");
+      host.textContent = "Paste Mermaid code into this block, for example: graph TD; Idea --> Notes";
+      return host;
+    }
 
     if (ready !== undefined) {
       host.innerHTML = ready;
@@ -180,6 +188,25 @@ export class ChartWidget extends WidgetType {
     host.className = "md-chart";
     host.append(canvas);
 
+    // Reopens the chart form on this block, in an editor that has one (2026-11-08).
+    const open = view.state.facet(chartOpener);
+
+    if (open !== null && read.spec.type !== "scatter") {
+      const edit = document.createElement("button");
+
+      edit.type = "button";
+      edit.className = "secondary md-chart-edit";
+      edit.textContent = "Edit chart";
+      edit.addEventListener("click", () => {
+        const at = chartBlockAt(view.state, view.posAtDOM(host));
+
+        if (at !== null) {
+          open(at);
+        }
+      });
+      host.append(edit);
+    }
+
     void draw(canvas, read.spec)
       .then((teardown) => {
         charts.set(host, teardown);
@@ -197,7 +224,8 @@ export class ChartWidget extends WidgetType {
     charts.delete(dom);
   }
 
-  override ignoreEvent(): boolean {
-    return false;
+  /** The Edit button is the chart's own; a click anywhere else opens the block's source. */
+  override ignoreEvent(event: Event): boolean {
+    return event.target instanceof Element && event.target.closest(".md-chart-edit") !== null;
   }
 }

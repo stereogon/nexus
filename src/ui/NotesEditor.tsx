@@ -15,36 +15,29 @@ import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { EditorState } from "@codemirror/state";
 import { drawSelection, EditorView, keymap, placeholder } from "@codemirror/view";
-import { useEffect, useImperativeHandle, useRef, useState, type Ref } from "react";
+import { useEffect, useRef, useState, type Ref } from "react";
 
 import { barFor, formatKeys, formatStateOf } from "../notes/markSelection";
 import type { FormatState } from "./NotesFormatBar";
 import { BlockHandles } from "./BlockHandles";
 import { HeadingRail } from "./HeadingRail";
+import { ChartForm } from "./ChartForm";
 import { NotesFormatting } from "./NotesFormatting";
+import { useNotesHandle, type NotesHandle } from "./useNotesHandle";
 import type { MenuAt } from "./menuPlacement";
 
 import { citationOffsets, citeLinks, nextOccurrence } from "../notes/citeLinks";
 import { codeLanguages } from "../notes/codeLanguages";
 import { flashLine, lineFlash } from "../notes/flash";
-import { citationAt } from "../notes/insert";
 import { livePreview } from "../notes/preview/field";
 import { blockKeys } from "../notes/blockKeys";
+import { chartOpener, writeChart, type ChartAt } from "../notes/chartEditing";
 import { dropEmptiedMarks } from "../notes/emptiedMarks";
 import { pageHeading, setHeading, type PageHeading } from "../notes/pageHeading";
 import { pasteImages } from "../notes/pasteImage";
 import { notePage, notesAppearance } from "../notes/theme";
-import type { Point } from "./notesDrop";
 
-/** What the pane can ask of the editor. */
-export interface NotesHandle {
-  /** Inserts a citation at the cursor, as a block of its own, and focuses the editor. */
-  readonly insertCitation: (block: string) => void;
-  /** Scrolls to a line, counting from 1, and puts the cursor at its start. */
-  readonly showLine: (line: number) => void;
-  /** Links images where they were dropped — `at` in window CSS pixels — or at the cursor. */
-  readonly insertImages: (paths: readonly string[], at: Point) => void;
-}
+export type { NotesHandle };
 
 export function NotesEditor({
   text,
@@ -102,6 +95,8 @@ export function NotesEditor({
 
   // The latest callbacks, read by the view's listeners. Rebuilding the view to pick up a
   // new callback would throw away the cursor and the undo history.
+  // The chart form, open on a block or a new chart's line, and why its last save failed.
+  const [chart, setChart] = useState<{ readonly at: ChartAt; readonly failure: string | null } | null>(null);
   const changed = useRef(onChange);
   const cited = useRef(onCite);
   const ready = useRef(onReady);
@@ -158,6 +153,9 @@ export function NotesEditor({
             cited.current(id);
           }),
           pasteImages(() => pasted.current),
+          chartOpener.of((at) => {
+            setChart({ at, failure: null });
+          }),
           blockKeys,
           dropEmptiedMarks,
           EditorView.updateListener.of((update) => {
@@ -220,60 +218,7 @@ export function NotesEditor({
     editor.dispatch({ effects: [EditorView.scrollIntoView(at, { y: "center" }), flashLine.of(at)] });
   }, [reveal]);
 
-  useImperativeHandle(
-    handle,
-    () => ({
-      insertCitation: (block: string) => {
-        const editor = view.current;
-
-        if (editor === null) {
-          return;
-        }
-
-        const at = editor.state.selection.main.head;
-        const { text: inserted, cursor } = citationAt(editor.state.doc.toString(), at, block);
-
-        editor.dispatch({
-          changes: { from: at, insert: inserted },
-          selection: { anchor: at + cursor },
-          scrollIntoView: true,
-        });
-        editor.focus();
-      },
-      insertImages: (paths: readonly string[], at: Point) => {
-        const editor = view.current;
-
-        if (editor === null || paths.length === 0) {
-          return;
-        }
-
-        const from = editor.posAtCoords(at) ?? editor.state.selection.main.head;
-        // On lines of their own, with the cursor below: an image is drawn only while the
-        // cursor is off its line, and a drop should show the picture, not its Markdown.
-        const breakBefore = from > editor.state.doc.lineAt(from).from ? "\n" : "";
-        const insert = `${breakBefore}${paths.map((path) => `![](${path})`).join("\n")}\n`;
-
-        editor.dispatch({ changes: { from, insert }, selection: { anchor: from + insert.length }, scrollIntoView: true });
-        editor.focus();
-      },
-      showLine: (line: number) => {
-        const editor = view.current;
-
-        if (editor === null || line < 1 || line > editor.state.doc.lines) {
-          return;
-        }
-
-        const start = editor.state.doc.line(line).from;
-
-        editor.dispatch({
-          selection: { anchor: start },
-          effects: EditorView.scrollIntoView(start, { y: "center" }),
-        });
-        editor.focus();
-      },
-    }),
-    [],
-  );
+  useNotesHandle(handle, view);
 
   return (
     <>
@@ -295,6 +240,21 @@ export function NotesEditor({
         {viewReady && <BlockHandles box={body} text={current} view={view} />}
         {viewReady && <HeadingRail text={current} view={view} />}
       </div>
+      {chart !== null && (
+        <ChartForm
+          failure={chart.failure}
+          onClose={() => {
+            setChart(null);
+            view.current?.focus();
+          }}
+          onSave={(source) => {
+            const failure = view.current === null ? "The notes are not open." : writeChart(view.current, chart.at, source);
+
+            setChart(failure === null ? null : { ...chart, failure });
+          }}
+          source={chart.at.source}
+        />
+      )}
     </>
   );
 }

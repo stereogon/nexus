@@ -66,9 +66,15 @@ function widgetFor(preview: Preview, context: PreviewContext, lit: string): Widg
 }
 
 function decorations(state: EditorState, context: PreviewContext): DecorationSet {
-  const previews = findPreviews(state.doc.toString()).filter(
-    (preview) => !opens(preview) || !touched(state, preview.from, preview.to),
-  );
+  const found = findPreviews(state.doc.toString());
+  const previews = found.filter((preview) => !opens(preview) || !touched(state, preview.from, preview.to));
+  // A diagram or chart being written is drawn below its code as it is typed (2026-11-08),
+  // rather than only once the cursor has left it.
+  const live = found
+    .filter((preview) => (preview.kind === "mermaid" || preview.kind === "chart") && touched(state, preview.from, preview.to))
+    .map((preview) =>
+      Decoration.widget({ widget: new SpacedWidget(widgetFor(preview, context, "")), block: true, side: 1 }).range(preview.to),
+    );
   const claimed = (from: number, to: number) =>
     previews.some((preview) => preview.from <= from && to <= preview.to);
   const markup = markupDecorations(state, claimed);
@@ -95,6 +101,7 @@ function decorations(state: EditorState, context: PreviewContext): DecorationSet
           preview.to,
         ),
       ),
+      ...live,
       ...markup.decorations,
       ...noteMarkDecorations(state, claimed),
     ],

@@ -143,6 +143,16 @@
   height: 280px;
 }
 
+.md-chart-edit {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.md-diagram-empty {
+  font-style: italic;
+}
+
 .md-image {
   display: block;
   max-width: 100%;
