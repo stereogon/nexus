@@ -463,6 +463,18 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-08 · The table toolbar, icons with option strips**
+The user: *"why can't we use icons instead of text, and then internal option dialog boxes
+… when we click on the alignment button, another dialog just above it showing the
+alignment options"*. The toolbar is five icons: **Rows ▾**, **Columns ▾**, **Alignment ▾**
+(showing the column in use's alignment), the header toggle and delete. Each ▾ opens a
+strip of option icons just above its button, or below it when the window has no room
+above. Rows offers add above or below, move up or down, and delete; Columns the same
+sideways; Alignment the three options. Every icon has a tooltip and a spoken name and
+keeps focus in the cell. Strips close when focus leaves the table, and deletes turn red
+on hover. A journey checks a strip opens above its button with the cell still focused.
+Verified: gate green.
+
 **2026-11-08 · The table toolbar, one row**
 The user, with a screenshot of the toolbar wrapped onto three rows over the heading above
 the table: *"make this better"*. It is now one compact row: **Row ▾** and **Column ▾** each
@@ -503,14 +515,17 @@ columns we want, then we can edit it with table formatting options"*.
 Limits: cells are single-line, as GFM's are. Merged cells and cell colours have no GFM
 form and are not offered. A table that cannot be read still shows as its text.
 
-**An unexplained crash, recorded rather than retried away.** The first gate run's
-Playwright step failed partway through: the Vite dev server that serves the test harness
-crashed inside Node while sending a 9 MB response, probably Mermaid's bundle. Every journey
-after that point failed with "Could not connect to the server". One of the failures was
-real, the old "clicking into a table shows its Markdown" journey, now rewritten. The full
-suite then ran clean (179 passed) with no crash. Nothing in the tests caused it, so nothing
-was changed for it. If it happens again, the next step is the dev server's memory and the
-size of the modules it serves.
+**A crash in Node, diagnosed (it recurred).** The first gate run's Playwright step failed
+partway through: the Vite dev server serving the test harness aborted, and every journey
+after that failed with "Could not connect to the server". It happened again on a later run,
+after 119 journeys. The abort is V8's own: *"Lazy deopt after a fast API call with return
+value is unsupported"*, inside `Buffer.byteLength` while Node 26.5.0 sent a 9 MB module. It
+is an engine defect, not something in the app or the tests. The test server and the
+screenshot server now start Node with `--no-turbo-fast-api-calls`, which turns off the
+optimisation that crashes, costing some speed; Node itself is left alone (global state).
+Two full runs followed with no abort (181 passed each). That is evidence, not proof, for an
+intermittent crash. `npm run app` serves the same modules and could meet the same abort; it
+has not been seen there. Remove the flag once Node fixes the bug.
 
 Verified: every gate step but Playwright green on the first run; the full Playwright suite
 green on the second (179). `tableModel.test.ts` (10) and the updated table and markup

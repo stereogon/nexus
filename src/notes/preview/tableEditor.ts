@@ -17,7 +17,7 @@ import { WidgetType, type EditorView } from "@codemirror/view";
 import { hasHeader, withCell, withRow, type Cell } from "../tableModel";
 import { appendInline, type Table } from "./table";
 import { editTable, leave } from "./tableEdits";
-import { tableTools } from "./tableTools";
+import { closeAll, showAlignment, tableTools } from "./tableTools";
 
 const cellOf = (input: HTMLInputElement): Cell => ({ row: Number(input.dataset.row), column: Number(input.dataset.col) });
 
@@ -96,7 +96,7 @@ function build(wrap: HTMLElement, view: EditorView, table: Table): void {
   wrap.replaceChildren(
     tableTools((edit) => {
       editTable(view, wrap, (fresh) => edit(fresh, current()));
-    }, hasHeader(table)),
+    }, hasHeader(table), table.align[current().column] ?? null),
     scroller,
   );
 
@@ -120,6 +120,10 @@ function build(wrap: HTMLElement, view: EditorView, table: Table): void {
     input.addEventListener("focus", () => {
       wrap.dataset.row = String(row);
       wrap.dataset.col = String(column);
+      // From the cell as drawn now, which an alignment edit redraws in place.
+      const drawn = box.style.textAlign;
+
+      showAlignment(wrap.querySelector(".md-table-tools"), drawn === "center" || drawn === "right" || drawn === "left" ? drawn : null);
     });
     input.addEventListener("input", () => {
       const caret = input.selectionStart;
@@ -170,6 +174,17 @@ export class TableEditorWidget extends WidgetType {
     const wrap = document.createElement("div");
 
     wrap.className = "md-table-editable";
+    // Once per element, not per `build`, which runs again when the shape changes.
+    // Leaving the table closes any option strip left open on its toolbar.
+    wrap.addEventListener("focusout", (event) => {
+      if (!(event.relatedTarget instanceof Node && wrap.contains(event.relatedTarget))) {
+        const bar = wrap.querySelector(".md-table-tools");
+
+        if (bar !== null) {
+          closeAll(bar);
+        }
+      }
+    });
     build(wrap, view, this.table);
 
     return wrap;
@@ -201,6 +216,10 @@ export class TableEditorWidget extends WidgetType {
 
       if (box !== null) {
         box.style.textAlign = align ?? "";
+
+        if (input === document.activeElement) {
+          showAlignment(dom.querySelector(".md-table-tools"), align ?? null);
+        }
         box.querySelector(".md-cell-view")?.replaceChildren();
         const shown = box.querySelector<HTMLElement>(".md-cell-view");
 

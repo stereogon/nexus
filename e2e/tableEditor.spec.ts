@@ -73,14 +73,15 @@ test("the toolbar adds and removes rows and columns, aligns, and turns the heade
   await cell(page, "Row 1, column 2").click();
   await expect(tools(page)).toBeVisible();
 
-  await tools(page).getByRole("button", { name: "Row", exact: true }).click();
+  await tools(page).getByRole("button", { name: "Rows", exact: true }).click();
   await tools(page).getByRole("menuitem", { name: "Add a row below" }).click();
   await expect.poll(async () => (await tableText(page)).length).toBe(5);
 
-  await tools(page).getByRole("button", { name: "Centre the column" }).click();
+  await tools(page).getByRole("button", { name: "Alignment", exact: true }).click();
+  await tools(page).getByRole("menuitem", { name: "Centre the column" }).click();
   await expect.poll(async () => (await tableText(page))[1]).toBe("| ----- | :---: |");
 
-  await tools(page).getByRole("button", { name: "Column", exact: true }).click();
+  await tools(page).getByRole("button", { name: "Columns", exact: true }).click();
   await tools(page).getByRole("menuitem", { name: "Delete the column" }).click();
   await expect.poll(async () => (await tableText(page))[0]).toBe("| Name  |");
 
@@ -96,6 +97,24 @@ test("the toolbar is one row above the table, not covering more than a line", as
 
   // One row of controls, as reported on 2026-11-08 when it wrapped onto three.
   expect(bar?.height ?? 0).toBeLessThan(40);
+});
+
+test("a toolbar icon opens its options in a strip just above it", async ({ page }) => {
+  await cell(page, "Row 2, column 1").click();
+  await tools(page).getByRole("button", { name: "Alignment", exact: true }).click();
+
+  const strip = tools(page).getByRole("menu", { name: "Alignment" });
+  const opener = await tools(page).getByRole("button", { name: "Alignment", exact: true }).boundingBox();
+  const shown = await strip.boundingBox();
+
+  await expect(strip.getByRole("menuitem")).toHaveCount(3);
+  expect((shown?.y ?? 0) + (shown?.height ?? 0)).toBeLessThanOrEqual(opener?.y ?? 0);
+  // Still in the cell, so the choice is about its column.
+  await expect(cell(page, "Row 2, column 1")).toBeFocused();
+
+  await strip.getByRole("menuitem", { name: "Align the column right" }).click();
+  await expect(strip).toBeHidden();
+  await expect.poll(async () => (await tableText(page))[1]).toBe("| ----: | ----- |");
 });
 
 test("⌘Z in a cell undoes what was typed there", async ({ page }) => {
