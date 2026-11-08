@@ -4,7 +4,10 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { appendInline, cellsOf, parseTable, TableWidget } from "./table";
+import { EditorView } from "@codemirror/view";
+
+import { appendInline, cellsOf, parseTable } from "./table";
+import { TableEditorWidget } from "./tableEditor";
 
 describe("a table's text", () => {
   it("reads the header, the alignment and the rows", () => {
@@ -59,7 +62,7 @@ describe("a cell", () => {
 });
 
 describe("the drawn table", () => {
-  it("has a header row and a row per line, aligned as written", () => {
+  it("has a header row and a row per line, each cell a box holding its words, aligned as written", () => {
     const source = "| A | B |\n|---|--:|\n| 1 | 2 |";
     const table = parseTable(source);
 
@@ -67,10 +70,14 @@ describe("the drawn table", () => {
       throw new Error("the fixture is a table");
     }
 
-    const element = new TableWidget(source, table).toDOM();
+    const view = new EditorView({ doc: source });
+    const element = new TableEditorWidget(source, table).toDOM(view);
+    const values = (selector: string) => [...element.querySelectorAll<HTMLInputElement>(`${selector} input`)].map((input) => input.value);
 
-    expect([...element.querySelectorAll("th")].map((cell) => cell.textContent)).toEqual(["A", "B"]);
+    expect(values("th")).toEqual(["A", "B"]);
     expect(element.querySelectorAll("tbody tr")).toHaveLength(1);
+    expect(values("td")).toEqual(["1", "2"]);
     expect(element.querySelectorAll("td")[1]?.style.textAlign).toBe("right");
+    view.destroy();
   });
 });

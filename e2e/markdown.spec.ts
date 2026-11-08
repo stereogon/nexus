@@ -51,11 +51,13 @@ test("a table is drawn as a table, header and rows", async ({ page }) => {
   await expect(table.locator("tbody strong")).toHaveText("Raft");
 });
 
-test("clicking into a table shows its Markdown, to edit", async ({ page }) => {
+test("clicking into a table edits the cell, and the table stays a table", async ({ page }) => {
+  // Until 2026-11-08 the table turned back into its Markdown; now it is edited in place
+  // (`tableEditor.spec.ts` covers the editing).
   await notes(page).locator(".md-table td").first().click();
 
-  await expect(notes(page).locator(".md-table")).toHaveCount(0);
-  await expect(notes(page).locator(".cm-content")).toContainText("|:----------|-----:|");
+  await expect(notes(page).locator(".md-table table")).toHaveCount(1);
+  await expect(notes(page).getByRole("textbox", { name: "Row 1, column 1", exact: true })).toBeFocused();
 });
 
 test("a quote has a bar beside it and no > in front of it", async ({ page }) => {

@@ -22,6 +22,7 @@ import type { FormatState } from "./NotesFormatBar";
 import { BlockHandles } from "./BlockHandles";
 import { HeadingRail } from "./HeadingRail";
 import { ChartForm } from "./ChartForm";
+import { TablePicker } from "./TablePicker";
 import { NotesFormatting } from "./NotesFormatting";
 import { useNotesHandle, type NotesHandle } from "./useNotesHandle";
 import type { MenuAt } from "./menuPlacement";
@@ -32,6 +33,7 @@ import { flashLine, lineFlash } from "../notes/flash";
 import { livePreview } from "../notes/preview/field";
 import { blockKeys } from "../notes/blockKeys";
 import { chartOpener, writeChart, type ChartAt } from "../notes/chartEditing";
+import { insertTable, tablePicker, type TableLine } from "../notes/tableInsert";
 import { dropEmptiedMarks } from "../notes/emptiedMarks";
 import { pageHeading, setHeading, type PageHeading } from "../notes/pageHeading";
 import { pasteImages } from "../notes/pasteImage";
@@ -97,6 +99,8 @@ export function NotesEditor({
   // new callback would throw away the cursor and the undo history.
   // The chart form, open on a block or a new chart's line, and why its last save failed.
   const [chart, setChart] = useState<{ readonly at: ChartAt; readonly failure: string | null } | null>(null);
+  // The table picker, open for a new table's line.
+  const [tableLine, setTableLine] = useState<TableLine | null>(null);
   const changed = useRef(onChange);
   const cited = useRef(onCite);
   const ready = useRef(onReady);
@@ -156,6 +160,7 @@ export function NotesEditor({
           chartOpener.of((at) => {
             setChart({ at, failure: null });
           }),
+          tablePicker.of(setTableLine),
           blockKeys,
           dropEmptiedMarks,
           EditorView.updateListener.of((update) => {
@@ -253,6 +258,21 @@ export function NotesEditor({
             setChart(failure === null ? null : { ...chart, failure });
           }}
           source={chart.at.source}
+        />
+      )}
+      {tableLine !== null && (
+        <TablePicker
+          onClose={() => {
+            setTableLine(null);
+            view.current?.focus();
+          }}
+          onPick={(rows, columns) => {
+            setTableLine(null);
+
+            if (view.current !== null) {
+              insertTable(view.current, tableLine, rows, columns);
+            }
+          }}
         />
       )}
     </>

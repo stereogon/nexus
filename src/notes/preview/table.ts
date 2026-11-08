@@ -1,12 +1,11 @@
 /**
- * A GitHub-style Markdown table, drawn as a table while the cursor is elsewhere.
+ * Reading a GitHub-style Markdown table, and drawing a cell's words. The table itself is
+ * drawn and edited by `tableEditor.ts` (2026-11-08); it was a read-only drawing before.
  *
  * Cells are built as DOM nodes, never as an HTML string, so the text of a cell can only
  * ever be text. Inside a cell, `**bold**`, `*italic*`, `_italic_` and `` `code` `` are
  * drawn; anything richer shows as written, which is the honest fallback for a cell.
  */
-import { WidgetType } from "@codemirror/view";
-
 export type Alignment = "left" | "center" | "right" | null;
 
 export interface Table {
@@ -68,58 +67,4 @@ export function appendInline(parent: HTMLElement, text: string): void {
   }
 
   parent.append(text.slice(last));
-}
-
-export class TableWidget extends WidgetType {
-  constructor(
-    readonly source: string,
-    readonly table: Table,
-  ) {
-    super();
-  }
-
-  override eq(other: TableWidget): boolean {
-    return other.source === this.source;
-  }
-
-  override toDOM(): HTMLElement {
-    const wrap = document.createElement("div");
-    const element = document.createElement("table");
-    const head = element.createTHead().insertRow();
-    const body = element.createTBody();
-
-    wrap.className = "md-table";
-
-    const fill = (cell: HTMLTableCellElement, text: string, at: number) => {
-      const align = this.table.align[at];
-
-      if (align !== null && align !== undefined) {
-        cell.style.textAlign = align;
-      }
-      appendInline(cell, text);
-    };
-
-    this.table.header.forEach((text, at) => {
-      const cell = document.createElement("th");
-
-      fill(cell, text, at);
-      head.append(cell);
-    });
-
-    for (const row of this.table.rows) {
-      const line = body.insertRow();
-
-      row.forEach((text, at) => {
-        fill(line.insertCell(), text, at);
-      });
-    }
-
-    wrap.append(element);
-
-    return wrap;
-  }
-
-  override ignoreEvent(): boolean {
-    return false;
-  }
 }

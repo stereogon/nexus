@@ -7,6 +7,7 @@ import type { EditorView } from "@codemirror/view";
 
 import type { Block } from "../notes/blocks";
 import { chartOpener } from "../notes/chartEditing";
+import { tablePicker } from "../notes/tableInsert";
 import { turnsInto, type Block as Kind } from "../notes/format";
 import { formatBlock } from "../notes/markSelection";
 import type { MenuItem } from "./PopMenu";
@@ -43,6 +44,14 @@ export function turnInto(editor: EditorView): MenuItem[] {
     { label: "To-do list", onSelect: as("task") },
     { label: "Quote", onSelect: as("quote") },
     { label: "Code", onSelect: write("```\n\n```", 4) },
+    {
+      label: "Table",
+      onSelect: () => {
+        const line = editor.state.doc.lineAt(editor.state.selection.main.head);
+
+        editor.state.facet(tablePicker)?.({ from: line.from, to: line.to, original: line.text });
+      },
+    },
     { label: "Diagram", onSelect: write("```mermaid\n\n```", 11) },
     {
       label: "Chart",

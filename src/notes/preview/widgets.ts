@@ -232,6 +232,14 @@ export class SpacedWidget extends WidgetType {
     return this.inner.ignoreEvent(event);
   }
 
+  /** Lets what it wraps redraw in place — an edited table keeps its focus that way. */
+  override updateDOM(dom: HTMLElement, view: EditorView, from: SpacedWidget): boolean {
+    const inner = dom.firstElementChild;
+
+    // Only between two of the same kind: a table cannot redraw a formula's element.
+    return inner instanceof HTMLElement && from.inner.constructor === this.inner.constructor && this.inner.updateDOM(inner, view, from.inner);
+  }
+
   override destroy(dom: HTMLElement): void {
     const inner = dom.firstElementChild;
 

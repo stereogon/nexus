@@ -463,6 +463,53 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-08 · Tables edited where they are drawn**
+From the to-do list: *"a proper table engine … add table, select the number of rows and
+columns we want, then we can edit it with table formatting options"*.
+
+- **Inserting.** "Table" in `+`'s menu opens a size picker (`TablePicker.tsx`): a grid to
+  point at, arrow keys and Enter for the keyboard, rows counting the header. The table is
+  written with a blank line on each side, and the cursor goes into its first heading,
+  selected, ready to be named. It is opened through the `tablePicker` facet, like the
+  chart form.
+- **Editing in place** (`preview/tableEditor.ts`). A table stays drawn with the cursor in
+  it; it no longer turns back into pipes. Each cell shows its words formatted, with a text
+  box laid over it that appears on click. An edit reads the table afresh from the notes,
+  applies a `tableModel.ts` operation and writes GFM back by the smallest text change
+  (`tableEdits.ts`), so there is one source of truth and ⌘Z, routed from the cell to the
+  editor's history, undoes it. Tab and Shift-Tab move between cells, and Tab in the last
+  cell adds a row; Enter goes down; ↑ and ↓ move between rows; Escape leaves.
+- **The toolbar** above a table in use adds rows above or below and columns left or right,
+  moves and deletes them, aligns a column, turns the header row off or on, and deletes the
+  table. GFM always has a header row, so "off" is a header of empty cells, which is not
+  drawn, and turning it on promotes the first row, so nothing is lost.
+- **Written tidy:** columns padded to their widest cell, pipes in a cell escaped.
+- **Redrawn in place** (`updateDOM`, passed through `SpacedWidget`) when only words changed,
+  so the box being typed in keeps its caret. The sabotage run shows why it matters: without
+  it, spaces typed into a cell were lost ("RaftandZab").
+- **Found by the journeys:** GFM carries a table on into a line that follows it without a
+  blank, so what was typed after Escape became a row, and the cursor was thrown above the
+  table. Escape now opens a new line with a blank one between, and an inserted table keeps
+  blank lines around it.
+
+Limits: cells are single-line, as GFM's are. Merged cells and cell colours have no GFM
+form and are not offered. A table that cannot be read still shows as its text.
+
+**An unexplained crash, recorded rather than retried away.** The first gate run's
+Playwright step failed partway through: the Vite dev server that serves the test harness
+crashed inside Node while sending a 9 MB response, probably Mermaid's bundle. Every journey
+after that point failed with "Could not connect to the server". One of the failures was
+real, the old "clicking into a table shows its Markdown" journey, now rewritten. The full
+suite then ran clean (179 passed) with no crash. Nothing in the tests caused it, so nothing
+was changed for it. If it happens again, the next step is the dev server's memory and the
+size of the modules it serves.
+
+Verified: every gate step but Playwright green on the first run; the full Playwright suite
+green on the second (179). `tableModel.test.ts` (10) and the updated table and markup
+tests; six journeys in `tableEditor.spec.ts`. Sabotage: no in-place redraw failed the typing
+journey; Escape onto the next line failed the leaving journey; ⌘Z not routed to the
+editor failed the undo journey.
+
 **2026-11-08 · Diagram and Chart blocks in the + menu**
 From the to-do list raised yesterday. `+`'s menu now offers **Diagram**, which writes an
 empty ```mermaid block with the cursor inside, and **Chart**, which opens the chart form.

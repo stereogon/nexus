@@ -17,26 +17,11 @@ import type { EditorState, Range } from "@codemirror/state";
 import { Decoration } from "@codemirror/view";
 
 import { BulletWidget, CheckboxWidget, CodeFootWidget, CodeHeaderWidget, RuleWidget } from "./markupWidgets";
-import { parseTable, TableWidget } from "./table";
+import { parseTable } from "./table";
+import { TableEditorWidget } from "./tableEditor";
 import { SpacedWidget } from "./widgets";
 
 const hidden = Decoration.replace({});
-
-/** The lines any cursor or selection touches. */
-function activeLines(state: EditorState): Set<number> {
-  const lines = new Set<number>();
-
-  for (const range of state.selection.ranges) {
-    const first = state.doc.lineAt(range.from).number;
-    const last = state.doc.lineAt(range.to).number;
-
-    for (let line = first; line <= last; line += 1) {
-      lines.add(line);
-    }
-  }
-
-  return lines;
-}
 
 /**
  * The decorations for ordinary Markdown in `state`.
@@ -50,7 +35,6 @@ export function markupDecorations(
 ): { readonly decorations: Range<Decoration>[]; readonly tables: { from: number; to: number }[] } {
   const out: Range<Decoration>[] = [];
   const tables: { from: number; to: number }[] = [];
-  const active = activeLines(state);
   const doc = state.doc;
   const lineOf = (at: number) => doc.lineAt(at).number;
   // Whether a cursor or selection is within `from`–`to`: only a link's address is shown
@@ -115,13 +99,14 @@ export function markupDecorations(
         case "Table": {
           const source = doc.sliceString(node.from, node.to);
           const table = parseTable(source);
-          const touched = [...active].some((line) => line >= lineOf(node.from) && line <= lineOf(node.to));
 
-          if (table === null || touched) {
+          // Edited where it is drawn (`tableEditor.ts`), so it stays a table with the cursor
+          // in it; only a table that cannot be read shows as its text (2026-11-08).
+          if (table === null) {
             lineClass(node.from, node.to, "md-table-source");
           } else {
             out.push(
-              Decoration.replace({ widget: new SpacedWidget(new TableWidget(source, table)), block: true }).range(node.from, node.to),
+              Decoration.replace({ widget: new SpacedWidget(new TableEditorWidget(source, table)), block: true }).range(node.from, node.to),
             );
             tables.push({ from: node.from, to: node.to });
           }

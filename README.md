@@ -93,6 +93,10 @@ The screenshots use the test suite's sample vault, not real notes. They are reta
   TypeScript, CSS, HTML and JSON.
 - LaTeX through KaTeX, diagrams and charts. A broken block shows a hint inline and never
   takes the editor down.
+- **Table** in the `+` menu: pick the size from a grid, then type straight into the cells
+  (Tab and Enter move between them; Tab in the last cell adds a row). A toolbar above the
+  table adds, moves and deletes rows and columns, aligns a column and turns the header
+  row off or on. It stays an ordinary Markdown table in the file.
 - **Diagram** in the `+` menu opens a block to paste [Mermaid](https://mermaid.js.org) code
   into; the diagram is drawn below it as you type.
 - **Chart** in the `+` menu opens a small form: bar, line or pie, a title, axis names, and a
@@ -148,9 +152,6 @@ Recorded in [`PROGRESS.md`](./PROGRESS.md) with the reasoning for each:
 - The rest of the diagnostics drawer: past logs, converter output, timings.
 - Telling you when LibreOffice is missing (imports wait safely until it is installed).
 - Restyling parts of the UI from the approved design canvas.
-- A table editor in the notes: insert a table by picking its rows and columns, then edit
-  it in place (add, remove and move rows and columns; align a column; header row). Today
-  a table is drawn from Markdown you type.
 - An MCP server, so AI agents (Claude and others) can search, read and add to a vault
   directly. Planned; see `PROGRESS.md` for the questions it raises first.
 

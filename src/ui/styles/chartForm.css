@@ -148,3 +148,45 @@
   gap: 8px;
   margin-top: 16px;
 }
+
+/* The table picker (`TablePicker.tsx`), in the same dialog style as the chart form. */
+.table-picker {
+  padding: 18px 20px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+
+.table-picker:focus-visible {
+  outline: none;
+}
+
+.table-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 22px);
+  gap: 3px;
+}
+
+.table-picker-grid button {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--field);
+}
+
+.table-picker-grid button.on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.table-picker-size {
+  margin: 10px 0 0;
+  color: var(--text-meta);
+  font-size: 12px;
+}

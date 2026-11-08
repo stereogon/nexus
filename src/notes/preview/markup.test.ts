@@ -142,12 +142,12 @@ describe("on the cursor's line", () => {
     expect(outside.replaced).toContain("https://raft.github.io");
   });
 
-  it("shows a table's source when the cursor is anywhere in it", () => {
+  it("keeps a table drawn with the cursor in it, since it is edited where it is drawn", () => {
     const doc = `| A | B |\n|---|---|\n| 1 | 2 |${END}`;
     const { tables, lines } = render(doc, 3);
 
-    expect(tables).toEqual([]);
-    expect(lines.filter((line) => line.cls === "md-table-source")).toHaveLength(3);
+    expect(tables).toHaveLength(1);
+    expect(lines.filter((line) => line.cls === "md-table-source")).toHaveLength(0);
   });
 
   it("leaves a rule as text while the cursor is inside it, as bold chosen on an empty line is", () => {
