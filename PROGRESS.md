@@ -463,6 +463,29 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-09 · The selection stays in the writing; whole lines look like blocks**
+The user: *"when we copy the text, the copy shows the copied lines till the edges, instead
+of the editor boundary, giving an impression that we are copying too much whitespace"*,
+and Notion's copying *"feels like we are copying blocks"*.
+- **Cause.** `drawSelection` runs a selection that spans lines between the content box's
+  edges less `.cm-line`'s padding — but the notes' margins are `.cm-content`'s padding (the
+  56px for + and ⋮⋮, 32px on the right), so the fill ran into both. Only the words were ever
+  copied; the picture said otherwise.
+- **Fix.** `notes/selectionLayer.ts`, a CodeMirror `layer` drawing the editor's own
+  rectangles (`RectangleMarker.forRange`) cut to the text column; `drawSelection` still
+  draws the cursor, and its selection layer is hidden. Whole lines selected (a line's start
+  to a line's end, over more than one) are drawn one rounded box to a line, as Notion draws
+  selected blocks — when whole blocks are what is copied.
+- **Not done: snapping a drag to whole blocks**, as Notion does. That changes what is
+  copied and what typing replaces, not just how it looks; left until asked for.
+- **Proof.** `selection.spec.ts`: a selection across lines stays inside the column, and
+  whole lines are drawn as one block each. Each failed under its sabotage (the cut to the
+  column removed; whole lines never detected).
+- **⌘⇧V (paste as plain text) does not work yet**, reported the same day. WebKit does not
+  turn ⌘⇧V into a paste event, so the page never gets the clipboard, and reading it from the
+  page shows WebKit's own "Paste" prompt every time. The clean route is the official
+  `tauri-plugin-clipboard-manager`, which is an install and waits on the user's go-ahead.
+
 **2026-11-09 · The screening notice can be put away**
 The user, of "This document asks for 2 things Nexus does not do.": *"add a close (cross) on
 this, so we can remove this alert once after seeing, and don't show again"*.

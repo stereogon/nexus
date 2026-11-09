@@ -18,6 +18,7 @@ import { formatKeys } from "../notes/markSelection";
 import { pageHeading, type PageHeading } from "../notes/pageHeading";
 import { pasteImages } from "../notes/pasteImage";
 import { richPaste } from "../notes/richPaste";
+import { selectionInColumn } from "../notes/selectionLayer";
 import { slashCommands } from "../notes/slash";
 import { livePreview } from "../notes/preview/field";
 import { tablePicker, type TableLine } from "../notes/tableInsert";
@@ -57,6 +58,7 @@ export function notesExtensions(setup: NotesSetup): Extension {
     EditorView.lineWrapping,
     // Drawn by the editor: WebKit did not paint its caret below the title (2026-11-07).
     drawSelection(),
+    selectionInColumn,
     notesAppearance,
     pageLayout.of(layoutFor(setup.page)),
     pageHeading(setup.heading),

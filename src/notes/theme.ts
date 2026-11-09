@@ -55,6 +55,11 @@ const editorTheme = EditorView.theme({
   "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, ::selection": {
     backgroundColor: "var(--accent-soft)",
   },
+  // The selection is drawn by `selectionLayer.ts`, held to the text column; this is
+  // `drawSelection`'s own, which ran into the margins.
+  ".cm-selectionLayer": { display: "none" },
+  ".md-selection-layer .cm-selectionBackground": { borderRadius: "3px" },
+  ".md-selection-layer .md-block-selected": { borderRadius: "5px" },
   ".cm-cursor": { borderLeftColor: "var(--accent)", borderLeftWidth: "2px" },
 
   // Line-level styles for the live preview, here rather than in a stylesheet: CodeMirror's
