@@ -463,6 +463,20 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-09 · Mermaid's error pictures no longer spill onto the page**
+The user, with a screenshot of the window covered in Mermaid "Syntax error in text" bombs:
+*"mermaid errors should not appear this way in the app"*. When Mermaid fails to render, it
+draws its own error picture into the page's body, outside the notes. Drawing a diagram as
+it is typed (2026-11-08) made that one picture per keystroke of half-written code. Now
+`diagrams.ts` checks the code with `mermaid.parse` before drawing, turns Mermaid's error
+picture off (`suppressErrorRendering`), and removes anything a failed draw leaves behind,
+by the ids Mermaid gives it. The failure shows only as the block's own short note: "This
+diagram could not be drawn yet: …".
+
+Verified: gate green. A journey types invalid Mermaid and checks the block shows its note
+and the page has no error picture; with the fix taken out, it fails with the error text on
+the page.
+
 **2026-11-09 · Closer to Notion, part 2: the "/" menu**
 Typing "/" at the start of a line or after a space opens the blocks `+` offers, under the
 "/" (`notes/slash.ts`, `ui/SlashMenu.tsx`). What follows narrows the list, those starting

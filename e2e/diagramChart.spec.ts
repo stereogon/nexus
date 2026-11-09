@@ -80,3 +80,14 @@ test("Edit chart reopens a drawn chart in the form, and saving rewrites its bloc
   await expect.poll(() => saved(page)).toContain('"data": [\n          2,\n          5\n        ]');
   await expect.poll(() => saved(page)).not.toContain('"data":[2,3]');
 });
+
+test("a diagram still being typed shows a short note in its block, and nothing on the page", async ({ page }) => {
+  await plus(page, "Diagram");
+  await page.keyboard.type("jbj");
+
+  await expect(notes(page).locator(".md-diagram .md-problem")).toContainText("could not be drawn yet");
+  // Mermaid's own failure picture, which it drew onto the page outside the notes.
+  await page.waitForTimeout(1500);
+  expect(await page.evaluate(() => document.body.innerText.includes("Syntax error in text"))).toBe(false);
+  expect(await page.locator("body > div[id^='dnexus-diagram'], body > svg[id^='nexus-diagram']").count()).toBe(0);
+});

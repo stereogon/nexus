@@ -55,6 +55,9 @@ export class MermaidWidget extends WidgetType {
     host.textContent = "Drawing the diagram…";
 
     void (async () => {
+      diagramCount += 1;
+      const id = `nexus-diagram-${String(diagramCount)}`;
+
       try {
         const { default: mermaid } = await import("mermaid");
 
@@ -63,17 +66,29 @@ export class MermaidWidget extends WidgetType {
           securityLevel: "strict",
           theme: "neutral",
           fontFamily: token("--font-ui"),
+          // Mermaid's own failure picture is drawn onto the page, outside the notes; with a
+          // diagram drawn as it is typed, every keystroke left another (reported 2026-11-09).
+          suppressErrorRendering: true,
         });
-        diagramCount += 1;
 
-        const { svg } = await mermaid.render(`nexus-diagram-${String(diagramCount)}`, this.source);
+        // Checked before drawing, so code still being typed never reaches the renderer.
+        await mermaid.parse(this.source);
+
+        const { svg } = await mermaid.render(id, this.source);
 
         drawn.set(this.source, svg);
         host.innerHTML = svg;
       } catch (thrown: unknown) {
         const reason = thrown instanceof Error ? thrown.message.split("\n")[0] : "it could not be read";
 
-        host.replaceChildren(problem(`This diagram could not be drawn: ${reason ?? "it could not be read"}. Click it to edit.`));
+        host.replaceChildren(problem(`This diagram could not be drawn yet: ${reason ?? "it could not be read"}.`));
+      } finally {
+        // Whatever a failed draw left behind on the page, by the ids Mermaid gives it.
+        for (const left of document.querySelectorAll(`#${id}, #d${id}, #i${id}`)) {
+          if (!host.contains(left)) {
+            left.remove();
+          }
+        }
       }
 
       view.requestMeasure();
