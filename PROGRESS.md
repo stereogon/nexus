@@ -463,6 +463,25 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-09 · Closer to Notion, part 3: pasting formatted text**
+Formatting copied from a web page or Google Docs now arrives as Markdown
+(`notes/htmlToMarkdown.ts`, `notes/richPaste.ts`) where it was flattened to plain text:
+headings, paragraphs, bold, italic, strikethrough, inline code, code blocks with their
+language, links, lists (nested, numbered, to-do), quotes, dividers and tables. Google Docs
+marks bold by style inside a wrapper `<b>` that is not bold, and that is read correctly.
+The converter is written here rather than taken from a library, since the subset is small.
+The HTML is parsed by DOMParser, which runs nothing. Only web and mail links keep their
+address, and images are left out (a picture on someone's server would not load offline).
+Inside code, what was copied is pasted as text. When the HTML says nothing the plain text
+did not, the editor's own paste is used.
+
+**Found, and not built twice:** pasting a web address over selected words already made a
+link: `@codemirror/lang-markdown`'s `pasteURLAsLink`, on by default. The branch written for
+it was removed when its journey passed with the handler switched off; the journey stays.
+
+Verified: gate green. `htmlToMarkdown.test.ts` (6); three journeys in `richPaste.spec.ts`.
+Sabotage: without the handler, the formatted-paste journey fails.
+
 **2026-11-09 · Mermaid's error pictures no longer spill onto the page**
 The user, with a screenshot of the window covered in Mermaid "Syntax error in text" bombs:
 *"mermaid errors should not appear this way in the app"*. When Mermaid fails to render, it

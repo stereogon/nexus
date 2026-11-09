@@ -1,7 +1,7 @@
 /**
  * What the notes editor is built with (moved out of `NotesEditor` on 2026-11-09, unchanged,
  * so that file keeps to the view's life and what is drawn over it): history and keys,
- * GFM, the live preview and its widgets, pasting images, the chart form's and the table
+ * GFM, the live preview and its widgets, pasting images and formatted text, the chart form's and the table
  * picker's openers, the "/" menu, and the editing behaviour in `notes/editing.ts`.
  */
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
@@ -17,6 +17,7 @@ import { lineFlash } from "../notes/flash";
 import { formatKeys } from "../notes/markSelection";
 import { pageHeading, type PageHeading } from "../notes/pageHeading";
 import { pasteImages } from "../notes/pasteImage";
+import { richPaste } from "../notes/richPaste";
 import { slashCommands } from "../notes/slash";
 import { livePreview } from "../notes/preview/field";
 import { tablePicker, type TableLine } from "../notes/tableInsert";
@@ -54,6 +55,8 @@ export function notesExtensions(setup: NotesSetup): Extension {
     placeholder("Start writing. Beside a document, select text in it and choose “Link to notes” to cite it here."),
     citeLinks(setup.onCite),
     pasteImages(setup.keepImage),
+    // After the image paste, which takes a pasted picture first.
+    richPaste,
     chartOpener.of(setup.onChart),
     tablePicker.of(setup.onTable),
     noteEditing,

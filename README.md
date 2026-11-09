@@ -104,6 +104,8 @@ The screenshots use the test suite's sample vault, not real notes. They are reta
   an **Edit chart** button that reopens it. Underneath it is a ```` ```chart ```` block of
   JSON, which can also be written by hand.
 - Paste or drop images. They are saved into the item's `assets/` folder.
+- Paste from the web or Google Docs and the formatting comes as Markdown: headings, lists,
+  bold, links, code, tables. Paste a link over selected words to make them a link.
 - A Notion-style format bar over a selection, or docked open from the notes' **Aa** button
   to choose a format before writing; shortcuts too, plus highlighting in the notes in the
   same four meanings.
