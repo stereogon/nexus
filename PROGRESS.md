@@ -463,6 +463,49 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-09 · The format bar, the header's strip and the format keys work in table cells**
+The user: *"the formatting options stopped appearing for the content inside the table. i am
+not able to make things bold, italics, since that popup is not coming, and even the toolbar
+header in the notes, not working for the content inside the table"*. Both controls followed
+the editor's own selection. Since the previous change, a cell's selection belongs to the
+cell, which CodeMirror leaves alone.
+
+`notes/preview/tableCellFormat.ts` closes the gap. The cell's words are read as Markdown, with
+the selection's ends marked by two private-use characters placed into a copy of the cell. The
+notes' own rules (`toggleInline`, `hasInline`, `cursorInside`) are applied, and the result is
+drawn back with the same words selected, the marks found and removed again. It is then written
+into the notes by `editTable`. A cell therefore formats by exactly the rules the rest of the
+notes do. `NotesEditor` follows `selectionchange` for a cell's selection, to raise the floating
+bar over it and show what is pressed, and goes back to the editor's state when focus leaves the
+cell. `NotesFormatting` sends an inline format to the cell when one is being typed in. ⌘B, ⌘I,
+⌘⇧S and ⌘E in a cell run the same function.
+
+Some controls are disabled in a cell: headings, lists, quote, link and the highlight colours.
+A cell is one line of a table, and holds none of them. With nothing selected in a cell, an
+inline format does nothing, because an empty pair of marks would be drawn as the marks
+themselves.
+
+**Found on the way, and fixed:**
+- A cell drew one level of formatting only, so bold italics (`**_fed_**`) showed as bold
+  `_fed_`. Formats now draw nested; code's words stay literal.
+- Strikethrough (`~~`) is now drawn in cells and read back.
+- Italics in a cell are written as `_`, the notes' own italic marker, so the bar recognises
+  them. A cell's `*italic*` becomes `_italic_` the next time that cell is edited; the two mean
+  the same in GFM.
+
+**A limit of the shared rule, not of cells:** after Bold and then Italic, the selection sits
+inside `**_…_**`, and `hasInline` looks only just outside it, so pressing Bold again adds a
+second pair instead of removing the first. The rest of the notes behave the same way. Left as
+it is, so the table matches the notes; worth fixing in `format.ts` for both at once.
+
+Verified: gate green. `tableCell.test.ts` covers `_`, strikethrough and nesting (6 tests). Three
+new journeys in `tableCellFormat.spec.ts` cover the floating bar (shown; blocks disabled; Bold on,
+pressed, off; then Bold and Italic together, still focused), ⌘B and ⌘E, and the header's strip.
+Sabotage, each failing a journey:
+- the strip ignoring the cell;
+- no `selectionchange` following;
+- the cell ignoring format keys.
+
 **2026-11-09 · Table cells stay formatted while edited**
 The user, quoting a cell with bold words in it: *"inside the table, when we select text the **
 still appear, outside the table this does not happen"*. Clicking a cell laid a plain text box
@@ -484,9 +527,8 @@ Details found on the way:
 - A cell being typed in is not redrawn while it already says what the notes say, so its
   caret stays put. After ⌘Z it is redrawn and the caret goes to the end.
 
-**Not done:** ⌘B and ⌘I do not format inside a cell; WebKit gives no binding for them there,
-which was checked. Bold typed as `**word**` is written as typed and drawn bold once the cell
-is left. Before this change, a cell had no formatting keys either.
+**Not done at the time:** ⌘B and ⌘I did not format inside a cell, because WebKit gives no
+binding for them there. Done in the next entry, with the format bar and strip.
 
 Verified: gate green. `tableCell.test.ts` (5): Markdown read back for tags, styles, edge
 spaces, empty marks and breaks. Three journeys in `tableCellFormat.spec.ts`: clicking and

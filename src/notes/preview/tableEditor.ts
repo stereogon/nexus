@@ -16,12 +16,17 @@ import { WidgetType, type EditorView } from "@codemirror/view";
 
 import { hasHeader, withCell, withRow, type Cell } from "../tableModel";
 import type { Table } from "./table";
+import type { Inline } from "../format";
 import { caretIn, cellMarkdown, drawCell, insertPlain } from "./tableCell";
+import { formatCell } from "./tableCellFormat";
 import { editTable, leave } from "./tableEdits";
 import { columnEdge, drawWidths } from "./tableResize";
 import { closeAll, showAlignment, tableTools } from "./tableTools";
 
 const cellOf = (input: HTMLElement): Cell => ({ row: Number(input.dataset.row), column: Number(input.dataset.col) });
+
+/** The format keys a cell answers to, as the rest of the notes binds them (`formatKeys`). */
+const FORMAT_KEYS: Readonly<Record<string, Inline | undefined>> = { b: "bold", i: "italic", "Shift-s": "strike", e: "code" };
 
 /** What the keys do in a cell: select its words, move between cells, add a row at the end, undo, leave. */
 function onKey(event: KeyboardEvent, view: EditorView, wrap: HTMLElement, input: HTMLElement, rows: () => number): void {
@@ -38,6 +43,15 @@ function onKey(event: KeyboardEvent, view: EditorView, wrap: HTMLElement, input:
     // The cell's words: WebKit's own would select the whole editor around it and move there.
     event.preventDefault();
     caretIn(input, true);
+    return;
+  }
+
+  // The notes' format keys (`formatKeys`), on the cell's selected words.
+  const kind = event.metaKey || event.ctrlKey ? FORMAT_KEYS[`${event.shiftKey ? "Shift-" : ""}${event.key.toLowerCase()}`] : undefined;
+
+  if (kind !== undefined) {
+    event.preventDefault();
+    formatCell(view, input, kind);
     return;
   }
 

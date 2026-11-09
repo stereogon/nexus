@@ -3,7 +3,7 @@
  * drawn and edited by `tableEditor.ts` (2026-11-08); it was a read-only drawing before.
  *
  * Cells are built as DOM nodes, never as an HTML string, so the text of a cell can only
- * ever be text. Inside a cell, `**bold**`, `*italic*`, `_italic_` and `` `code` `` are
+ * ever be text. Inside a cell, `**bold**`, `*italic*`, `_italic_`, `~~struck~~` and `` `code` `` are
  * drawn; anything richer shows as written, which is the honest fallback for a cell.
  *
  * GFM has nowhere to keep a column's width, so a width dragged in the editor (2026-11-09) is
@@ -89,9 +89,9 @@ export function parseTable(source: string): Table | null {
   return { header, align, rows, widths };
 }
 
-/** Appends `text` to `parent`, drawing bold, italic and code spans as elements. */
+/** Appends `text` to `parent`, drawing bold, italic, strikethrough and code spans as elements. */
 export function appendInline(parent: HTMLElement, text: string): void {
-  const pattern = /(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*|_[^_]+_)/g;
+  const pattern = /(`[^`]+`|\*\*[^*]+\*\*|~~[^~]+~~|\*[^*]+\*|_[^_]+_)/g;
   let last = 0;
 
   for (const match of text.matchAll(pattern)) {
@@ -103,10 +103,19 @@ export function appendInline(parent: HTMLElement, text: string): void {
       ? ["code", token.slice(1, -1)]
       : token.startsWith("**")
         ? ["strong", token.slice(2, -2)]
-        : ["em", token.slice(1, -1)];
+        : token.startsWith("~~")
+          ? ["s", token.slice(2, -2)]
+          : ["em", token.slice(1, -1)];
     const element = document.createElement(tag);
 
-    element.textContent = inner;
+    // Formats inside one another — bold italic, as the format bar makes — drawn nested;
+    // code's words are literal.
+    if (tag === "code") {
+      element.textContent = inner;
+    } else {
+      appendInline(element, inner);
+    }
+
     parent.append(element);
     last = match.index + token.length;
   }

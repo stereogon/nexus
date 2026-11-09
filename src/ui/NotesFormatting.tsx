@@ -7,6 +7,7 @@ import type { EditorView } from "@codemirror/view";
 import type { RefObject } from "react";
 
 import { formatBlock, formatInline, formatLink, markSelection } from "../notes/markSelection";
+import { activeCell, formatCell } from "../notes/preview/tableCellFormat";
 import type { MenuAt } from "./menuPlacement";
 import { NotesFormatBar, NotesFormatStrip, type FormatState } from "./NotesFormatBar";
 
@@ -16,6 +17,7 @@ export function NotesFormatting({
   at,
   state,
   selected,
+  inCell,
   onDismiss,
 }: {
   readonly view: RefObject<EditorView | null>;
@@ -25,6 +27,8 @@ export function NotesFormatting({
   readonly at: MenuAt | null;
   readonly state: FormatState;
   readonly selected: boolean;
+  /** In a table cell, which takes only inline formats. */
+  readonly inCell: boolean;
   readonly onDismiss: () => void;
 }) {
   const apply = (act: (editor: EditorView) => void) => () => {
@@ -35,8 +39,18 @@ export function NotesFormatting({
   const handlers = {
     state,
     selected,
+    inCell,
     onInline: (kind: Parameters<typeof formatInline>[1]) => {
-      apply((editor) => formatInline(editor, kind))();
+      // In a table cell, on the cell's words (`tableCellFormat.ts`); elsewhere, the notes'.
+      apply((editor) => {
+        const cell = activeCell(editor);
+
+        if (cell === null) {
+          formatInline(editor, kind);
+        } else {
+          formatCell(editor, cell, kind);
+        }
+      })();
     },
     onBlock: (kind: Parameters<typeof formatBlock>[1]) => {
       apply((editor) => formatBlock(editor, kind))();

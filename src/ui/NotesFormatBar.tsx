@@ -45,6 +45,11 @@ interface Handlers {
   readonly state: FormatState;
   /** Whether words are selected. A highlight needs some, or a highlight to sit in. */
   readonly selected: boolean;
+  /**
+   * In a table cell: only bold, italic, strikethrough and code apply there. A cell is one
+   * line of a table, so it holds no heading, list, quote, link or highlight.
+   */
+  readonly inCell: boolean;
   readonly onInline: (kind: Inline) => void;
   readonly onBlock: (kind: Block) => void;
   readonly onLink: () => void;
@@ -56,11 +61,11 @@ const keepFocus = (event: { preventDefault: () => void }) => {
   event.preventDefault();
 };
 
-function FormatControls({ state, selected, onInline, onBlock, onLink, onHighlight }: Handlers) {
+function FormatControls({ state, selected, inCell, onInline, onBlock, onLink, onHighlight }: Handlers) {
   const tip = (label: string, keys: string) => (keys === "" ? label : `${label} (${keys})`);
   // An empty highlight would be invisible, so the colours wait for words; inside an
   // existing highlight they recolour or remove it.
-  const marking = selected || state.highlight !== null;
+  const marking = !inCell && (selected || state.highlight !== null);
 
   return (
     <>
@@ -79,7 +84,7 @@ function FormatControls({ state, selected, onInline, onBlock, onLink, onHighligh
           {glyph}
         </button>
       ))}
-      <button aria-label="Link" className="format-button" onClick={onLink} title={tip("Link", "⌘K")} type="button">
+      <button aria-label="Link" className="format-button" disabled={inCell} onClick={onLink} title={tip("Link", "⌘K")} type="button">
         ↗
       </button>
 
@@ -90,6 +95,7 @@ function FormatControls({ state, selected, onInline, onBlock, onLink, onHighligh
           aria-label={label}
           aria-pressed={state.block === kind}
           className="format-button"
+          disabled={inCell}
           key={kind}
           onClick={() => {
             onBlock(kind);

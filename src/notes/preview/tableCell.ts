@@ -6,7 +6,7 @@
  *
  * The cell is a small editable element holding the formatted words (`appendInline`), and
  * what is typed is read back out of it as GFM inline Markdown (`cellMarkdown`): bold,
- * italic and code, which are what a cell draws. CodeMirror leaves edits and selections
+ * italic, strikethrough and code, which are what a cell draws. CodeMirror leaves edits and selections
  * inside a widget alone, so the element is the browser's to edit.
  */
 import { appendInline } from "./table";
@@ -14,6 +14,8 @@ import { appendInline } from "./table";
 const isBold = (element: HTMLElement) =>
   element.nodeName === "STRONG" || element.nodeName === "B" || Number(element.style.fontWeight) >= 600 || element.style.fontWeight === "bold";
 const isItalic = (element: HTMLElement) => element.nodeName === "EM" || element.nodeName === "I" || element.style.fontStyle === "italic";
+const isStruck = (element: HTMLElement) =>
+  element.nodeName === "S" || element.nodeName === "DEL" || element.nodeName === "STRIKE" || element.style.textDecoration.includes("line-through");
 
 /** `inner` between `mark`s, with its edge spaces outside them, where GFM needs them. */
 function marked(inner: string, mark: string): string {
@@ -51,7 +53,10 @@ function inline(node: Node, last: boolean): string {
   const inner = children.map((child, at) => inline(child, last && at === children.length - 1)).join("");
   const bold = isBold(node) ? marked(inner, "**") : inner;
 
-  return isItalic(node) ? marked(bold, "*") : bold;
+  // Italic as `_`, the notes' own italic marker (`format.ts`), so the format bar knows it.
+  const italic = isItalic(node) ? marked(bold, "_") : bold;
+
+  return isStruck(node) ? marked(italic, "~~") : italic;
 }
 
 /** The words in `cell` as the GFM inline Markdown they were drawn from. */

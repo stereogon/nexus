@@ -33,9 +33,26 @@ import { flashLine } from "../notes/flash";
 import { writeChart, type ChartAt } from "../notes/chartEditing";
 import { slashSession, type SlashSession } from "../notes/slash";
 import { insertTable, type TableLine } from "../notes/tableInsert";
+import { cellFormatting } from "../notes/preview/tableCellFormat";
 import { setHeading, type PageHeading } from "../notes/pageHeading";
 
 export type { NotesHandle };
+
+/**
+ * What the format controls show: for the table cell being typed in, if there is one, or
+ * else for the editor's selection. A block picked with ⋮⋮ puts the bar away: the block's
+ * own menu is opening.
+ */
+function formatOf(view: EditorView, picked: boolean): { at: MenuAt | null; state: FormatState; selected: boolean; inCell: boolean } {
+  return (
+    cellFormatting(view) ?? {
+      at: picked ? null : barFor(view),
+      state: formatStateOf(view),
+      selected: !view.state.selection.main.empty,
+      inCell: false,
+    }
+  );
+}
 
 export function NotesEditor({
   text,
@@ -83,12 +100,15 @@ export function NotesEditor({
   const [current, setCurrent] = useState(text);
   const [viewReady, setViewReady] = useState(false);
   const view = useRef<EditorView | null>(null);
+  // Whether the format controls last showed a table cell's selection.
+  const inCell = useRef(false);
   // What the selection or cursor has, and where a floating bar goes for a selection; `null`
   // until the editor has reported once.
   const [format, setFormat] = useState<{
     readonly at: MenuAt | null;
     readonly state: FormatState;
     readonly selected: boolean;
+    readonly inCell: boolean;
   } | null>(null);
 
   // The latest callbacks, read by the view's listeners. Rebuilding the view to pick up a
@@ -147,15 +167,10 @@ export function NotesEditor({
               setCurrent(update.state.doc.toString());
             }
 
-            // A block picked with ⋮⋮ puts the bar away: the block's own menu is opening.
             const picked = update.transactions.some((transaction) => transaction.annotation(pickedByHandle) === true);
 
             if (update.selectionSet || update.focusChanged || update.docChanged || picked) {
-              setFormat({
-                at: picked ? null : barFor(update.view),
-                state: formatStateOf(update.view),
-                selected: !update.state.selection.main.empty,
-              });
+              setFormat(formatOf(update.view, picked));
             }
           },
         }),
@@ -165,11 +180,25 @@ export function NotesEditor({
     view.current = built;
     setCurrent(built.state.doc.toString());
     // Known from the start, so formatting docked open is there before anything is typed.
-    setFormat({ at: null, state: formatStateOf(built), selected: false });
+    setFormat({ at: null, state: formatStateOf(built), selected: false, inCell: false });
+
+    // A table cell's selection is the browser's, not the editor's, so it is followed here.
+    const followCell = () => {
+      const cell = cellFormatting(built);
+
+      if (cell !== null || inCell.current) {
+        setFormat(cell ?? formatOf(built, false));
+      }
+
+      inCell.current = cell !== null;
+    };
+
+    built.dom.ownerDocument.addEventListener("selectionchange", followCell);
     setViewReady(true);
     ready.current();
 
     return () => {
+      built.dom.ownerDocument.removeEventListener("selectionchange", followCell);
       built.destroy();
       view.current = null;
       setViewReady(false);
@@ -222,6 +251,7 @@ export function NotesEditor({
           onDismiss={() => {
             setFormat((current) => (current === null ? null : { ...current, at: null }));
           }}
+          inCell={format.inCell}
           selected={format.selected}
           state={format.state}
           view={view}

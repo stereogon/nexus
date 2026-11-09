@@ -201,6 +201,13 @@
   background: var(--track);
 }
 
+/* In a table cell, which takes only inline formats. */
+.format-button:disabled {
+  opacity: 0.35;
+  background: none;
+  cursor: default;
+}
+
 .format-button[aria-pressed="true"] {
   background: var(--accent-soft);
   color: var(--accent);

@@ -14,19 +14,29 @@ const cell = (html: string) => {
 };
 
 describe("a cell's Markdown", () => {
-  it("is what it was drawn from, for bold, italic and code", () => {
+  it("is what it was drawn from, for bold, italic, strikethrough and code", () => {
     const element = document.createElement("div");
-    const text = "fed with **ambiguity**, *contradiction* and `code`";
+    const text = "fed with **ambiguity**, _contradiction_, ~~struck~~ and `code`";
 
     drawCell(element, text);
 
-    expect(element.textContent).toBe("fed with ambiguity, contradiction and code");
+    expect(element.textContent).toBe("fed with ambiguity, contradiction, struck and code");
     expect(cellMarkdown(element)).toBe(text);
   });
 
-  it("reads the browser's own bold and italic, as tags or as styles", () => {
-    expect(cellMarkdown(cell("<b>a</b> <i>b</i> <span style=\"font-weight: bold\">c</span>"))).toBe("**a** *b* **c**");
-    expect(cellMarkdown(cell("<strong><em>both</em></strong>"))).toBe("***both***");
+  it("reads the browser's own bold, italic and strikethrough, as tags or as styles; italic as the notes' `_`", () => {
+    expect(cellMarkdown(cell("<b>a</b> <i>b</i> <span style=\"font-weight: bold\">c</span> <del>d</del>"))).toBe("**a** _b_ **c** ~~d~~");
+    expect(cellMarkdown(cell("<strong><em>both</em></strong>"))).toBe("**_both_**");
+  });
+
+  it("draws formats inside one another nested, and reads them back the same", () => {
+    const element = document.createElement("div");
+
+    drawCell(element, "**_both_** and _**again**_ and `**literal**`");
+
+    expect(element.textContent).toBe("both and again and **literal**");
+    expect(element.querySelector("strong em")?.textContent).toBe("both");
+    expect(cellMarkdown(element)).toBe("**_both_** and _**again**_ and `**literal**`");
   });
 
   it("keeps spaces at a mark's edge outside it, where GFM needs them", () => {
