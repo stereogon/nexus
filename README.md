@@ -97,7 +97,9 @@ The screenshots use the test suite's sample vault, not real notes. They are reta
 - **Table** in the `+` menu: pick the size from a grid, then type straight into the cells
   (Tab and Enter move between them; Tab in the last cell adds a row). A toolbar above the
   table adds, moves and deletes rows and columns, aligns a column and turns the header
-  row off or on. It stays an ordinary Markdown table in the file.
+  row off or on. Drag the edge between two columns to resize one; double-click it to fit
+  the words again. Rows grow with their words. It stays an ordinary Markdown table in the
+  file, with any widths on a hidden comment line above it.
 - **Diagram** in the `+` menu opens a block to paste [Mermaid](https://mermaid.js.org) code
   into; the diagram is drawn below it as you type.
 - **Chart** in the `+` menu opens a small form: bar, line or pie, a title, axis names, and a

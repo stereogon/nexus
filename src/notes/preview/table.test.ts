@@ -18,6 +18,7 @@ describe("a table's text", () => {
         ["Raft", "2014"],
         ["Paxos", "1998"],
       ],
+      widths: [null, null],
     });
   });
 
@@ -72,12 +73,30 @@ describe("the drawn table", () => {
 
     const view = new EditorView({ doc: source });
     const element = new TableEditorWidget(source, table).toDOM(view);
-    const values = (selector: string) => [...element.querySelectorAll<HTMLInputElement>(`${selector} input`)].map((input) => input.value);
+    const values = (selector: string) => [...element.querySelectorAll<HTMLTextAreaElement>(`${selector} textarea`)].map((input) => input.value);
 
     expect(values("th")).toEqual(["A", "B"]);
     expect(element.querySelectorAll("tbody tr")).toHaveLength(1);
     expect(values("td")).toEqual(["1", "2"]);
     expect(element.querySelectorAll("td")[1]?.style.textAlign).toBe("right");
+    view.destroy();
+  });
+
+  it("draws a column as wide as its widths line says, wrapping its words to it", () => {
+    const source = "<!-- column widths: auto 240 -->\n| A | B |\n|---|---|\n| 1 | 2 |";
+    const table = parseTable(source);
+
+    if (table === null) {
+      throw new Error("the fixture is a table");
+    }
+
+    const view = new EditorView({ doc: source });
+    const element = new TableEditorWidget(source, table).toDOM(view);
+    const cols = [...element.querySelectorAll("col")].map((col) => col.style.width);
+
+    expect(cols).toEqual(["", "240px"]);
+    expect([...element.querySelectorAll("td")].map((cell) => cell.hasAttribute("data-sized"))).toEqual([false, true]);
+    expect(element.querySelectorAll(".md-col-edge")).toHaveLength(4);
     view.destroy();
   });
 });

@@ -95,7 +95,7 @@ function table(element: HTMLElement): string {
 
   return header === undefined || width === 0
     ? ""
-    : writeTable({ header, align: header.map(() => null), rows: body });
+    : writeTable({ header, align: header.map(() => null), rows: body, widths: header.map(() => null) });
 }
 
 /** A list's items, each line indented by `indent`, nested lists under their item. */

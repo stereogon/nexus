@@ -16,6 +16,7 @@ import {
   withoutRow,
   withRow,
   withRowMoved,
+  withWidth,
   writeTable,
 } from "./tableModel";
 
@@ -101,5 +102,41 @@ describe("the header row", () => {
 
   it("stays off for a column added to a table without one", () => {
     expect(hasHeader(withColumn(withHeaderToggled(table), 0))).toBe(false);
+  });
+});
+
+describe("column widths", () => {
+  const table = read(SOURCE);
+
+  it("are not written while every column fits its words", () => {
+    expect(table.widths).toEqual([null, null]);
+    expect(writeTable(table)).not.toContain("<!--");
+  });
+
+  it("are written on the line above the table, and read back the same", () => {
+    const sized = withWidth(table, 1, 180.4);
+    const written = writeTable(sized);
+
+    expect(written.split("\n")[0]).toBe("<!-- column widths: auto 180 -->");
+    expect(read(written)).toEqual(sized);
+  });
+
+  it("are held to what a column can be, and put back to fitting with null", () => {
+    expect(withWidth(table, 0, 5).widths[0]).toBe(72);
+    expect(withWidth(table, 0, 99999).widths[0]).toBe(1600);
+    expect(withWidth(withWidth(table, 0, 200), 0, null)).toEqual(table);
+  });
+
+  it("move, and go, with their column", () => {
+    const sized = withWidth(table, 0, 200);
+
+    expect(withColumnMoved(sized, 0, 1).widths).toEqual([null, 200]);
+    expect(withoutColumn(sized, 0).widths).toEqual([null]);
+    expect(withColumn(sized, 0).widths).toEqual([null, 200, null]);
+  });
+
+  it("read from a hand-written line, a stray word fitting its words and missing columns too", () => {
+    expect(read(`<!-- column widths: 150 wide -->\n${SOURCE}`).widths).toEqual([150, null]);
+    expect(read(`<!--column widths: 150-->\n${SOURCE}`).widths).toEqual([150, null]);
   });
 });

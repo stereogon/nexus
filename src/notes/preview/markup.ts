@@ -19,7 +19,7 @@ import { Decoration } from "@codemirror/view";
 import { calloutOf } from "../callout";
 import { CalloutHeadWidget } from "./calloutWidget";
 import { BulletWidget, CheckboxWidget, CodeFootWidget, CodeHeaderWidget, RuleWidget } from "./markupWidgets";
-import { parseTable } from "./table";
+import { parseTable, tableStart } from "./table";
 import { TableEditorWidget } from "./tableEditor";
 import { SpacedWidget } from "./widgets";
 
@@ -101,7 +101,9 @@ export function markupDecorations(
         }
 
         case "Table": {
-          const source = doc.sliceString(node.from, node.to);
+          // From the line recording its column widths, when it has one, which is drawn as part of it.
+          const from = tableStart(doc, node.from);
+          const source = doc.sliceString(from, node.to);
           const table = parseTable(source);
 
           // Edited where it is drawn (`tableEditor.ts`), so it stays a table with the cursor
@@ -110,9 +112,9 @@ export function markupDecorations(
             lineClass(node.from, node.to, "md-table-source");
           } else {
             out.push(
-              Decoration.replace({ widget: new SpacedWidget(new TableEditorWidget(source, table)), block: true }).range(node.from, node.to),
+              Decoration.replace({ widget: new SpacedWidget(new TableEditorWidget(source, table)), block: true }).range(from, node.to),
             );
-            tables.push({ from: node.from, to: node.to });
+            tables.push({ from, to: node.to });
           }
 
           return false;

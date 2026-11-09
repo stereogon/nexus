@@ -8,12 +8,17 @@ import { syntaxTree } from "@codemirror/language";
 import type { EditorView } from "@codemirror/view";
 
 import { writeTable, type Cell } from "../tableModel";
-import { parseTable, type Table } from "./table";
+import { parseTable, tableStart, type Table } from "./table";
 import type { TableEdit } from "./tableTools";
 
-/** The table's place in the notes, found from its drawn element. */
+/** The table's place in the notes, its widths line included, found from its drawn element. */
 export function tableRange(view: EditorView, wrap: HTMLElement): { readonly from: number; readonly to: number } | null {
-  let node = syntaxTree(view.state).resolveInner(view.posAtDOM(wrap), 1);
+  const doc = view.state.doc;
+  const at = doc.lineAt(view.posAtDOM(wrap));
+  const next = at.number < doc.lines ? doc.line(at.number + 1) : null;
+  // The element starts at the widths line, when there is one, and the rows on the line after.
+  const rows = next !== null && tableStart(doc, next.from) === at.from ? next.from : at.from;
+  let node = syntaxTree(view.state).resolveInner(rows, 1);
 
   while (node.name !== "Table") {
     const parent = node.parent;
@@ -25,14 +30,14 @@ export function tableRange(view: EditorView, wrap: HTMLElement): { readonly from
     node = parent;
   }
 
-  return { from: node.from, to: node.to };
+  return { from: tableStart(view.state.doc, node.from), to: node.to };
 }
 
 /** Focuses `cell` of the table that starts at `from`, the caret at `caret` or its end. */
 export function focusCell(view: EditorView, from: number, cell: Cell, caret: number | null = null): void {
   for (const wrap of view.contentDOM.querySelectorAll<HTMLElement>(".md-table-editable")) {
     if (view.posAtDOM(wrap) === from) {
-      const input = wrap.querySelector<HTMLInputElement>(`input[data-row="${String(cell.row)}"][data-col="${String(cell.column)}"]`);
+      const input = wrap.querySelector<HTMLTextAreaElement>(`.md-cell-input[data-row="${String(cell.row)}"][data-col="${String(cell.column)}"]`);
       const at = Math.min(caret ?? Number.MAX_SAFE_INTEGER, input?.value.length ?? 0);
 
       input?.focus();

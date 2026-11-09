@@ -49,7 +49,7 @@ export function insertTable(view: EditorView, line: TableLine, rows: number, col
   // Its name selected, so typing replaces "Column 1".
   const box = view.contentDOM.ownerDocument.activeElement;
 
-  if (box instanceof HTMLInputElement) {
+  if (box instanceof HTMLTextAreaElement) {
     box.select();
   }
 }

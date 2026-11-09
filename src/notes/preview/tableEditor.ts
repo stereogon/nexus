@@ -7,9 +7,9 @@
  * nothing is kept anywhere but the notes. The table is read afresh from the notes for every
  * edit, never from the widget, so the two cannot drift apart.
  *
- * Redrawn in place when only words changed (`updateDOM`), so the cell being typed in keeps
+ * Redrawn in place when only words or widths changed (`updateDOM`), so the cell being typed in keeps
  * its focus and caret; rebuilt when rows or columns changed, and the cell to be in is then
- * focused again.
+ * focused again. A column's width is dragged at its edge (`tableResize.ts`).
  */
 import { redo, undo } from "@codemirror/commands";
 import { WidgetType, type EditorView } from "@codemirror/view";
@@ -17,17 +17,18 @@ import { WidgetType, type EditorView } from "@codemirror/view";
 import { hasHeader, withCell, withRow, type Cell } from "../tableModel";
 import { appendInline, type Table } from "./table";
 import { editTable, leave } from "./tableEdits";
+import { columnEdge, drawWidths } from "./tableResize";
 import { closeAll, showAlignment, tableTools } from "./tableTools";
 
-const cellOf = (input: HTMLInputElement): Cell => ({ row: Number(input.dataset.row), column: Number(input.dataset.col) });
+const cellOf = (input: HTMLTextAreaElement): Cell => ({ row: Number(input.dataset.row), column: Number(input.dataset.col) });
 
 /** What the keys do in a cell: move between cells, add a row at the end, undo, leave. */
-function onKey(event: KeyboardEvent, view: EditorView, wrap: HTMLElement, input: HTMLInputElement, rows: () => number): void {
+function onKey(event: KeyboardEvent, view: EditorView, wrap: HTMLElement, input: HTMLTextAreaElement, rows: () => number): void {
   const at = cellOf(input);
-  const inputs = [...wrap.querySelectorAll<HTMLInputElement>("input.md-cell-input")];
+  const inputs = [...wrap.querySelectorAll<HTMLTextAreaElement>(".md-cell-input")];
   const index = inputs.indexOf(input);
   const cellAt = (row: number, column: number) =>
-    wrap.querySelector<HTMLInputElement>(`input[data-row="${String(row)}"][data-col="${String(column)}"]`);
+    wrap.querySelector<HTMLTextAreaElement>(`.md-cell-input[data-row="${String(row)}"][data-col="${String(column)}"]`);
   const addRowAndGo = (column: number) => {
     editTable(view, wrap, (table) => ({ table: withRow(table, table.rows.length), focus: { row: table.rows.length, column } }));
   };
@@ -103,7 +104,8 @@ function build(wrap: HTMLElement, view: EditorView, table: Table): void {
   const cell = (row: number, column: number, text: string): HTMLTableCellElement => {
     const box = document.createElement(row < 0 ? "th" : "td");
     const shown = document.createElement("span");
-    const input = document.createElement("input");
+    // A box that wraps, so the words being typed wrap as the cell draws them (2026-11-09).
+    const input = document.createElement("textarea");
     const align = table.align[column];
 
     if (align !== null && align !== undefined) {
@@ -113,6 +115,7 @@ function build(wrap: HTMLElement, view: EditorView, table: Table): void {
     shown.className = "md-cell-view";
     appendInline(shown, text);
     input.className = "md-cell-input";
+    input.rows = 1;
     input.value = text;
     input.dataset.row = String(row);
     input.dataset.col = String(column);
@@ -126,6 +129,14 @@ function build(wrap: HTMLElement, view: EditorView, table: Table): void {
       showAlignment(wrap.querySelector(".md-table-tools"), drawn === "center" || drawn === "right" || drawn === "left" ? drawn : null);
     });
     input.addEventListener("input", () => {
+      // A cell is one line in GFM: a line break pasted in becomes a space.
+      if (/[\r\n]/.test(input.value)) {
+        const at = input.selectionStart;
+
+        input.value = input.value.replace(/\r\n|[\r\n]/g, " ");
+        input.setSelectionRange(at, at);
+      }
+
       const caret = input.selectionStart;
 
       editTable(view, wrap, (fresh) => ({ table: withCell(fresh, cellOf(input), input.value), focus: cellOf(input) }), caret);
@@ -133,7 +144,7 @@ function build(wrap: HTMLElement, view: EditorView, table: Table): void {
     input.addEventListener("keydown", (event) => {
       onKey(event, view, wrap, input, () => wrap.querySelectorAll("tbody tr").length);
     });
-    box.append(shown, input);
+    box.append(shown, input, columnEdge(view, wrap, column));
 
     return box;
   };
@@ -155,6 +166,12 @@ function build(wrap: HTMLElement, view: EditorView, table: Table): void {
       line.append(cell(row, column, text));
     });
   });
+  // Widths set on columns rather than cells, so each column is drawn once.
+  element.prepend(document.createElement("colgroup"));
+  table.header.forEach(() => {
+    element.querySelector("colgroup")?.append(document.createElement("col"));
+  });
+  drawWidths(element, table);
   scroller.append(element);
 }
 
@@ -204,7 +221,13 @@ export class TableEditorWidget extends WidgetType {
       return true;
     }
 
-    for (const input of dom.querySelectorAll<HTMLInputElement>("input.md-cell-input")) {
+    const element = dom.querySelector("table");
+
+    if (element !== null) {
+      drawWidths(element, this.table);
+    }
+
+    for (const input of dom.querySelectorAll<HTMLTextAreaElement>(".md-cell-input")) {
       const { row, column } = cellOf(input);
       const text = (row < 0 ? this.table.header : this.table.rows[row])?.[column] ?? "";
       const box = input.parentElement;

@@ -463,6 +463,46 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-09 · Table columns resized by dragging their edge**
+The user: *"there is one problem with the table engine, we cannot resize the tables columns
+or rows"*. Each column now has an edge to drag (`notes/preview/tableResize.ts`). It shows as
+a line down the whole column when pointed at, and the width follows the pointer. Letting go
+writes the width into the notes once, so one drag is one ⌘Z. A double-click on the edge puts
+the column back to fitting its words. A column can be 72 px to 1600 px; 72 px is the cells'
+existing `min-width`.
+
+**Where a width lives, and why there.** GFM tables have no syntax for a width. The widths are
+kept on a comment line directly above the table, `<!-- column widths: 180 auto -->`, in
+pixels, or `auto` for a column that fits its words. The line is written only when some
+column has a width. It is read as part of the table, both where the table is drawn
+(`markup.ts`) and where it is edited (`tableRange`), so it moves, changes and goes with the
+table. GitHub, Obsidian and other Markdown readers hide a comment, and the table below it
+stays a valid table. The alternative was Pandoc's convention of relative widths taken from the
+delimiter row's dashes. It was rejected: a table typed by hand (`|---|---|` under long words)
+would have read as a deliberate width, and a column could never be narrower than its words.
+
+**Rows are not dragged, and this is deliberate.** Notion's rows don't drag either: a row is
+as tall as its words, wrapped to its columns' widths. GFM has no row height to keep, and a
+height that ignored the words would clip them. What did need fixing was the wrapping. A cell's
+typing box was a one-line `<input>`, so a long cell wrapped while shown but became one sideways-scrolling line
+the moment it was clicked. It is now a `<textarea>` that wraps exactly as the cell draws. A
+line break pasted into it becomes a space, since a GFM cell is one line. A column given a
+width wraps even a long word to it (`overflow-wrap: anywhere`). A column fitting its words
+still breaks only between words.
+
+**Not done:** the edge is a pointer control only, so widths can't be changed from the
+keyboard.
+
+Verified: gate green. Unit tests: 5 for widths in `tableModel.test.ts`, and 1 for drawn widths in
+`table.test.ts`. Four journeys in `tableResize.spec.ts` (drag, keep, ⌘Z; typing after
+resizing; double-click; wrapping). Sabotage, each failing a journey:
+- the edit range without the widths line, which added a second line on the next drag;
+- the cell box as a one-line input;
+- a drag that writes nothing.
+
+Two journeys were too weak at first, and passed under sabotage. They were tightened until
+they failed.
+
 **2026-11-09 · ⋮⋮'s menu no longer opens under the format bar**
 The user: clicking ⋮⋮ showed *"both the text formatting options and the element options like
 turn to heading … on top of each other"*. ⋮⋮ selects the block before opening its menu —
