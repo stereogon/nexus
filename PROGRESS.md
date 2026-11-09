@@ -463,6 +463,42 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-09 · Show document and Close as icons**
+The user, with the header's "Show document" wrapping onto two lines beside "Close": *"this
+looks so bad, can we have an icon instead … an icon for side by side split view"*. Show
+document is now a split-view icon (two panes side by side), and Close the ✕ the notes
+already use beside a document; both keep their names and tooltips. The pane's header moved
+into `NotesHeader.tsx`, and the move commands into `ipc/moves.ts`, as each file passed the
+line limit.
+
+**2026-11-09 · Dragging items and folders in the sidebar to move them**
+From the to-do list raised the same day.
+- **What drags where.** An item or a folder dragged onto a folder row, or up onto a folder
+  in the path above the list, moves there. A press that moves under 5px is still a click.
+- **How it is followed** (`ui/useSidebarDrag.ts`): by the pointer, not the browser's drag
+  and drop, which the window's own file-drop handling sits over. Rows say what they are
+  with `data-drag` and `data-path`, and drop targets with `data-drop`.
+- **What it refuses** (`canDrop`): where it already is, and a folder dropped on itself or
+  anything inside it.
+- **Items** move through `move_item`, as the details sheet's folder menu does.
+- **Folders** move through a new command, `move_folder` (`folder_move.rs`). It refuses a
+  folder going inside itself, anything ending up deeper than the vault walk looks, and a
+  name already there. It is one rename on disk, and the remembered reading places of every
+  item inside follow it.
+- **After a move.** What was open inside the moved folder is reopened from its new place,
+  and a sidebar showing it follows it there. Either move runs through `against`, so a
+  refused one says why with the vault left open.
+- **Found by the journey:** the guard that swallows the click a drag ends with outlived
+  the drag when no click came (a press and release on different rows send none), and ate
+  the next real click. It now lasts only until the release has been handled.
+- **Not draggable:** an item still waiting for its PDF. Its row is a disabled button, which
+  WebKit sends no pointer events from; the details sheet still moves it.
+
+Verified: gate green. `folder_move.rs` tests (5: contents, notes and places carried;
+inside itself, too deep, name taken and the vault's top refused); `useSidebarDrag.test.ts`
+(2); three journeys in `sidebarDrag.spec.ts`. Sabotage: the lingering click guard fails
+the folder journey, and a drag that does nothing on drop fails both moves.
+
 **2026-11-09 · A document's notes on their own**
 From the to-do list raised the same day. "Notes only" in the notes' header hides the
 document; the notes become a page under the document's title (the plain note's layout),
@@ -6087,8 +6123,7 @@ notes only view"*; *"we need gesture identification for zoom in on the documents
 file drag and move feature in the sidebar"*.
 - ~~**Notes alone**~~ — built the same day; see the entry above.
 - ~~**Zoom**~~ — built the same day; see the entry above.
-- **Drag to move:** items and folders dragged in the sidebar onto a folder (or up to the
-  one above) move there, through `move_item` as the details sheet's folder menu does.
+- ~~**Drag to move**~~ — built the same day; see the entry above.
 
 ### Planned, raised 2026-11-07: Diagram and Chart blocks you can find
 The user: *"there is no way to add mermaid diagram … add a separate mermaid diagram block

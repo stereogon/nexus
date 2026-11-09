@@ -215,26 +215,6 @@ export async function deleteItem(vault: string, directory: string): Promise<stri
   return z.string().parse(payload);
 }
 
-/** An item after a move, and why its remembered place could not follow it, if it could not. */
-export const MovedItemSchema = z.object({
-  item: LectureRowSchema,
-  placeLost: CommandErrorSchema.nullable(),
-});
-
-export type MovedItem = z.infer<typeof MovedItemSchema>;
-
-/**
- * Moves the item at `directory` into `folder` (`""` for the top of the vault).
- *
- * @throws {CommandError} if the item or folder is gone, or the folder already holds
- * something of that name — never by writing over it.
- */
-export async function moveItem(vault: string, directory: string, folder: string): Promise<MovedItem> {
-  const payload: unknown = await invoke("move_item", { vault, directory, folder });
-
-  return MovedItemSchema.parse(payload);
-}
-
 /**
  * Opens a vault and lists what is in it.
  *

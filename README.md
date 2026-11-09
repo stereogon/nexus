@@ -123,6 +123,8 @@ The screenshots use the test suite's sample vault, not real notes. They are reta
   an image's words are shown as its caption.
 - Notion's keys: Tab and Shift-Tab nest list items, ⌘D duplicates a block, ⌘⇧↑ and ⌘⇧↓ move
   it, ⌘⌥0 turns it back into text. Select several lines and ⋮⋮ acts on all of them.
+- Drag an item or a folder in the sidebar onto another folder, or up the folder path above
+  the list, to move it there.
 - **Notes only** hides the document to work in its notes as a page; **Show document** (or ⌘\)
   brings it back. Side by side is the default.
 - Saves as you type. The divider between document and notes can be dragged, and so can the
@@ -155,14 +157,13 @@ Recorded in [`PROGRESS.md`](./PROGRESS.md) with the reasoning for each:
 - Remembering zoom per document (the page and position are remembered; zoom is not yet).
 - Page thumbnails, the document outline, Fit page.
 - `⌘L`, `⌘B`, and `⌘\` split presets (today `⌘\` shows or hides the notes).
-- Renaming, deleting or moving a folder, and dragging items between folders (Finder does
-  these meanwhile; Nexus picks the change up when the vault is next read).
+- Renaming or deleting a folder (Finder does these meanwhile; Nexus picks the change up
+  when the vault is next read).
 - The "Reorganize vault" screen (the engine exists; it files by course and week, which the
   window no longer asks for).
 - The rest of the diagnostics drawer: past logs, converter output, timings.
 - Telling you when LibreOffice is missing (imports wait safely until it is installed).
 - Restyling parts of the UI from the approved design canvas.
-- Dragging items and folders in the sidebar onto another folder to move them.
 - From the comparison with Notion (2026-11-09), not yet built: find and replace in the notes
   (needs `@codemirror/search` installed), toggle lists, links between notes with backlinks,
   colouring for more code languages (Python and others each need a package), and the format

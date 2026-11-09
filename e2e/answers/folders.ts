@@ -123,5 +123,27 @@ export function folderHandlers(held: Held): Handlers {
 
       return { item: moved, placeLost: null };
     },
+    move_folder: (args) => {
+      const { folder, into } = z.object({ vault: z.string(), folder: z.string(), into: z.string() }).parse(args);
+
+      if (!held.folders.includes(folder)) {
+        throw new CommandFailure("ERR_NOT_A_FOLDER", `No folder at ${folder}.`);
+      }
+
+      if (into === folder || into.startsWith(`${folder}/`)) {
+        throw new CommandFailure("ERR_FOLDER_INTO_ITSELF", "A folder cannot go inside itself. Drop it on a folder outside it.");
+      }
+
+      const to = within(into, folder.slice(folder.lastIndexOf("/") + 1));
+
+      refuseTaken(held, to);
+
+      const after = (path: string) => (path === folder || path.startsWith(`${folder}/`) ? `${to}${path.slice(folder.length)}` : path);
+
+      held.folders = held.folders.map(after);
+      held.lectures = held.lectures.map((lecture) => ({ ...lecture, directory: after(lecture.directory) }));
+
+      return { folder: to, placeLost: null };
+    },
   };
 }

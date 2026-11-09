@@ -12,6 +12,7 @@ pub mod assets;
 pub mod document;
 pub mod dropped_image;
 pub mod edit;
+pub mod folder_move;
 pub mod folders;
 pub mod import;
 pub mod layout;
@@ -84,6 +85,7 @@ pub fn run() -> Result<(), tauri::Error> {
             folders::create_folder,
             folders::create_note,
             folders::move_item,
+            folder_move::move_folder,
             trash::delete_item,
             preview_reorganize,
             apply_reorganize,

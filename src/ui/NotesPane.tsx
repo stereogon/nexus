@@ -18,7 +18,8 @@ import type { PageHeading } from "../notes/pageHeading";
 import { Failure } from "./Failure";
 import { NotesEditor, type NotesHandle } from "./NotesEditor";
 import { acceptNotesDrops } from "./notesDrop";
-import { useNotes, type SaveStatus } from "./useNotes";
+import { NotesHeader, type Alone } from "./NotesHeader";
+import { useNotes } from "./useNotes";
 
 /** Why a pasted image was not kept, in words the reader can act on. */
 const REFUSED = {
@@ -34,15 +35,6 @@ const REFUSED = {
 const DROP_NOT_AN_IMAGE =
   "That is not an image Nexus keeps in notes — PNG, JPEG, GIF and WebP are — so nothing was added. To import a document, drop it anywhere outside the notes.";
 
-/** What the header says about the last save. Plain words: the reader is not a developer. */
-const STATUS_TEXT: Record<SaveStatus, string> = {
-  loading: "Opening…",
-  saved: "Saved",
-  unsaved: "Editing",
-  saving: "Saving…",
-  conflict: "Not saved — changed elsewhere",
-  failed: "Not saved",
-};
 
 export function NotesPane({
   vault,
@@ -78,13 +70,7 @@ export function NotesPane({
    * For a plain note, which has no document: the pane is then the whole reading area, its
    * header names the note, and closing it closes the note. `null` beside a document.
    */
-  readonly alone: {
-    readonly title: string;
-    readonly place: string;
-    readonly onClose: () => void;
-    /** A document's notes shown alone: brings the document back beside them. */
-    readonly onShowDocument?: () => void;
-  } | null;
+  readonly alone: Alone | null;
   /** Beside a document: hides it and keeps the notes, as a page of their own (2026-11-09). */
   readonly onNotesOnly?: () => void;
   /** The title and the line under it, drawn above the writing. */
@@ -193,54 +179,16 @@ export function NotesPane({
       ref={pane}
       style={width === null ? undefined : { flexBasis: width }}
     >
-      <header className={alone === null ? "notes-bar pane-head" : "notes-bar pane-head lead"} data-tauri-drag-region="">
-        <span className="notes-title" data-tauri-drag-region="">
-          {alone !== null && alone.place !== "" && <span className="viewer-place">{`${alone.place} /`}</span>}
-          {alone === null ? "Notes" : alone.title}
-        </span>
-        <span aria-live="polite" className={`notes-status ${notes.status}`}>
-          {STATUS_TEXT[notes.status]}
-        </span>
-        <button
-          aria-label="Formatting"
-          aria-pressed={formatting}
-          className="chrome-icon notes-format-toggle"
-          // Not taking focus, so the cursor stays where the next words will be typed.
-          onMouseDown={(event) => {
-            event.preventDefault();
-          }}
-          onClick={() => {
-            setFormatting((open) => !open);
-          }}
-          title={formatting ? "Hide formatting" : "Show formatting"}
-          type="button"
-        >
-          Aa
-        </button>
-        {alone === null && onNotesOnly !== undefined && (
-          <button aria-label="Notes only" className="chrome-icon" onClick={onNotesOnly} title="Hide the document and keep writing" type="button">
-            <svg aria-hidden="true" fill="none" height="15" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.4" viewBox="0 0 16 16" width="15">
-              <path d="M9.5 2.5h4v4M13.5 2.5 9 7M6.5 13.5h-4v-4M2.5 13.5 7 9" />
-            </svg>
-          </button>
-        )}
-        {alone?.onShowDocument !== undefined && (
-          <button className="secondary" onClick={alone.onShowDocument} title="Show the document beside the notes (⌘\\)" type="button">
-            Show document
-          </button>
-        )}
-        {alone === null ? (
-          <button aria-label="Hide notes" className="chrome-icon" onClick={onHide} title={"Hide notes (⌘\\)"} type="button">
-            <svg aria-hidden="true" fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeWidth="1.6" viewBox="0 0 14 14" width="14">
-              <path d="M3.5 3.5l7 7M10.5 3.5l-7 7" />
-            </svg>
-          </button>
-        ) : (
-          <button className="secondary" onClick={alone.onClose} type="button">
-            Close
-          </button>
-        )}
-      </header>
+      <NotesHeader
+        alone={alone}
+        formatting={formatting}
+        onFormatting={() => {
+          setFormatting((open) => !open);
+        }}
+        onHide={onHide}
+        onNotesOnly={onNotesOnly}
+        status={notes.status}
+      />
 
       {notes.onDisk !== null && (
         <div className="notes-conflict" role="alert">

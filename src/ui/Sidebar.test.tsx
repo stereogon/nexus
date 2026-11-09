@@ -64,6 +64,7 @@ function show(
     folder,
     busy: false,
     openDirectory: null,
+    onMove: vi.fn(),
     width: null,
     skipped: [],
     unloadable: [],

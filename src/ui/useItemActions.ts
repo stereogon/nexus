@@ -12,11 +12,11 @@ import {
   createNote,
   deleteItem,
   editLecture,
-  moveItem,
   type LectureEdit,
   type LectureRow,
 } from "../ipc/vault";
-import { parentOf, spoken } from "./folders";
+import { moveFolder, moveItem } from "../ipc/moves";
+import { nameOf, parentOf, spoken } from "./folders";
 import type { Making } from "./sidebarRows";
 import type { Opening } from "./useOpenLecture";
 
@@ -38,6 +38,10 @@ export function useItemActions({
   readonly save: (item: LectureRow, edit: LectureEdit, folder: string) => void;
   /** Moves an item into the vault's `.trash`, closing it first if it is open. */
   readonly remove: (item: LectureRow) => void;
+  /** Moves an item into `into` (`""` for the top), as dragging it in the sidebar does. */
+  readonly relocate: (item: LectureRow, into: string) => void;
+  /** Moves a folder, with everything in it, into `into` (2026-11-09). */
+  readonly relocateFolder: (folder: string, into: string) => void;
 } {
   const make = useCallback(
     (making: Making, name: string) => {
@@ -119,5 +123,58 @@ export function useItemActions({
     [against, reading, vault],
   );
 
-  return { make, save, remove };
+  const relocate = useCallback(
+    (item: LectureRow, into: string) => {
+      if (vault === null || into === parentOf(item.directory)) {
+        return;
+      }
+
+      against(vault, async () => {
+        const moved = await moveItem(vault, item.directory, into);
+
+        // An open item's files are somewhere else now, so it is opened again from there.
+        if (reading.lecture?.lecture.directory === item.directory) {
+          reading.open(vault, moved.item);
+        }
+
+        const said = `Moved "${moved.item.title}" to ${spoken(into) || "the top of the vault"}.`;
+
+        return moved.placeLost === null ? said : `${said} ${moved.placeLost.remediation}`;
+      });
+    },
+    [against, reading, vault],
+  );
+
+  const relocateFolder = useCallback(
+    (path: string, into: string) => {
+      if (vault === null || into === parentOf(path)) {
+        return;
+      }
+
+      against(vault, async () => {
+        const moved = await moveFolder(vault, path, into);
+        const open = reading.lecture?.lecture;
+        const after = (inside: string) => (inside === path || inside.startsWith(`${path}/`) ? `${moved.folder}${inside.slice(path.length)}` : inside);
+
+        // What was open inside it is opened again from where it is now, and a sidebar
+        // showing it follows it there.
+        if (open !== undefined && after(open.directory) !== open.directory) {
+          reading.open(vault, { ...open, directory: after(open.directory) });
+        }
+
+        if (after(folder) !== folder) {
+          onFolder(after(folder));
+        }
+
+        const said = `Moved "${nameOf(path)}" to ${spoken(into) || "the top of the vault"}.`;
+
+        return moved.placeLost === null ? said : `${said} ${moved.placeLost.remediation}`;
+      });
+    },
+    [against, folder, onFolder, reading, vault],
+  );
+
+  return {
+    relocate,
+    relocateFolder, make, save, remove };
 }

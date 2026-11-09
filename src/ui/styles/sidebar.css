@@ -253,3 +253,29 @@ button.row-edit:focus-visible {
 .sidebar-empty-hint {
   color: var(--text-faint);
 }
+
+/* Dragging in the sidebar (`useSidebarDrag`): the name following the pointer, and where it
+   would go marked. */
+.sidebar-ghost {
+  position: fixed;
+  z-index: 60;
+  max-width: 220px;
+  padding: 5px 10px;
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.16);
+  color: var(--text);
+  font-size: 12.5px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+.sidebar button[data-drop-active] {
+  background: var(--accent-soft);
+  outline: 1.5px dashed var(--accent);
+  outline-offset: -1.5px;
+  border-radius: 8px;
+}

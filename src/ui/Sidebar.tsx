@@ -11,13 +11,14 @@
  * Laid out from the redesign canvas (2026-11-07), which drew the folder sidebar chosen with
  * the user on 2026-11-06 (`sidebarRows.ts` says why).
  */
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import type { LectureRow, ProblemRow } from "../ipc/vault";
 import { nameOf, trail, vaultNameOf } from "./folders";
 import { SidebarFoot } from "./SidebarFoot";
 import { SidebarHead } from "./SidebarHead";
 import { useMetaShortcut } from "./useMetaShortcut";
+import { useSidebarDrag, type Dragged } from "./useSidebarDrag";
 import { Folder, Lecture, NameField, Problems } from "./SidebarLecture";
 import type { Making, SidebarRow } from "./sidebarRows";
 
@@ -61,6 +62,8 @@ function Crumbs({
         <li>
           <button
             aria-current={folder === "" ? "location" : undefined}
+            // Up the path, somewhere to drop what is dragged (`useSidebarDrag`).
+            data-drop=""
             onClick={() => {
               onFolder("");
             }}
@@ -73,6 +76,7 @@ function Crumbs({
           <li key={path}>
             <button
               aria-current={path === folder ? "location" : undefined}
+              data-drop={path}
               onClick={() => {
                 onFolder(path);
               }}
@@ -105,6 +109,7 @@ export function Sidebar({
   foot,
   onSearch,
   width,
+  onMove,
 }: {
   readonly rows: readonly SidebarRow[];
   readonly root: string;
@@ -129,8 +134,12 @@ export function Sidebar({
   readonly onSearch: () => void;
   /** A dragged width, or `null` for the stylesheet's. */
   readonly width: number | null;
+  /** An item or folder dragged onto a folder, to move it there (`useSidebarDrag`). */
+  readonly onMove: (dragged: Dragged, into: string) => void;
 }) {
   const [making, setMaking] = useState<Making | null>(null);
+  const box = useRef<HTMLElement | null>(null);
+  const ghost = useSidebarDrag(box, onMove);
 
   // The + menu's Note and Folder from the keyboard, as it shows them (canvas, 2026-11-09).
   useMetaShortcut("n", !busy, () => {
@@ -142,7 +151,12 @@ export function Sidebar({
 
   return (
     // A dragged width replaces the stylesheet's; `useSidebarWidth` has held it to the window.
-    <aside className="sidebar" style={width === null ? undefined : { flexBasis: width }}>
+    <aside className="sidebar" ref={box} style={width === null ? undefined : { flexBasis: width }}>
+      {ghost !== null && (
+        <div aria-hidden="true" className="sidebar-ghost" style={{ left: ghost.x + 12, top: ghost.y + 8 }}>
+          {ghost.label}
+        </div>
+      )}
       <SidebarHead
         busy={busy}
         onChooseVault={onChooseVault}

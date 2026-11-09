@@ -166,6 +166,15 @@ export function App() {
             skipped={summary.skipped}
             unloadable={summary.unloadable}
             width={sidebarSizing.width}
+            onMove={(dragged, into) => {
+              const item = summary.lectures.find((lecture) => lecture.directory === dragged.path);
+
+              if (dragged.kind === "folder") {
+                actions.relocateFolder(dragged.path, into);
+              } else if (item !== undefined) {
+                actions.relocate(item, into);
+              }
+            }}
           />
         )}
         {sidebar.shown && <PaneDivider label="Sidebar width" sizing={sidebarSizing} title="Drag to resize the sidebar" />}

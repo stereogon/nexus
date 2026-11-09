@@ -54,6 +54,10 @@ export function Folder({
       <button
         aria-label={row.location === "" ? `Folder ${row.name}` : `Folder ${row.name}, in ${row.location}`}
         className="open"
+        // Dragged to move it, and dropped on to move something into it (`useSidebarDrag`).
+        data-drag="folder"
+        data-drop={row.path}
+        data-path={row.path}
         disabled={busy}
         onClick={() => {
           onFolder(row.path);
@@ -103,6 +107,8 @@ export function Lecture({
           .filter((part) => part !== "")
           .join(", ")}
         className="open"
+        data-drag="item"
+        data-path={row.lecture.directory}
         disabled={busy || !openable}
         onClick={() => {
           onOpen(row.lecture);
