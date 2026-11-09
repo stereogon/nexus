@@ -463,6 +463,33 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-09 · Closer to Notion, part 1: nesting, block shortcuts, several blocks at once**
+The user asked what in Notion the notes still lack, then: *"for the features that are good
+to build, lets build them"*. "Good to build" was taken as what keeps the notes plain
+Markdown, works offline and needs nothing installed unasked: a "/" menu, Tab nesting,
+block shortcuts, acting on several blocks, rich paste, linking by pasting over a selection,
+callouts and image captions. Find and replace needs `@codemirror/search` (to ask). Toggles,
+links between notes and more code languages wait; colours, underline and columns have no
+Markdown form.
+
+This part:
+- **Tab and Shift-Tab** (`notes/indentKeys.ts`) nest a list item under the one above, by
+  that item's marker width, or bring it out to its parent's level, with every selected
+  list line. In code they indent. Elsewhere Tab still moves focus on: an indented
+  paragraph is a code block in Markdown, and the editor should not trap the keyboard.
+- **⌘D, ⌘⇧↑, ⌘⇧↓, ⌘⌥0** (`notes/blockShortcuts.ts`) duplicate, move past the neighbouring
+  block (a code block or table moves and is passed whole) and turn back into text, over
+  every block the selection touches. A move is one change, so one undo.
+- **Several blocks at once.** Clicking ⋮⋮ inside a selection of several lines keeps that
+  selection, and its menu deletes, duplicates or turns into another kind all of it, the
+  last only when every line is a block of its own.
+- `NotesEditor`'s extension list moved, unchanged, into `ui/notesExtensions.ts`, and the
+  editing behaviour is bundled in `notes/editing.ts`.
+
+Verified: gate green. `indentKeys.test.ts` and `blockShortcuts.test.ts` (10); four journeys
+in `notionKeys.spec.ts`. Sabotage: without the keys, the nesting and ⌘D/⌘⇧↑ journeys
+fail; without keeping the selection, the several-lines journey fails.
+
 **2026-11-08 · The table toolbar, icons with option strips**
 The user: *"why can't we use icons instead of text, and then internal option dialog boxes
 … when we click on the alignment button, another dialog just above it showing the

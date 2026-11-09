@@ -5,10 +5,10 @@
  */
 import type { EditorView } from "@codemirror/view";
 
-import type { Block } from "../notes/blocks";
+import { blockAt, type Block } from "../notes/blocks";
 import { chartOpener } from "../notes/chartEditing";
 import { tablePicker } from "../notes/tableInsert";
-import { turnsInto, type Block as Kind } from "../notes/format";
+import { KINDS, turnsInto, type Block as Kind } from "../notes/format";
 import { formatBlock } from "../notes/markSelection";
 import type { MenuItem } from "./PopMenu";
 
@@ -118,16 +118,29 @@ export function blockActions(editor: EditorView, block: Block): MenuItem[] {
     },
   ];
 
-  if (block.from !== block.to) {
+  const lines = Array.from({ length: block.to - block.from + 1 }, (_, at) => doc.line(block.from + at));
+  const text = doc.toString();
+  // Turned into another kind only when every line is a block of its own that can be: never
+  // the lines of a code block or a table, which only mean something together.
+  const convertible = lines.every((line) => {
+    const own = blockAt(text, line.number);
+
+    return own.from === own.to && turnsInto(line.text).length > 0;
+  });
+
+  if (!convertible) {
     return actions;
   }
 
-  const line = doc.line(block.from);
+  const first = lines[0];
+  const last = lines[lines.length - 1];
   const as = (kind: Kind) => () => {
-    editor.dispatch({ selection: { anchor: line.from, head: line.to } });
+    editor.dispatch({ selection: { anchor: first?.from ?? 0, head: last?.to ?? 0 } });
     formatBlock(editor, kind);
     editor.focus();
   };
+  // One line offers every kind but its own; several, every kind, since they may differ.
+  const kinds = lines.length === 1 && first !== undefined ? turnsInto(first.text) : KINDS;
 
-  return [...actions, ...turnsInto(line.text).map((kind) => ({ label: TURN_INTO[kind], onSelect: as(kind) }))];
+  return [...actions, ...kinds.map((kind) => ({ label: TURN_INTO[kind], onSelect: as(kind) }))];
 }

@@ -12,6 +12,7 @@ import type { EditorView } from "@codemirror/view";
 import { useEffect, useRef, useState, type RefObject } from "react";
 
 import { blockAt, moveBlock, type Block } from "../notes/blocks";
+import { selectedBlocks } from "../notes/blockShortcuts";
 import { blockActions, turnInto } from "./blockMenus";
 import type { MenuAt } from "./menuPlacement";
 import { PopMenu, under } from "./PopMenu";
@@ -173,11 +174,20 @@ export function BlockHandles({
     );
   }
 
-  const select = (target: EditorView) => {
+  // The block selected, unless a selection of several lines takes it in: that stands (2026-11-09).
+  const select = (target: EditorView): Block => {
     const doc = target.state.doc;
+    const { from, to } = target.state.selection.main;
+    const [first, last] = [doc.lineAt(from).number, doc.lineAt(to).number];
+
+    if (first !== last && first <= hovered.block.from && last >= hovered.block.to) {
+      target.focus();
+      return selectedBlocks(target.state);
+    }
 
     target.dispatch({ selection: { anchor: doc.line(hovered.block.from).from, head: doc.line(hovered.block.to).to } });
     target.focus();
+    return hovered.block;
   };
 
   const addBelow = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -231,8 +241,7 @@ export function BlockHandles({
 
       if (!moved || before === null) {
         // A click: the block selected, and its menu opened beside the handle.
-        select(editor);
-        setActions({ at: under(button, "left", 220), block });
+        setActions({ at: under(button, "left", 220), block: select(editor) });
         return;
       }
 

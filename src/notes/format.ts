@@ -150,7 +150,7 @@ export function blockOf(line: string): Block {
 }
 
 /** Every block kind, in the order a menu offers them. */
-const KINDS: readonly Block[] = ["paragraph", "h1", "h2", "h3", "bullet", "numbered", "task", "quote"];
+export const KINDS: readonly Block[] = ["paragraph", "h1", "h2", "h3", "bullet", "numbered", "task", "quote"];
 
 /**
  * A line drawn as an element rather than as text — a citation, an image, a formula on its

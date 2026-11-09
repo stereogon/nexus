@@ -11,13 +11,12 @@
  * The text is only replaced wholesale when the parent says the notes changed underneath:
  * a different lecture, or "use theirs" after a conflict.
  */
-import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
-import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { EditorState } from "@codemirror/state";
-import { drawSelection, EditorView, keymap, placeholder } from "@codemirror/view";
+import { EditorView } from "@codemirror/view";
 import { useEffect, useRef, useState, type Ref } from "react";
 
-import { barFor, formatKeys, formatStateOf } from "../notes/markSelection";
+import { barFor, formatStateOf } from "../notes/markSelection";
+import { notesExtensions } from "./notesExtensions";
 import type { FormatState } from "./NotesFormatBar";
 import { BlockHandles } from "./BlockHandles";
 import { HeadingRail } from "./HeadingRail";
@@ -27,17 +26,11 @@ import { NotesFormatting } from "./NotesFormatting";
 import { useNotesHandle, type NotesHandle } from "./useNotesHandle";
 import type { MenuAt } from "./menuPlacement";
 
-import { citationOffsets, citeLinks, nextOccurrence } from "../notes/citeLinks";
-import { codeLanguages } from "../notes/codeLanguages";
-import { flashLine, lineFlash } from "../notes/flash";
-import { livePreview } from "../notes/preview/field";
-import { blockKeys } from "../notes/blockKeys";
-import { chartOpener, writeChart, type ChartAt } from "../notes/chartEditing";
-import { insertTable, tablePicker, type TableLine } from "../notes/tableInsert";
-import { dropEmptiedMarks } from "../notes/emptiedMarks";
-import { pageHeading, setHeading, type PageHeading } from "../notes/pageHeading";
-import { pasteImages } from "../notes/pasteImage";
-import { notePage, notesAppearance } from "../notes/theme";
+import { citationOffsets, nextOccurrence } from "../notes/citeLinks";
+import { flashLine } from "../notes/flash";
+import { writeChart, type ChartAt } from "../notes/chartEditing";
+import { insertTable, type TableLine } from "../notes/tableInsert";
+import { setHeading, type PageHeading } from "../notes/pageHeading";
 
 export type { NotesHandle };
 
@@ -129,41 +122,19 @@ export function NotesEditor({
       parent,
       state: EditorState.create({
         doc: starting.current,
-        extensions: [
-          history(),
-          keymap.of([
-            ...formatKeys,
-            ...defaultKeymap,
-            ...historyKeymap,
-          ]),
-          // GitHub-flavoured: tables, strikethrough and task lists, which plain CommonMark
-          // does not have. Without it a table was not even recognised (2026-11-05).
-          markdown({ base: markdownLanguage, codeLanguages }),
-          EditorView.lineWrapping,
-          // Drawn by the editor: WebKit did not paint its caret below the title (2026-11-07).
-          drawSelection(),
-          notesAppearance,
-          page ? notePage : [],
-          pageHeading(titled.current),
-          lineFlash,
-          livePreview({
-            onCite: (id) => {
-              cited.current(id);
-            },
-            imageUrl: (src) => images.current(src),
-          }),
-          placeholder("Start writing. Beside a document, select text in it and choose “Link to notes” to cite it here."),
-          citeLinks((id) => {
+        extensions: notesExtensions({
+          page,
+          heading: titled.current,
+          onCite: (id) => {
             cited.current(id);
-          }),
-          pasteImages(() => pasted.current),
-          chartOpener.of((at) => {
+          },
+          imageUrl: (src) => images.current(src),
+          keepImage: () => pasted.current,
+          onChart: (at) => {
             setChart({ at, failure: null });
-          }),
-          tablePicker.of(setTableLine),
-          blockKeys,
-          dropEmptiedMarks,
-          EditorView.updateListener.of((update) => {
+          },
+          onTable: setTableLine,
+          onUpdate: (update) => {
             if (update.docChanged) {
               changed.current(update.state.doc.toString());
               setCurrent(update.state.doc.toString());
@@ -176,8 +147,8 @@ export function NotesEditor({
                 selected: !update.state.selection.main.empty,
               });
             }
-          }),
-        ],
+          },
+        }),
       }),
     });
 

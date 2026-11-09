@@ -115,6 +115,8 @@ The screenshots use the test suite's sample vault, not real notes. They are reta
 - Citations and images are elements: kept or removed whole. Typing ``` opens a code block
   to write in.
 - To-dos are drawn as boxes; a done one is struck through.
+- Notion's keys: Tab and Shift-Tab nest list items, ⌘D duplicates a block, ⌘⇧↑ and ⌘⇧↓ move
+  it, ⌘⌥0 turns it back into text. Select several lines and ⋮⋮ acts on all of them.
 - Saves as you type. The divider between document and notes can be dragged, and so can the
   sidebar's edge; both widths are remembered on this Mac.
 
