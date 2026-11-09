@@ -61,6 +61,7 @@ export function turnInto(editor: EditorView): MenuItem[] {
     { label: "Numbered list", onSelect: as("numbered") },
     { label: "To-do list", onSelect: as("task") },
     { label: "Quote", onSelect: as("quote") },
+    { label: "Callout", onSelect: write("> [!NOTE]\n> ", 12) },
     { label: "Code", onSelect: write("```\n\n```", 4) },
     {
       label: "Table",

@@ -12,6 +12,7 @@ import { syntaxTree } from "@codemirror/language";
 import { EditorState, Prec, type Extension, type Line } from "@codemirror/state";
 import { EditorView, keymap } from "@codemirror/view";
 
+import { calloutOf } from "./callout";
 import { hiddenPrefix } from "./format";
 import { isCitationLine } from "./preview/find";
 
@@ -61,7 +62,8 @@ export function settled(state: EditorState, head: number, down: boolean, from: n
   const below = line.number < doc.lines ? doc.line(line.number + 1) : null;
   const above = line.number > 1 ? doc.line(line.number - 1) : null;
 
-  if (isCitationLine(line.text)) {
+  // A citation, or a callout's marker line, drawn as its head: both stepped over.
+  if (isCitationLine(line.text) || calloutOf(line.text) !== null) {
     return (down ? below?.from : above?.to) ?? below?.from ?? above?.to ?? head;
   }
 
@@ -122,6 +124,15 @@ function backspace(view: EditorView): boolean {
   }
 
   const line = state.doc.lineAt(range.head);
+
+  // At the start of a callout's first words (after the hidden `> `): the callout becomes a
+  // plain quote, rather than its marker being left with nothing in it.
+  if (line.number > 1 && range.head === line.from + hiddenPrefix(line.text) && calloutOf(state.doc.line(line.number - 1).text) !== null) {
+    const marker = state.doc.line(line.number - 1);
+
+    view.dispatch({ changes: { from: marker.from, to: line.from } });
+    return true;
+  }
 
   if (range.head !== line.from || line.number === 1) {
     return false;
@@ -190,6 +201,7 @@ export const blockKeys: Extension = [
   keepCursorVisible,
   openCodeBlock,
   // Ahead of Markdown's and CodeMirror's own Backspace, which would join the line to a
-  // citation's or a fence's hidden text.
-  Prec.high(keymap.of([{ key: "Backspace", run: backspace }])),
+  // citation's or a fence's hidden text, or take a callout's line out of its quote: highest,
+  // since Markdown's keys are themselves above the defaults. Anything else is passed on.
+  Prec.highest(keymap.of([{ key: "Backspace", run: backspace }])),
 ];

@@ -16,6 +16,8 @@ import { syntaxTree } from "@codemirror/language";
 import type { EditorState, Range } from "@codemirror/state";
 import { Decoration } from "@codemirror/view";
 
+import { calloutOf } from "../callout";
+import { CalloutHeadWidget } from "./calloutWidget";
 import { BulletWidget, CheckboxWidget, CodeFootWidget, CodeHeaderWidget, RuleWidget } from "./markupWidgets";
 import { parseTable } from "./table";
 import { TableEditorWidget } from "./tableEditor";
@@ -52,6 +54,8 @@ export function markupDecorations(
     out.push(hidden.range(from, doc.sliceString(to, to + 1) === " " ? to + 1 : to));
   };
   let lists = 0;
+  /** Where each callout's marker line starts, which its head replaces. */
+  const heads = new Set<number>();
 
   /**
    * A fenced code block: one panel, its fence lines drawn as blocks — the header, with the
@@ -127,9 +131,30 @@ export function markupDecorations(
           out.push(Decoration.mark({ class: "md-inline-code" }).range(node.from, node.to));
           return true;
 
-        case "Blockquote":
-          lineClass(node.from, node.to, "md-quote");
+        case "Blockquote": {
+          const first = doc.lineAt(node.from);
+          const type = calloutOf(first.text);
+
+          if (type === null) {
+            lineClass(node.from, node.to, "md-quote");
+            return true;
+          }
+
+          // A callout (2026-11-09): its marker line drawn as its head, its lines a tinted box.
+          const last = doc.lineAt(node.to);
+
+          out.push(
+            Decoration.replace({ widget: new CalloutHeadWidget(type, first.from, last.number === first.number), block: true }).range(first.from, first.to),
+          );
+          heads.add(first.from);
+
+          for (let number = first.number + 1; number <= last.number; number += 1) {
+            const end = number === last.number ? " md-callout-end" : "";
+
+            out.push(Decoration.line({ class: `md-callout-line md-callout-${type}${end}` }).range(doc.line(number).from));
+          }
           return true;
+        }
 
         case "BulletList":
         case "OrderedList":
@@ -138,7 +163,10 @@ export function markupDecorations(
 
         case "QuoteMark":
         case "HeaderMark":
-          hideWithSpace(node.from, node.to);
+          // A callout's marker line is already drawn whole as its head.
+          if (!heads.has(doc.lineAt(node.from).from)) {
+            hideWithSpace(node.from, node.to);
+          }
           return true;
 
         case "EmphasisMark":

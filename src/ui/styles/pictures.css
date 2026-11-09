@@ -1,0 +1,68 @@
+/**
+ * The pictures in the notes: Mermaid diagrams, charts and images with their captions.
+ * Split from `markdown.css` on 2026-11-09, when captions took it past the line limit.
+ */
+
+.md-diagram,
+.md-chart {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--text-meta);
+}
+
+.md-diagram {
+  display: flex;
+  justify-content: center;
+}
+
+.md-diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Chart.js sizes its canvas from the box it is in, so the box has to have a height. */
+.md-chart {
+  position: relative;
+  height: 280px;
+}
+
+.md-chart-edit {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.md-diagram-empty {
+  font-style: italic;
+}
+
+.md-image {
+  display: block;
+  max-width: 100%;
+  max-height: 440px;
+  margin: 8px 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+/* An image with words, `![these](…)`: the words under it as its caption. */
+.md-figure {
+  display: inline-block;
+  max-width: 100%;
+}
+
+.md-figure .md-image {
+  margin-bottom: 4px;
+}
+
+.md-caption {
+  display: block;
+  color: var(--text-meta);
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  text-align: center;
+}

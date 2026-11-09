@@ -118,6 +118,8 @@ The screenshots use the test suite's sample vault, not real notes. They are reta
   to write in.
 - To-dos are drawn as boxes; a done one is struck through.
 - Type `/` for the same blocks as `+`, narrowed as you type; ↑ ↓ and Enter to choose.
+- Callouts (Note, Tip, Important, Warning, Caution), stored as GitHub's `> [!NOTE]` alerts;
+  an image's words are shown as its caption.
 - Notion's keys: Tab and Shift-Tab nest list items, ⌘D duplicates a block, ⌘⇧↑ and ⌘⇧↓ move
   it, ⌘⌥0 turns it back into text. Select several lines and ⋮⋮ acts on all of them.
 - Saves as you type. The divider between document and notes can be dragged, and so can the

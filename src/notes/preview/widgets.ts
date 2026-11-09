@@ -195,7 +195,20 @@ export class ImageWidget extends WidgetType {
       image.replaceWith(problem(`The image “${this.src}” is not in these notes' assets folder any more.`, true));
     });
 
-    return image;
+    if (this.alt.trim() === "") {
+      return image;
+    }
+
+    // Its words, `![these](…)`, shown under it as a caption (2026-11-09), as Notion has one.
+    const figure = document.createElement("span");
+    const caption = document.createElement("span");
+
+    figure.className = "md-figure";
+    caption.className = "md-caption";
+    caption.textContent = this.alt;
+    figure.append(image, caption);
+
+    return figure;
   }
 
   override ignoreEvent(): boolean {

@@ -463,6 +463,28 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-09 · Closer to Notion, part 4: callouts and image captions**
+- **Callouts** are written as GitHub's alerts: a quote whose first line is `[!NOTE]`,
+  `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]` or `[!CAUTION]` (`notes/callout.ts`). They read
+  as callouts on GitHub and as plain quotes elsewhere, so the notes stay Markdown.
+  - **Drawing.** The marker line is drawn as the callout's head (`preview/calloutWidget.ts`):
+    an icon and a menu of the five kinds, which rewrites the marker. It is a block, so the
+    cursor steps over it as it does over a code fence. The lines below are one tinted box.
+  - **Colour.** Each kind takes a meaning's colour: Note the question's, Tip the
+    definition's, Warning the key's, Caution the exam's, Important the accent. A theme
+    that swaps a highlight colour swaps the callout's with it.
+  - **Inserting and leaving.** "Callout" is in the `+` and "/" menus. Backspace at the
+    start of a callout's first words turns it into a plain quote.
+- **Image captions.** An image's words, `![these](…)`, are shown under it.
+- **Found by the journey:** Backspace there first took the line out of the quote instead.
+  Markdown's own Backspace runs above the defaults and handled the key before ours, so
+  ours now runs at the highest precedence and passes on whatever it does not handle.
+- Picture styles split from `markdown.css` into `pictures.css`.
+
+Verified: gate green. `callout.test.ts` (2); three journeys in `callouts.spec.ts`. Sabotage:
+without callout recognition the callout journey fails; without captions the caption one
+fails.
+
 **2026-11-09 · Closer to Notion, part 3: pasting formatted text**
 Formatting copied from a web page or Google Docs now arrives as Markdown
 (`notes/htmlToMarkdown.ts`, `notes/richPaste.ts`) where it was flattened to plain text:

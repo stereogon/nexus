@@ -90,6 +90,38 @@ const editorTheme = EditorView.theme({
     borderTopLeftRadius: "10px",
     borderTopRightRadius: "10px",
   },
+  // A callout (2026-11-09): one tinted box, its head in place of the `[!NOTE]` line, its
+  // colour the meaning's own — the four highlight colours and the accent, so a theme that
+  // swaps a highlight colour swaps the callout's too.
+  ".md-callout-note": { "--callout": "var(--semantic-question)", "--callout-wash": "var(--highlight-question)" },
+  ".md-callout-tip": { "--callout": "var(--semantic-definition)", "--callout-wash": "var(--highlight-definition)" },
+  ".md-callout-important": { "--callout": "var(--accent)", "--callout-wash": "var(--accent-soft)" },
+  ".md-callout-warning": { "--callout": "var(--semantic-key)", "--callout-wash": "var(--highlight-key)" },
+  ".md-callout-caution": { "--callout": "var(--semantic-exam)", "--callout-wash": "var(--highlight-exam)" },
+  ".md-callout-top": { paddingTop: "10px" },
+  ".md-callout-head": {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    padding: "8px 14px 2px",
+    backgroundColor: "var(--callout-wash)",
+    borderLeft: "3px solid var(--callout)",
+    borderTopRightRadius: "8px",
+    fontFamily: "var(--font-ui)",
+    fontSize: "13px",
+    fontWeight: "600",
+    color: "var(--text)",
+  },
+  ".md-callout-alone .md-callout-head": { paddingBottom: "8px", borderBottomRightRadius: "8px" },
+  ".md-callout-alone": { paddingBottom: "12px" },
+  ".md-callout-icon": { color: "var(--callout)" },
+  ".md-callout-head .md-callout-kind": { color: "var(--text)", fontWeight: "600", paddingLeft: "0" },
+  ".md-callout-line": {
+    backgroundColor: "var(--callout-wash)",
+    borderLeft: "3px solid var(--callout)",
+    padding: "0 14px",
+  },
+  ".md-callout-end": { paddingBottom: "8px", borderBottomRightRadius: "8px" },
   // Room around a code block, as padding on boxes of their own (never margins, which the
   // editor would not count when placing the lines after the block).
   ".md-code-top": { paddingTop: "10px" },
@@ -109,7 +141,7 @@ const editorTheme = EditorView.theme({
     borderBottomLeftRadius: "10px",
     borderBottomRightRadius: "10px",
   },
-  ".md-code-lang, .md-code-copy": {
+  ".md-code-lang, .md-code-copy, .md-callout-kind": {
     height: "24px",
     padding: "0 6px",
     border: "none",
@@ -120,7 +152,7 @@ const editorTheme = EditorView.theme({
     fontSize: "12px",
     cursor: "pointer",
   },
-  ".md-code-lang:hover, .md-code-copy:hover": {
+  ".md-code-lang:hover, .md-code-copy:hover, .md-callout-kind:hover": {
     background: "var(--track)",
     color: "var(--text)",
   },
