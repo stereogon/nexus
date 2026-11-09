@@ -8,6 +8,7 @@
  * Why there is a fake backend at all is in `harness.ts`.
  */
 import type { Annotation } from "../src/ipc/annotations";
+import type { DocumentRisk } from "../src/ipc/document";
 import type { LectureRow } from "../src/ipc/vault";
 
 declare global {
@@ -53,6 +54,8 @@ export interface Fixture {
   readonly assetDelayMs?: number;
   /** Folders with nothing in them; those holding an item are listed from its path. */
   readonly folders?: readonly string[];
+  /** What screening found in each document, keyed by directory; absent means nothing. */
+  readonly risks?: Readonly<Record<string, readonly DocumentRisk[]>>;
 }
 
 /** Slide-shaped, because most of what this app opens is a lecture deck. */

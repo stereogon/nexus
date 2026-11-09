@@ -56,6 +56,8 @@ export function backend(fixture: Fixture): (command: string, args?: InvokeArgs) 
   const paneWidths = new Map<string, number>();
   const positions = new Map(Object.entries(fixture.positions ?? {}));
   let lastLecture = fixture.lastLecture ?? null;
+  // Documents whose notice was asked not to be shown again; per-device, like the positions.
+  const quietNotices = new Set<string>();
 
   const vault: Handlers = {
     last_vault: () => fixture.vault,
@@ -97,7 +99,19 @@ export function backend(fixture: Fixture): (command: string, args?: InvokeArgs) 
 
       // The path is the directory the fixture gave it, moved or not. The harness turns it
       // into a URL that the Playwright route answers with the generated PDF for it.
-      return { path: held.movedFrom.get(directory) ?? directory, bytes: 1, risks: [], needsAttention: false };
+      const risks = fixture.risks?.[directory] ?? [];
+
+      return {
+        path: held.movedFrom.get(directory) ?? directory,
+        bytes: 1,
+        risks,
+        needsAttention: risks.some((risk) => risk.severity === "notable"),
+      };
+    },
+    notice_quiet: (args) => quietNotices.has(InLecture.parse(args).directory),
+    quiet_notice: (args) => {
+      quietNotices.add(InLecture.parse(args).directory);
+      return null;
     },
     edit_lecture: (args) => {
       const { directory, edit } = EditLecture.parse(args);

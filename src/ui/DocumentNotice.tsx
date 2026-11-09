@@ -19,20 +19,43 @@
  * own tokens rather than invented, and it wants an artboard of its own — recorded in
  * `PROGRESS.md` rather than left as a difference someone finds later.
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import type { DocumentRisk } from "../ipc/document";
+import { noticeQuiet, quietNotice } from "../ipc/notice";
 
 export function DocumentNotice({
   risks,
   needsAttention,
+  vault,
+  directory,
 }: {
   readonly risks: readonly DocumentRisk[];
   readonly needsAttention: boolean;
+  readonly vault: string;
+  readonly directory: string;
 }) {
   const [open, setOpen] = useState(needsAttention);
+  // Whether to show it at all (2026-11-09): ✕ puts it away until the document is opened
+  // again, and "Don't show again" for good on this device. Unknown until asked, so a quiet
+  // notice does not flash up first.
+  const [shown, setShown] = useState<boolean | null>(null);
 
-  if (risks.length === 0) {
+  useEffect(() => {
+    const session = { live: true };
+
+    void noticeQuiet(vault, directory).then((quiet) => {
+      if (session.live) {
+        setShown(!quiet);
+      }
+    });
+
+    return () => {
+      session.live = false;
+    };
+  }, [vault, directory]);
+
+  if (risks.length === 0 || shown !== true) {
     return null;
   }
 
@@ -55,6 +78,19 @@ export function DocumentNotice({
         >
           {open ? "Hide" : "What it asks for"}
         </button>
+        <button
+          aria-label="Dismiss"
+          className="chrome-icon notice-dismiss"
+          onClick={() => {
+            setShown(false);
+          }}
+          title="Put this away until the document is opened again"
+          type="button"
+        >
+          <svg aria-hidden="true" fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeWidth="1.6" viewBox="0 0 14 14" width="12">
+            <path d="M3.5 3.5l7 7M10.5 3.5l-7 7" />
+          </svg>
+        </button>
       </div>
 
       {open && (
@@ -66,6 +102,18 @@ export function DocumentNotice({
               <code className="code">{risk.code}</code>
             </li>
           ))}
+          <li className="notice-quiet">
+            <button
+              className="quiet"
+              onClick={() => {
+                setShown(false);
+                void quietNotice(vault, directory);
+              }}
+              type="button"
+            >
+              Don't show again for this document
+            </button>
+          </li>
         </ul>
       )}
     </section>

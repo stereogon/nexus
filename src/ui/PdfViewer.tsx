@@ -154,10 +154,7 @@ export function PdfViewer({
         title={title}
       />
 
-      <DocumentNotice
-        needsAttention={document.needsAttention}
-        risks={document.risks}
-      />
+      <DocumentNotice directory={directory} needsAttention={document.needsAttention} risks={document.risks} vault={vault} />
 
       {highlights.failure !== null && <Failure error={highlights.failure} />}
       {jumped.missing && (

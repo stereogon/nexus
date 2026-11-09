@@ -125,6 +125,9 @@ The screenshots use the test suite's sample vault, not real notes. They are reta
   it, ⌘⌥0 turns it back into text. Select several lines and ⋮⋮ acts on all of them.
 - Drag an item or a folder in the sidebar onto another folder, or up the folder path above
   the list, to move it there.
+- A document that asks for things Nexus does not do (running a program, opening the web)
+  says so above its pages; ✕ puts that away, or **Don't show again** silences it for that
+  document on this Mac.
 - **Notes only** hides the document to work in its notes as a page; **Show document** (or ⌘\)
   brings it back. Side by side is the default.
 - Saves as you type. The divider between document and notes can be dragged, and so can the

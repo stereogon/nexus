@@ -23,7 +23,9 @@
 //! discarded and not backed up, because there is no work in it to preserve. The rule is
 //! the same one applied throughout — back up what holds work, discard what does not.
 
-use std::collections::BTreeMap;
+mod raw;
+
+use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
 
@@ -150,46 +152,13 @@ impl PageOffset {
 
 /// Everything this device remembers about where it was.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
-#[serde(try_from = "RawViewState", into = "RawViewState")]
+#[serde(try_from = "raw::RawViewState", into = "raw::RawViewState")]
 pub struct ViewState {
     lectures: BTreeMap<RelativePath, LectureView>,
     last_opened: Option<RelativePath>,
-}
-
-/// The on-disk shape.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(deny_unknown_fields, rename_all = "camelCase")]
-struct RawViewState {
-    schema_version: u32,
-    #[serde(default)]
-    lectures: BTreeMap<RelativePath, LectureView>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    last_opened: Option<RelativePath>,
-}
-
-impl TryFrom<RawViewState> for ViewState {
-    type Error = CoreError;
-
-    fn try_from(raw: RawViewState) -> Result<Self, Self::Error> {
-        if raw.schema_version != VIEW_STATE_SCHEMA_VERSION {
-            return Err(VIEW_STATE_SCHEMA.reject(VIEW_STATE_FILE_NAME, raw.schema_version));
-        }
-
-        Ok(Self {
-            lectures: raw.lectures,
-            last_opened: raw.last_opened,
-        })
-    }
-}
-
-impl From<ViewState> for RawViewState {
-    fn from(state: ViewState) -> Self {
-        Self {
-            schema_version: VIEW_STATE_SCHEMA_VERSION,
-            lectures: state.lectures,
-            last_opened: state.last_opened,
-        }
-    }
+    /// Documents whose screening notice this device was asked not to show again
+    /// (2026-11-09). Per document, so silencing one deck does not silence the next.
+    quiet_notices: BTreeSet<RelativePath>,
 }
 
 impl ViewState {
@@ -226,7 +195,18 @@ impl ViewState {
     /// Whether nothing is remembered.
     #[must_use]
     pub fn is_empty(&self) -> bool {
-        self.lectures.is_empty() && self.last_opened.is_none()
+        self.lectures.is_empty() && self.last_opened.is_none() && self.quiet_notices.is_empty()
+    }
+
+    /// Stops showing `lecture`'s screening notice on this device.
+    pub fn quiet_notice(&mut self, lecture: &RelativePath) {
+        self.quiet_notices.insert(lecture.clone());
+    }
+
+    /// Whether `lecture`'s screening notice was asked not to be shown again.
+    #[must_use]
+    pub fn is_notice_quiet(&self, lecture: &RelativePath) -> bool {
+        self.quiet_notices.contains(lecture)
     }
 
     /// Follows a lecture that has moved, keeping the place in it.
@@ -246,6 +226,10 @@ impl ViewState {
         if self.last_opened.as_ref() == Some(from) {
             self.last_opened = Some(to.clone());
         }
+
+        if self.quiet_notices.remove(from) {
+            self.quiet_notices.insert(to.clone());
+        }
     }
 
     /// Drops positions for lectures that are no longer in the vault.
@@ -261,6 +245,8 @@ impl ViewState {
     pub fn prune_to(&mut self, lectures: &[BundleRef]) {
         self.lectures
             .retain(|directory, _| lectures.iter().any(|l| l.directory() == directory));
+        self.quiet_notices
+            .retain(|directory| lectures.iter().any(|l| l.directory() == directory));
 
         if self
             .last_opened

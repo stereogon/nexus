@@ -143,8 +143,19 @@
   color: var(--text-secondary);
 }
 
-.notice-head button {
+.notice-head button:first-of-type {
   margin-left: auto;
+}
+
+/* ✕, at the head's end; and "Don't show again", under the list (2026-11-09). */
+.notice-dismiss {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+}
+
+.notice-quiet {
+  padding-top: 2px;
 }
 
 .notice-list {

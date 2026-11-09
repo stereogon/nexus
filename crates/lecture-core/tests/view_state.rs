@@ -241,3 +241,45 @@ fn pruning_keeps_a_page_beyond_a_shortened_document() {
         9_999
     );
 }
+
+#[test]
+fn a_quieted_notice_stays_quiet_for_that_document_only() {
+    let mut state = ViewState::empty();
+
+    state.quiet_notice(&path("week-1/raft"));
+
+    assert!(state.is_notice_quiet(&path("week-1/raft")));
+    assert!(!state.is_notice_quiet(&path("week-1/paxos")));
+    assert!(!state.is_empty());
+}
+
+#[test]
+fn a_quieted_notice_follows_its_document_and_survives_the_file() {
+    let mut state = ViewState::empty();
+
+    state.quiet_notice(&path("week-1/raft"));
+    state.relocate(&path("week-1/raft"), &path("archive/raft"));
+
+    let written = serde_json::to_string(&state).unwrap();
+    let read: ViewState = serde_json::from_str(&written).unwrap();
+
+    assert!(read.is_notice_quiet(&path("archive/raft")));
+    assert!(!read.is_notice_quiet(&path("week-1/raft")));
+}
+
+#[test]
+fn a_file_written_before_quiet_notices_reads_unchanged() {
+    let read: ViewState = serde_json::from_str(r#"{"schemaVersion":1,"lectures":{}}"#).unwrap();
+
+    assert!(read.is_empty());
+}
+
+#[test]
+fn a_quieted_notice_for_a_document_no_longer_there_is_pruned() {
+    let mut state = ViewState::empty();
+
+    state.quiet_notice(&path("week-1/gone"));
+    state.prune_to(&references(&["week-1/raft"]));
+
+    assert!(!state.is_notice_quiet(&path("week-1/gone")));
+}

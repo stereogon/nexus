@@ -463,6 +463,32 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-09 · The screening notice can be put away**
+The user, of "This document asks for 2 things Nexus does not do.": *"add a close (cross) on
+this, so we can remove this alert once after seeing, and don't show again"*.
+- **✕ puts it away until the document is opened again.** Component state only: a warning
+  read once is still worth seeing next time unless asked otherwise.
+- **"Don't show again for this document"**, under the list, silences it for that document
+  on this Mac. Per document, not everywhere: silencing one familiar deck must not hide the
+  warning on the next, unfamiliar one — the warning that matters is the one not yet read.
+- **Where it is kept.** In the per-device `ViewState` (`quietNotices`, a set of item paths),
+  beside reading positions, outside the vault — a preference about this device's reading,
+  not part of the item, and nothing for a sync client to conflict over. It follows a moved
+  item (`relocate`) and is dropped with a deleted one (`prune_to`). The field is optional
+  and omitted when empty, so files written before it read unchanged (tested).
+- **Tradeoff, recorded.** `ViewState` is `deny_unknown_fields`, so an *older* build would
+  refuse a file that has `quietNotices` and fall back to an empty state, losing this
+  device's reading positions. That needs a downgrade to happen at all, and the state is
+  per-device and rebuilt by reading; accepted rather than loosening the strict parse.
+- **Not shown before the answer.** The notice asks `notice_quiet` first and draws nothing
+  until it knows, so a silenced notice does not flash up; an unreadable state answers "not
+  quiet", so a failure errs toward showing the warning.
+- **Proof.** Unit tests for ✕, Don't show again and a silenced document, each failing under
+  a sabotage (the notice drawn before the answer; the remembering removed); `notice.spec.ts`
+  for the same across reopening, failing with the remembering removed; four `view_state`
+  tests in Rust. `view_state.rs` was split into `view_state/` with the serde shape in
+  `raw.rs`, as the new field took it past the line limit.
+
 **2026-11-09 · Show document and Close as icons**
 The user, with the header's "Show document" wrapping onto two lines beside "Close": *"this
 looks so bad, can we have an icon instead … an icon for side by side split view"*. Show

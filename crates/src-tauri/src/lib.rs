@@ -17,6 +17,7 @@ pub mod folders;
 pub mod import;
 pub mod layout;
 pub mod notes;
+pub mod notice;
 pub mod picker;
 pub mod position;
 pub mod reorganize;
@@ -86,6 +87,8 @@ pub fn run() -> Result<(), tauri::Error> {
             folders::create_note,
             folders::move_item,
             folder_move::move_folder,
+            notice::notice_quiet,
+            notice::quiet_notice,
             trash::delete_item,
             preview_reorganize,
             apply_reorganize,
