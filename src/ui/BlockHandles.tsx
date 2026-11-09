@@ -1,7 +1,7 @@
 /**
  * Notion's handle beside each line (2026-11-07): `+` adds a line below the block, and ⋮⋮
- * selects the block on a click — so the format bar can turn it into a heading or a list —
- * or moves it on a drag, with a line showing where it will land. ⌥↑ and ⌥↓ move a line from
+ * selects the block on a click and opens its menu — delete, duplicate, turn into — or
+ * moves it on a drag, with a line showing where it will land. ⌥↑ and ⌥↓ move a line from
  * the keyboard (CodeMirror's own), which the handle's title says.
  *
  * What a block is and how one moves are `notes/blocks.ts`; this follows the pointer and
@@ -13,6 +13,7 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 
 import { blockAt, moveBlock, type Block } from "../notes/blocks";
 import { selectedBlocks } from "../notes/blockShortcuts";
+import { pickedByHandle } from "../notes/markSelection";
 import { blockActions, turnInto } from "./blockMenus";
 import type { MenuAt } from "./menuPlacement";
 import { PopMenu, under } from "./PopMenu";
@@ -179,15 +180,13 @@ export function BlockHandles({
     const doc = target.state.doc;
     const { from, to } = target.state.selection.main;
     const [first, last] = [doc.lineAt(from).number, doc.lineAt(to).number];
+    const kept = first !== last && first <= hovered.block.from && last >= hovered.block.to;
+    const block = kept ? null : { anchor: doc.line(hovered.block.from).from, head: doc.line(hovered.block.to).to };
 
-    if (first !== last && first <= hovered.block.from && last >= hovered.block.to) {
-      target.focus();
-      return selectedBlocks(target.state);
-    }
-
-    target.dispatch({ selection: { anchor: doc.line(hovered.block.from).from, head: doc.line(hovered.block.to).to } });
+    // Marked either way, so the floating format bar puts itself away for the block's menu.
+    target.dispatch({ ...(block === null ? {} : { selection: block }), annotations: pickedByHandle.of(true) });
     target.focus();
-    return hovered.block;
+    return kept ? selectedBlocks(target.state) : hovered.block;
   };
 
   const addBelow = (event: React.MouseEvent<HTMLButtonElement>) => {

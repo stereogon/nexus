@@ -15,7 +15,7 @@ import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { useEffect, useRef, useState, type Ref } from "react";
 
-import { barFor, formatStateOf } from "../notes/markSelection";
+import { barFor, formatStateOf, pickedByHandle } from "../notes/markSelection";
 import { layoutFor, notesExtensions, pageLayout } from "./notesExtensions";
 import type { FormatState } from "./NotesFormatBar";
 import { BlockHandles } from "./BlockHandles";
@@ -147,9 +147,12 @@ export function NotesEditor({
               setCurrent(update.state.doc.toString());
             }
 
-            if (update.selectionSet || update.focusChanged || update.docChanged) {
+            // A block picked with ⋮⋮ puts the bar away: the block's own menu is opening.
+            const picked = update.transactions.some((transaction) => transaction.annotation(pickedByHandle) === true);
+
+            if (update.selectionSet || update.focusChanged || update.docChanged || picked) {
               setFormat({
-                at: barFor(update.view),
+                at: picked ? null : barFor(update.view),
                 state: formatStateOf(update.view),
                 selected: !update.state.selection.main.empty,
               });

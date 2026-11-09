@@ -463,6 +463,17 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-09 · ⋮⋮'s menu no longer opens under the format bar**
+The user: clicking ⋮⋮ showed *"both the text formatting options and the element options like
+turn to heading … on top of each other"*. ⋮⋮ selects the block before opening its menu —
+from before the menu existed, so the format bar could act on the block — and the selection
+raised the floating bar too. The handle's selection now carries an annotation
+(`pickedByHandle`, in `markSelection.ts`) and the editor puts the floating bar away for it;
+when a selection of several lines is kept as it is, the same mark is sent with no change. The
+block's menu has Turn into, so nothing is lost; selecting again by hand brings the bar back.
+The docked strip under **Aa** is unaffected. Two journeys (one block; several lines kept),
+both failing with the mark ignored.
+
 **2026-11-09 · Zoom gestures more sensitive**
 The user: *"the zoom gesture sensitivity needs to be increased a bit"*. A pinch now zooms by
 the fingers' spread to the power 1.5 (`pinchFactor`): spreading to twice as far apart zooms

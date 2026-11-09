@@ -5,6 +5,7 @@
  * The rules — what wrapping, recolouring or removing changes — are `marks.ts`, pure and
  * tested; this applies them to a live editor.
  */
+import { Annotation } from "@codemirror/state";
 import type { EditorView, KeyBinding } from "@codemirror/view";
 
 import type { HighlightSemantic } from "../ipc/annotations";
@@ -112,6 +113,13 @@ export function formatStateOf(view: EditorView): FormatState {
     highlight: around?.semantic ?? null,
   };
 }
+
+/**
+ * A block selected by clicking its ⋮⋮ handle, which opens the block's own menu — Turn
+ * into among it — so the floating format bar is not raised for it as well. Both opened
+ * together, one over the other (reported 2026-11-09).
+ */
+export const pickedByHandle = Annotation.define<true>();
 
 /**
  * Where the floating format bar goes for the current selection, or `null` if there should

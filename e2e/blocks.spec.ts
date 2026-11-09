@@ -118,6 +118,21 @@ test("clicking ⋮⋮ opens the block's menu: turn it into a heading, duplicate 
   await expect.poll(() => source(page)).not.toContain("Gamma line");
 });
 
+test("⋮⋮'s menu opens alone, without the floating format bar over it", async ({ page }) => {
+  const bar = page.locator(".highlight-menu[aria-label='Format']");
+
+  // A selection made by hand raises the bar, so its absence below is the handle's doing.
+  await line(page, "Alpha line").click();
+  await page.keyboard.press("Shift+ArrowDown");
+  await expect(bar).toBeVisible();
+
+  await line(page, "Gamma line").hover();
+  await notes(page).getByRole("button", { name: "Move this block, or open its menu" }).click();
+
+  await expect(page.getByRole("menu", { name: "Block" })).toBeVisible();
+  await expect(bar).toHaveCount(0);
+});
+
 test("the headings run down the right edge, follow the reading, and take you there", async ({ page }) => {
   const rail = notes(page).getByRole("navigation", { name: "Headings" });
   const dashes = rail.locator(".heading-dash");

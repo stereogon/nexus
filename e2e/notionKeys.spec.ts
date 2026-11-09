@@ -53,6 +53,8 @@ test("several lines selected are turned into headings together from ⋮⋮", asy
   await page.keyboard.press("Shift+ArrowDown");
   await line(page, "Beta line").hover();
   await notes(page).getByRole("button", { name: "Move this block, or open its menu" }).click();
+  // The selection stands, but its floating format bar gives way to the block's menu.
+  await expect(page.locator(".highlight-menu[aria-label='Format']")).toHaveCount(0);
   await page.getByRole("menu", { name: "Block" }).getByRole("menuitem", { name: "Turn into heading 2" }).click();
 
   await expect.poll(async () => (await lines(page)).slice(0, 3)).toEqual(["## Alpha line", "## Beta line", "Gamma line"]);
