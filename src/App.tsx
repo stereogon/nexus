@@ -175,6 +175,7 @@ export function App() {
             lectures={summary.lectures}
             onClose={finding.closeLibrary}
             onOpenAt={finding.goTo}
+            returnTo={open?.lecture.title ?? null}
             vault={summary.root}
           />
         ) : open !== null ? (

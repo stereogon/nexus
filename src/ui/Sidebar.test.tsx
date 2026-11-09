@@ -115,7 +115,7 @@ describe("what the sidebar shows", () => {
   it("says a folder is empty, and how to fill it", () => {
     show({ folders: ["Empty"], lectures: [] }, { folder: "Empty" });
 
-    expect(screen.getByText(/Nothing here yet/)).not.toBeNull();
+    expect(screen.getByText(/Nothing in .* yet/)).not.toBeNull();
   });
 
   it("shortens the vault path and keeps the whole one available", () => {
@@ -206,7 +206,7 @@ describe("what the sidebar calls", () => {
     const props = show(VAULT);
 
     fireEvent.click(screen.getByRole("button", { name: "New note, folder or import" }));
-    expect(screen.getByText("Added to the folder showing")).not.toBeNull();
+    expect(screen.getByText("Added to NexusVault")).not.toBeNull();
     fireEvent.click(screen.getByRole("menuitem", { name: /Import document/u }));
 
     expect(props.onImport).toHaveBeenCalledOnce();

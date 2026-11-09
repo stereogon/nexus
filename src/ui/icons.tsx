@@ -87,6 +87,16 @@ export function NoteIcon() {
   );
 }
 
+/** A magnifier, for a field that filters or searches. */
+export function SearchIcon() {
+  return (
+    <Icon size={14}>
+      <circle cx="7" cy="7" r="4.6" />
+      <path d="M10.4 10.4l3.1 3.1" />
+    </Icon>
+  );
+}
+
 export function FolderIcon() {
   return (
     <Icon>

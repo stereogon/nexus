@@ -463,6 +463,40 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-09 · Brought back in line with the canvas**
+The user, with the canvas's highlight bar and library beside the app's: *"why does the
+highlight design not look like this currently? are there more designs that do not match
+the canvas?"*. Every artboard was read and compared with the app, surface by surface.
+- **The cause of most of it:** a global `h2` rule from before the redesign made every
+  second-level heading a small grey overline in capitals: "HIGHLIGHTS", "SETTINGS", a
+  document's name in its details sheet. `h2` is now the canvas's title, the brand face in
+  the case it was written; the overline look stays `.overline`'s.
+- **Highlight bar:** a pill of round 30px meanings, a divider, then the actions as soft
+  pills, with "Link to notes ⌘L" showing its shortcut (announced by `aria-keyshortcuts`,
+  not added to its name). The meanings are round in the notes' format bar too, as the
+  canvas draws them there.
+- **Library:**
+  - The count is "N of M" when filtered, and the button says "Back to <what was open>".
+  - The chips say "Exam" (not "Exam / important"). A chosen chip takes its own colour,
+    and sticky notes are a quiet grey, not a fifth meaning's.
+  - The folder menu and the word filter are fields with their icons inside, the filter at
+    the row's end.
+  - Each card says "week-2 · 3 exam points", and the highlights are in the interface face.
+- **+ menu:** ⌘N makes a note and ⇧⌘N a folder, as it now shows (`useMetaShortcut` can
+  require ⇧). Its foot names the folder: "Added to week-2". A pop menu's shortcut is no
+  longer read as part of the item's name.
+- **An empty folder** says "Nothing in Journal yet." and offers New note.
+- **Kept as they are, on purpose:**
+  - The pixel ghost on the empty pane, added after the canvas.
+  - The details sheet's plain tags field; chips are a later change.
+- **Not built:** the canvas's "Moved … Undo" notice needs an undo for moves, a feature
+  of its own.
+- **Not a difference after all:** the + menu's import key is ⌘O; in the monospaced type
+  at 11px the letter reads like a zero.
+
+Verified: gate green. The library and highlight-menu tests and journeys updated (by
+name, not visible text, where a shortcut is now shown).
+
 **2026-11-09 · A refused change no longer closes the vault; imports take the next free name; errors restyled**
 The user, with a screenshot of the welcome screen showing `ERR_LECTURE_ALREADY_HERE`: *"This
 error page looks weird, doesn't match the latest design … why can't we … import with the
@@ -6015,6 +6049,19 @@ the user's instruction, 2026-10-27), local only, never pushed without being aske
   which is attribution-only but does require a notice to ship with the binary. Nothing
   generates one yet. Belongs with the `cargo deny` work so it is produced from the real
   dependency tree rather than maintained by hand.
+
+### Planned, raised 2026-11-09: notes alone, zoom gestures, dragging in the sidebar
+The user: *"the user might want to close the document and just see the notes for an
+imported document … currently we have document view and side by side view, we don't have
+notes only view"*; *"we need gesture identification for zoom in on the documents … control
++ scroll, or command and +, or just gesture, all three should work"*; *"the directory and
+file drag and move feature in the sidebar"*.
+- **Notes alone:** a document's notes shown without the document, a button in view
+  bringing it back; side by side stays the default.
+- **Zoom:** trackpad pinch, Ctrl with the scroll wheel, ⌘+ and ⌘−, beside the buttons. ⌘0,
+  the usual "actual size", is the error panel's here, so it stays that.
+- **Drag to move:** items and folders dragged in the sidebar onto a folder (or up to the
+  one above) move there, through `move_item` as the details sheet's folder menu does.
 
 ### Planned, raised 2026-11-07: Diagram and Chart blocks you can find
 The user: *"there is no way to add mermaid diagram … add a separate mermaid diagram block

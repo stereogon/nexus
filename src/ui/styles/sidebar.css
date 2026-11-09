@@ -227,8 +227,29 @@ button.row-edit:focus-visible {
   font-family: var(--font-mono);
 }
 
+/* An empty folder, as the canvas has it: said, with the first thing to do offered. */
 .sidebar-empty {
-  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 28px 14px;
   color: var(--text-meta);
   font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.sidebar-empty p {
+  margin: 0;
+}
+
+.sidebar-empty button {
+  height: 28px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+
+.sidebar-empty-hint {
+  color: var(--text-faint);
 }

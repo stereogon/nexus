@@ -108,7 +108,7 @@ test("the library lists every highlight, and filters by meaning and by folder", 
   await expect(library(page).locator(".library-mark")).toHaveCount(3);
   await expect(library(page)).toContainText("3 highlights");
 
-  await library(page).getByRole("button", { name: "Exam / important" }).click();
+  await library(page).getByRole("button", { name: "Exam", exact: true }).click();
   await expect(library(page).locator(".library-mark")).toHaveCount(2);
 
   await library(page).getByLabel("Folder").selectOption("week-2");

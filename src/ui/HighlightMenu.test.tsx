@@ -131,7 +131,8 @@ describe("an existing highlight", () => {
       <HighlightMenu onLink={vi.fn()} at={AT} current={null} onChoose={null} onDismiss={vi.fn()} onRemove={vi.fn()} />,
     );
 
-    expect(screen.getAllByRole("button").map((button) => button.textContent)).toEqual([
+    // By name: Link to notes also shows its shortcut, which is not part of what it is.
+    expect(screen.getAllByRole("button").map((button) => button.getAttribute("aria-label") ?? button.textContent)).toEqual([
       "Link to notes",
       "Remove",
     ]);

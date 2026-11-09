@@ -20,6 +20,8 @@ export function useMetaShortcut(
   key: string,
   enabled: boolean,
   action: () => void,
+  /** Whether ⇧ is part of the chord: ⌘N and ⇧⌘N are different shortcuts (2026-11-09). */
+  shift = false,
 ): void {
   useEffect(() => {
     if (!enabled) {
@@ -29,7 +31,7 @@ export function useMetaShortcut(
     const onKeyDown = (event: KeyboardEvent) => {
       // `ctrlKey` is excluded rather than ignored: ⌘⌃O is a different chord, and treating
       // it as this one would fire on a shortcut someone meant for something else.
-      if (!event.metaKey || event.ctrlKey || event.altKey) {
+      if (!event.metaKey || event.ctrlKey || event.altKey || event.shiftKey !== shift) {
         return;
       }
 
@@ -53,5 +55,5 @@ export function useMetaShortcut(
     return () => {
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [action, enabled, key]);
+  }, [action, enabled, key, shift]);
 }

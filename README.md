@@ -159,6 +159,10 @@ Recorded in [`PROGRESS.md`](./PROGRESS.md) with the reasoning for each:
 - The rest of the diagnostics drawer: past logs, converter output, timings.
 - Telling you when LibreOffice is missing (imports wait safely until it is installed).
 - Restyling parts of the UI from the approved design canvas.
+- Hiding the document beside its notes, to work in the notes alone, with a way back to
+  side by side (side by side stays the default).
+- Zooming a document with the trackpad (pinch), Ctrl and the scroll wheel, and ⌘+ / ⌘−.
+- Dragging items and folders in the sidebar onto another folder to move them.
 - From the comparison with Notion (2026-11-09), not yet built: find and replace in the notes
   (needs `@codemirror/search` installed), toggle lists, links between notes with backlinks,
   colouring for more code languages (Python and others each need a package), and the format

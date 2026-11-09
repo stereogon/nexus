@@ -11,8 +11,10 @@ import { useEffect, useState } from "react";
 import { vaultHighlights, type VaultMarks } from "../ipc/search";
 import { asCommandError, type CommandError, type LectureRow } from "../ipc/vault";
 import { Failure } from "./Failure";
+import { FolderIcon, SearchIcon } from "./icons";
 import { parentOf, spoken } from "./folders";
 import {
+  countOf,
   folderChoices,
   kindOf,
   libraryGroups,
@@ -26,6 +28,8 @@ import { SEMANTIC_GLYPH, SEMANTIC_LABEL } from "./semantics";
 import type { ArrivalTarget } from "./useArrival";
 
 const KIND_LABEL: Record<MarkKind, string> = { ...SEMANTIC_LABEL, sticky: "Sticky notes" };
+/** The filter chips' words, as the canvas has them: "Exam", not the longer "Exam / important". */
+const CHIP_LABEL: Record<MarkKind, string> = { key: "Key concept", definition: "Definition", exam: "Exam", question: "Question", sticky: "Sticky notes" };
 const KIND_GLYPH: Record<MarkKind, string> = { ...SEMANTIC_GLYPH, sticky: "✎" };
 
 export function HighlightsLibrary({
@@ -33,11 +37,14 @@ export function HighlightsLibrary({
   lectures,
   onOpenAt,
   onClose,
+  returnTo,
 }: {
   readonly vault: string;
   readonly lectures: readonly LectureRow[];
   readonly onOpenAt: (lecture: LectureRow, target: ArrivalTarget) => void;
   readonly onClose: () => void;
+  /** The title of what was open before, which closing goes back to; `null` for nothing. */
+  readonly returnTo: string | null;
 }) {
   const [marks, setMarks] = useState<VaultMarks | null>(null);
   const [failure, setFailure] = useState<CommandError | null>(null);
@@ -68,6 +75,7 @@ export function HighlightsLibrary({
 
   const groups = marks === null ? [] : libraryGroups(marks, lectures, filter);
   const shown = groups.reduce((count, group) => count + group.marks.length, 0);
+  const total = marks === null ? 0 : libraryGroups(marks, lectures, NO_FILTER).reduce((count, group) => count + group.marks.length, 0);
   const choices = marks === null ? null : folderChoices(marks, lectures);
 
   const toggle = (kind: MarkKind) => {
@@ -86,9 +94,9 @@ export function HighlightsLibrary({
     <main aria-labelledby="library-heading" className="pane library">
       <header className="library-head pane-head lead" data-tauri-drag-region="">
         <h2 id="library-heading">Highlights</h2>
-        {marks !== null && <span className="library-count">{shown === 1 ? "1 highlight" : `${String(shown)} highlights`}</span>}
+        {marks !== null && <span className="library-count">{shown === total ? countOf(total, new Set()) : `${String(shown)} of ${String(total)}`}</span>}
         <button className="secondary" onClick={onClose} type="button">
-          Close
+          {returnTo === null ? "Close" : `Back to ${returnTo}`}
         </button>
       </header>
 
@@ -108,13 +116,14 @@ export function HighlightsLibrary({
               <span aria-hidden="true" className="library-glyph" data-kind={kind}>
                 {KIND_GLYPH[kind]}
               </span>
-              {KIND_LABEL[kind]}
+              {CHIP_LABEL[kind]}
             </button>
           ))}
         </div>
 
         {choices !== null && (
           <label className="library-facet">
+            <FolderIcon />
             <span className="vh">Folder</span>
             <select
               onChange={(event) => {
@@ -135,6 +144,7 @@ export function HighlightsLibrary({
         )}
 
         <label className="library-search">
+          <SearchIcon />
           <span className="vh">Highlighted words</span>
           <input
             onChange={(event) => {
@@ -165,7 +175,9 @@ export function HighlightsLibrary({
           {groups.map((group) => (
             <section aria-label={group.lecture.title} className="library-lecture" key={group.lecture.directory}>
               <h3>{group.lecture.title}</h3>
-              <p className="library-facets">{spoken(parentOf(group.lecture.directory))}</p>
+              <p className="library-facets">
+                {[spoken(parentOf(group.lecture.directory)), countOf(group.marks.length, filter.kinds)].filter((part) => part !== "").join(" · ")}
+              </p>
               <ul>
                 {group.marks.map((mark) => (
                   <li key={mark.id}>

@@ -35,7 +35,7 @@ test("a folder made here is stepped into, and a note made there opens to be writ
   await page.getByLabel("Name of the new folder").press("Enter");
 
   await expect(crumbs(page).getByRole("button", { name: "Journal" })).toHaveAttribute("aria-current", "location");
-  await expect(sidebar(page).getByText(/Nothing here yet/)).toBeVisible();
+  await expect(sidebar(page).getByText(/Nothing in .* yet/)).toBeVisible();
 
   await page.getByRole("button", { name: "New note, folder or import" }).click();
   await page.getByRole("menuitem", { name: "Note" }).click();

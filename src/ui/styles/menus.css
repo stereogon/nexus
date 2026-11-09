@@ -22,6 +22,7 @@
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
 }
 
+/* Round, as the canvas draws the meanings in both menus (2026-11-09). */
 .highlight-pick {
   width: 24px;
   height: 24px;
@@ -30,7 +31,7 @@
   justify-content: center;
   padding: 0;
   border: none;
-  border-radius: 6px;
+  border-radius: 50%;
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 600;
@@ -67,6 +68,57 @@
 .highlight-pick:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
+}
+
+/* The document's highlight bar, as the canvas draws it: a pill, larger round meanings, a
+   divider, and the actions as soft pills with their shortcut. */
+.highlight-bar {
+  gap: 4px;
+  padding: 6px;
+  border: none;
+  border-radius: 22px;
+  box-shadow:
+    0 12px 32px rgba(30, 20, 10, 0.16),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+.highlight-bar .highlight-pick {
+  width: 30px;
+  height: 30px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.highlight-bar-divider {
+  width: 1px;
+  height: 20px;
+  margin: 0 4px;
+  background: var(--border);
+}
+
+.highlight-bar .highlight-link,
+.highlight-bar .highlight-remove {
+  height: 30px;
+  margin: 0;
+  padding: 0 12px;
+  border: none;
+  border-radius: 15px;
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+
+.highlight-bar .highlight-link:hover,
+.highlight-bar .highlight-remove:hover {
+  background: var(--track);
+}
+
+.highlight-keys {
+  margin-left: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-meta);
 }
 
 /* Text actions in the menu share one look; Remove only differs in its hover colour. */
@@ -201,66 +253,4 @@
 .highlight-pick:disabled {
   opacity: 0.35;
   cursor: default;
-}
-
-/* A small menu: the sidebar's "+" and the vault switcher. */
-.pop-menu {
-  position: fixed;
-  z-index: 30;
-  min-width: 220px;
-  max-width: 320px;
-  padding: 6px;
-  background: var(--surface);
-  border: 1px solid var(--border-strong);
-  border-radius: 12px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
-  font-family: var(--font-ui);
-}
-
-.pop-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  height: 36px;
-  padding: 0 10px;
-  background: transparent;
-  border: none;
-  border-radius: 8px;
-  color: var(--text);
-  font-family: var(--font-ui);
-  font-size: 13px;
-  text-align: left;
-  cursor: pointer;
-}
-
-/* The "/" menu (`SlashMenu.tsx`): the item ↑ and ↓ have chosen, and room to scroll. */
-.slash-menu {
-  max-height: 320px;
-  overflow-y: auto;
-}
-
-.pop-item.active,
-.pop-item:hover,
-.pop-item:focus-visible {
-  background: var(--track);
-}
-
-.pop-label {
-  flex: 1 1 auto;
-}
-
-.pop-keys {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-meta);
-}
-
-.pop-note {
-  margin: 4px 10px 4px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 11px;
-  color: var(--text-meta);
 }

@@ -22,6 +22,7 @@ export function SidebarHead({
   onMake,
   onImport,
   onChooseVault,
+  place,
 }: {
   readonly root: string;
   readonly busy: boolean;
@@ -29,6 +30,8 @@ export function SidebarHead({
   readonly onMake: (making: Making) => void;
   readonly onImport: () => void;
   readonly onChooseVault: () => void;
+  /** The name of the folder showing, which the + menu says new things go into. */
+  readonly place: string;
 }) {
   const [open, setOpen] = useState<{ readonly menu: "vault" | "new"; readonly at: MenuAt } | null>(null);
   const close = () => {
@@ -87,12 +90,12 @@ export function SidebarHead({
         <PopMenu
           at={open.at}
           items={[
-            { label: "Note", icon: <NoteIcon />, onSelect: () => { onMake("note"); } },
-            { label: "Folder", icon: <FolderIcon />, onSelect: () => { onMake("folder"); } },
+            { label: "Note", icon: <NoteIcon />, keys: "⌘N", onSelect: () => { onMake("note"); } },
+            { label: "Folder", icon: <FolderIcon />, keys: "⇧⌘N", onSelect: () => { onMake("folder"); } },
             { label: "Import document…", icon: <ImportIcon />, keys: "⌘O", onSelect: onImport },
           ]}
           label="New"
-          note="Added to the folder showing"
+          note={`Added to ${place}`}
           onDismiss={close}
           opener="new"
         />

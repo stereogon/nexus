@@ -57,7 +57,8 @@ export function HighlightMenu({
   return (
     <div
       aria-label="Highlight as"
-      className="highlight-menu"
+      // The canvas's highlight bar (2026-11-09): a pill of round meanings, then the actions.
+      className="highlight-menu highlight-bar"
       // Pressing a control must not take focus from what was selected: in the notes, losing
       // focus closes this menu before the click lands; in the document it would drop the
       // text selection the menu is for.
@@ -89,6 +90,10 @@ export function HighlightMenu({
           </button>
         ))}
 
+      {onChoose !== null && (onSticky !== null || onLink !== null || onRemove !== null) && (
+        <span aria-hidden="true" className="highlight-bar-divider" />
+      )}
+
       {/* The spec's quick-action bar puts this beside the swatches (§2.4). */}
       {onSticky !== null && (
         <button className="highlight-link" onClick={onSticky} title="A sticky note beside this on the slide" type="button">
@@ -97,8 +102,15 @@ export function HighlightMenu({
       )}
 
       {onLink !== null && (
-        <button className="highlight-link" onClick={onLink} title="Link to notes (⌘L)" type="button">
-          Link to notes
+        <button
+          aria-keyshortcuts="Meta+L"
+          aria-label="Link to notes"
+          className="highlight-link"
+          onClick={onLink}
+          title="Link to notes (⌘L)"
+          type="button"
+        >
+          Link to notes <span aria-hidden="true" className="highlight-keys">⌘L</span>
         </button>
       )}
 

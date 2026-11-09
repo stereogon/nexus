@@ -10,6 +10,13 @@ import type { MenuAt } from "./menuPlacement";
 import { useFloating } from "./useFloating";
 import { useDismissOutside } from "./usePopover";
 
+/** A shortcut as shown, "⇧⌘N", as `aria-keyshortcuts` writes it, "Shift+Meta+N". */
+function spokenKeys(keys: string): string {
+  const parts = [keys.includes("⇧") ? "Shift" : "", keys.includes("⌘") ? "Meta" : "", keys.replace(/[⇧⌘]/gu, "")];
+
+  return parts.filter((part) => part !== "").join("+");
+}
+
 export interface MenuItem {
   readonly label: string;
   readonly icon?: ReactNode;
@@ -43,6 +50,8 @@ export function PopMenu({
     <div aria-label={label} className="pop-menu" ref={box} role="menu" style={{ left: placed.left, top: placed.top }}>
       {items.map((item) => (
         <button
+          // The shortcut is shown, and announced as one, but is not part of the item's name.
+          aria-keyshortcuts={item.keys === undefined ? undefined : spokenKeys(item.keys)}
           className="pop-item"
           key={item.label}
           onClick={() => {
@@ -54,7 +63,11 @@ export function PopMenu({
         >
           {item.icon}
           <span className="pop-label">{item.label}</span>
-          {item.keys !== undefined && <span className="pop-keys">{item.keys}</span>}
+          {item.keys !== undefined && (
+            <span aria-hidden="true" className="pop-keys">
+              {item.keys}
+            </span>
+          )}
         </button>
       ))}
       {note !== undefined && <p className="pop-note">{note}</p>}

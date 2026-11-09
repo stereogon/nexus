@@ -101,3 +101,23 @@ export function folderChoices(marks: VaultMarks, lectures: readonly LectureRow[]
 
   return [...new Set(folders)].sort(byName);
 }
+
+/** What each kind is called, many of them, for a card's count. */
+const MANY: Record<MarkKind, [string, string]> = {
+  key: ["key concept", "key concepts"],
+  definition: ["definition", "definitions"],
+  exam: ["exam point", "exam points"],
+  question: ["question", "questions"],
+  sticky: ["sticky note", "sticky notes"],
+};
+
+/**
+ * A card's count, as the canvas words it: "3 exam points" when one kind is shown, else
+ * "3 highlights" (2026-11-09).
+ */
+export function countOf(count: number, kinds: ReadonlySet<MarkKind>): string {
+  const [only] = [...kinds];
+  const [one, many] = kinds.size === 1 && only !== undefined ? MANY[only] : ["highlight", "highlights"];
+
+  return `${String(count)} ${count === 1 ? one : many}`;
+}

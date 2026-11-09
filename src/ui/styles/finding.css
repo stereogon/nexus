@@ -54,8 +54,9 @@
   background: var(--semantic-question);
 }
 
+/* Sticky notes in a quiet grey, as the canvas has them: not a fifth meaning's colour. */
 .library-glyph[data-kind="sticky"] {
-  background: var(--accent-ink);
+  background: var(--text-meta);
 }
 
 /* The library, in the document pane (redesign, 2026-11-07): a header strip, a filter bar,
@@ -80,10 +81,14 @@
 }
 
 .library-head h2 {
-  margin: 0;
-  font-family: var(--font-brand);
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 17px;
+}
+
+/* "Back to …": the canvas's compact button. */
+.library-head button {
+  height: 30px;
+  padding: 0 12px;
+  font-size: 13px;
 }
 
 .library-count {
@@ -130,6 +135,12 @@
   color: var(--text);
 }
 
+/* A chosen meaning in its own colour, as the canvas draws the Exam chip. */
+.library-kind[data-kind="key"][aria-pressed="true"] { border-color: var(--semantic-key); background: var(--highlight-key); }
+.library-kind[data-kind="definition"][aria-pressed="true"] { border-color: var(--semantic-definition); background: var(--highlight-definition); }
+.library-kind[data-kind="exam"][aria-pressed="true"] { border-color: var(--semantic-exam); background: var(--exam-wash); }
+.library-kind[data-kind="question"][aria-pressed="true"] { border-color: var(--semantic-question); background: var(--highlight-question); }
+
 /* In the chips and the cards the letters are larger than in a search result. */
 .library-kind .library-glyph,
 .library-mark .library-glyph {
@@ -139,26 +150,48 @@
   font-size: 11px;
 }
 
-.library-facet select,
-.library-search input {
+/* The folder menu and the word filter: a bordered field with its icon inside, as the
+   canvas draws them, the filter at the row's end. */
+.library-facet,
+.library-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   height: 32px;
   box-sizing: border-box;
   padding: 0 10px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--field);
+  color: var(--text-meta);
+}
+
+.library-facet select,
+.library-search input {
+  height: 30px;
+  padding: 0;
+  border: none;
+  background: transparent;
   color: var(--text);
   font: inherit;
   font-size: 13px;
+  outline: none;
 }
 
 .library-search {
-  flex: 0 1 260px;
+  flex: 0 1 240px;
   margin-left: auto;
 }
 
 .library-search input {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
+}
+
+.library-facet:focus-within,
+.library-search:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
 }
 
 .library-body {
@@ -185,7 +218,7 @@
 .library-lecture h3 {
   margin: 0 10px;
   font-family: var(--font-brand);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
 }
 
@@ -211,7 +244,7 @@
   border-radius: 9px;
   background: none;
   color: var(--text);
-  font-family: var(--font-prose);
+  font-family: var(--font-ui);
   font-size: 14px;
   line-height: 1.5;
   text-align: left;

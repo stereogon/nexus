@@ -17,6 +17,7 @@ import type { LectureRow, ProblemRow } from "../ipc/vault";
 import { nameOf, trail, vaultNameOf } from "./folders";
 import { SidebarFoot } from "./SidebarFoot";
 import { SidebarHead } from "./SidebarHead";
+import { useMetaShortcut } from "./useMetaShortcut";
 import { Folder, Lecture, NameField, Problems } from "./SidebarLecture";
 import type { Making, SidebarRow } from "./sidebarRows";
 
@@ -131,6 +132,14 @@ export function Sidebar({
 }) {
   const [making, setMaking] = useState<Making | null>(null);
 
+  // The + menu's Note and Folder from the keyboard, as it shows them (canvas, 2026-11-09).
+  useMetaShortcut("n", !busy, () => {
+    setMaking("note");
+  });
+  useMetaShortcut("n", !busy, () => {
+    setMaking("folder");
+  }, true);
+
   return (
     // A dragged width replaces the stylesheet's; `useSidebarWidth` has held it to the window.
     <aside className="sidebar" style={width === null ? undefined : { flexBasis: width }}>
@@ -140,6 +149,7 @@ export function Sidebar({
         onHide={onHide}
         onImport={onImport}
         onMake={setMaking}
+        place={folder === "" ? vaultNameOf(root) : nameOf(folder)}
         root={root}
       />
 
@@ -168,9 +178,20 @@ export function Sidebar({
         )}
 
         {rows.length === 0 && making === null && (
-          <p className="sidebar-empty">
-            Nothing here yet. Make a note or a folder with +, or drop a PDF, PowerPoint or Word file on the window.
-          </p>
+          // As the canvas has it: the folder named, and the first thing to do offered.
+          <div className="sidebar-empty">
+            <p>Nothing in {folder === "" ? vaultNameOf(root) : nameOf(folder)} yet.</p>
+            <button
+              disabled={busy}
+              onClick={() => {
+                setMaking("note");
+              }}
+              type="button"
+            >
+              New note
+            </button>
+            <p className="sidebar-empty-hint">Or drop a PDF, PowerPoint or Word file on the window.</p>
+          </div>
         )}
 
         {rows.map((row) =>

@@ -13,13 +13,16 @@ h1 {
   margin: 0 0 4px;
 }
 
+/* A pane's or a panel's title, as the redesign canvas sets them: the brand face, in the
+   case it was written. It was a small grey overline in capitals from before the redesign,
+   which every title inherited — "HIGHLIGHTS", "SETTINGS", a document's name in capitals
+   in its details (found against the canvas, 2026-11-09). That look is `.overline`'s. */
 h2 {
-  font-size: 12px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--text-meta);
-  margin: 26px 0 10px;
+  margin: 0;
+  font-family: var(--font-brand);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
 }
 
 /* `.path` shared this rule until 2026-10-29, when the dead-rule check found nothing used
