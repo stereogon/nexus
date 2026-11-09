@@ -30,3 +30,17 @@ export function stepFrom(scale: number, direction: 1 | -1): number {
 
   return next ?? scale;
 }
+
+/** `scale` held to the range the viewer offers. */
+export function withinLimits(scale: number): number {
+  return Math.min(ZOOM_LIMITS.max, Math.max(ZOOM_LIMITS.min, scale));
+}
+
+/**
+ * How much one Ctrl-wheel event zooms by, from its `deltaY`: a pinch sends many small
+ * deltas, a mouse wheel few large ones, and each notch of a wheel should move about a
+ * quarter, not jump. Down zooms out, as everywhere on a Mac.
+ */
+export function wheelFactor(deltaY: number): number {
+  return Math.exp(-Math.max(-60, Math.min(60, deltaY)) * 0.004);
+}

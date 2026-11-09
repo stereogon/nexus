@@ -463,6 +463,20 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-09 · Zooming a document with the trackpad, Ctrl and the wheel, and ⌘+ / ⌘−**
+From the to-do list raised the same day (`ui/useZoomGestures.ts`). A pinch and Ctrl with
+the scroll wheel zoom smoothly between 25% and 600% (`useZoom.scaleTo`); ⌘+ (or ⌘=) and ⌘−
+move through the buttons' steps. WebKit reports a pinch as its own gesture events with the
+pinch's scale so far, and a Ctrl-wheel as a wheel event with `ctrlKey`. Both are handled,
+and Ctrl-wheels are ignored mid-pinch, so a pinch never zooms twice. One wheel notch zooms
+about a quarter (`wheelFactor`). ⌘0, the usual "actual size", stays the error panel's.
+Not done: the zoom holds the page's top where it was, not the point under the fingers.
+
+Verified: gate green. `zoom.test.ts` (12); three journeys in `zoomGestures.spec.ts` (keys,
+Ctrl-wheel, a synthetic WebKit pinch). With the gestures switched off, all three fail. A
+real trackpad was not used: Playwright cannot pinch, so the pinch journey sends WebKit's
+gesture events itself.
+
 **2026-11-09 · Brought back in line with the canvas**
 The user, with the canvas's highlight bar and library beside the app's: *"why does the
 highlight design not look like this currently? are there more designs that do not match
@@ -6058,8 +6072,7 @@ notes only view"*; *"we need gesture identification for zoom in on the documents
 file drag and move feature in the sidebar"*.
 - **Notes alone:** a document's notes shown without the document, a button in view
   bringing it back; side by side stays the default.
-- **Zoom:** trackpad pinch, Ctrl with the scroll wheel, ⌘+ and ⌘−, beside the buttons. ⌘0,
-  the usual "actual size", is the error panel's here, so it stays that.
+- ~~**Zoom**~~ — built the same day; see the entry above.
 - **Drag to move:** items and folders dragged in the sidebar onto a folder (or up to the
   one above) move there, through `move_item` as the details sheet's folder menu does.
 

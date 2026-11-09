@@ -6,7 +6,7 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { stepFrom, ZOOM_LIMITS, ZOOM_STEPS } from "./zoom";
+import { stepFrom, wheelFactor, withinLimits, ZOOM_LIMITS, ZOOM_STEPS } from "./zoom";
 
 describe("stepping up", () => {
   it("goes to the next step", () => {
@@ -58,5 +58,19 @@ describe("the steps themselves", () => {
 
   it("include 100%, since that is the one people look for", () => {
     expect(ZOOM_STEPS).toContain(1);
+  });
+});
+
+describe("zooming by gesture", () => {
+  it("zooms in on a wheel up and out on a wheel down, a notch about a quarter", () => {
+    expect(wheelFactor(-100)).toBeGreaterThan(1);
+    expect(wheelFactor(100)).toBeLessThan(1);
+    expect(wheelFactor(100)).toBeCloseTo(Math.exp(-0.24), 5);
+  });
+
+  it("stays within the viewer's range", () => {
+    expect(withinLimits(10)).toBe(ZOOM_LIMITS.max);
+    expect(withinLimits(0.01)).toBe(ZOOM_LIMITS.min);
+    expect(withinLimits(1.3)).toBe(1.3);
   });
 });

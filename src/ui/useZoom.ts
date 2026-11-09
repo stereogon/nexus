@@ -6,10 +6,10 @@
  * so opening the notes or the editor panel beside the document re-fits the page rather
  * than leaving it overflowing.
  */
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import { fitWidth } from "../pdf/pages";
-import { stepFrom, ZOOM_LIMITS, type Zoom } from "./zoom";
+import { stepFrom, withinLimits, ZOOM_LIMITS, type Zoom } from "./zoom";
 
 /** Room for the bed to breathe either side of a page at fit-width. */
 const BED_PADDING = 48;
@@ -21,6 +21,8 @@ export function useZoom(
   readonly scale: number;
   readonly fitting: boolean;
   readonly step: (direction: 1 | -1) => void;
+  /** Pins the scale at `scale(current)`, for a pinch or Ctrl and the wheel (2026-11-09). */
+  readonly scaleTo: (scale: (current: number) => number) => void;
   readonly fit: () => void;
 } {
   const [zoom, setZoom] = useState<Zoom>({ kind: "fit" });
@@ -29,6 +31,17 @@ export function useZoom(
     zoom.kind === "at"
       ? zoom.scale
       : fitWidth(pageWidth, Math.max(0, paneWidth - BED_PADDING), ZOOM_LIMITS);
+
+  // The scale as last drawn, for a gesture's events, which arrive faster than renders.
+  const current = useRef(scale);
+  current.current = scale;
+
+  const scaleTo = useCallback((next: (from: number) => number) => {
+    const scaled = withinLimits(next(current.current));
+
+    current.current = scaled;
+    setZoom({ kind: "at", scale: scaled });
+  }, []);
 
   const step = useCallback(
     (direction: 1 | -1) => {
@@ -41,5 +54,5 @@ export function useZoom(
     setZoom({ kind: "fit" });
   }, []);
 
-  return { scale, fitting: zoom.kind === "fit", step, fit };
+  return { scale, fitting: zoom.kind === "fit", step, scaleTo, fit };
 }

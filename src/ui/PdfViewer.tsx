@@ -18,6 +18,7 @@ import { usePdfDocument } from "../pdf/useDocument";
 import { DocumentNotice } from "./DocumentNotice";
 import { parentOf, spoken } from "./folders";
 import { Failure } from "./Failure";
+import { useZoomGestures } from "./useZoomGestures";
 import { FindBar } from "./FindBar";
 import { HighlightMenu } from "./HighlightMenu";
 import { PdfPage } from "./PdfPage";
@@ -76,6 +77,8 @@ export function PdfViewer({
   const viewport = useElementSize(scroller);
 
   const zoom = useZoom(state.sizes[0]?.width ?? 0, viewport.width);
+
+  useZoomGestures(scroller, state.sizes.length > 0, zoom);
   const scale = zoom.scale;
   const { mode, changeMode, setPageIndex, boxes, showing, mounted, stackHeight, goTo, track } = usePageLayout(
     state.sizes,

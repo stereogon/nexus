@@ -79,6 +79,7 @@ The screenshots use the test suite's sample vault, not real notes. They are reta
 **Reading**
 - PDF rendering with pdf.js, in continuous-scroll or one-page mode. Pages and zoom float at
   the foot of the document: arrows, a page field, zoom and fit-width.
+- Zoom with a trackpad pinch, Ctrl and the scroll wheel, or ⌘+ / ⌘−.
 - Each document and note reopens where you left it, and Nexus reopens the last one on launch.
 - Find in the open document (`⌘F`): every match marked, Enter for the next.
 - Text highlights in four meanings: **K**ey concept (amber), **D**efinition (green),
@@ -150,7 +151,7 @@ The screenshots use the test suite's sample vault, not real notes. They are reta
 Recorded in [`PROGRESS.md`](./PROGRESS.md) with the reasoning for each:
 
 - Remembering zoom per document (the page and position are remembered; zoom is not yet).
-- Page thumbnails, the document outline, Fit page, `⌘+` / `⌘−` zoom.
+- Page thumbnails, the document outline, Fit page.
 - `⌘L`, `⌘B`, and `⌘\` split presets (today `⌘\` shows or hides the notes).
 - Renaming, deleting or moving a folder, and dragging items between folders (Finder does
   these meanwhile; Nexus picks the change up when the vault is next read).
@@ -161,7 +162,6 @@ Recorded in [`PROGRESS.md`](./PROGRESS.md) with the reasoning for each:
 - Restyling parts of the UI from the approved design canvas.
 - Hiding the document beside its notes, to work in the notes alone, with a way back to
   side by side (side by side stays the default).
-- Zooming a document with the trackpad (pinch), Ctrl and the scroll wheel, and ⌘+ / ⌘−.
 - Dragging items and folders in the sidebar onto another folder to move them.
 - From the comparison with Notion (2026-11-09), not yet built: find and replace in the notes
   (needs `@codemirror/search` installed), toggle lists, links between notes with backlinks,
