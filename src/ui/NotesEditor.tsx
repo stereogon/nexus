@@ -16,7 +16,7 @@ import { EditorView } from "@codemirror/view";
 import { useEffect, useRef, useState, type Ref } from "react";
 
 import { barFor, formatStateOf } from "../notes/markSelection";
-import { notesExtensions } from "./notesExtensions";
+import { layoutFor, notesExtensions, pageLayout } from "./notesExtensions";
 import type { FormatState } from "./NotesFormatBar";
 import { BlockHandles } from "./BlockHandles";
 import { HeadingRail } from "./HeadingRail";
@@ -70,7 +70,7 @@ export function NotesEditor({
   readonly reveal: { readonly id: string; readonly nonce: number } | null;
   /** The format controls are docked open, so they are there before anything is written. */
   readonly formatting: boolean;
-  /** A plain note's whole page, rather than notes beside a document. Fixed for a mount. */
+  /** The notes as a whole page — a plain note, or a document's notes shown alone. */
   readonly page: boolean;
   /** The title and the line under it, drawn above the first line (`pageHeading`). */
   readonly heading: PageHeading;
@@ -172,6 +172,12 @@ export function NotesEditor({
       setViewReady(false);
     };
   }, [generation]);
+
+  // The notes laid out as a page, or beside a document, as the pane changes between the
+  // two — without rebuilding the editor.
+  useEffect(() => {
+    view.current?.dispatch({ effects: pageLayout.reconfigure(layoutFor(page)) });
+  }, [page]);
 
   // A rename or new tags redraw the heading in place, keeping the cursor and the history.
   useEffect(() => {

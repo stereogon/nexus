@@ -56,6 +56,7 @@ export function NotesPane({
   onCited,
   width,
   alone,
+  onNotesOnly,
   heading,
 }: {
   readonly vault: string;
@@ -77,7 +78,15 @@ export function NotesPane({
    * For a plain note, which has no document: the pane is then the whole reading area, its
    * header names the note, and closing it closes the note. `null` beside a document.
    */
-  readonly alone: { readonly title: string; readonly place: string; readonly onClose: () => void } | null;
+  readonly alone: {
+    readonly title: string;
+    readonly place: string;
+    readonly onClose: () => void;
+    /** A document's notes shown alone: brings the document back beside them. */
+    readonly onShowDocument?: () => void;
+  } | null;
+  /** Beside a document: hides it and keeps the notes, as a page of their own (2026-11-09). */
+  readonly onNotesOnly?: () => void;
   /** The title and the line under it, drawn above the writing. */
   readonly heading: PageHeading;
 }) {
@@ -208,6 +217,18 @@ export function NotesPane({
         >
           Aa
         </button>
+        {alone === null && onNotesOnly !== undefined && (
+          <button aria-label="Notes only" className="chrome-icon" onClick={onNotesOnly} title="Hide the document and keep writing" type="button">
+            <svg aria-hidden="true" fill="none" height="15" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.4" viewBox="0 0 16 16" width="15">
+              <path d="M9.5 2.5h4v4M13.5 2.5 9 7M6.5 13.5h-4v-4M2.5 13.5 7 9" />
+            </svg>
+          </button>
+        )}
+        {alone?.onShowDocument !== undefined && (
+          <button className="secondary" onClick={alone.onShowDocument} title="Show the document beside the notes (⌘\\)" type="button">
+            Show document
+          </button>
+        )}
         {alone === null ? (
           <button aria-label="Hide notes" className="chrome-icon" onClick={onHide} title={"Hide notes (⌘\\)"} type="button">
             <svg aria-hidden="true" fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeWidth="1.6" viewBox="0 0 14 14" width="14">

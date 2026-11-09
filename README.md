@@ -123,6 +123,8 @@ The screenshots use the test suite's sample vault, not real notes. They are reta
   an image's words are shown as its caption.
 - Notion's keys: Tab and Shift-Tab nest list items, ⌘D duplicates a block, ⌘⇧↑ and ⌘⇧↓ move
   it, ⌘⌥0 turns it back into text. Select several lines and ⋮⋮ acts on all of them.
+- **Notes only** hides the document to work in its notes as a page; **Show document** (or ⌘\)
+  brings it back. Side by side is the default.
 - Saves as you type. The divider between document and notes can be dragged, and so can the
   sidebar's edge; both widths are remembered on this Mac.
 
@@ -160,8 +162,6 @@ Recorded in [`PROGRESS.md`](./PROGRESS.md) with the reasoning for each:
 - The rest of the diagnostics drawer: past logs, converter output, timings.
 - Telling you when LibreOffice is missing (imports wait safely until it is installed).
 - Restyling parts of the UI from the approved design canvas.
-- Hiding the document beside its notes, to work in the notes alone, with a way back to
-  side by side (side by side stays the default).
 - Dragging items and folders in the sidebar onto another folder to move them.
 - From the comparison with Notion (2026-11-09), not yet built: find and replace in the notes
   (needs `@codemirror/search` installed), toggle lists, links between notes with backlinks,

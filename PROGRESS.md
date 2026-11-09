@@ -463,6 +463,21 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-09 · A document's notes on their own**
+From the to-do list raised the same day. "Notes only" in the notes' header hides the
+document; the notes become a page under the document's title (the plain note's layout),
+with **Show document** in the header to bring it back. From there ⌘\ also brings it back
+rather than hiding all there is. Side by side stays the default.
+- **The same editor throughout.** `Reading` keeps the one notes pane mounted across the
+  change, and the page layout became its own CodeMirror compartment (`pageLayout`), so it
+  changes without rebuilding the editor. The cursor, undo history and scroll position
+  survive. The document viewer unmounts while hidden and reopens at the remembered place.
+- Not remembered between openings: each opening starts side by side.
+
+Verified: gate green. Two journeys in `notesOnly.spec.ts`. Sabotage: Notes only that
+leaves the document showing fails the first; a notes pane rebuilt on the change (keyed on
+the view) fails its check that the editor is the same one.
+
 **2026-11-09 · Zooming a document with the trackpad, Ctrl and the wheel, and ⌘+ / ⌘−**
 From the to-do list raised the same day (`ui/useZoomGestures.ts`). A pinch and Ctrl with
 the scroll wheel zoom smoothly between 25% and 600% (`useZoom.scaleTo`); ⌘+ (or ⌘=) and ⌘−
@@ -6070,8 +6085,7 @@ imported document … currently we have document view and side by side view, we 
 notes only view"*; *"we need gesture identification for zoom in on the documents … control
 + scroll, or command and +, or just gesture, all three should work"*; *"the directory and
 file drag and move feature in the sidebar"*.
-- **Notes alone:** a document's notes shown without the document, a button in view
-  bringing it back; side by side stays the default.
+- ~~**Notes alone**~~ — built the same day; see the entry above.
 - ~~**Zoom**~~ — built the same day; see the entry above.
 - **Drag to move:** items and folders dragged in the sidebar onto a folder (or up to the
   one above) move there, through `move_item` as the details sheet's folder menu does.

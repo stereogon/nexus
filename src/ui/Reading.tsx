@@ -137,9 +137,19 @@ export function Reading({
     setReveal((previous) => ({ id, nonce: (previous?.nonce ?? 0) + 1 }));
   }, []);
 
+  // The document hidden and its notes shown alone, as a page (2026-11-09); side by side is
+  // the default. The notes pane stays the same component throughout, so the cursor, the
+  // undo history and where the notes were scrolled survive the change.
+  const [documentShown, setDocumentShown] = useState(true);
+
   const toggleNotes = useCallback(() => {
-    setNotesOpen((open) => !open);
-  }, []);
+    if (documentShown) {
+      setNotesOpen((open) => !open);
+    } else {
+      // From the notes alone, ⌘\ brings the document back rather than hiding all there is.
+      setDocumentShown(true);
+    }
+  }, [documentShown]);
 
   // Nothing to hide the notes beside when they are all there is.
   useMetaShortcut("\\", document !== null, toggleNotes);
@@ -167,24 +177,30 @@ export function Reading({
 
   return (
     <div className="reading" ref={area}>
-      <PdfViewer
-        directory={directory}
-        document={document}
-        jump={jump}
-        notesLink={{ cited, show: showInNotes }}
-        notesOpen={notesOpen}
-        onClose={onClose}
-        onLinkToNotes={link}
-        onNotes={toggleNotes}
-        title={title}
-        vault={vault}
-      />
-      {notesOpen && <PaneDivider label="Notes width" sizing={sizing} title="Drag to resize the notes" />}
+      {documentShown && (
+        <PdfViewer
+          directory={directory}
+          document={document}
+          jump={jump}
+          notesLink={{ cited, show: showInNotes }}
+          notesOpen={notesOpen}
+          onClose={onClose}
+          onLinkToNotes={link}
+          onNotes={toggleNotes}
+          title={title}
+          vault={vault}
+        />
+      )}
+      {documentShown && notesOpen && <PaneDivider label="Notes width" sizing={sizing} title="Drag to resize the notes" />}
       <NotesPane
         heading={heading}
         directory={directory}
         handle={notes}
-        hidden={!notesOpen}
+        hidden={documentShown && !notesOpen}
+        onNotesOnly={() => {
+          setNotesOpen(true);
+          setDocumentShown(false);
+        }}
         onCite={cite}
         onCited={setCited}
         onHide={() => {
@@ -193,8 +209,19 @@ export function Reading({
         onReady={ready}
         reveal={reveal}
         vault={vault}
-        width={sizing.width}
-        alone={null}
+        width={documentShown ? sizing.width : null}
+        alone={
+          documentShown
+            ? null
+            : {
+                title,
+                place: spoken(parentOf(directory)),
+                onClose,
+                onShowDocument: () => {
+                  setDocumentShown(true);
+                },
+              }
+        }
       />
     </div>
   );

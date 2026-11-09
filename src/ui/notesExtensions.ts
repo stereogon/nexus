@@ -6,7 +6,7 @@
  */
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
-import type { Extension } from "@codemirror/state";
+import { Compartment, type Extension } from "@codemirror/state";
 import { drawSelection, EditorView, keymap, placeholder, type ViewUpdate } from "@codemirror/view";
 
 import { chartOpener, type ChartAt } from "../notes/chartEditing";
@@ -23,6 +23,16 @@ import { livePreview } from "../notes/preview/field";
 import { tablePicker, type TableLine } from "../notes/tableInsert";
 import { notePage, notesAppearance } from "../notes/theme";
 import { turnInto } from "./blockMenus";
+
+/**
+ * Whether the notes are laid out as a page, centred under their title: a plain note, and a
+ * document's notes shown alone (2026-11-09). Its own compartment so it can change without
+ * rebuilding the editor, which would lose the cursor and the undo history.
+ */
+export const pageLayout = new Compartment();
+
+/** The page layout for `page`. */
+export const layoutFor = (page: boolean): Extension => (page ? notePage : []);
 
 export interface NotesSetup {
   /** A plain note's whole page, rather than notes beside a document. */
@@ -48,7 +58,7 @@ export function notesExtensions(setup: NotesSetup): Extension {
     // Drawn by the editor: WebKit did not paint its caret below the title (2026-11-07).
     drawSelection(),
     notesAppearance,
-    setup.page ? notePage : [],
+    pageLayout.of(layoutFor(setup.page)),
     pageHeading(setup.heading),
     lineFlash,
     livePreview({ onCite: setup.onCite, imageUrl: setup.imageUrl }),
