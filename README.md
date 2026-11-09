@@ -159,6 +159,11 @@ Recorded in [`PROGRESS.md`](./PROGRESS.md) with the reasoning for each:
 - The rest of the diagnostics drawer: past logs, converter output, timings.
 - Telling you when LibreOffice is missing (imports wait safely until it is installed).
 - Restyling parts of the UI from the approved design canvas.
+- From the comparison with Notion (2026-11-09), not yet built: find and replace in the notes
+  (needs `@codemirror/search` installed), toggle lists, links between notes with backlinks,
+  colouring for more code languages (Python and others each need a package), and the format
+  bar offering Diagram, Chart, Table and Callout. Text colours, underline and columns have
+  no Markdown form, so they are left out.
 - An MCP server, so AI agents (Claude and others) can search, read and add to a vault
   directly. Planned; see `PROGRESS.md` for the questions it raises first.
 
