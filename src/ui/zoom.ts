@@ -39,8 +39,18 @@ export function withinLimits(scale: number): number {
 /**
  * How much one Ctrl-wheel event zooms by, from its `deltaY`: a pinch sends many small
  * deltas, a mouse wheel few large ones, and each notch of a wheel should move about a
- * quarter, not jump. Down zooms out, as everywhere on a Mac.
+ * third, not jump. Down zooms out, as everywhere on a Mac. (0.004 a unit, a notch about a
+ * quarter, until 2026-11-09: the user found the gestures too slow.)
  */
 export function wheelFactor(deltaY: number): number {
-  return Math.exp(-Math.max(-60, Math.min(60, deltaY)) * 0.004);
+  return Math.exp(-Math.max(-60, Math.min(60, deltaY)) * 0.006);
+}
+
+/**
+ * How much a pinch zooms by, from how far the fingers have spread (`ratio`, 2 for twice
+ * as far apart). More than the spread itself (2026-11-09): one-to-one, a pinch across the
+ * trackpad only doubled the page, and the user asked for more.
+ */
+export function pinchFactor(ratio: number): number {
+  return ratio ** 1.5;
 }

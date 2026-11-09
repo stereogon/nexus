@@ -39,7 +39,7 @@ test("Ctrl and the scroll wheel zoom in and out over the page", async ({ page })
   await expect.poll(() => percent(page)).toBeGreaterThan(start);
 });
 
-test("a trackpad pinch zooms by how far the fingers spread", async ({ page }) => {
+test("a trackpad pinch zooms by more than the fingers spread", async ({ page }) => {
   const start = await percent(page);
 
   await page.locator(".viewer-bed").evaluate((bed) => {
@@ -55,6 +55,6 @@ test("a trackpad pinch zooms by how far the fingers spread", async ({ page }) =>
     gesture("gestureend", 2);
   });
 
-  // Doubled, within the rounding of the percentage it started from.
-  await expect.poll(async () => Math.abs((await percent(page)) - start * 2)).toBeLessThanOrEqual(2);
+  // Twice the spread zooms by 2^1.5, within the rounding of the percentage it started from.
+  await expect.poll(async () => Math.abs((await percent(page)) - start * 2 ** 1.5)).toBeLessThanOrEqual(2);
 });

@@ -463,6 +463,13 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-09 · Zoom gestures more sensitive**
+The user: *"the zoom gesture sensitivity needs to be increased a bit"*. A pinch now zooms by
+the fingers' spread to the power 1.5 (`pinchFactor`): spreading to twice as far apart zooms
+2.8×, where it was 2×, and pinching back the same distance still returns exactly to where it
+began. A Ctrl-wheel moves 0.006 a delta unit, from 0.004, so a wheel notch is about a third
+rather than a quarter. Both in `zoom.ts`, unit-tested; the pinch journey now expects 2^1.5.
+
 **2026-11-09 · The selection stays in the writing; whole lines look like blocks**
 The user: *"when we copy the text, the copy shows the copied lines till the edges, instead
 of the editor boundary, giving an impression that we are copying too much whitespace"*,

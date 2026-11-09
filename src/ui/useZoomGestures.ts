@@ -11,7 +11,7 @@
 import { useEffect, useRef, type RefObject } from "react";
 
 import { useMetaShortcut } from "./useMetaShortcut";
-import { wheelFactor } from "./zoom";
+import { pinchFactor, wheelFactor } from "./zoom";
 
 /** A pinch's scale so far, from WebKit's gesture event, which no DOM type describes. */
 function pinchScale(event: Event): number | null {
@@ -60,7 +60,7 @@ export function useZoomGestures(
       if (scale !== null && pinchFrom !== null) {
         const from = pinchFrom;
 
-        scaleTo(() => (from * scale) / pinchStart);
+        scaleTo(() => from * pinchFactor(scale / pinchStart));
       }
     };
     const onPinchEnd = () => {
