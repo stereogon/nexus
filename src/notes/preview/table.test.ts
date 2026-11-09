@@ -73,7 +73,7 @@ describe("the drawn table", () => {
 
     const view = new EditorView({ doc: source });
     const element = new TableEditorWidget(source, table).toDOM(view);
-    const values = (selector: string) => [...element.querySelectorAll<HTMLTextAreaElement>(`${selector} textarea`)].map((input) => input.value);
+    const values = (selector: string) => [...element.querySelectorAll<HTMLElement>(`${selector} .md-cell-input`)].map((cell) => cell.textContent);
 
     expect(values("th")).toEqual(["A", "B"]);
     expect(element.querySelectorAll("tbody tr")).toHaveLength(1);

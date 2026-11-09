@@ -127,7 +127,7 @@ test("⌘Z in a cell undoes what was typed there", async ({ page }) => {
   // Back to the table exactly as it was, before the edit padded its columns too.
   await page.keyboard.press("Meta+z");
   await expect.poll(() => tableText(page)).toContain("| Paxos | 5 |");
-  await expect(cell(page, "Row 2, column 1")).toHaveValue("Paxos");
+  await expect(cell(page, "Row 2, column 1")).toHaveText("Paxos");
 });
 
 test("Escape leaves the table, and what is typed next goes below it", async ({ page }) => {

@@ -86,7 +86,7 @@ test("a double-click on the edge puts the column back to fitting its words", asy
   await expect.poll(() => widthsLine(page)).toBeNull();
 });
 
-test("a narrowed column wraps its words, the row growing, and the box typed in wraps the same", async ({ page }) => {
+test("a narrowed column wraps its words, the row growing, and they stay wrapped while typed in", async ({ page }) => {
   const words = "a long sentence that will not fit in a narrow column";
   const name = cell(page, "Row 1, column 1");
 
@@ -98,9 +98,9 @@ test("a narrowed column wraps its words, the row growing, and the box typed in w
   await dragEdge(page, 0, -((await widthOf(page, 0)) - 120));
   await expect.poll(() => widthOf(page, 0)).toBeLessThan(130);
 
-  // Taller than one line, in the cell and in the box over it, which still holds every word.
+  // The row grown to several lines, and the words typed in still wrapped, every one shown.
   await name.click();
-  await expect.poll(async () => (await name.boundingBox())?.height ?? 0).toBeGreaterThan(oneLine * 2.5);
-  await expect(name).toHaveValue(words);
+  await expect.poll(async () => (await name.locator("xpath=..").boundingBox())?.height ?? 0).toBeGreaterThan(oneLine * 2.5);
+  await expect(name).toHaveText(words);
   expect(await name.evaluate((box) => box.scrollHeight <= box.clientHeight + 1 && box.scrollWidth <= box.clientWidth + 1)).toBe(true);
 });

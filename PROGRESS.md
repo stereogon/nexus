@@ -463,6 +463,40 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-09 · Table cells stay formatted while edited**
+The user, quoting a cell with bold words in it: *"inside the table, when we select text the **
+still appear, outside the table this does not happen"*. Clicking a cell laid a plain text box
+over the drawn words, so the Markdown showed. Each cell is now its words themselves, formatted
+and editable where they are drawn (`notes/preview/tableCell.ts`). What is typed is read back
+out as GFM inline Markdown: `<strong>`/`<b>` or a bold style is `**`, `<em>`/`<i>` or an
+italic style is `*`, `<code>` is backticks. A mark's edge spaces go outside it, as GFM needs.
+Marks around nothing are dropped, and a line break becomes a space. CodeMirror ignores edits
+and selections inside a widget (checked in its source: `readMutation` returns null for a widget,
+and `onSelectionChange` defers to `ignoreEvent`), so the cell is the browser's to edit. This
+also replaces the wrapping `<textarea>` from the column-resize change earlier today: words wrap
+as drawn, because they are what is drawn.
+
+Details found on the way:
+- WebKit's own ⌘A in a cell selected the whole editor around it and moved focus there, so a
+  cell handles ⌘A as "select this cell's words".
+- Pasting adds plain words on one line, since formatting from elsewhere is markup a cell
+  cannot hold.
+- A cell being typed in is not redrawn while it already says what the notes say, so its
+  caret stays put. After ⌘Z it is redrawn and the caret goes to the end.
+
+**Not done:** ⌘B and ⌘I do not format inside a cell; WebKit gives no binding for them there,
+which was checked. Bold typed as `**word**` is written as typed and drawn bold once the cell
+is left. Before this change, a cell had no formatting keys either.
+
+Verified: gate green. `tableCell.test.ts` (5): Markdown read back for tags, styles, edge
+spaces, empty marks and breaks. Three journeys in `tableCellFormat.spec.ts`: clicking and
+selecting shows no marks; typing inside bold stays bold in the cell and the notes; pasting is
+plain and on one line. The table journeys were updated from input values to text. Sabotage,
+each failing a journey:
+- cells drawn as raw Markdown;
+- bold read back without its marks;
+- no ⌘A handling.
+
 **2026-11-09 · With the sidebar hidden, the title no longer starts under Show sidebar**
 The user, with a screenshot of the title's first letters under the Show sidebar control:
 *"now it hides the name"*. The control spans 82 px to 126 px, and the leading header's inset

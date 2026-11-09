@@ -14,16 +14,18 @@
   min-width: 72px;
 }
 
-/* The words, formatted; kept a line high when empty so the cell can be clicked. */
-.md-cell-view {
+/* The words, formatted and edited where they are drawn (`tableCell.ts`); kept a line high
+   when empty so the cell can be clicked. */
+.md-cell-input {
   display: block;
   min-height: 1.45em;
   white-space: pre-wrap;
   overflow-wrap: break-word;
+  outline: none;
+  cursor: text;
 }
 
 /* A column given a width wraps even a long word to it, rather than refusing to narrow. */
-.md-table-editable [data-sized] .md-cell-view,
 .md-table-editable [data-sized] .md-cell-input {
   overflow-wrap: anywhere;
 }
@@ -62,38 +64,11 @@
   user-select: none;
 }
 
-/* The box over the cell: there to be clicked, seen only while typing in it. */
-.md-cell-input {
-  position: absolute;
-  inset: 0;
-  box-sizing: border-box;
-  width: 100%;
-  padding: 6px 12px;
-  border: none;
-  background: transparent;
-  color: var(--text);
-  font: inherit;
-  line-height: inherit;
-  text-align: inherit;
-  white-space: pre-wrap;
-  overflow-wrap: break-word;
-  resize: none;
-  overflow: hidden;
-  margin: 0;
-  opacity: 0;
-}
-
-.md-table-editable th:focus-within .md-cell-input,
-.md-table-editable td:focus-within .md-cell-input {
-  opacity: 1;
-  background: var(--surface);
+/* The cell being typed in. */
+.md-table-editable th:focus-within,
+.md-table-editable td:focus-within {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
-}
-
-.md-table-editable th:focus-within .md-cell-view,
-.md-table-editable td:focus-within .md-cell-view {
-  visibility: hidden;
 }
 
 .md-table-tools {

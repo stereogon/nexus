@@ -6,6 +6,7 @@
 import { Facet } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
 
+import { caretIn } from "./preview/tableCell";
 import { focusCell } from "./preview/tableEdits";
 import { blankTable, writeTable } from "./tableModel";
 
@@ -49,7 +50,7 @@ export function insertTable(view: EditorView, line: TableLine, rows: number, col
   // Its name selected, so typing replaces "Column 1".
   const box = view.contentDOM.ownerDocument.activeElement;
 
-  if (box instanceof HTMLTextAreaElement) {
-    box.select();
+  if (box instanceof HTMLElement && box.classList.contains("md-cell-input")) {
+    caretIn(box, true);
   }
 }

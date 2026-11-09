@@ -9,6 +9,7 @@ import type { EditorView } from "@codemirror/view";
 
 import { writeTable, type Cell } from "../tableModel";
 import { parseTable, tableStart, type Table } from "./table";
+import { caretIn } from "./tableCell";
 import type { TableEdit } from "./tableTools";
 
 /** The table's place in the notes, its widths line included, found from its drawn element. */
@@ -33,15 +34,16 @@ export function tableRange(view: EditorView, wrap: HTMLElement): { readonly from
   return { from: tableStart(view.state.doc, node.from), to: node.to };
 }
 
-/** Focuses `cell` of the table that starts at `from`, the caret at `caret` or its end. */
-export function focusCell(view: EditorView, from: number, cell: Cell, caret: number | null = null): void {
+/** Focuses `cell` of the table that starts at `from`, the caret at the end of its words. */
+export function focusCell(view: EditorView, from: number, cell: Cell): void {
   for (const wrap of view.contentDOM.querySelectorAll<HTMLElement>(".md-table-editable")) {
     if (view.posAtDOM(wrap) === from) {
-      const input = wrap.querySelector<HTMLTextAreaElement>(`.md-cell-input[data-row="${String(cell.row)}"][data-col="${String(cell.column)}"]`);
-      const at = Math.min(caret ?? Number.MAX_SAFE_INTEGER, input?.value.length ?? 0);
+      const input = wrap.querySelector<HTMLElement>(`.md-cell-input[data-row="${String(cell.row)}"][data-col="${String(cell.column)}"]`);
 
-      input?.focus();
-      input?.setSelectionRange(at, at);
+      if (input !== null) {
+        input.focus();
+        caretIn(input);
+      }
       return;
     }
   }
@@ -65,7 +67,7 @@ function smallestChange(from: number, before: string, after: string): { from: nu
 }
 
 /** Applies `change` to the table drawn in `wrap`, then focuses the cell it names. */
-export function editTable(view: EditorView, wrap: HTMLElement, change: (table: Table) => ReturnType<TableEdit>, caret: number | null = null): void {
+export function editTable(view: EditorView, wrap: HTMLElement, change: (table: Table) => ReturnType<TableEdit>): void {
   const range = tableRange(view, wrap);
   const before = range === null ? "" : view.state.sliceDoc(range.from, range.to);
   const current = parseTable(before);
@@ -87,7 +89,7 @@ export function editTable(view: EditorView, wrap: HTMLElement, change: (table: T
   view.dispatch({ changes: smallestChange(range.from, before, writeTable(table)), userEvent: "input.table" });
 
   if (focus !== null) {
-    focusCell(view, range.from, focus, caret);
+    focusCell(view, range.from, focus);
   }
 }
 

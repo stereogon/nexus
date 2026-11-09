@@ -1,37 +1,45 @@
 /**
  * A table in the notes, edited where it is drawn (2026-11-08).
  *
- * Each cell shows its words formatted and turns into a text box when clicked. What is typed
- * is written back into the notes as GFM (`tableModel.ts`) by an ordinary editor change — the
+ * Each cell is its words, formatted and edited where they are drawn (`tableCell.ts`). What is
+ * typed is written back into the notes as GFM (`tableModel.ts`) by an ordinary editor change — the
  * smallest one between the old text and the new — so ⌘Z undoes it with everything else and
  * nothing is kept anywhere but the notes. The table is read afresh from the notes for every
  * edit, never from the widget, so the two cannot drift apart.
  *
  * Redrawn in place when only words or widths changed (`updateDOM`), so the cell being typed in keeps
- * its focus and caret; rebuilt when rows or columns changed, and the cell to be in is then
+ * its caret; rebuilt when rows or columns changed, and the cell to be in is then
  * focused again. A column's width is dragged at its edge (`tableResize.ts`).
  */
 import { redo, undo } from "@codemirror/commands";
 import { WidgetType, type EditorView } from "@codemirror/view";
 
 import { hasHeader, withCell, withRow, type Cell } from "../tableModel";
-import { appendInline, type Table } from "./table";
+import type { Table } from "./table";
+import { caretIn, cellMarkdown, drawCell, insertPlain } from "./tableCell";
 import { editTable, leave } from "./tableEdits";
 import { columnEdge, drawWidths } from "./tableResize";
 import { closeAll, showAlignment, tableTools } from "./tableTools";
 
-const cellOf = (input: HTMLTextAreaElement): Cell => ({ row: Number(input.dataset.row), column: Number(input.dataset.col) });
+const cellOf = (input: HTMLElement): Cell => ({ row: Number(input.dataset.row), column: Number(input.dataset.col) });
 
-/** What the keys do in a cell: move between cells, add a row at the end, undo, leave. */
-function onKey(event: KeyboardEvent, view: EditorView, wrap: HTMLElement, input: HTMLTextAreaElement, rows: () => number): void {
+/** What the keys do in a cell: select its words, move between cells, add a row at the end, undo, leave. */
+function onKey(event: KeyboardEvent, view: EditorView, wrap: HTMLElement, input: HTMLElement, rows: () => number): void {
   const at = cellOf(input);
-  const inputs = [...wrap.querySelectorAll<HTMLTextAreaElement>(".md-cell-input")];
+  const inputs = [...wrap.querySelectorAll<HTMLElement>(".md-cell-input")];
   const index = inputs.indexOf(input);
   const cellAt = (row: number, column: number) =>
-    wrap.querySelector<HTMLTextAreaElement>(`.md-cell-input[data-row="${String(row)}"][data-col="${String(column)}"]`);
+    wrap.querySelector<HTMLElement>(`.md-cell-input[data-row="${String(row)}"][data-col="${String(column)}"]`);
   const addRowAndGo = (column: number) => {
     editTable(view, wrap, (table) => ({ table: withRow(table, table.rows.length), focus: { row: table.rows.length, column } }));
   };
+
+  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "a") {
+    // The cell's words: WebKit's own would select the whole editor around it and move there.
+    event.preventDefault();
+    caretIn(input, true);
+    return;
+  }
 
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z") {
     // The editor's history, which holds every cell edit; the box's own would not.
@@ -47,7 +55,7 @@ function onKey(event: KeyboardEvent, view: EditorView, wrap: HTMLElement, input:
 
       if (next !== undefined) {
         next.focus();
-        next.select();
+        caretIn(next, true);
       } else if (!event.shiftKey) {
         addRowAndGo(0);
       }
@@ -103,20 +111,19 @@ function build(wrap: HTMLElement, view: EditorView, table: Table): void {
 
   const cell = (row: number, column: number, text: string): HTMLTableCellElement => {
     const box = document.createElement(row < 0 ? "th" : "td");
-    const shown = document.createElement("span");
-    // A box that wraps, so the words being typed wrap as the cell draws them (2026-11-09).
-    const input = document.createElement("textarea");
+    // The words themselves, edited where they are drawn (`tableCell.ts`).
+    const input = document.createElement("div");
     const align = table.align[column];
 
     if (align !== null && align !== undefined) {
       box.style.textAlign = align;
     }
 
-    shown.className = "md-cell-view";
-    appendInline(shown, text);
     input.className = "md-cell-input";
-    input.rows = 1;
-    input.value = text;
+    input.contentEditable = "true";
+    input.spellcheck = true;
+    input.role = "textbox";
+    drawCell(input, text);
     input.dataset.row = String(row);
     input.dataset.col = String(column);
     input.setAttribute("aria-label", row < 0 ? `Header, column ${String(column + 1)}` : `Row ${String(row + 1)}, column ${String(column + 1)}`);
@@ -129,22 +136,21 @@ function build(wrap: HTMLElement, view: EditorView, table: Table): void {
       showAlignment(wrap.querySelector(".md-table-tools"), drawn === "center" || drawn === "right" || drawn === "left" ? drawn : null);
     });
     input.addEventListener("input", () => {
-      // A cell is one line in GFM: a line break pasted in becomes a space.
-      if (/[\r\n]/.test(input.value)) {
-        const at = input.selectionStart;
-
-        input.value = input.value.replace(/\r\n|[\r\n]/g, " ");
-        input.setSelectionRange(at, at);
-      }
-
-      const caret = input.selectionStart;
-
-      editTable(view, wrap, (fresh) => ({ table: withCell(fresh, cellOf(input), input.value), focus: cellOf(input) }), caret);
+      editTable(view, wrap, (fresh) => ({ table: withCell(fresh, cellOf(input), cellMarkdown(input)), focus: null }));
+    });
+    // Pasted as words: formatting from elsewhere would be markup a cell cannot hold.
+    input.addEventListener("paste", (event) => {
+      event.preventDefault();
+      insertPlain(input, event.clipboardData?.getData("text/plain") ?? "");
+      editTable(view, wrap, (fresh) => ({ table: withCell(fresh, cellOf(input), cellMarkdown(input)), focus: null }));
+    });
+    input.addEventListener("drop", (event) => {
+      event.preventDefault();
     });
     input.addEventListener("keydown", (event) => {
       onKey(event, view, wrap, input, () => wrap.querySelectorAll("tbody tr").length);
     });
-    box.append(shown, input, columnEdge(view, wrap, column));
+    box.append(input, columnEdge(view, wrap, column));
 
     return box;
   };
@@ -227,27 +233,27 @@ export class TableEditorWidget extends WidgetType {
       drawWidths(element, this.table);
     }
 
-    for (const input of dom.querySelectorAll<HTMLTextAreaElement>(".md-cell-input")) {
+    for (const input of dom.querySelectorAll<HTMLElement>(".md-cell-input")) {
       const { row, column } = cellOf(input);
       const text = (row < 0 ? this.table.header : this.table.rows[row])?.[column] ?? "";
       const box = input.parentElement;
       const align = this.table.align[column];
+      const typing = input === document.activeElement;
 
-      if (input.value.trim() !== text.trim() || (input !== document.activeElement && input.value !== text)) {
-        input.value = text;
+      // The cell being typed in already shows what it says; redrawing it would lose the caret.
+      if (!typing || cellMarkdown(input).trim() !== text.trim()) {
+        drawCell(input, text);
+
+        if (typing) {
+          caretIn(input);
+        }
       }
 
       if (box !== null) {
         box.style.textAlign = align ?? "";
 
-        if (input === document.activeElement) {
+        if (typing) {
           showAlignment(dom.querySelector(".md-table-tools"), align ?? null);
-        }
-        box.querySelector(".md-cell-view")?.replaceChildren();
-        const shown = box.querySelector<HTMLElement>(".md-cell-view");
-
-        if (shown !== null) {
-          appendInline(shown, text);
         }
       }
     }
