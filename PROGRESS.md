@@ -463,6 +463,14 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-09 · With the sidebar hidden, the title no longer starts under Show sidebar**
+The user, with a screenshot of the title's first letters under the Show sidebar control:
+*"now it hides the name"*. The control spans 82 px to 126 px, and the leading header's inset
+was 124 px. That overlapped by 2 px, with no gap. This was not caused by the bounce fix,
+which touched only the root. The inset is now 138 px. The hidden-sidebar journey in
+`layout.spec.ts` now measures the title starting at least 8 px after the control. It fails
+at 124.
+
 **2026-11-09 · The window no longer bounces as a whole**
 The user sent a screenshot with both panes slid up over an empty bed: *"when i put my cursor at
 a certain position, i am able to scroll both windows and see underneath, thsi is bad ux"*.

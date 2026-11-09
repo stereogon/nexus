@@ -97,9 +97,11 @@ body {
 }
 
 /* With the sidebar hidden, the leftmost header sits under the window's own buttons and
-   beside the Show sidebar control, so it leaves room for both. */
+   beside the Show sidebar control, so it leaves room for both: the control ends at 126px
+   (`left` 82 + 44 wide), and the title starts a clear gap after it. It was 124, which put
+   the title's first letters under the control (reported 2026-11-09). */
 .panes[data-sidebar="hidden"] .pane-head.lead {
-  padding-left: 124px;
+  padding-left: 138px;
 }
 
 .sidebar-show {

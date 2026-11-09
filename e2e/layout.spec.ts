@@ -118,6 +118,12 @@ test("hiding the sidebar leaves room beside the window's own buttons, and shows 
   await expect(page.locator(".sidebar")).toHaveCount(0);
   expect(await inset()).toBeGreaterThanOrEqual(120);
 
+  // The title starts clear of the Show sidebar control, not under its edge.
+  const control = await page.getByRole("button", { name: "Show sidebar" }).boundingBox();
+  const title = await page.locator(".viewer-title").boundingBox();
+
+  expect((title?.x ?? 0) - ((control?.x ?? 0) + (control?.width ?? 0))).toBeGreaterThanOrEqual(8);
+
   await page.getByRole("button", { name: "Show sidebar" }).click();
 
   await expect(page.locator(".sidebar")).toBeVisible();
