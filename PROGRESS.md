@@ -481,10 +481,14 @@ and Notion's copying *"feels like we are copying blocks"*.
 - **Proof.** `selection.spec.ts`: a selection across lines stays inside the column, and
   whole lines are drawn as one block each. Each failed under its sabotage (the cut to the
   column removed; whole lines never detected).
-- **⌘⇧V (paste as plain text) does not work yet**, reported the same day. WebKit does not
-  turn ⌘⇧V into a paste event, so the page never gets the clipboard, and reading it from the
-  page shows WebKit's own "Paste" prompt every time. The clean route is the official
-  `tauri-plugin-clipboard-manager`, which is an install and waits on the user's go-ahead.
+- **⌘⇧V pastes as plain text** (reported the same day as not working; install approved).
+  WebKit does not turn ⌘⇧V into a paste event, so the page never got the clipboard, and
+  reading it from the page shows WebKit's own "Paste" prompt every time. Now a keymap in
+  `notes/plainPaste.ts` asks `clipboard_text` (`src-tauri/src/clipboard.rs`), which reads
+  it through the official `tauri-plugin-clipboard-manager`, from Rust only: the webview is
+  granted none of the plugin's own commands, so it cannot write the clipboard. The text
+  goes in exactly as copied, replacing the selection. `plainPaste.spec.ts` proves it
+  (failed with the key unbound); licences in §5.
 
 **2026-11-09 · The screening notice can be put away**
 The user, of "This document asks for 2 things Nexus does not do.": *"add a close (cross) on
@@ -6317,6 +6321,19 @@ All permissive and compatible with distributing a binary. `unicode-ident` and
 `unicode-normalization` carry an additional term (Unicode-3.0, attribution-only), so the
 shipped app must include a notices file; that is an open task, listed in §4.
 `lecture-core` itself is MIT.
+
+#### `tauri-plugin-clipboard-manager`, added 2026-11-09 (with permission)
+
+For ⌘⇧V, paste as plain text. `tauri-plugin-clipboard-manager` 2.5.0 (Apache-2.0 OR MIT)
+over `arboard` 3.7.0 (MIT OR Apache-2.0). Read from `cargo metadata`, it added 37 lock
+entries; the ones built for macOS are `arboard`, `image` 0.25.10 and its decoders (`tiff`,
+`zune-jpeg`, `zune-core`, `fax`, `weezl`, `moxcms`, `pxfm`, `half`), `quick-xml`,
+`quick-error`, `byteorder-lite`, `zerocopy`, `hashbrown` and `foldhash` — all MIT, Apache-2.0,
+BSD, Zlib or Unlicense alternatives. The rest are Linux (Wayland, X11) and Windows backends
+that never compile here; among them `clipboard-win` and `error-code` are BSL-1.0, also
+permissive. `image` is the weight: `arboard` carries clipboard images, which Nexus does not
+read through it. Accepted as the cost of the official plugin rather than reimplementing
+clipboard access, which would need `unsafe` AppKit calls that §4 forbids.
 
 #### The whole resolved tree, read on 2026-10-28
 

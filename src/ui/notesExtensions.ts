@@ -19,6 +19,8 @@ import { pageHeading, type PageHeading } from "../notes/pageHeading";
 import { pasteImages } from "../notes/pasteImage";
 import { richPaste } from "../notes/richPaste";
 import { selectionInColumn } from "../notes/selectionLayer";
+import { plainPaste } from "../notes/plainPaste";
+import { clipboardText } from "../ipc/clipboard";
 import { slashCommands } from "../notes/slash";
 import { livePreview } from "../notes/preview/field";
 import { tablePicker, type TableLine } from "../notes/tableInsert";
@@ -69,6 +71,7 @@ export function notesExtensions(setup: NotesSetup): Extension {
     pasteImages(setup.keepImage),
     // After the image paste, which takes a pasted picture first.
     richPaste,
+    plainPaste(clipboardText),
     chartOpener.of(setup.onChart),
     tablePicker.of(setup.onTable),
     noteEditing,

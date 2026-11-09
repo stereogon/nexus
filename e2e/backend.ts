@@ -108,6 +108,7 @@ export function backend(fixture: Fixture): (command: string, args?: InvokeArgs) 
         needsAttention: risks.some((risk) => risk.severity === "notable"),
       };
     },
+    clipboard_text: () => fixture.clipboard ?? null,
     notice_quiet: (args) => quietNotices.has(InLecture.parse(args).directory),
     quiet_notice: (args) => {
       quietNotices.add(InLecture.parse(args).directory);

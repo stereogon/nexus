@@ -56,6 +56,8 @@ export interface Fixture {
   readonly folders?: readonly string[];
   /** What screening found in each document, keyed by directory; absent means nothing. */
   readonly risks?: Readonly<Record<string, readonly DocumentRisk[]>>;
+  /** What the clipboard holds as text, for ⌘⇧V; absent means no text. */
+  readonly clipboard?: string;
 }
 
 /** Slide-shaped, because most of what this app opens is a lecture deck. */

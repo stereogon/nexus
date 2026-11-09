@@ -64,6 +64,10 @@ tauri = { version = "2", features = ["protocol-asset"] }
 tauri-build = { version = "2", features = [] }
 # The folder picker, which is a platform capability rather than something to reimplement.
 tauri-plugin-dialog = "2"
+# Reading the clipboard for ⌘⇧V, paste as plain text (approved 2026-11-09): WebKit does not
+# make ⌘⇧V a paste event, and reading it from the page prompts every time. Used from Rust
+# only, through one read-only command; the webview is granted none of the plugin's own.
+tauri-plugin-clipboard-manager = "2"
 
 # Internal crates, so a member can depend on another without repeating the path.
 lecture-core = { path = "crates/lecture-core" }

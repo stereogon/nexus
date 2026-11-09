@@ -9,6 +9,7 @@
 
 pub mod annotations;
 pub mod assets;
+pub mod clipboard;
 pub mod document;
 pub mod dropped_image;
 pub mod edit;
@@ -54,6 +55,7 @@ pub fn run() -> Result<(), tauri::Error> {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
         .invoke_handler(tauri::generate_handler![
             open_vault,
             open_document,
@@ -87,6 +89,7 @@ pub fn run() -> Result<(), tauri::Error> {
             folders::create_note,
             folders::move_item,
             folder_move::move_folder,
+            clipboard::clipboard_text,
             notice::notice_quiet,
             notice::quiet_notice,
             trash::delete_item,
