@@ -37,6 +37,16 @@
   background: var(--text-faint) padding-box;
 }
 
+/* The window itself never moves (2026-11-09). Each pane scrolls inside its own box; but a
+   trackpad scroll landing where nothing scrolls, or running on past a pane's end, made
+   WebKit stretch the whole page with macOS's elastic bounce, sliding both panes up over an
+   empty bed. `none` on the root stops the bounce and the scroll that chains into it. */
+html,
+body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 body {
   margin: 0;
   background: var(--chrome);

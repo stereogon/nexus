@@ -463,6 +463,25 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-09 · The window no longer bounces as a whole**
+The user sent a screenshot with both panes slid up over an empty bed: *"when i put my cursor at
+a certain position, i am able to scroll both windows and see underneath, thsi is bad ux"*.
+Nothing was overflowing. Wheeling across the whole window in the test browser scrolled only
+the panes, and the document stayed at 0. The cause is macOS's elastic bounce. A trackpad
+scroll that landed where nothing scrolls, or ran on past a pane's end, chained up to the root
+and stretched the whole page. `html, body { overflow: hidden; overscroll-behavior: none }`
+in `shell.css` stops both.
+
+The user also pointed to an icon that "floats" while this happens. It is not one of Nexus's
+icons: no icon in the app has that square-in-a-square shape. It is most likely something macOS
+draws during the bounce. Not confirmed; to be checked once the bounce is gone.
+
+Verified: gate green. `windowBounce.spec.ts` checks the root's computed overscroll and
+overflow, wheels across the window, and asserts that only the panes moved. Sabotage: with
+`overscroll-behavior: auto`, it fails. **Not verified:** the bounce itself, which needs a
+real trackpad. The test browser cannot produce it, so the journey checks the setting that
+turns it off, not the gesture.
+
 **2026-11-09 · Table columns resized by dragging their edge**
 The user: *"there is one problem with the table engine, we cannot resize the tables columns
 or rows"*. Each column now has an edge to drag (`notes/preview/tableResize.ts`). It shows as
