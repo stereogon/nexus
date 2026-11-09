@@ -234,6 +234,13 @@
   cursor: pointer;
 }
 
+/* The "/" menu (`SlashMenu.tsx`): the item ↑ and ↓ have chosen, and room to scroll. */
+.slash-menu {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.pop-item.active,
 .pop-item:hover,
 .pop-item:focus-visible {
   background: var(--track);

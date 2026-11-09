@@ -463,6 +463,23 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-09 · Closer to Notion, part 2: the "/" menu**
+Typing "/" at the start of a line or after a space opens the blocks `+` offers, under the
+"/" (`notes/slash.ts`, `ui/SlashMenu.tsx`). What follows narrows the list, those starting
+with it first; ↑ and ↓ choose; Enter or Tab takes the choice; Escape closes it with the
+text kept. It does not open inside a word ("and/or") or in code. The session lives in the
+editor's state, so it follows edits and ends when the cursor leaves the words after the
+"/". The editor keeps focus throughout.
+
+From "/" typed after some words, a choice that changes the line's kind (heading, to-do,
+quote) keeps the words. One that fills a whole line (code, table, diagram, chart,
+divider) now goes on a new line below (`freshLine` in `blockMenus.ts`) instead of writing
+over them; `+` uses the same items, so it gains the same care. "Text" now really turns a
+line back into text.
+
+Verified: gate green. Five journeys in `slash.spec.ts`. Sabotage: with no items behind the
+keys, choosing fails; writing over the line loses the words and fails the code journey.
+
 **2026-11-09 · Closer to Notion, part 1: nesting, block shortcuts, several blocks at once**
 The user asked what in Notion the notes still lack, then: *"for the features that are good
 to build, lets build them"*. "Good to build" was taken as what keeps the notes plain

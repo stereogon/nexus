@@ -13,9 +13,27 @@ import { formatBlock } from "../notes/markSelection";
 import type { MenuItem } from "./PopMenu";
 
 /**
- * What `+`'s menu turns the new line into, as Notion's does: a block type from the format
- * rules, or a code block, a diagram or a divider written out, or a chart made in the chart
- * form (2026-11-08: diagrams and charts had worked only for whoever knew the fence to type).
+ * The line the cursor is on if it is empty, or else a new empty one opened below it, for
+ * a block that replaces a whole line: from "/" typed after some words, writing over the
+ * line would lose them.
+ */
+function freshLine(editor: EditorView): { readonly from: number; readonly to: number; readonly original: string } {
+  const line = editor.state.doc.lineAt(editor.state.selection.main.head);
+
+  if (line.text.trim() === "") {
+    return { from: line.from, to: line.to, original: line.text };
+  }
+
+  editor.dispatch({ changes: { from: line.to, insert: "\n" }, selection: { anchor: line.to + 1 } });
+
+  return { from: line.to + 1, to: line.to + 1, original: "" };
+}
+
+/**
+ * What `+`'s menu and the "/" menu turn the line into, as Notion's do: a block type from
+ * the format rules, or a code block, a table, a diagram or a divider written out, or a
+ * chart made in the chart form (2026-11-08: diagrams and charts had worked only for whoever
+ * knew the fence to type).
  */
 export function turnInto(editor: EditorView): MenuItem[] {
   const as = (kind: Kind) => () => {
@@ -23,9 +41,9 @@ export function turnInto(editor: EditorView): MenuItem[] {
     editor.focus();
   };
   const write = (text: string, cursorAt: number) => () => {
-    const line = editor.state.doc.lineAt(editor.state.selection.main.head);
+    const line = freshLine(editor);
     // At the very end of the notes a line follows, so there is a way out of a code block.
-    const tail = line.number === editor.state.doc.lines && !text.endsWith("\n") ? "\n" : "";
+    const tail = line.to === editor.state.doc.length && !text.endsWith("\n") ? "\n" : "";
 
     editor.dispatch({
       changes: { from: line.from, to: line.to, insert: text + tail },
@@ -35,7 +53,7 @@ export function turnInto(editor: EditorView): MenuItem[] {
   };
 
   return [
-    { label: "Text", onSelect: () => { editor.focus(); } },
+    { label: "Text", onSelect: as("paragraph") },
     { label: "Heading 1", onSelect: as("h1") },
     { label: "Heading 2", onSelect: as("h2") },
     { label: "Heading 3", onSelect: as("h3") },
@@ -47,18 +65,14 @@ export function turnInto(editor: EditorView): MenuItem[] {
     {
       label: "Table",
       onSelect: () => {
-        const line = editor.state.doc.lineAt(editor.state.selection.main.head);
-
-        editor.state.facet(tablePicker)?.({ from: line.from, to: line.to, original: line.text });
+        editor.state.facet(tablePicker)?.(freshLine(editor));
       },
     },
     { label: "Diagram", onSelect: write("```mermaid\n\n```", 11) },
     {
       label: "Chart",
       onSelect: () => {
-        const line = editor.state.doc.lineAt(editor.state.selection.main.head);
-
-        editor.state.facet(chartOpener)?.({ from: line.from, to: line.to, source: null, original: line.text });
+        editor.state.facet(chartOpener)?.({ ...freshLine(editor), source: null });
       },
     },
     { label: "Divider", onSelect: write("---\n", 4) },

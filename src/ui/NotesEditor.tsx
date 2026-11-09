@@ -21,7 +21,9 @@ import type { FormatState } from "./NotesFormatBar";
 import { BlockHandles } from "./BlockHandles";
 import { HeadingRail } from "./HeadingRail";
 import { ChartForm } from "./ChartForm";
+import { SlashMenu } from "./SlashMenu";
 import { TablePicker } from "./TablePicker";
+import { turnInto } from "./blockMenus";
 import { NotesFormatting } from "./NotesFormatting";
 import { useNotesHandle, type NotesHandle } from "./useNotesHandle";
 import type { MenuAt } from "./menuPlacement";
@@ -29,6 +31,7 @@ import type { MenuAt } from "./menuPlacement";
 import { citationOffsets, nextOccurrence } from "../notes/citeLinks";
 import { flashLine } from "../notes/flash";
 import { writeChart, type ChartAt } from "../notes/chartEditing";
+import { slashSession, type SlashSession } from "../notes/slash";
 import { insertTable, type TableLine } from "../notes/tableInsert";
 import { setHeading, type PageHeading } from "../notes/pageHeading";
 
@@ -94,6 +97,8 @@ export function NotesEditor({
   const [chart, setChart] = useState<{ readonly at: ChartAt; readonly failure: string | null } | null>(null);
   // The table picker, open for a new table's line.
   const [tableLine, setTableLine] = useState<TableLine | null>(null);
+  // The "/" menu's session, while one is open.
+  const [slash, setSlash] = useState<SlashSession | null>(null);
   const changed = useRef(onChange);
   const cited = useRef(onCite);
   const ready = useRef(onReady);
@@ -135,6 +140,8 @@ export function NotesEditor({
           },
           onTable: setTableLine,
           onUpdate: (update) => {
+            setSlash(update.state.field(slashSession, false) ?? null);
+
             if (update.docChanged) {
               changed.current(update.state.doc.toString());
               setCurrent(update.state.doc.toString());
@@ -231,6 +238,7 @@ export function NotesEditor({
           source={chart.at.source}
         />
       )}
+      {slash !== null && view.current !== null && <SlashMenu items={turnInto(view.current)} session={slash} view={view.current} />}
       {tableLine !== null && (
         <TablePicker
           onClose={() => {

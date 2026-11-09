@@ -2,7 +2,7 @@
  * What the notes editor is built with (moved out of `NotesEditor` on 2026-11-09, unchanged,
  * so that file keeps to the view's life and what is drawn over it): history and keys,
  * GFM, the live preview and its widgets, pasting images, the chart form's and the table
- * picker's openers, and the editing behaviour in `notes/editing.ts`.
+ * picker's openers, the "/" menu, and the editing behaviour in `notes/editing.ts`.
  */
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
@@ -17,9 +17,11 @@ import { lineFlash } from "../notes/flash";
 import { formatKeys } from "../notes/markSelection";
 import { pageHeading, type PageHeading } from "../notes/pageHeading";
 import { pasteImages } from "../notes/pasteImage";
+import { slashCommands } from "../notes/slash";
 import { livePreview } from "../notes/preview/field";
 import { tablePicker, type TableLine } from "../notes/tableInsert";
 import { notePage, notesAppearance } from "../notes/theme";
+import { turnInto } from "./blockMenus";
 
 export interface NotesSetup {
   /** A plain note's whole page, rather than notes beside a document. */
@@ -55,6 +57,8 @@ export function notesExtensions(setup: NotesSetup): Extension {
     chartOpener.of(setup.onChart),
     tablePicker.of(setup.onTable),
     noteEditing,
+    // The "/" menu offers what `+`'s does.
+    slashCommands((view) => turnInto(view)),
     EditorView.updateListener.of(setup.onUpdate),
   ];
 }
