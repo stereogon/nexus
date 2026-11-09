@@ -142,20 +142,29 @@ fn lectures_are_appended_after_the_ones_already_there() {
 }
 
 #[test]
-fn a_name_that_is_already_taken_is_refused_rather_than_overwritten() {
+fn a_name_already_taken_gets_the_next_free_one_and_the_first_is_untouched() {
     // Importing over an existing lecture would destroy its notes and annotations, which is
-    // the worst thing this command could do.
+    // the worst thing this command could do; since 2026-11-09 the new one is named "Raft 2"
+    // rather than refused.
     let fixture = Fixture::new();
-    bring_in(&fixture.vault(), &fixture.document("Raft.pdf")).unwrap();
+    let first = bring_in(&fixture.vault(), &fixture.document("Raft.pdf")).unwrap();
 
-    let again = bring_in(&fixture.vault(), &fixture.document("Raft.pdf"));
-    let error = again.expect_err("the second import should be refused");
+    let second = bring_in(&fixture.vault(), &fixture.document("Raft.pdf")).unwrap();
+    let third = bring_in(&fixture.vault(), &fixture.document("Raft.pdf")).unwrap();
 
-    assert_eq!(error.code, "ERR_LECTURE_ALREADY_HERE");
-    assert!(!error.remediation.is_empty());
+    assert_eq!(first.title, "Raft");
+    assert_eq!(second.title, "Raft 2");
+    assert_eq!(third.title, "Raft 3");
+    assert_ne!(first.directory, second.directory);
 
-    // And the first lecture is untouched.
-    assert_eq!(open_vault(&fixture.vault()).unwrap().lectures.len(), 1);
+    let lectures = open_vault(&fixture.vault()).unwrap().lectures;
+
+    assert_eq!(lectures.len(), 3);
+    assert!(
+        lectures
+            .iter()
+            .any(|row| row.directory == first.directory && row.title == "Raft")
+    );
 }
 
 #[test]

@@ -9,7 +9,7 @@ import type { CommandError, LectureRow } from "../ipc/vault";
 
 /** What became of one dropped file. */
 export type DropOutcome =
-  | { readonly kind: "added"; readonly lecture: LectureRow }
+  | { readonly kind: "added"; readonly lecture: LectureRow; readonly path: string }
   | { readonly kind: "refused"; readonly error: CommandError };
 
 type Added = Extract<DropOutcome, { kind: "added" }>;
@@ -27,13 +27,33 @@ function lacksPdf(lecture: LectureRow): boolean {
 }
 
 /**
+ * The name a document would have had, when the import gave it the next free one because
+ * something in the folder already had it ("Raft" arriving as "Raft 2", 2026-11-09): read
+ * from the file's own name, so a file already called "Raft 2" is not mistaken for one.
+ */
+export function renamedFrom(lecture: LectureRow, path: string): string | null {
+  const file = (path.split(/[\\/]/u).pop() ?? "").replace(/\.[^.]+$/u, "");
+  const counted = /^(.*) (\d+)$/u.exec(lecture.title);
+  const original = counted?.[1];
+
+  return original !== undefined && file.endsWith(original) && !file.endsWith(lecture.title) ? original : null;
+}
+
+/**
  * What to say after importing one document.
  *
  * An import that could not convert still succeeded, so this reports the state rather than
  * treating it as a failure — and says what it means for the person, not what the enum is
  * called.
  */
-export function noteFor(lecture: LectureRow): string {
+export function noteFor(lecture: LectureRow, path = ""): string {
+  const original = renamedFrom(lecture, path);
+  const named = original === null ? "" : ` “${original}” was already in this folder, so this one is “${lecture.title}”.`;
+
+  return `${conversionNote(lecture)}${named}`;
+}
+
+function conversionNote(lecture: LectureRow): string {
   switch (lecture.conversion) {
     case "failed":
       return `Added "${lecture.title}", but it could not be converted to a PDF. The original is kept, so you can still take notes beside it.`;
@@ -69,7 +89,7 @@ export function noteForDrop(outcomes: readonly DropOutcome[]): string | null {
   // One file is the common case, and it already has a sentence naming it. A summary would
   // be a worse answer to a smaller question.
   if (added.length === 1 && refused.length === 0 && only !== undefined) {
-    return noteFor(only.lecture);
+    return noteFor(only.lecture, only.path);
   }
 
   const parts: string[] = [];
@@ -79,6 +99,16 @@ export function noteForDrop(outcomes: readonly DropOutcome[]): string | null {
       added.length === 1
         ? "Added 1 document."
         : `Added ${String(added.length)} documents.`,
+    );
+  }
+
+  const renamed = added.filter((outcome) => renamedFrom(outcome.lecture, outcome.path) !== null).length;
+
+  if (renamed > 0) {
+    parts.push(
+      renamed === 1
+        ? "1 was given a number after its name, as one by that name was already there."
+        : `${String(renamed)} were given a number after their names, as ones by those names were already there.`,
     );
   }
 
@@ -127,7 +157,7 @@ export async function importEach(
 
   for (const path of paths) {
     try {
-      outcomes.push({ kind: "added", lecture: await importOne(vault, path) });
+      outcomes.push({ kind: "added", lecture: await importOne(vault, path), path });
     } catch (thrown: unknown) {
       outcomes.push({ kind: "refused", error: asError(thrown) });
     }

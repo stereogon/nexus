@@ -180,12 +180,7 @@ export function PdfViewer({
 
       <div className={boxing ? "viewer-bed boxing" : "viewer-bed"} onScroll={onScroll} ref={scroller}>
         {state.loading && <p className="note">Opening the document…</p>}
-        {state.failure !== null && (
-          <div className="card error">
-            <div className="code">{state.failure.code}</div>
-            <div>{state.failure.remediation}</div>
-          </div>
-        )}
+        {state.failure !== null && <Failure error={state.failure} />}
 
         <div className="pdf-stack" style={{ height: stackHeight }}>
           {mounted !== null &&

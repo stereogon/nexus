@@ -6,14 +6,6 @@
  * from the window the rest of the time.
  */
 
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 14px 16px;
-  margin-bottom: var(--gap);
-}
-
 .lecture {
   display: flex;
   align-items: baseline;
@@ -26,10 +18,6 @@
   background: var(--viewer-bed);
   border-radius: 6px;
   padding: 1px 8px;
-}
-
-.error {
-  border-left: 3px solid var(--semantic-exam);
 }
 
 .empty {

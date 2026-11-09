@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { pickVaultDirectory } from "../ipc/picker";
-import { asCommandError, openVault, rememberVault, type VaultSummary } from "../ipc/vault";
+import { asCommandError, openVault, rememberVault, type CommandError, type VaultSummary } from "../ipc/vault";
 import type { VaultState } from "./vaultState";
 
 export function useVault(
@@ -17,6 +17,9 @@ export function useVault(
   onChosen: () => void,
 ): {
   readonly state: VaultState;
+  /** Why the last change to the vault could not be made, shown until it is dismissed. */
+  readonly failure: CommandError | null;
+  readonly dismissFailure: () => void;
   readonly busy: boolean;
   /** Runs an action that changes the vault, then re-reads the vault from disk. */
   readonly against: (vault: string, act: () => Promise<string | null>) => void;
@@ -25,6 +28,10 @@ export function useVault(
 } {
   const [state, setState] = useState<VaultState>({ kind: "idle" });
   const [busy, setBusy] = useState(false);
+  const [failure, setFailure] = useState<CommandError | null>(null);
+  const dismissFailure = useCallback(() => {
+    setFailure(null);
+  }, []);
 
   // Folded into `state` once it arrives, rather than rendering from two sources. The
   // functional update is what makes that safe: it fills an *idle* shell and leaves any
@@ -46,6 +53,7 @@ export function useVault(
     (vault: string, act: () => Promise<string | null>) => {
       void (async () => {
         setBusy(true);
+        setFailure(null);
 
         try {
           const note = await act();
@@ -56,7 +64,17 @@ export function useVault(
           setState({ kind: "open", summary: await openVault(vault) });
           notice.show(note);
         } catch (thrown: unknown) {
-          setState({ kind: "failed", error: asCommandError(thrown) });
+          // A change that could not be made leaves the vault open, said in a notice. It used
+          // to close the vault and show the welcome screen with the error, so a name already
+          // taken threw someone out of their vault (reported 2026-11-09). Re-read in case
+          // the change got part of the way; only a vault that cannot be read at all closes.
+          setFailure(asCommandError(thrown));
+
+          try {
+            setState({ kind: "open", summary: await openVault(vault) });
+          } catch (unreadable: unknown) {
+            setState({ kind: "failed", error: asCommandError(unreadable) });
+          }
         } finally {
           setBusy(false);
         }
@@ -93,5 +111,5 @@ export function useVault(
     })();
   }, [notice, onChosen]);
 
-  return { state, busy, against, choose };
+  return { state, failure, dismissFailure, busy, against, choose };
 }

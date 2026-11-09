@@ -72,11 +72,11 @@ test("⌘0 opens the error panel, which says when nothing has gone wrong", async
 test("an error stays in the panel after its card has gone", async ({ page }) => {
   await openNexus(page, { ...standardFixture(), failing: ["load_annotations"] });
   await openLecture(page, READING.title);
-  await expect(page.locator(".card.error")).toContainText("ERR_E2E_FAILING");
+  await expect(page.locator(".failure")).toContainText("ERR_E2E_FAILING");
 
   // The card belongs to the lecture; going back to the vault takes it away.
   await page.getByRole("button", { name: "Close document" }).click();
-  await expect(page.locator(".card.error")).toHaveCount(0);
+  await expect(page.locator(".failure")).toHaveCount(0);
 
   // Settings says there was one, before it is opened.
   await page.getByRole("button", { name: "Settings, 1 error since launch" }).click();

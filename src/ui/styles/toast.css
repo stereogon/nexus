@@ -40,3 +40,84 @@
 .toast-dismiss:hover {
   opacity: 1;
 }
+
+/* A failure (`Failure.tsx`), in the redesign's soft card (2026-11-09): the sentence saying
+   what to do first, the code under it, quieter, for reporting it. */
+.failure {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  box-sizing: border-box;
+  max-width: 640px;
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--exam-wash);
+  color: var(--text);
+  font-family: var(--font-ui);
+}
+
+.failure-mark {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--semantic-exam);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.failure-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.failure-text {
+  margin: 1px 0 4px;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.failure-code {
+  margin: 0;
+  color: var(--text-meta);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.failure-dismiss {
+  flex: 0 0 auto;
+  padding: 0 4px;
+  border: none;
+  background: none;
+  color: var(--text-meta);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.failure-dismiss:hover {
+  color: var(--text);
+}
+
+/* Floating at the foot of the window, where a confirmation shows, over whatever is open. */
+.failure-float {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  z-index: 46;
+  width: min(560px, calc(100vw - 48px));
+  transform: translateX(-50%);
+}
+
+.failure-float .failure {
+  margin: 0;
+  background: var(--surface);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+  border-left: 3px solid var(--semantic-exam);
+}

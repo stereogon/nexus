@@ -62,7 +62,7 @@ export function App() {
   const forgetEditing = useCallback(() => {
     setEditing(null);
   }, []);
-  const { state, busy, against, choose } = useVault(remembered.summary, notice, forgetEditing);
+  const { state, failure, dismissFailure, busy, against, choose } = useVault(remembered.summary, notice, forgetEditing);
   const sidebar = useSidebar();
   const panes = useRef<HTMLDivElement | null>(null);
   const sidebarSizing = useSidebarWidth(panes);
@@ -246,6 +246,12 @@ export function App() {
         />
       )}
       {notice.text !== null && <Notice onDismiss={notice.dismiss} text={notice.text} />}
+      {/* A change to the vault that could not be made, floating where a confirmation would. */}
+      {failure !== null && (
+        <div className="failure-float">
+          <Failure error={failure} onDismiss={dismissFailure} />
+        </div>
+      )}
       {zone.dragging && (
         <DropOverlay formats={zone.formats} into={showing === "" ? vaultNameOf(summary.root) : nameOf(showing)} />
       )}

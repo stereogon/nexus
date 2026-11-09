@@ -3,8 +3,10 @@
  *
  * Kept apart from the workspace shell because it is a different screen, not a state of the
  * same one: there is no sidebar to draw, nothing to group, and the only thing to do is
- * choose a folder.
+ * choose a folder. Redrawn on 2026-11-09 in the redesign's type and colours, with the app's
+ * own icon: it had been an unstyled heading and button from before the redesign.
  */
+import icon from "../../crates/src-tauri/icons/128x128@2x.png";
 import type { CommandError } from "../ipc/vault";
 import { Failure } from "./Failure";
 
@@ -18,21 +20,20 @@ export function Welcome({
   readonly onChoose: () => void;
 }) {
   return (
-    <main className="content">
-      <h1>Nexus</h1>
-      <p className="subtitle">
-        Your documents and notes, side by side, entirely offline.
-      </p>
-
-      <div className="actions">
-        <button disabled={busy} onClick={onChoose} type="button">
+    <main className="welcome">
+      <div className="welcome-card">
+        <img alt="" className="welcome-icon" height="96" src={icon} width="96" />
+        <h1 className="welcome-title">Nexus</h1>
+        <p className="welcome-lead">Your documents and notes, side by side, entirely offline.</p>
+        <button className="welcome-open" disabled={busy} onClick={onChoose} type="button">
           Open a vault
         </button>
-      </div>
+        <p className="welcome-hint">A vault is any folder. Your notes stay in it as plain Markdown files.</p>
 
-      {failures.map((error) => (
-        <Failure error={error} key={error.code} />
-      ))}
+        {failures.map((error) => (
+          <Failure error={error} key={error.code} />
+        ))}
+      </div>
     </main>
   );
 }

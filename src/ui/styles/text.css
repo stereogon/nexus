@@ -22,11 +22,6 @@ h2 {
   margin: 26px 0 10px;
 }
 
-.subtitle {
-  color: var(--text-secondary);
-  margin: 0 0 20px;
-}
-
 /* `.path` shared this rule until 2026-10-29, when the dead-rule check found nothing used
    it: the one place that shows a path -- the sidebar footer -- styles its own. */
 .code {

@@ -463,6 +463,34 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-09 · A refused change no longer closes the vault; imports take the next free name; errors restyled**
+The user, with a screenshot of the welcome screen showing `ERR_LECTURE_ALREADY_HERE`: *"This
+error page looks weird, doesn't match the latest design … why can't we … import with the
+name + (some number)?"*
+
+- **The real bug.** `useVault`'s `against`, which runs every change to the vault (import,
+  new folder or note, move, delete), turned any failure into the vault's "failed" state.
+  That closed the vault and showed the welcome screen with the error, so a name already
+  taken threw the person out of their vault. A failed change now keeps the vault open: it
+  is re-read in case the change got part of the way, and the error floats at the foot of
+  the window until dismissed. Only a vault that cannot be read at all still closes.
+- **Imports take the next free name.** `import.rs`'s `free_name` tries the file's name,
+  then "… 2", "… 3", up to a thousand. A name is free only when neither an item nor a
+  folder holds it, so nothing already there is written over. The notice says so: "“Raft”
+  was already in this folder, so this one is “Raft 2”." (`renamedFrom` reads this from the
+  file's own name, so a file already called "Raft 2" is not mistaken for a renamed one.) A
+  drop of several counts how many were renamed. The Rust test that expected a refusal now
+  imports the same file three times: Raft, Raft 2, Raft 3, the first untouched.
+- **Errors in the redesign's style.** `Failure` is a soft card: the sentence saying what
+  to do comes first, then the code, quieter. It had been a bordered box led by the code in
+  capitals. The viewer's own copy of the old card now uses it. The welcome screen, untouched
+  since before the redesign, is a centred card with the app's icon, the wordmark, one line
+  on what a vault is and the button.
+
+Verified: gate green. Import tests (11, the rename among them); `dropped.test.ts` (20,
+three new); a journey refusing a taken folder name checks the vault stays open and the
+failure floats and dismisses. Sabotage: closing the vault on failure again fails it.
+
 **2026-11-09 · Closer to Notion, part 4: callouts and image captions**
 - **Callouts** are written as GitHub's alerts: a quote whose first line is `[!NOTE]`,
   `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]` or `[!CAUTION]` (`notes/callout.ts`). They read

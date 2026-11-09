@@ -20,12 +20,6 @@ button {
   cursor: pointer;
 }
 
-.actions {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 4px;
-}
-
 /* The canvas allows the accent only on the primary action in a group; a secondary button
    is the surface with a border. */
 button.secondary {

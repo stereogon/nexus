@@ -127,3 +127,20 @@ test("deleting the open document closes it, asks first, and takes it out of the 
   await expect(page.getByLabel("Page 1", { exact: true })).toHaveCount(0);
   await expect(sidebar(page).getByRole("button", { name: READING.title, exact: true })).toHaveCount(0);
 });
+
+test("a change that cannot be made says why and leaves the vault open", async ({ page }) => {
+  // Until 2026-11-09 any refused change closed the vault and showed the welcome screen.
+  await page.getByRole("button", { name: "New note, folder or import" }).click();
+  await page.getByRole("menuitem", { name: "Folder" }).click();
+  await page.getByLabel("Name of the new folder").fill("week-1");
+  await page.getByLabel("Name of the new folder").press("Enter");
+
+  const failure = page.locator(".failure-float").getByRole("alert");
+
+  await expect(failure).toContainText("already in this folder");
+  await expect(sidebar(page).getByRole("button", { name: "Folder week-1", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Open a vault" })).toHaveCount(0);
+
+  await failure.getByRole("button", { name: "Dismiss" }).click();
+  await expect(failure).toHaveCount(0);
+});

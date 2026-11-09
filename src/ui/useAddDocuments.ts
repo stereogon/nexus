@@ -29,7 +29,7 @@ export function useAddDocuments(
     against(vault, async () => {
       const file = await pickDocument();
 
-      return file === null ? null : noteFor(await importDocument(vault, folder, file));
+      return file === null ? null : noteFor(await importDocument(vault, folder, file), file);
     });
   }, [against, folder, vault]);
 

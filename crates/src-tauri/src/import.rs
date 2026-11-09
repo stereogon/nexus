@@ -17,7 +17,8 @@ use lecture_core::{
     RelativePath, Slug, placed_by_number, split_number,
 };
 use lecture_fs::{
-    AtomicFsStorage, ImportRequest, Importer, ManifestStore, SystemClock, VaultLoader, VaultRoot,
+    AtomicFsStorage, ImportRequest, Importer, LoadedVault, ManifestStore, SystemClock, VaultLoader,
+    VaultRoot,
 };
 
 use crate::folders::{folder_in, placed};
@@ -95,7 +96,6 @@ pub fn bring_in_to(vault: &str, folder: &str, file: &str) -> Result<LectureRow, 
     let source = Path::new(file);
     let stem = stem_of(source)?;
     let named = split_number(stem);
-    let title = Label::parse(&named.title)?;
 
     let loaded = VaultLoader::new(ManifestStore::new(
         AtomicFsStorage::new(root.clone()),
@@ -103,21 +103,7 @@ pub fn bring_in_to(vault: &str, folder: &str, file: &str) -> Result<LectureRow, 
     ))
     .load()?;
     let parent = folder_in(&loaded, folder)?;
-    // The folder is named from the whole file name, number included, so `Week 1 Lecture 1`
-    // and `Week 1 Lecture 2` cannot collide over the title they share once it is taken out.
-    let bundle = placed(parent.as_ref(), Slug::from_title(stem)?)?;
-
-    if loaded
-        .bundles
-        .iter()
-        .any(|held| held.directory() == &bundle)
-    {
-        return Err(CommandError {
-            code: "ERR_LECTURE_ALREADY_HERE",
-            remediation: "Something with this name is already in this folder. Rename the \
-                          file you are adding, or open the one that is already there.",
-        });
-    }
+    let (bundle, title) = free_name(&loaded, parent.as_ref(), stem, &named.title)?;
 
     // `sequence` is authoritative, so this is the one decision that fixes where the lecture
     // appears: placed by its number among the numbered lectures, or after the last lecture
@@ -155,6 +141,53 @@ pub fn bring_in_to(vault: &str, folder: &str, file: &str) -> Result<LectureRow, 
     )?;
 
     Ok(row(&LectureBundle::new(bundle, outcome.manifest)))
+}
+
+/// The most names tried before giving up: a folder holding a thousand items of one name
+/// is not something a person made, and the loop must end.
+const MOST_NAMES: u32 = 1000;
+
+/// Where the new item goes and what it is called: its file's name, or, when something in
+/// the folder already has that name, the name with " 2", " 3" and so on after it (asked for
+/// on 2026-11-09 in place of refusing). Nothing already there is ever written over: a name
+/// is free only when neither an item nor a folder holds it.
+///
+/// The folder is named from the whole file name, number included, so `Week 1 Lecture 1`
+/// and `Week 1 Lecture 2` cannot collide over the title they share once it is taken out.
+///
+/// # Errors
+///
+/// `ERR_LECTURE_ALREADY_HERE` if a thousand names are all taken, and as [`Slug::from_title`]
+/// and [`Label::parse`] for a name that cannot be used.
+fn free_name(
+    loaded: &LoadedVault,
+    parent: Option<&RelativePath>,
+    stem: &str,
+    title: &str,
+) -> Result<(RelativePath, Label), CommandError> {
+    for count in 1..=MOST_NAMES {
+        let suffix = if count == 1 {
+            String::new()
+        } else {
+            format!(" {count}")
+        };
+        let bundle = placed(parent, Slug::from_title(&format!("{stem}{suffix}"))?)?;
+        let taken = loaded
+            .bundles
+            .iter()
+            .any(|held| held.directory() == &bundle)
+            || loaded.folders.iter().any(|folder| folder == &bundle);
+
+        if !taken {
+            return Ok((bundle, Label::parse(&format!("{title}{suffix}"))?));
+        }
+    }
+
+    Err(CommandError {
+        code: "ERR_LECTURE_ALREADY_HERE",
+        remediation: "This folder already has too many items of this name. Rename the file \
+                      you are adding, then add it again.",
+    })
 }
 
 /// The file's own name, without its extension: where the title and number come from.

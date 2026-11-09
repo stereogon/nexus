@@ -8,7 +8,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { CommandError, ConversionState, LectureRow } from "../ipc/vault";
-import { importEach, noteFor, noteForDrop, type DropOutcome } from "./dropped";
+import { importEach, noteFor, noteForDrop, renamedFrom, type DropOutcome } from "./dropped";
 
 function lecture(title: string, conversion: ConversionState): LectureRow {
   return {
@@ -28,8 +28,8 @@ function lecture(title: string, conversion: ConversionState): LectureRow {
   };
 }
 
-function added(title: string, conversion: ConversionState = "ready"): DropOutcome {
-  return { kind: "added", lecture: lecture(title, conversion) };
+function added(title: string, conversion: ConversionState = "ready", path = `/Users/me/Downloads/${title}.pdf`): DropOutcome {
+  return { kind: "added", lecture: lecture(title, conversion), path };
 }
 
 function refused(remediation: string): DropOutcome {
@@ -241,5 +241,24 @@ describe("importing a drop", () => {
 
     expect(note).toContain("2 files could not be added.");
     expect(note).not.toContain("Added");
+  });
+});
+
+describe("a document given the next free name", () => {
+  it("says the name was taken, and what it is called instead", () => {
+    expect(noteFor(lecture("Raft 2", "ready"), "/Users/me/Downloads/Raft.pdf")).toBe(
+      'Added "Raft 2". “Raft” was already in this folder, so this one is “Raft 2”.',
+    );
+  });
+
+  it("is not mistaken for a file already called that", () => {
+    expect(renamedFrom(lecture("Raft 2", "ready"), "/Users/me/Raft 2.pdf")).toBeNull();
+    expect(renamedFrom(lecture("Week 3", "ready"), "/Users/me/Week 3.pdf")).toBeNull();
+  });
+
+  it("is counted among several dropped together", () => {
+    const note = noteForDrop([added("Raft 2", "ready", "/x/Raft.pdf"), added("Paxos")]);
+
+    expect(note).toContain("1 was given a number after its name");
   });
 });
