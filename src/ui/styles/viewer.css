@@ -154,8 +154,15 @@
   height: 24px;
 }
 
-.notice-quiet {
-  padding-top: 2px;
+/* Its words in line with the findings' (past the 8px dot and its 8px gap, less the
+   button's own 8px padding), on one line: in the list it took the dot's column and
+   wrapped a word to a line (reported 2026-11-09). */
+.notice-foot {
+  margin: 6px 0 0 8px;
+}
+
+.notice-foot button {
+  white-space: nowrap;
 }
 
 .notice-list {

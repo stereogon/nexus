@@ -17,6 +17,22 @@ test.beforeEach(async ({ page }) => {
   await expect(notice(page)).toBeVisible();
 });
 
+test("Don't show again sits under the findings on one line, in line with their words", async ({ page }) => {
+  const quiet = page.getByRole("button", { name: "Don't show again for this document" });
+  const finding = page.getByText(LAUNCH.explanation);
+  const button = await quiet.boundingBox();
+  const words = await finding.boundingBox();
+  const line = await finding.evaluate((element) => parseFloat(getComputedStyle(element).lineHeight));
+
+  expect(button).not.toBeNull();
+  expect(words).not.toBeNull();
+  // One line of 13px type and its padding, not a word to a line.
+  expect(button?.height ?? 0).toBeLessThan(line * 2);
+  // Its words start where the finding's do: the button's 8px padding in from its edge.
+  expect(Math.abs((button?.x ?? 0) + 8 - (words?.x ?? 0))).toBeLessThanOrEqual(1.5);
+  expect(button?.y ?? 0).toBeGreaterThan(words?.y ?? 0);
+});
+
 test("✕ puts the notice away until the document is opened again", async ({ page }) => {
   await page.getByRole("button", { name: "Dismiss" }).click();
   await expect(notice(page)).toHaveCount(0);

@@ -525,6 +525,10 @@ this, so we can remove this alert once after seeing, and don't show again"*.
   refuse a file that has `quietNotices` and fall back to an empty state, losing this
   device's reading positions. That needs a downgrade to happen at all, and the state is
   per-device and rebuilt by reading; accepted rather than loosening the strict parse.
+- **Placed under the list, not in it** (fixed the same day, from the user's screenshot:
+  *"this doesn't look very good"*). As a list item it fell into the 8px column the dots
+  use and wrapped a word to a line; it is not a finding, either. It sits below the list now,
+  its words in line with the findings', on one line — a journey measures both.
 - **Not shown before the answer.** The notice asks `notice_quiet` first and draws nothing
   until it knows, so a silenced notice does not flash up; an unreadable state answers "not
   quiet", so a failure errs toward showing the warning.

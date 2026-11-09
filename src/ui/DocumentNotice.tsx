@@ -87,22 +87,34 @@ export function DocumentNotice({
           title="Put this away until the document is opened again"
           type="button"
         >
-          <svg aria-hidden="true" fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeWidth="1.6" viewBox="0 0 14 14" width="12">
+          <svg
+            aria-hidden="true"
+            fill="none"
+            height="12"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeWidth="1.6"
+            viewBox="0 0 14 14"
+            width="12"
+          >
             <path d="M3.5 3.5l7 7M10.5 3.5l-7 7" />
           </svg>
         </button>
       </div>
 
       {open && (
-        <ul className="notice-list">
-          {risks.map((risk) => (
-            <li key={risk.code}>
-              <span className={`dot ${risk.severity}`} />
-              <span>{risk.explanation}</span>
-              <code className="code">{risk.code}</code>
-            </li>
-          ))}
-          <li className="notice-quiet">
+        <>
+          <ul className="notice-list">
+            {risks.map((risk) => (
+              <li key={risk.code}>
+                <span className={`dot ${risk.severity}`} />
+                <span>{risk.explanation}</span>
+                <code className="code">{risk.code}</code>
+              </li>
+            ))}
+          </ul>
+          {/* Under the list, not in it: it is not one of the findings. */}
+          <div className="notice-foot">
             <button
               className="quiet"
               onClick={() => {
@@ -113,8 +125,8 @@ export function DocumentNotice({
             >
               Don't show again for this document
             </button>
-          </li>
-        </ul>
+          </div>
+        </>
       )}
     </section>
   );
