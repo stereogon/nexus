@@ -1,0 +1,22 @@
+/* Find and replace in the notes (⌘F): the document's find bar (`viewer.css`), wrapping to a
+   second row when the notes are narrow. Not on the canvas, as the document's is not. */
+.notes-find {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+.notes-find input {
+  flex: 1 1 140px;
+  width: auto;
+}
+
+/* Every match ringed in the accent, and the one being looked at filled, as the selection is.
+   Ringed rather than washed so a match in highlighted words still shows. */
+.md-find {
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.md-find-current {
+  background: var(--page-selection);
+}

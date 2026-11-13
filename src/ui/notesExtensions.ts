@@ -2,7 +2,7 @@
  * What the notes editor is built with (moved out of `NotesEditor` on 2026-11-09, unchanged,
  * so that file keeps to the view's life and what is drawn over it): history and keys,
  * GFM, the live preview and its widgets, pasting images and formatted text, the chart form's and the table
- * picker's openers, the "/" menu, and the editing behaviour in `notes/editing.ts`.
+ * picker's openers, find and replace, the "/" menu, and the editing behaviour in `notes/editing.ts`.
  */
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
@@ -14,6 +14,7 @@ import { citeLinks } from "../notes/citeLinks";
 import { codeLanguages } from "../notes/codeLanguages";
 import { noteEditing } from "../notes/editing";
 import { lineFlash } from "../notes/flash";
+import { findInNotes } from "../notes/findInNotes";
 import { formatKeys } from "../notes/markSelection";
 import { pageHeading, type PageHeading } from "../notes/pageHeading";
 import { pasteImages } from "../notes/pasteImage";
@@ -53,6 +54,8 @@ export interface NotesSetup {
 export function notesExtensions(setup: NotesSetup): Extension {
   return [
     history(),
+    // Ahead of the default keys, whose Escape only collapses the selection on a match.
+    findInNotes,
     keymap.of([...formatKeys, ...defaultKeymap, ...historyKeymap]),
     // GitHub-flavoured: tables, strikethrough and task lists, which plain CommonMark
     // does not have. Without it a table was not even recognised (2026-11-05).
@@ -74,9 +77,10 @@ export function notesExtensions(setup: NotesSetup): Extension {
     plainPaste(clipboardText),
     chartOpener.of(setup.onChart),
     tablePicker.of(setup.onTable),
-    noteEditing,
-    // The "/" menu offers what `+`'s does.
+    // The "/" menu offers what `+`'s does. Ahead of the editing keys, so its Enter takes a
+    // choice before Enter in formatted words (`enterKeys.ts`) is asked.
     slashCommands((view) => turnInto(view)),
+    noteEditing,
     EditorView.updateListener.of(setup.onUpdate),
   ];
 }

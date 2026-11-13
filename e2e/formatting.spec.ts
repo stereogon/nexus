@@ -131,3 +131,16 @@ test("only inline code gets a chip, never the text inside a block", async ({ pag
   await expect(line(page, "Use").locator(".md-inline-code")).toHaveCount(1);
   await expect(line(page, "plain block").locator(".md-inline-code")).toHaveCount(0);
 });
+
+test("Enter after bold words typed in takes the closing ** with them, not down to the next line", async ({ page }) => {
+  await line(page, "The end.").click();
+  await page.keyboard.press("End");
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("Meta+b");
+  await page.keyboard.type("Key term");
+  await page.keyboard.press("Enter");
+  await page.keyboard.type("plain after");
+
+  await expect.poll(() => saved(page)).toMatch(/The end\.\n\*\*Key term\*\*\nplain after$/u);
+  await expect(line(page, "plain after").locator("strong, .cm-strong, .tok-strong")).toHaveCount(0);
+});

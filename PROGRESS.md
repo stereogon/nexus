@@ -463,6 +463,45 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-13 · Find and replace in the notes; Enter after bold keeps its `**`**
+The user: *"we definitely need search and replace functionality in the notes"*, and *"when we
+click enter right after a bolded text, the "**" move to the next line"*.
+
+**Enter** (`notes/enterKeys.ts`). The marks are hidden, so the end of bold words and the
+place after the closing `**` look the same, and typing into a chosen format (⌘B, then words)
+leaves the cursor before the closing marks. Enter split the line there. Now Enter at the end
+of a construct's words — bold, italic, strikethrough, code, a link, a highlight — steps past
+its closing marks first; at the start, in front of its opening ones; in the middle, closes it
+before the new line and opens it again after, the cursor in the reopened words, as Notion
+splits bold words into two bold lines. Nested formats split innermost first. The new line is
+still Markdown's own Enter (a list or quote continues), composed into one change so one ⌘Z
+takes it back. Nothing changes in code. `constructsNear` moved out of `emptiedMarks.ts` into
+`notes/constructs.ts`, now shared by both. The "/" menu now comes before the editing keys in
+the editor's setup, so its Enter still takes a choice first.
+
+**Find and replace** (`notes/findInNotes.ts`, `ui/NotesFindBar.tsx`). ⌘F with the notes
+focused opens a strip at the top of the notes, in the document's find bar's chrome: the words,
+"2 of 5", ↑ ↓, a Replace with field, Replace, Replace all, ✕. Case-blind and literal. The
+match being looked at is the editor's selection, so Replace changes exactly that and moves on,
+and Replace all is one change one ⌘Z undoes. Escape, in the bar or the notes, closes it. With
+words selected on one line, ⌘F looks for them. Its keys sit ahead of CodeMirror's defaults,
+whose Escape only collapsed the selection on a match. **Written rather than taken from
+`@codemirror/search`** (which would have needed asking to install): the search is a few lines
+of plain matching, and its panel would have needed restyling to look like the document's bar.
+`formatOf` moved from `NotesEditor.tsx` to `NotesFormatting.tsx` to keep the editor under 300
+lines.
+
+**Known limits.** It searches the Markdown: words split by a mark (`**bo**ld`) are found only
+as written. A match inside a table is counted and replaced, but not drawn, since a table is
+drawn as its own editor rather than as text. What stepping to one shows was not checked.
+
+Verified: gate green. `enterKeys.test.ts` (6), `findInNotes.test.ts` (3), and five journeys:
+Enter after bold typed in (`formatting.spec.ts`); in `notesFind.spec.ts` ⌘F opening the notes'
+bar not the document's, counting, stepping round the end and Escape from bar and notes;
+Replace and ⌘Z; Replace all and ⌘Z; ⌘F with words selected. Sabotage: without `enterKeys` the
+Enter journey fails; Replace all as one change per match fails its one-⌘Z journey; without the
+Escape key the first find journey fails.
+
 **2026-11-09 · The format bar, the header's strip and the format keys work in table cells**
 The user: *"the formatting options stopped appearing for the content inside the table. i am
 not able to make things bold, italics, since that popup is not coming, and even the toolbar

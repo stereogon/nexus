@@ -15,16 +15,18 @@ import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { useEffect, useRef, useState, type Ref } from "react";
 
-import { barFor, formatStateOf, pickedByHandle } from "../notes/markSelection";
+import { formatStateOf, pickedByHandle } from "../notes/markSelection";
+import { notesFind, type NotesFind } from "../notes/findInNotes";
 import { layoutFor, notesExtensions, pageLayout } from "./notesExtensions";
 import type { FormatState } from "./NotesFormatBar";
+import { NotesFindBar } from "./NotesFindBar";
 import { BlockHandles } from "./BlockHandles";
 import { HeadingRail } from "./HeadingRail";
 import { ChartForm } from "./ChartForm";
 import { SlashMenu } from "./SlashMenu";
 import { TablePicker } from "./TablePicker";
 import { turnInto } from "./blockMenus";
-import { NotesFormatting } from "./NotesFormatting";
+import { formatOf, NotesFormatting } from "./NotesFormatting";
 import { useNotesHandle, type NotesHandle } from "./useNotesHandle";
 import type { MenuAt } from "./menuPlacement";
 
@@ -37,22 +39,6 @@ import { cellFormatting } from "../notes/preview/tableCellFormat";
 import { setHeading, type PageHeading } from "../notes/pageHeading";
 
 export type { NotesHandle };
-
-/**
- * What the format controls show: for the table cell being typed in, if there is one, or
- * else for the editor's selection. A block picked with ⋮⋮ puts the bar away: the block's
- * own menu is opening.
- */
-function formatOf(view: EditorView, picked: boolean): { at: MenuAt | null; state: FormatState; selected: boolean; inCell: boolean } {
-  return (
-    cellFormatting(view) ?? {
-      at: picked ? null : barFor(view),
-      state: formatStateOf(view),
-      selected: !view.state.selection.main.empty,
-      inCell: false,
-    }
-  );
-}
 
 export function NotesEditor({
   text,
@@ -119,6 +105,8 @@ export function NotesEditor({
   const [tableLine, setTableLine] = useState<TableLine | null>(null);
   // The "/" menu's session, while one is open.
   const [slash, setSlash] = useState<SlashSession | null>(null);
+  // Find and replace, while its bar is open.
+  const [finding, setFinding] = useState<NotesFind | null>(null);
   const changed = useRef(onChange);
   const cited = useRef(onCite);
   const ready = useRef(onReady);
@@ -161,6 +149,7 @@ export function NotesEditor({
           onTable: setTableLine,
           onUpdate: (update) => {
             setSlash(update.state.field(slashSession, false) ?? null);
+            setFinding(update.state.field(notesFind, false) ?? null);
 
             if (update.docChanged) {
               changed.current(update.state.doc.toString());
@@ -257,6 +246,7 @@ export function NotesEditor({
           view={view}
         />
       )}
+      {finding !== null && <NotesFindBar find={finding} view={view} />}
       <div className="notes-body" ref={body}>
         <div className="notes-editor" ref={host} />
         {viewReady && <BlockHandles box={body} text={current} view={view} />}

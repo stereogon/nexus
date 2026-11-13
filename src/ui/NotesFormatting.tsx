@@ -6,10 +6,26 @@
 import type { EditorView } from "@codemirror/view";
 import type { RefObject } from "react";
 
-import { formatBlock, formatInline, formatLink, markSelection } from "../notes/markSelection";
-import { activeCell, formatCell } from "../notes/preview/tableCellFormat";
+import { barFor, formatBlock, formatInline, formatLink, formatStateOf, markSelection } from "../notes/markSelection";
+import { activeCell, cellFormatting, formatCell } from "../notes/preview/tableCellFormat";
 import type { MenuAt } from "./menuPlacement";
 import { NotesFormatBar, NotesFormatStrip, type FormatState } from "./NotesFormatBar";
+
+/**
+ * What the format controls show: for the table cell being typed in, if there is one, or
+ * else for the editor's selection. A block picked with ⋮⋮ puts the bar away: the block's
+ * own menu is opening.
+ */
+export function formatOf(view: EditorView, picked: boolean): { at: MenuAt | null; state: FormatState; selected: boolean; inCell: boolean } {
+  return (
+    cellFormatting(view) ?? {
+      at: picked ? null : barFor(view),
+      state: formatStateOf(view),
+      selected: !view.state.selection.main.empty,
+      inCell: false,
+    }
+  );
+}
 
 export function NotesFormatting({
   view,

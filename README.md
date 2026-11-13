@@ -106,6 +106,8 @@ The screenshots use the test suite's sample vault, not real notes. They are reta
   grid of labels and values (paste cells straight from a spreadsheet). A drawn chart has
   an **Edit chart** button that reopens it. Underneath it is a ```` ```chart ```` block of
   JSON, which can also be written by hand.
+- **Find and replace** in the notes with `⌘F` while writing: Enter and Shift-Enter step
+  through the matches, Replace changes the one shown, Replace all changes every one.
 - Paste or drop images. They are saved into the item's `assets/` folder.
 - Paste from the web or Google Docs and the formatting comes as Markdown: headings, lists,
   bold, links, code, tables. Paste a link over selected words to make them a link. ⌘⇧V
