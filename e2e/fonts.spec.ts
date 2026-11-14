@@ -1,6 +1,6 @@
 /**
  * The window's font (2026-11-14, at the user's request, after Slack's setting): the theme's
- * own, Readable or Mono, chosen in Settings and drawn at once in the interface and the notes;
+ * own, Readable, Mono or System, chosen in Settings and drawn at once in the interface and the notes;
  * Funky brings its own, Recursive; and the one this device chose is the one it opens in.
  */
 import { expect, test, type Page } from "@playwright/test";
@@ -21,7 +21,7 @@ async function open(page: Page, fixture = standardFixture()): Promise<void> {
   await openLecture(page, READING.title);
 }
 
-test("choosing Readable or Mono draws the interface and the notes in it, and Theme undoes it", async ({ page }) => {
+test("choosing Readable, Mono or System draws the interface and the notes in it, and Theme undoes it", async ({ page }) => {
   await open(page);
   expect(await family(page, UI)).toMatch(/^"?IBM Plex Sans/u);
   expect(await family(page, NOTES)).toMatch(/^"?Literata/u);
@@ -37,6 +37,11 @@ test("choosing Readable or Mono draws the interface and the notes in it, and The
   await fonts(page).getByRole("radio", { name: /Mono/u }).click();
   expect(await family(page, UI)).toMatch(/^"?IBM Plex Mono/u);
   expect(await family(page, NOTES)).toMatch(/^"?IBM Plex Mono/u);
+
+  await fonts(page).getByRole("radio", { name: /System/u }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-font", "system");
+  expect(await family(page, UI)).toMatch(/^-apple-system/u);
+  expect(await family(page, NOTES)).toMatch(/^-apple-system/u);
 
   await fonts(page).getByRole("radio", { name: /^Theme/u }).click();
   expect(await family(page, NOTES)).toMatch(/^"?Literata/u);

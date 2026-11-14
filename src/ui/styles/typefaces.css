@@ -1,6 +1,6 @@
 /**
  * The window's font (2026-11-14, at the user's request, after Slack's setting): the theme's
- * own, Readable or Mono, chosen in Settings (`FontChoices`), and the face a theme brings.
+ * own, Readable, Mono or System, chosen in Settings (`FontChoices`), and the face a theme brings.
  *
  * Only the interface and the notes' prose change. Code, paths and keys stay in Plex Mono,
  * and the page is the document's own. Keyed on `data-theme`, which `applyTheme` writes, and
@@ -18,7 +18,8 @@
 /* A chosen font is the person's over the theme's, and brings the brand's headings back.
    After the theme's rule and as specific, so it wins in Funky too. */
 :root[data-font="readable"],
-:root[data-font="mono"] {
+:root[data-font="mono"],
+:root[data-font="system"] {
   --font-brand: "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
@@ -27,17 +28,24 @@
   --font-prose: "Atkinson Hyperlegible Next", -apple-system, sans-serif;
 }
 
+/* The Mac's own face, which needs nothing bundled: the system picks San Francisco's Text or
+   Display cut for the size, which is what makes it read well small. */
+:root[data-font="system"] {
+  --font-ui: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-prose: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+}
+
 :root[data-font="mono"] {
   --font-ui: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   --font-prose: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 /* ---------------------------------------------------------------------------------
-   Choosing a font in Settings: three cards, each with a sample in its own face.
+   Choosing a font in Settings: four cards, two by two, each a sample in its own face.
    --------------------------------------------------------------------------------- */
 .font-choices {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -82,6 +90,10 @@
 
 .font-choice[data-font="mono"] .font-sample {
   font-family: "IBM Plex Mono", monospace;
+}
+
+.font-choice[data-font="system"] .font-sample {
+  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 }
 
 .font-sample {

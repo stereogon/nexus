@@ -478,6 +478,25 @@ a rail at the window's edge at most 48px wide, Settings at its foot opening the 
 the library opened from it and shown pressed; gone again with the sidebar. The hiding journey
 now measures the title's start from the window's edge. Sabotage: without the rail, it fails.
 
+**2026-11-14 · Sidebar text larger, and a System font**
+The user, comparing Notion's sidebar: *"why does our text in the app look a bit weird? … ours
+look pretty less readable … is it just because our has small font size?"* Not only that. Rows
+were 13px at weight 400; Notion's are about 14px and medium. Plex Sans has no small optical
+size, where San Francisco switches to its Text cut, looser and more open, below 20pt. And the
+app's `-webkit-font-smoothing: antialiased` draws regular weights thinner on a light ground.
+The user chose: *"lets fix and add another font option (system)"*.
+
+- **Rows** are 14px at 450 (Plex Sans is bundled variable, so 450 is drawn, not rounded); the
+  open one 600, up from 500, so it still stands apart.
+- **System**, a fourth font beside Theme, Readable and Mono: `-apple-system` for the interface
+  and the notes' prose, nothing bundled, so nothing to license. Stored as `system` in
+  `font.txt`; an older build reading it falls back to the theme's, as for any unknown word.
+  The Settings cards are now two by two.
+- Font smoothing is left as it is; it is app-wide, and worth judging on its own after these.
+
+Verified: gate green. Rust: `system` round-trips and parses. Unit: four choices, System
+chosen. Journey: System draws the interface and the notes in `-apple-system`.
+
 **2026-11-14 · Pages: notes inside notes**
 The user: *"ability to create a page inside another page. this page won't be visible on the
 sidebar … when the page is opened it opens in the same way as the previous one alongside the

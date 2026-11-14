@@ -79,13 +79,15 @@ describe("the foot of the sidebar", () => {
 
     const fonts = within(screen.getByRole("radiogroup", { name: "Font" }));
 
-    expect(fonts.getAllByRole("radio")).toHaveLength(3);
+    expect(fonts.getAllByRole("radio")).toHaveLength(4);
     expect(fonts.getByRole("radio", { name: /^Theme/u }).getAttribute("aria-checked")).toBe("true");
 
     fireEvent.click(fonts.getByRole("radio", { name: /Readable/u }));
     expect(props.onChooseFont).toHaveBeenCalledWith("readable");
     fireEvent.click(fonts.getByRole("radio", { name: /Mono/u }));
     expect(props.onChooseFont).toHaveBeenCalledWith("mono");
+    fireEvent.click(fonts.getByRole("radio", { name: /System/u }));
+    expect(props.onChooseFont).toHaveBeenCalledWith("system");
     expect(screen.getByRole("dialog", { name: "Settings" })).not.toBeNull();
   });
 

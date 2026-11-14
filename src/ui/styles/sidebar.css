@@ -121,8 +121,10 @@ button.search-open .kbd {
   border-radius: 7px;
   color: var(--row-text);
   font-family: var(--font-ui);
-  font-size: 13px;
-  font-weight: 400;
+  /* 14px and a touch over regular (2026-11-14): at 13px and 400, Plex read thin beside
+     Notion's sidebar. Plex Sans is bundled as a variable face, so 450 is drawn, not rounded. */
+  font-size: 14px;
+  font-weight: 450;
   text-align: left;
 }
 
@@ -132,7 +134,7 @@ button.search-open .kbd {
 
 .lecture-row[data-open="true"] button.open {
   color: var(--accent);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 /* The canvas shows two-digit prefixes and sizes this at 16px. Real folders here are named

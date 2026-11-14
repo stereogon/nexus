@@ -1,5 +1,6 @@
 //! Which font this device draws the window in (2026-11-14, at the user's request, after
-//! Slack's setting): the theme's own, a face made for legibility, or monospace.
+//! Slack's setting): the theme's own, a face made for legibility, monospace, or the Mac's
+//! own (added the same day, at the user's request, after comparing Notion's sidebar).
 //!
 //! `font.txt` in `~/Library/Application Support/Nexus/`, beside [`crate::theme`] and
 //! [`crate::window_layout`] and for the same reasons: §3 puts per-device state outside the
@@ -30,6 +31,8 @@ pub enum Font {
     Readable,
     /// IBM Plex Mono, everywhere.
     Mono,
+    /// The system's own face: San Francisco on macOS, as Apple's apps and Notion use.
+    System,
 }
 
 impl Font {
@@ -40,13 +43,14 @@ impl Font {
             Self::Theme => "theme",
             Self::Readable => "readable",
             Self::Mono => "mono",
+            Self::System => "system",
         }
     }
 
     /// The font `word` names, or `None` if it names none.
     #[must_use]
     pub fn from_word(word: &str) -> Option<Self> {
-        [Self::Theme, Self::Readable, Self::Mono]
+        [Self::Theme, Self::Readable, Self::Mono, Self::System]
             .into_iter()
             .find(|font| font.word() == word)
     }

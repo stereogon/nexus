@@ -18,6 +18,9 @@ fn a_recorded_font_comes_back() {
     remember(&base, Font::Mono).unwrap();
     assert_eq!(recall(&base), Font::Mono);
 
+    remember(&base, Font::System).unwrap();
+    assert_eq!(recall(&base), Font::System);
+
     remember(&base, Font::Theme).unwrap();
     assert_eq!(recall(&base), Font::Theme);
 }
@@ -42,6 +45,10 @@ fn the_stored_word_is_what_the_window_sends() {
     assert_eq!(
         serde_json::from_str::<Font>("\"mono\"").unwrap(),
         Font::Mono
+    );
+    assert_eq!(
+        serde_json::from_str::<Font>("\"system\"").unwrap(),
+        Font::System
     );
     assert!(serde_json::from_str::<Font>("\"comic\"").is_err());
 }
