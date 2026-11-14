@@ -70,7 +70,8 @@
 :root[data-layout="islands"] .sidebar-rail,
 :root[data-layout="islands"] .viewer,
 :root[data-layout="islands"] .notes-pane,
-:root[data-layout="islands"] .panes > .pane {
+:root[data-layout="islands"] .panes > .pane,
+:root[data-layout="islands"] .side-panel {
   border: none;
   border-radius: 10px;
   overflow: hidden;
@@ -80,6 +81,12 @@
 /* The gap between islands is the divider's, so dragging still works between them. */
 :root[data-layout="islands"] .pane-divider {
   flex: 0 0 6px;
+}
+
+/* The error panel and the item editor open at the window's right with no divider before
+   them, so each keeps its gap itself, as the rail does. */
+:root[data-layout="islands"] .side-panel {
+  margin-left: 6px;
 }
 
 /* The rail beside a pane has no divider, so it keeps its gap itself. */

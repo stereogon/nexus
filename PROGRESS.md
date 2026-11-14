@@ -478,6 +478,13 @@ a rail at the window's edge at most 48px wide, Settings at its foot opening the 
 the library opened from it and shown pressed; gone again with the sidebar. The hiding journey
 now measures the title's start from the window's edge. Sabotage: without the rail, it fails.
 
+**2026-11-14 · The error panel and item editor are islands too**
+The user: *"you haven't put the islands theme to the diagnostics page"*. Both open as a
+`.side-panel` in the pane row, which the Islands rule did not name, so they stayed flush
+with a hard border. Now rounded and ringed like the other panes, with their own 6px gap since
+no divider comes before them. Verified: gate green; a journey opens ⌘0 in Islands and checks
+the radius and the gap to the notes, and fails with the rule removed.
+
 **2026-11-14 · Sidebar text larger, and a System font**
 The user, comparing Notion's sidebar: *"why does our text in the app look a bit weird? … ours
 look pretty less readable … is it just because our has small font size?"* Not only that. Rows

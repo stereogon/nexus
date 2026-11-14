@@ -52,3 +52,19 @@ test("the window opens in the layout this device last chose, the hidden sidebar'
   // Off the window's edge, on the base, as the other islands are.
   expect((await page.locator(".sidebar-rail").boundingBox())?.x ?? 0).toBeGreaterThanOrEqual(6);
 });
+
+test("the error panel opens as an island too, apart from the pane beside it", async ({ page }) => {
+  await openNexus(page, { ...standardFixture(), layout: "islands" });
+  await openLecture(page, READING.title);
+  await page.keyboard.press("Meta+0");
+
+  const panel = page.locator(".side-panel");
+
+  await expect(panel).toBeVisible();
+  expect(await radius(page, ".side-panel")).toBe("10px");
+  // The base shows in the gap between it and the notes.
+  const notes = await page.locator(".notes-pane").boundingBox();
+  const own = await panel.boundingBox();
+
+  expect((own?.x ?? 0) - ((notes?.x ?? 0) + (notes?.width ?? 0))).toBeGreaterThanOrEqual(6);
+});
