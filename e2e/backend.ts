@@ -22,6 +22,7 @@ import type { LectureRow } from "../src/ipc/vault";
 import { annotationHandlers } from "./answers/annotations";
 import { folderHandlers, foldersOf, type Held } from "./answers/folders";
 import { notesHandlers } from "./answers/notes";
+import { pageShelf, pagesHandlers } from "./answers/pages";
 import { searchHandlers } from "./answers/search";
 import { CommandFailure, InLecture, type Handlers } from "./answers/shared";
 import type { Fixture } from "./fixture";
@@ -57,6 +58,7 @@ export function backend(fixture: Fixture): (command: string, args?: InvokeArgs) 
   };
   // Per-device, so kept for the page's life like the real file is kept between launches.
   const paneWidths = new Map<string, number>();
+  const pages = pageShelf(fixture);
   const positions = new Map(Object.entries(fixture.positions ?? {}));
   let lastLecture = fixture.lastLecture ?? null;
   let layout = fixture.layout ?? "classic";
@@ -168,7 +170,8 @@ export function backend(fixture: Fixture): (command: string, args?: InvokeArgs) 
     ...folderHandlers(held),
     ...annotationHandlers(fixture),
     ...notesHandlers(fixture),
-    ...searchHandlers(fixture),
+    ...pagesHandlers(pages),
+    ...searchHandlers(fixture, pages),
   };
 
   return (command, args) => {

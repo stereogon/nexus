@@ -1,0 +1,36 @@
+{
+  "link": {
+    "id": "pg-1",
+    "line": "[Raft \\[draft\\] \\\\ notes](page://pg-1)",
+    "title": "Raft [draft] \\ notes"
+  },
+  "listing": {
+    "pages": [
+      {
+        "cites": [
+          "hl-1"
+        ],
+        "created": "2026-11-14T09:00:00Z",
+        "id": "pg-1",
+        "parent": null,
+        "title": "Ideas"
+      },
+      {
+        "cites": [],
+        "created": "2026-11-14T10:00:00Z",
+        "id": "pg-2",
+        "parent": "pg-1",
+        "title": "Inside"
+      }
+    ],
+    "unreadable": 1
+  },
+  "opened": {
+    "text": "",
+    "version": "828e4840070178dc"
+  },
+  "saved": {
+    "outcome": "saved",
+    "version": "9e25082a29e80618"
+  }
+}

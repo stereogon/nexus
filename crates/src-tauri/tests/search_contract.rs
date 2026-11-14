@@ -41,6 +41,13 @@ fn the_search_payloads_match_the_committed_fixture() {
         "# Raft\n\nA leader is elected.\n",
     )
     .unwrap();
+    // A page, written by hand so its id and date stay fixed in the fixture.
+    fs::create_dir_all(dir.path().join(RAFT).join("pages")).unwrap();
+    fs::write(
+        dir.path().join(RAFT).join("pages").join("pg-1.md"),
+        "---\nnexus-page: 1\ntitle: \"Leader ideas\"\ncreated: \"2026-11-14T09:00:00Z\"\n---\n\nWhy is the leader elected?\n",
+    )
+    .unwrap();
     fs::write(
         dir.path().join(BROKEN).join("annotations.json"),
         "{ not json",

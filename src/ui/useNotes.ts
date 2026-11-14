@@ -16,6 +16,12 @@
  * Unsaved text is saved when the lecture changes or the pane goes away, so closing a
  * lecture mid-sentence keeps the sentence.
  *
+ * # Pages
+ *
+ * A page (2026-11-14) is a note inside the item's notes, kept at `pages/<id>.md`. It loads
+ * and saves exactly as `notes.md` does, through its own commands, so `page` only chooses
+ * which file; moving to another page is a change of file like a change of lecture.
+ *
  * # Conflicts
  *
  * If `notes.md` changed outside this window, the save writes nothing and this holds both
@@ -24,9 +30,11 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { loadNotes, saveNotes, type Notes } from "../ipc/notes";
+import type { Notes } from "../ipc/notes";
 import { citedIds } from "../notes/citeLinks";
+import { linkedPages } from "../notes/pageLinks";
 import { asCommandError, type CommandError } from "../ipc/vault";
+import { keepOnLeaving, load, write } from "./notesFile";
 
 /** How long typing has to pause before a save. */
 export const SAVE_AFTER_MS = 800;
@@ -44,6 +52,8 @@ export interface NotesState {
   readonly failure: CommandError | null;
   /** The highlights the notes cite, so the document can show which lead somewhere. */
   readonly cited: ReadonlySet<string>;
+  /** The pages the notes link to, so the Pages panel can say which are in the text. */
+  readonly linked: ReadonlySet<string>;
   /** The editor's text changed. */
   readonly change: (text: string) => void;
   /** Save the editor's text over the version on disk, having seen it. */
@@ -52,22 +62,23 @@ export interface NotesState {
   readonly takeTheirs: () => void;
 }
 
-export function useNotes(vault: string, directory: string): NotesState {
+export function useNotes(vault: string, directory: string, page: string | null = null): NotesState {
   const [loaded, setLoaded] = useState<Notes | null>(null);
   const [generation, setGeneration] = useState(0);
   const [status, setStatus] = useState<SaveStatus>("loading");
   const [onDisk, setOnDisk] = useState<Notes | null>(null);
   const [failure, setFailure] = useState<CommandError | null>(null);
   const [cited, setCited] = useState<ReadonlySet<string>>(new Set());
+  const [linked, setLinked] = useState<ReadonlySet<string>>(new Set());
 
   // Replaced only when the set of ids actually changes, so typing an ordinary sentence
   // does not re-render every page of the document.
   const noteCitations = useCallback((text: string) => {
-    const next = new Set(citedIds(text));
+    const keep = (next: Set<string>) => (current: ReadonlySet<string>) =>
+      current.size === next.size && [...next].every((id) => current.has(id)) ? current : next;
 
-    setCited((current) =>
-      current.size === next.size && [...next].every((id) => current.has(id)) ? current : next,
-    );
+    setCited(keep(new Set(citedIds(text))));
+    setLinked(keep(linkedPages(text)));
   }, []);
 
   // Held in refs, not state: the save loop reads the latest of each without re-rendering,
@@ -75,9 +86,14 @@ export function useNotes(vault: string, directory: string): NotesState {
   const text = useRef("");
   const version = useRef<string | null>(null);
   const dirty = useRef(false);
-  const inFlight = useRef(false);
   const blocked = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The save in flight, as the version it will leave the file at (`null` if it does not
+  // save), so leaving the file mid-save can follow on from it.
+  const pending = useRef<Promise<string | null> | null>(null);
+  // Which opening of a file this is. A save that returns after another file has opened
+  // belongs to the one left, and must not touch this one's version or status.
+  const opening = useRef(0);
 
   // Read through functions, as `PdfPage` reads its cancellation flag: typing during a
   // save sets these while the save is awaited, which TypeScript cannot see, and having
@@ -90,19 +106,28 @@ export function useNotes(vault: string, directory: string): NotesState {
       // Nothing unsaved means nothing to write: a debounce timer set while an earlier save
       // was in flight can fire after that save already carried the text, and writing the
       // same bytes again is a change every sync client has to reconcile.
-      if (basedOn === null || inFlight.current || !isDirty()) {
+      if (basedOn === null || pending.current !== null || !isDirty()) {
         return;
       }
 
-      inFlight.current = true;
-      dirty.current = false;
-      setStatus("saving");
-
-      const sending = text.current;
+      const mine = opening.current;
+      const request = write({ vault, directory, page }, text.current, basedOn);
       let succeeded = false;
 
+      dirty.current = false;
+      pending.current = request.then(
+        (outcome) => (outcome.outcome === "saved" ? outcome.version : null),
+        () => null,
+      );
+      setStatus("saving");
+
       try {
-        const outcome = await saveNotes(vault, directory, sending, basedOn);
+        const outcome = await request;
+
+        // Another file opened meanwhile; the flush on leaving this one carries on from here.
+        if (mine !== opening.current) {
+          return;
+        }
 
         if (outcome.outcome === "conflict") {
           blocked.current = true;
@@ -117,13 +142,19 @@ export function useNotes(vault: string, directory: string): NotesState {
         setFailure(null);
         setStatus(isDirty() ? "unsaved" : "saved");
       } catch (thrown: unknown) {
+        if (mine !== opening.current) {
+          return;
+        }
+
         // The text is still in the editor and still marked unsaved; the next change, or
         // leaving the lecture, tries again.
         dirty.current = true;
         setFailure(asCommandError(thrown));
         setStatus("failed");
       } finally {
-        inFlight.current = false;
+        if (mine === opening.current) {
+          pending.current = null;
+        }
       }
 
       // Typing that arrived during a successful save goes next. After a *failed* save it
@@ -133,17 +164,15 @@ export function useNotes(vault: string, directory: string): NotesState {
         await save();
       }
     },
-    [vault, directory],
+    [vault, directory, page],
   );
-
-  // A ref to the latest `save`, for the unmount flush, which must use this lecture's.
-  const latestSave = useRef(save);
-  latestSave.current = save;
 
   useEffect(() => {
     const session = { cancelled: false };
     const live = () => !session.cancelled;
 
+    opening.current += 1;
+    pending.current = null;
     setLoaded(null);
     setStatus("loading");
     setOnDisk(null);
@@ -153,7 +182,7 @@ export function useNotes(vault: string, directory: string): NotesState {
 
     void (async () => {
       try {
-        const notes = await loadNotes(vault, directory);
+        const notes = await load(vault, directory, page);
 
         if (live()) {
           text.current = notes.text;
@@ -180,12 +209,13 @@ export function useNotes(vault: string, directory: string): NotesState {
         timer.current = null;
       }
 
-      // Leaving with unsaved text: save it now rather than lose the last sentence.
+      // Leaving with unsaved text — closing the item, or opening another note or page in
+      // it: save it now, to the file it was written in, rather than lose the last sentence.
       if (dirty.current && !blocked.current) {
-        void latestSave.current();
+        keepOnLeaving({ vault, directory, page }, text.current, version.current, pending.current);
       }
     };
-  }, [vault, directory, noteCitations]);
+  }, [vault, directory, page, noteCitations]);
 
   const change = useCallback(
     (next: string) => {
@@ -237,5 +267,5 @@ export function useNotes(vault: string, directory: string): NotesState {
     setStatus("saved");
   }, [onDisk, noteCitations]);
 
-  return { loaded, generation, status, onDisk, failure, cited, change, keepMine, takeTheirs };
+  return { loaded, generation, status, onDisk, failure, cited, linked, change, keepMine, takeTheirs };
 }

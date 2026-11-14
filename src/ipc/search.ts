@@ -26,6 +26,18 @@ export const VaultSearchSchema = z.object({
           snippet: SnippetSchema,
         }),
       ),
+      /** Its pages whose title or text match (2026-11-14). */
+      pages: z.array(
+        z.object({
+          id: z.string(),
+          title: z.string(),
+          parent: z.string().nullable(),
+          parentTitle: z.string().nullable(),
+          titleMatch: SnippetSchema.nullable(),
+          notes: z.array(z.object({ line: z.number().int().positive(), snippet: SnippetSchema })),
+          noteLines: z.number().int().nonnegative(),
+        }),
+      ),
     }),
   ),
   unreadable: z.number().int().nonnegative(),

@@ -146,6 +146,15 @@ The screenshots use the test suite's sample vault, not real notes. They are reta
 - Clicking a citation scrolls the document to the highlight and pulses it.
 - A highlight that is cited shows a ¶ marker; clicking it scrolls the notes to the citation.
 
+**Pages**
+- A **page** is a note inside a note: type `/page` in the notes, name it, and its link goes
+  where the cursor was. It opens beside the same document, with the way back up above its
+  title; pages can hold pages. Pages never appear in the sidebar, which keeps the item marked
+  open, but ⌘P finds them.
+- The **Pages** button in the notes header lists the pages in the note on screen, puts back
+  the link of one whose link was taken out, and deletes one after asking (it moves to the
+  vault's `.trash`).
+
 **Look**
 - Twenty-four themes in every colour — Paper, Ink, Plain, Graphite, Contrast, Contrast
   Dark, Funky, Solar, Sakura, Sepia, Sky, Meadow, Citrus, Lagoon, Indigo, Neon, Fjord,
@@ -182,7 +191,7 @@ Recorded in [`PROGRESS.md`](./PROGRESS.md) with the reasoning for each:
 - Telling you when LibreOffice is missing (imports wait safely until it is installed).
 - Restyling parts of the UI from the approved design canvas.
 - From the comparison with Notion (2026-11-09), not yet built: find and replace in the notes
-  (needs `@codemirror/search` installed), toggle lists, links between notes with backlinks,
+  (needs `@codemirror/search` installed), toggle lists, links between items with backlinks (pages link within an item),
   colouring for more code languages (Python and others each need a package), and the format
   bar offering Diagram, Chart, Table and Callout. Text colours, underline and columns have
   no Markdown form, so they are left out.
@@ -222,6 +231,7 @@ StudyVault/
         │   └── document.pdf   # What the viewer renders
         ├── notes.md           # Markdown with cite://<id> links
         ├── annotations.json   # Highlights and sticky notes, in page-relative coordinates
+        ├── pages/             # Pages inside the notes: <id>.md, front matter then Markdown
         └── assets/            # Images pasted or dropped into the notes
 ```
 

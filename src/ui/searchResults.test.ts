@@ -34,8 +34,9 @@ const FOUND: VaultSearch = {
       notes: [{ line: 12, snippet: { before: "why a ", matched: "majority", after: "?" } }],
       noteLines: 1,
       marks: [{ id: "h1", page: 4, semantic: "exam", snippet: { before: "votes from a ", matched: "majority", after: "" } }],
+      pages: [],
     },
-    { directory: "gone/item", notes: [{ line: 1, snippet: { before: "", matched: "majority", after: "" } }], noteLines: 1, marks: [] },
+    { directory: "gone/item", notes: [{ line: 1, snippet: { before: "", matched: "majority", after: "" } }], noteLines: 1, marks: [], pages: [] },
   ],
   unreadable: 0,
   truncated: false,
@@ -69,6 +70,35 @@ describe("the search window's results", () => {
     expect(note?.target.kind).toBe("item");
     expect(line?.target).toMatchObject({ kind: "place", at: { kind: "line", line: 12 } });
     expect(mark?.target).toMatchObject({ kind: "place", at: { kind: "highlight", id: "h1" } });
+  });
+
+  it("lists a matching page with the note it lives in, opening the page at its line", () => {
+    const snippet = { before: "", matched: "Majority", after: " ideas" };
+    const pages = [
+      { id: "pg-1", title: "Majority ideas", parent: null, parentTitle: null, titleMatch: snippet, notes: [], noteLines: 0 },
+      {
+        id: "pg-2",
+        title: "Quorums",
+        parent: "pg-1",
+        parentTitle: "Majority ideas",
+        titleMatch: null,
+        notes: [{ line: 3, snippet: { before: "a ", matched: "majority", after: " overlaps" } }],
+        noteLines: 1,
+      },
+    ];
+    const [raft] = FOUND.lectures;
+    const found: VaultSearch = { ...FOUND, lectures: raft === undefined ? [] : [{ ...raft, notes: [], marks: [], pages }] };
+
+    const results = searchResults(LISTING, "majority", found).filter((result) => result.look === "page");
+
+    expect(results.map((result) => [result.group, result.title, result.detail, result.snippet?.matched])).toEqual([
+      ["notes", "Majority ideas", "page in Raft consensus", "Majority"],
+      ["notes", "Quorums", "page in Majority ideas", "majority"],
+    ]);
+    expect(results.map((result) => (result.target.kind === "place" ? result.target.at : null))).toEqual([
+      { kind: "page", page: "pg-1", line: null },
+      { kind: "page", page: "pg-2", line: 3 },
+    ]);
   });
 
   it("drops results for an item removed since the search was asked", () => {

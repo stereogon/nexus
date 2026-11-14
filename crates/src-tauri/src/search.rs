@@ -16,8 +16,10 @@
 
 use std::path::Path;
 
-use lecture_core::{Annotation, HighlightSemantic, LineMatch, RelativePath, SearchQuery, Snippet};
-use lecture_fs::{AnnotationStore, AtomicFsStorage, NotesStore, VaultRoot};
+use lecture_core::{
+    Annotation, HighlightSemantic, LineMatch, PageId, RelativePath, SearchQuery, Snippet,
+};
+use lecture_fs::{AnnotationStore, AtomicFsStorage, NotesStore, PageStore, VaultRoot};
 use serde::Serialize;
 
 use crate::vault::CommandError;
@@ -27,6 +29,9 @@ pub const NOTE_LINES_PER_LECTURE: usize = 3;
 
 /// At most this many highlights of one lecture are listed.
 pub const MARKS_PER_LECTURE: usize = 5;
+
+/// At most this many pages of one lecture are listed.
+pub const PAGES_PER_LECTURE: usize = 5;
 
 /// At most this many results in all, so a one-letter query cannot build a huge answer.
 pub const MAX_RESULTS: usize = 100;
@@ -45,6 +50,26 @@ pub struct MarkHit {
     pub snippet: Snippet,
 }
 
+/// A page whose title or text contains the query (2026-11-14).
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PageHit {
+    /// What `page://` points at, and what the window opens.
+    pub id: String,
+    /// Its name.
+    pub title: String,
+    /// The page it is inside, or `None` for one directly in the item's notes.
+    pub parent: Option<String>,
+    /// That page's name, so the window can say where this one lives.
+    pub parent_title: Option<String>,
+    /// Where in its title, if the title matched.
+    pub title_match: Option<Snippet>,
+    /// Matching lines of its text, the first few.
+    pub notes: Vec<LineMatch>,
+    /// How many lines of its text matched in all.
+    pub note_lines: usize,
+}
+
 /// One lecture's matches.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -57,6 +82,8 @@ pub struct LectureHits {
     pub note_lines: usize,
     /// Its matching highlights and sticky notes, the first few.
     pub marks: Vec<MarkHit>,
+    /// Its pages that match, each with its own lines.
+    pub pages: Vec<PageHit>,
 }
 
 /// What a search of the vault found.
@@ -148,6 +175,7 @@ pub fn find_in_vault(
         return Ok(found);
     };
     let (notes, marks) = stores(vault)?;
+    let pages = PageStore::new(AtomicFsStorage::new(VaultRoot::open(Path::new(vault))?));
     let mut results = 0;
 
     for directory in directories {
@@ -177,13 +205,16 @@ pub fn find_in_vault(
             .take(MARKS_PER_LECTURE)
             .collect();
 
-        if !lines.is_empty() || !hits.is_empty() {
-            results += lines.len() + hits.len();
+        let page_hits = pages_matching(&pages, &bundle, &query);
+
+        if !lines.is_empty() || !hits.is_empty() || !page_hits.is_empty() {
+            results += lines.len() + hits.len() + page_hits.len();
             found.lectures.push(LectureHits {
                 directory: directory.clone(),
                 notes: lines,
                 note_lines,
                 marks: hits,
+                pages: page_hits,
             });
         }
     }
@@ -215,6 +246,44 @@ pub fn marks_in_vault(vault: &str, directories: &[String]) -> Result<VaultMarks,
     }
 
     Ok(found)
+}
+
+/// The pages of `bundle` whose title or text contain `query`, at most
+/// [`PAGES_PER_LECTURE`]. A page that cannot be read is passed over, as one lecture's
+/// damaged notes are: opening it is where it is explained.
+fn pages_matching(pages: &PageStore, bundle: &RelativePath, query: &SearchQuery) -> Vec<PageHit> {
+    let Ok(listing) = pages.list(bundle) else {
+        return Vec::new();
+    };
+    let title_of = |id: &str| {
+        listing
+            .pages
+            .iter()
+            .find(|page| page.id == id)
+            .map(|page| page.title.clone())
+    };
+
+    listing
+        .pages
+        .iter()
+        .cloned()
+        .filter_map(|page| {
+            let body = pages.load(bundle, &PageId::parse(&page.id).ok()?).ok()??;
+            let (lines, note_lines) = query.lines(&body.text, NOTE_LINES_PER_LECTURE);
+            let title_match = query.snippet(&page.title);
+
+            (title_match.is_some() || !lines.is_empty()).then(|| PageHit {
+                parent_title: page.parent.as_deref().and_then(title_of),
+                id: page.id,
+                title: page.title,
+                parent: page.parent,
+                title_match,
+                notes: lines,
+                note_lines,
+            })
+        })
+        .take(PAGES_PER_LECTURE)
+        .collect()
 }
 
 fn stores(vault: &str) -> Result<(NotesStore, AnnotationStore), CommandError> {

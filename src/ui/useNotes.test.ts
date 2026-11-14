@@ -10,9 +10,12 @@ import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { loadNotes, saveNotes } from "../ipc/notes";
+import { clearErrors } from "./errorLog";
 import { SAVE_AFTER_MS, useNotes } from "./useNotes";
 
 vi.mock("../ipc/notes", () => ({ loadNotes: vi.fn(), saveNotes: vi.fn() }));
+// Pages are `useNotesPages.test.ts`'s; mocked here so nothing reaches a real IPC.
+vi.mock("../ipc/pages", () => ({ loadPage: vi.fn(), savePage: vi.fn() }));
 
 const load = vi.mocked(loadNotes);
 const save = vi.mocked(saveNotes);
@@ -21,6 +24,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   load.mockResolvedValue({ text: "# Week 2\n", version: "v1" });
   save.mockResolvedValue({ outcome: "saved", version: "v2" });
+  clearErrors();
 });
 
 afterEach(() => {

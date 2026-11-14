@@ -3,7 +3,14 @@
  * toggle, and the buttons that change the view — Notes only beside a document; Show
  * document and Close when the notes are on their own. Split from `NotesPane` on
  * 2026-11-09, when those buttons became icons and the pane passed the line limit.
+ *
+ * With a page open (2026-11-14) the header names where it is — the item, then each page
+ * down to this one, every step but the last a way back up — and the Pages button lists the
+ * pages inside the note on screen.
  */
+import { Fragment, type ReactNode } from "react";
+
+import type { NoteKey } from "./pageTree";
 import type { SaveStatus } from "./useNotes";
 
 /** What the header says about the last save. Plain words: the reader is not a developer. */
@@ -25,8 +32,17 @@ export interface Alone {
   readonly onShowDocument?: () => void;
 }
 
+/** One step of a page's path: a note, and its name. */
+export interface Crumb {
+  readonly note: NoteKey;
+  readonly title: string;
+}
+
 export function NotesHeader({
   alone,
+  trail,
+  onCrumb,
+  pages,
   status,
   formatting,
   onFormatting,
@@ -34,6 +50,11 @@ export function NotesHeader({
   onNotesOnly,
 }: {
   readonly alone: Alone | null;
+  /** From the item's notes down to the page open; empty while the item's own notes are. */
+  readonly trail: readonly Crumb[];
+  readonly onCrumb: (note: NoteKey) => void;
+  /** The Pages button. */
+  readonly pages: ReactNode;
   readonly status: SaveStatus;
   readonly formatting: boolean;
   readonly onFormatting: () => void;
@@ -42,13 +63,41 @@ export function NotesHeader({
 }) {
   return (
     <header className="notes-bar pane-head" data-tauri-drag-region="">
-      <span className="notes-title" data-tauri-drag-region="">
-        {alone !== null && alone.place !== "" && <span className="viewer-place">{`${alone.place} /`}</span>}
-        {alone === null ? "Notes" : alone.title}
-      </span>
+      {trail.length === 0 ? (
+        <span className="notes-title" data-tauri-drag-region="">
+          {alone !== null && alone.place !== "" && <span className="viewer-place">{`${alone.place} /`}</span>}
+          {alone === null ? "Notes" : alone.title}
+        </span>
+      ) : (
+        <nav aria-label="Where this page is" className="notes-trail">
+          {trail.map((crumb, index) =>
+            index === trail.length - 1 ? (
+              <span aria-current="page" className="notes-trail-here" key={crumb.note ?? ""}>
+                {crumb.title}
+              </span>
+            ) : (
+              <Fragment key={crumb.note ?? ""}>
+                <button
+                  className="notes-trail-step"
+                  onClick={() => {
+                    onCrumb(crumb.note);
+                  }}
+                  type="button"
+                >
+                  {crumb.title}
+                </button>
+                <span aria-hidden="true" className="notes-trail-slash">
+                  /
+                </span>
+              </Fragment>
+            ),
+          )}
+        </nav>
+      )}
       <span aria-live="polite" className={`notes-status ${status}`}>
         {STATUS_TEXT[status]}
       </span>
+      {pages}
       <button
         aria-label="Formatting"
         aria-pressed={formatting}

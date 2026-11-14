@@ -10,6 +10,7 @@
 import { z } from "zod";
 
 import type { Fixture } from "../fixture";
+import type { PageShelf } from "./pages";
 import { type Handlers } from "./shared";
 
 const InVault = z.object({ vault: z.string(), directories: z.array(z.string()) });
@@ -22,18 +23,23 @@ function snippet(text: string, query: string): { before: string; matched: string
     : { before: text.slice(0, at), matched: text.slice(at, at + query.length), after: text.slice(at + query.length) };
 }
 
-export function searchHandlers(fixture: Fixture): Handlers {
+/** Each line of `text` that holds `query`, numbered from 1. */
+function linesWith(text: string, query: string) {
+  return text.split("\n").flatMap((line, index) => {
+    const found = snippet(line, query);
+
+    return found === null ? [] : [{ line: index + 1, snippet: found }];
+  });
+}
+
+export function searchHandlers(fixture: Fixture, shelf: PageShelf): Handlers {
   return {
     search_vault: (args) => {
       const { directories } = InVault.parse(args);
       const query = z.object({ query: z.string() }).parse(args).query.trim();
 
       const lectures = directories.flatMap((directory) => {
-        const notes = (fixture.notes?.[directory] ?? "").split("\n").flatMap((line, index) => {
-          const found = snippet(line, query);
-
-          return found === null ? [] : [{ line: index + 1, snippet: found }];
-        });
+        const notes = linesWith(fixture.notes?.[directory] ?? "", query);
         const marks = (fixture.annotations[directory] ?? []).flatMap((annotation) => {
           const words = annotation.kind === "textHighlight" ? annotation.quote : annotation.kind === "textBox" ? annotation.text : (annotation.caption ?? "");
           const found = snippet(words, query);
@@ -43,7 +49,27 @@ export function searchHandlers(fixture: Fixture): Handlers {
             : [{ id: annotation.id, page: annotation.page, semantic: annotation.kind === "textBox" ? null : annotation.semantic, snippet: found }];
         });
 
-        return notes.length === 0 && marks.length === 0 ? [] : [{ directory, notes, noteLines: notes.length, marks }];
+        const held = shelf.get(directory) ?? [];
+        const pages = held.flatMap((page) => {
+          const titleMatch = snippet(page.title, query);
+          const lines = linesWith(page.text, query);
+
+          return titleMatch === null && lines.length === 0
+            ? []
+            : [
+                {
+                  id: page.id,
+                  title: page.title,
+                  parent: page.parent,
+                  parentTitle: held.find((above) => above.id === page.parent)?.title ?? null,
+                  titleMatch,
+                  notes: lines,
+                  noteLines: lines.length,
+                },
+              ];
+        });
+
+        return notes.length === 0 && marks.length === 0 && pages.length === 0 ? [] : [{ directory, notes, noteLines: notes.length, marks, pages }];
       });
 
       return { lectures, unreadable: 0, truncated: false };

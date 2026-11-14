@@ -22,9 +22,8 @@ import type { FormatState } from "./NotesFormatBar";
 import { NotesFindBar } from "./NotesFindBar";
 import { BlockHandles } from "./BlockHandles";
 import { HeadingRail } from "./HeadingRail";
-import { ChartForm } from "./ChartForm";
+import { EditorDialogs, type ChartOpen } from "./EditorDialogs";
 import { SlashMenu } from "./SlashMenu";
-import { TablePicker } from "./TablePicker";
 import { turnInto } from "./blockMenus";
 import { formatOf, NotesFormatting } from "./NotesFormatting";
 import { useNotesHandle, type NotesHandle } from "./useNotesHandle";
@@ -32,9 +31,10 @@ import type { MenuAt } from "./menuPlacement";
 
 import { citationOffsets, nextOccurrence } from "../notes/citeLinks";
 import { flashLine } from "../notes/flash";
-import { writeChart, type ChartAt } from "../notes/chartEditing";
+
 import { slashSession, type SlashSession } from "../notes/slash";
-import { insertTable, type TableLine } from "../notes/tableInsert";
+import type { PageLine } from "../notes/pageLinks";
+import type { TableLine } from "../notes/tableInsert";
 import { cellFormatting } from "../notes/preview/tableCellFormat";
 import { setHeading, type PageHeading } from "../notes/pageHeading";
 
@@ -53,6 +53,9 @@ export function NotesEditor({
   formatting,
   page,
   heading,
+  onPage,
+  onUp,
+  onNewPage,
 }: {
   /** The text to start from, taken afresh only when `generation` changes. */
   readonly text: string;
@@ -77,6 +80,12 @@ export function NotesEditor({
   readonly page: boolean;
   /** The title and the line under it, drawn above the first line (`pageHeading`). */
   readonly heading: PageHeading;
+  /** A page link was pressed. */
+  readonly onPage: (id: string) => void;
+  /** A page's way up was pressed. */
+  readonly onUp: () => void;
+  /** Makes a page named `title` inside these notes, resolving to the line that links it. */
+  readonly onNewPage: (title: string) => Promise<string>;
 }) {
   const host = useRef<HTMLDivElement | null>(null);
   const body = useRef<HTMLDivElement | null>(null);
@@ -100,9 +109,11 @@ export function NotesEditor({
   // The latest callbacks, read by the view's listeners. Rebuilding the view to pick up a
   // new callback would throw away the cursor and the undo history.
   // The chart form, open on a block or a new chart's line, and why its last save failed.
-  const [chart, setChart] = useState<{ readonly at: ChartAt; readonly failure: string | null } | null>(null);
+  const [chart, setChart] = useState<ChartOpen>(null);
   // The table picker, open for a new table's line.
   const [tableLine, setTableLine] = useState<TableLine | null>(null);
+  // Naming a new page, for the line `/page` was chosen on.
+  const [pageLine, setPageLine] = useState<PageLine | null>(null);
   // The "/" menu's session, while one is open.
   const [slash, setSlash] = useState<SlashSession | null>(null);
   // Find and replace, while its bar is open.
@@ -112,6 +123,10 @@ export function NotesEditor({
   const ready = useRef(onReady);
   const images = useRef(imageUrl);
   const pasted = useRef(onPasteImage);
+  const paged = useRef(onPage);
+  const upped = useRef(onUp);
+  paged.current = onPage;
+  upped.current = onUp;
   images.current = imageUrl;
   pasted.current = onPasteImage;
   changed.current = onChange;
@@ -141,6 +156,13 @@ export function NotesEditor({
           onCite: (id) => {
             cited.current(id);
           },
+          onPage: (id) => {
+            paged.current(id);
+          },
+          onUp: () => {
+            upped.current();
+          },
+          onNewPage: setPageLine,
           imageUrl: (src) => images.current(src),
           keepImage: () => pasted.current,
           onChart: (at) => {
@@ -202,8 +224,8 @@ export function NotesEditor({
 
   // A rename or new tags redraw the heading in place, keeping the cursor and the history.
   useEffect(() => {
-    view.current?.dispatch({ effects: setHeading.of({ title: heading.title, meta: heading.meta }) });
-  }, [heading.title, heading.meta]);
+    view.current?.dispatch({ effects: setHeading.of({ title: heading.title, meta: heading.meta, up: heading.up }) });
+  }, [heading.title, heading.meta, heading.up]);
 
   // Where each highlight's citation was last shown, so the next press moves on from it.
   const shown = useRef(new Map<string, number>());
@@ -252,37 +274,17 @@ export function NotesEditor({
         {viewReady && <BlockHandles box={body} text={current} view={view} />}
         {viewReady && <HeadingRail text={current} view={view} />}
       </div>
-      {chart !== null && (
-        <ChartForm
-          failure={chart.failure}
-          onClose={() => {
-            setChart(null);
-            view.current?.focus();
-          }}
-          onSave={(source) => {
-            const failure = view.current === null ? "The notes are not open." : writeChart(view.current, chart.at, source);
-
-            setChart(failure === null ? null : { ...chart, failure });
-          }}
-          source={chart.at.source}
-        />
-      )}
       {slash !== null && view.current !== null && <SlashMenu items={turnInto(view.current)} session={slash} view={view.current} />}
-      {tableLine !== null && (
-        <TablePicker
-          onClose={() => {
-            setTableLine(null);
-            view.current?.focus();
-          }}
-          onPick={(rows, columns) => {
-            setTableLine(null);
-
-            if (view.current !== null) {
-              insertTable(view.current, tableLine, rows, columns);
-            }
-          }}
-        />
-      )}
+      <EditorDialogs
+        chart={chart}
+        onChart={setChart}
+        onNewPage={onNewPage}
+        onPageLine={setPageLine}
+        onTableLine={setTableLine}
+        pageLine={pageLine}
+        tableLine={tableLine}
+        view={view}
+      />
     </>
   );
 }

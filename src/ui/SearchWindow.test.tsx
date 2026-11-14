@@ -44,6 +44,7 @@ const FOUND: VaultSearch = {
       notes: [{ line: 3, snippet: { before: "every ", matched: "raft", after: " log" } }],
       noteLines: 1,
       marks: [],
+      pages: [],
     },
   ],
   unreadable: 0,

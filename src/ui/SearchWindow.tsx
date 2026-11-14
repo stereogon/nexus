@@ -11,7 +11,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Snippet, VaultSearch } from "../ipc/search";
 import type { CommandError } from "../ipc/vault";
 import { Failure } from "./Failure";
-import { FolderIcon, NoteIcon } from "./icons";
+import { FolderIcon, NoteIcon, PageIcon } from "./icons";
 import { GROUP_TITLE, searchResults, type SearchResult } from "./searchResults";
 import { SEMANTIC_GLYPH, SEMANTIC_LABEL } from "./semantics";
 import type { Listing } from "./sidebarRows";
@@ -34,6 +34,8 @@ function Look({ result }: { readonly result: SearchResult }) {
       return <FolderIcon />;
     case "note":
       return <NoteIcon />;
+    case "page":
+      return <PageIcon />;
     case "document":
       return (
         <svg aria-hidden="true" fill="none" height="16" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.4" viewBox="0 0 16 16" width="16">

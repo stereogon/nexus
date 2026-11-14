@@ -19,6 +19,7 @@ pub mod import;
 pub mod layout;
 pub mod notes;
 pub mod notice;
+pub mod pages;
 pub mod picker;
 pub mod position;
 pub mod reorganize;
@@ -73,6 +74,11 @@ pub fn run() -> Result<(), tauri::Error> {
             restore_annotation,
             notes::load_notes,
             notes::save_notes,
+            pages::list_pages,
+            pages::create_page,
+            pages::load_page,
+            pages::save_page,
+            pages::delete_page,
             assets::save_asset,
             dropped_image::save_dropped_image,
             remember_vault,

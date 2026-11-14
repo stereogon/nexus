@@ -25,6 +25,8 @@ mod lecture_number;
 mod manifest;
 mod normalized_rect;
 mod order_key;
+mod page;
+mod page_file;
 mod page_number;
 mod path_template;
 mod relative_path;
@@ -69,6 +71,11 @@ pub use manifest::{
 };
 pub use normalized_rect::NormalizedRect;
 pub use order_key::OrderKey;
+pub use page::{
+    MAX_PAGE_TITLE_CHARS, PAGE_FORMAT_VERSION, PAGE_SCHEME, PAGES_DIR_NAME, PageId,
+    page_and_descendants, page_link, page_title,
+};
+pub use page_file::{PAGE_FILE_PATTERN, PageFile, PageHeader, PageUnreadable};
 pub use page_number::PageNumber;
 pub use path_template::{PathTemplate, Unnameable};
 pub use relative_path::{MAX_BUNDLE_DEPTH, MAX_DEPTH, MAX_WITHIN_BUNDLE_DEPTH, RelativePath};

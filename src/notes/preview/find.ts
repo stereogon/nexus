@@ -15,6 +15,8 @@
  * keeps "it costs $5 and $6" from becoming maths.
  */
 
+import { PAGE_LINK_LINE, unescapedTitle } from "../pageLinks";
+
 export type Preview =
   | {
       readonly kind: "citation";
@@ -26,7 +28,8 @@ export type Preview =
     }
   | { readonly kind: "math"; readonly from: number; readonly to: number; readonly tex: string; readonly display: boolean }
   | { readonly kind: "mermaid" | "chart"; readonly from: number; readonly to: number; readonly source: string }
-  | { readonly kind: "image"; readonly from: number; readonly to: number; readonly alt: string; readonly src: string };
+  | { readonly kind: "image"; readonly from: number; readonly to: number; readonly alt: string; readonly src: string }
+  | { readonly kind: "page"; readonly from: number; readonly to: number; readonly id: string; readonly title: string };
 
 /** The citation line `lecture_core::citation_block` writes; see `notes/citation.ts`. */
 const CITATION = /^> 📌 \*\*\[Page (\d+)\]\(cite:\/\/([A-Za-z0-9_-]+)\)\*\*(?:: \*"(.*)"\*)?\s*$/u;
@@ -121,6 +124,13 @@ export function findPreviews(doc: string): Preview[] {
         id: citation[2],
         quote: citation[3] === undefined ? null : unescaped(citation[3]),
       });
+      continue;
+    }
+
+    const linked = PAGE_LINK_LINE.exec(line);
+
+    if (linked?.[1] !== undefined && linked[2] !== undefined) {
+      found.push({ kind: "page", from, to, id: linked[2], title: unescapedTitle(linked[1]) });
       continue;
     }
 

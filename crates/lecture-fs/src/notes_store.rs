@@ -77,33 +77,12 @@ impl NotesStore {
     /// [`CoreError::Io`] if the file cannot be read, and a containment error if `bundle`
     /// does not resolve safely inside the vault.
     pub fn load(&self, bundle: &RelativePath) -> Result<Notes, CoreError> {
-        let path = notes_path(bundle)?;
-
-        let bytes = match self.storage.read(&path) {
-            Ok(bytes) => bytes,
-            Err(error) if is_missing(&error) => Vec::new(),
-            Err(error) => return Err(error),
+        let empty = || Notes {
+            text: String::new(),
+            version: fingerprint_hex(&[]),
         };
-        let version = fingerprint_hex(&bytes);
 
-        match String::from_utf8(bytes) {
-            Ok(text) => Ok(Notes { text, version }),
-            Err(error) => {
-                let backup = match self.storage.back_up(&path) {
-                    Ok(at) => BackupOutcome::Saved(at.display().to_string()),
-                    Err(_) => BackupOutcome::Failed,
-                };
-
-                Err(CoreError::StoredFileUnreadable {
-                    file: NOTES_FILE_NAME,
-                    detail: format!(
-                        "it is not UTF-8 text (the first unreadable byte is at position {})",
-                        error.utf8_error().valid_up_to()
-                    ),
-                    backup,
-                })
-            }
-        }
+        Ok(read_text(&self.storage, &notes_path(bundle)?, NOTES_FILE_NAME)?.unwrap_or_else(empty))
     }
 
     /// Writes `text` as the notes of `bundle`, if the file is still at `based_on`.
@@ -129,6 +108,50 @@ impl NotesStore {
         Ok(NotesSave::Saved {
             version: fingerprint_hex(text.as_bytes()),
         })
+    }
+}
+
+/// A text file and the version it was read at, or `None` if there is no such file.
+///
+/// Shared by the notes and by pages (`page_store`), which version and protect their files
+/// the same way.
+///
+/// # Errors
+///
+/// Returns [`CoreError::StoredFileUnreadable`] naming `file` if the bytes are not UTF-8,
+/// having copied them aside first. They are never decoded with replacement characters: the
+/// next save would write those back, and the original bytes would be gone. Also returns
+/// [`CoreError::Io`] if the file cannot be read, and a containment error if `path` does not
+/// resolve safely inside the vault.
+pub(crate) fn read_text(
+    storage: &AtomicFsStorage,
+    path: &RelativePath,
+    file: &'static str,
+) -> Result<Option<Notes>, CoreError> {
+    let bytes = match storage.read(path) {
+        Ok(bytes) => bytes,
+        Err(error) if is_missing(&error) => return Ok(None),
+        Err(error) => return Err(error),
+    };
+    let version = fingerprint_hex(&bytes);
+
+    match String::from_utf8(bytes) {
+        Ok(text) => Ok(Some(Notes { text, version })),
+        Err(error) => {
+            let backup = match storage.back_up(path) {
+                Ok(at) => BackupOutcome::Saved(at.display().to_string()),
+                Err(_) => BackupOutcome::Failed,
+            };
+
+            Err(CoreError::StoredFileUnreadable {
+                file,
+                detail: format!(
+                    "it is not UTF-8 text (the first unreadable byte is at position {})",
+                    error.utf8_error().valid_up_to()
+                ),
+                backup,
+            })
+        }
     }
 }
 

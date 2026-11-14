@@ -38,6 +38,8 @@
 @import "./notes.css";
 @import "./blocks.css";
 @import "./markdown.css";
+@import "./pages.css";
+@import "./pagesPanel.css";
 @import "./pictures.css";
 @import "./tableEditor.css";
 @import "./notesFind.css";

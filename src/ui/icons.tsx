@@ -153,3 +153,31 @@ export function DocumentIcon() {
     </Icon>
   );
 }
+
+/** A page inside a note (2026-11-14): a sheet with a turned corner and two lines on it. */
+export function PageIcon() {
+  return (
+    <Icon size={15}>
+      <path d="M4 2h5.5l3 3v9h-8.5z" />
+      <path d="M9.5 2v3h3M6 8.5h4M6 11h3" />
+    </Icon>
+  );
+}
+
+/** Deleting something that moves to the vault's `.trash`. */
+export function TrashIcon() {
+  return (
+    <Icon size={14}>
+      <path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.5h5.8l.6-8.5" />
+    </Icon>
+  );
+}
+
+/** Putting a link back into the text. */
+export function LinkIcon() {
+  return (
+    <Icon size={14}>
+      <path d="M7 9a3 3 0 004.2 0l2-2a3 3 0 00-4.2-4.2l-.8.8M9 7a3 3 0 00-4.2 0l-2 2a3 3 0 004.2 4.2l.8-.8" />
+    </Icon>
+  );
+}

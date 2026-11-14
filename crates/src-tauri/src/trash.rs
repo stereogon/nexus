@@ -64,7 +64,7 @@ pub fn move_to_trash(vault: &str, directory: &str) -> Result<String, CommandErro
 /// A name in `.trash` nothing holds yet: the item's path with its folders joined by ` - `,
 /// so `CS454/Week 3/raft` is `CS454 - Week 3 - raft` and says where it came from, then
 /// ` 2`, ` 3` … when something deleted earlier already has it.
-fn free_name(
+pub(crate) fn free_name(
     storage: &lecture_fs::AtomicFsStorage,
     trash: &RelativePath,
     from: &RelativePath,

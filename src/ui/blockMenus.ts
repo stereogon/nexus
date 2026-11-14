@@ -7,6 +7,7 @@ import type { EditorView } from "@codemirror/view";
 
 import { blockAt, type Block } from "../notes/blocks";
 import { chartOpener } from "../notes/chartEditing";
+import { pageMaker } from "../notes/pageLinks";
 import { tablePicker } from "../notes/tableInsert";
 import { KINDS, turnsInto, type Block as Kind } from "../notes/format";
 import { formatBlock } from "../notes/markSelection";
@@ -77,6 +78,13 @@ export function turnInto(editor: EditorView): MenuItem[] {
       },
     },
     { label: "Divider", onSelect: write("---\n", 4) },
+    {
+      // A page inside this note (2026-11-14): asks its name, then leaves its link here.
+      label: "Page",
+      onSelect: () => {
+        editor.state.facet(pageMaker)?.(freshLine(editor));
+      },
+    },
   ];
 }
 

@@ -24,6 +24,15 @@ describe("what Rust sends", () => {
     expect(`${snippet?.before ?? ""}${snippet?.matched ?? ""}${snippet?.after ?? ""}`).toBe("A leader is elected.");
   });
 
+  it("parses a page that matched by its title and its text", () => {
+    const [page] = VaultSearchSchema.parse(searchFixture.search).lectures[0]?.pages ?? [];
+
+    expect(page?.title).toBe("Leader ideas");
+    expect(page?.parent).toBeNull();
+    expect(page?.titleMatch?.matched).toBe("Leader");
+    expect(page?.notes[0]?.line).toBe(1);
+  });
+
   it("parses the highlights library", () => {
     const library = VaultMarksSchema.parse(searchFixture.highlights);
 

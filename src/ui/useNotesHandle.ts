@@ -1,5 +1,6 @@
 /**
- * What the notes pane can ask of the editor: insert a citation or images, show a line.
+ * What the notes pane can ask of the editor: insert a citation, a page link or images, take
+ * out deleted pages' links, show a line.
  * Moved out of `NotesEditor` on 2026-11-08, unchanged, to keep that file to its job of
  * building and hosting the view.
  */
@@ -7,12 +8,18 @@ import { EditorView } from "@codemirror/view";
 import { useImperativeHandle, type Ref, type RefObject } from "react";
 
 import { citationAt } from "../notes/insert";
+import { removePageLinks } from "../notes/pageLinks";
 import type { Point } from "./notesDrop";
 
 /** What the pane can ask of the editor. */
 export interface NotesHandle {
-  /** Inserts a citation at the cursor, as a block of its own, and focuses the editor. */
-  readonly insertCitation: (block: string) => void;
+  /**
+   * Inserts a block at the cursor, on lines of its own — a citation, or a page's link put
+   * back from the Pages panel — and focuses the editor.
+   */
+  readonly insertBlock: (block: string) => void;
+  /** Takes out the lines linking any of `ids`, as deleted pages' links go. */
+  readonly removePageLinks: (ids: ReadonlySet<string>) => void;
   /** Scrolls to a line, counting from 1, and puts the cursor at its start. */
   readonly showLine: (line: number) => void;
   /** Links images where they were dropped — `at` in window CSS pixels — or at the cursor. */
@@ -23,7 +30,7 @@ export function useNotesHandle(handle: Ref<NotesHandle>, view: RefObject<EditorV
   useImperativeHandle(
     handle,
     () => ({
-      insertCitation: (block: string) => {
+      insertBlock: (block: string) => {
         const editor = view.current;
 
         if (editor === null) {
@@ -39,6 +46,11 @@ export function useNotesHandle(handle: Ref<NotesHandle>, view: RefObject<EditorV
           scrollIntoView: true,
         });
         editor.focus();
+      },
+      removePageLinks: (ids: ReadonlySet<string>) => {
+        if (view.current !== null) {
+          removePageLinks(view.current, ids);
+        }
       },
       insertImages: (paths: readonly string[], at: Point) => {
         const editor = view.current;

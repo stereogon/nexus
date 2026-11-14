@@ -3,6 +3,7 @@
  * so that file keeps to the view's life and what is drawn over it): history and keys,
  * GFM, the live preview and its widgets, pasting images and formatted text, the chart form's and the table
  * picker's openers, find and replace, the "/" menu, and the editing behaviour in `notes/editing.ts`.
+ * Pages (2026-11-14) add three: a page link pressed, a page's way up, and `/page`.
  */
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
@@ -17,6 +18,7 @@ import { lineFlash } from "../notes/flash";
 import { findInNotes } from "../notes/findInNotes";
 import { formatKeys } from "../notes/markSelection";
 import { pageHeading, type PageHeading } from "../notes/pageHeading";
+import { pageMaker, type PageLine } from "../notes/pageLinks";
 import { pasteImages } from "../notes/pasteImage";
 import { richPaste } from "../notes/richPaste";
 import { selectionInColumn } from "../notes/selectionLayer";
@@ -43,6 +45,12 @@ export interface NotesSetup {
   readonly page: boolean;
   readonly heading: PageHeading;
   readonly onCite: (id: string) => void;
+  /** A page link was pressed. */
+  readonly onPage: (id: string) => void;
+  /** A page's way up was pressed. */
+  readonly onUp: () => void;
+  /** `/page` was chosen: ask for the new page's name, for this line. */
+  readonly onNewPage: (line: PageLine) => void;
   readonly imageUrl: (src: string) => string | null;
   /** Keeps a pasted image, resolving to the path to link, or `null` if it was not kept. */
   readonly keepImage: () => (file: File) => Promise<string | null>;
@@ -66,9 +74,9 @@ export function notesExtensions(setup: NotesSetup): Extension {
     selectionInColumn,
     notesAppearance,
     pageLayout.of(layoutFor(setup.page)),
-    pageHeading(setup.heading),
+    pageHeading(setup.heading, setup.onUp),
     lineFlash,
-    livePreview({ onCite: setup.onCite, imageUrl: setup.imageUrl }),
+    livePreview({ onCite: setup.onCite, imageUrl: setup.imageUrl, onPage: setup.onPage }),
     placeholder("Start writing. Beside a document, select text in it and choose “Link to notes” to cite it here."),
     citeLinks(setup.onCite),
     pasteImages(setup.keepImage),
@@ -77,6 +85,7 @@ export function notesExtensions(setup: NotesSetup): Extension {
     plainPaste(clipboardText),
     chartOpener.of(setup.onChart),
     tablePicker.of(setup.onTable),
+    pageMaker.of(setup.onNewPage),
     // The "/" menu offers what `+`'s does. Ahead of the editing keys, so its Enter takes a
     // choice before Enter in formatted words (`enterKeys.ts`) is asked.
     slashCommands((view) => turnInto(view)),

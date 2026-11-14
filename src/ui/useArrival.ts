@@ -12,7 +12,9 @@ import type { LectureRow } from "../ipc/vault";
 
 export type ArrivalTarget =
   | { readonly kind: "highlight"; readonly id: string }
-  | { readonly kind: "line"; readonly line: number };
+  | { readonly kind: "line"; readonly line: number | null }
+  /** A page of the item (2026-11-14), at a line of it or at its top. */
+  | { readonly kind: "page"; readonly page: string; readonly line: number | null };
 
 export interface Arrival {
   readonly directory: string;

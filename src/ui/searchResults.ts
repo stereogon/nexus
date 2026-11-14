@@ -2,8 +2,9 @@
  * What the ⌘P search window lists, as one flat list in reading order.
  *
  * Names first — documents, notes and folders anywhere in the vault whose names match,
- * each saying where it is — then lines of notes, then highlights, each opening at its
- * place. One list rather than separate boxes, so ↑ and ↓ move through all of it and Enter
+ * each saying where it is — then lines of notes and pages, then highlights, each opening
+ * at its place. A page (2026-11-14) says which note it lives in, and opens beside its
+ * item's document. One list rather than separate boxes, so ↑ and ↓ move through all of it and Enter
  * opens whichever is chosen (redesign canvas, 2026-11-07). Pure, so the order is tested
  * without a window.
  */
@@ -41,7 +42,7 @@ export interface SearchResult {
   /** Its folder, as `CS454 / Week 3`; empty at the top of the vault. */
   readonly where: string;
   /** What the icon shows. */
-  readonly look: "folder" | "document" | "note" | HighlightSemantic | "sticky";
+  readonly look: "folder" | "document" | "note" | "page" | HighlightSemantic | "sticky";
   readonly target: ResultTarget;
 }
 
@@ -98,6 +99,21 @@ export function searchResults(listing: Listing, query: string, found: VaultSearc
         where,
         look: lecture.kind,
         target: { kind: "place", lecture, at: { kind: "line", line: hit.line } },
+      });
+    }
+
+    for (const hit of hits.pages) {
+      const [first] = hit.notes;
+
+      notes.push({
+        key: `p:${lecture.directory}:${hit.id}`,
+        group: "notes",
+        title: hit.title,
+        detail: `page in ${hit.parentTitle ?? lecture.title}`,
+        snippet: first?.snippet ?? hit.titleMatch,
+        where,
+        look: "page",
+        target: { kind: "place", lecture, at: { kind: "page", page: hit.id, line: first?.line ?? null } },
       });
     }
 

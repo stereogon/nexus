@@ -478,6 +478,61 @@ a rail at the window's edge at most 48px wide, Settings at its foot opening the 
 the library opened from it and shown pressed; gone again with the sidebar. The hiding journey
 now measures the title's start from the window's edge. Sabotage: without the rail, it fails.
 
+**2026-11-14 · Pages: notes inside notes**
+The user: *"ability to create a page inside another page. this page won't be visible on the
+sidebar … when the page is opened it opens in the same way as the previous one alongside the
+same doc … this page will have a link to the parent page to go back to it … these pages are
+searchable from the search button … but the sidebar still shows the parent / original
+document highlighted saying it is opened."* Pages may hold pages; "Link to notes" cites into
+the page open; a Pages panel lists the pages in a note, puts back a link taken out ("Link
+here"), and deletes after a warning. Drawn on the canvas first (the Pages boards), then built.
+
+- **Stored inside the item's bundle**, at `pages/<id>.md`: Markdown with front matter
+  (`nexus-page: 1`, `title`, `parent` — left out for a page in the item's own notes —
+  `created`), then the body exactly as typed. The front-matter pattern Jekyll and Obsidian
+  read. Values are double-quoted with `\\` and `"` escaped, written by hand so
+  `lecture-core` keeps no JSON dependency. Unknown keys are ignored and the header is kept
+  byte for byte on save, so a newer build's fields survive an older one. One file per page,
+  so an edit touches one file; no manifest, so the vault walk and §3's "a lecture is any
+  directory containing `manifest.json`" are untouched, and moving an item takes its pages.
+- **A page from a newer build** (`nexus-page` above 1) is refused as
+  `SchemaVersionUnsupported` and left alone; a **damaged** one is `StoredFileUnreadable` and
+  backed up to `.bak` when opened. The listing counts unreadable files without touching them,
+  and the Pages panel says how many.
+- **Saving** uses the notes' protocol: the version is the fingerprint of the whole file, and a
+  save based on an old read is a conflict, never an overwrite.
+- **Deleting** moves the page and every page inside it (deepest first) to the vault's
+  `.trash`, as a deleted item goes, so a slip can be undone in Finder. Its link lines are taken
+  out of the note on screen.
+- **Links** are `[Title](page://<id>)` on a line of their own, drawn as the page's row and kept
+  or deleted whole, like a citation. The TS writer is a twin of `lecture_core::page_link`, held
+  to it by a Rust-written entry in `fixtures/pages.json`.
+- **Which highlights are cited** is now the union over the item's notes and all its pages
+  (pages' cites come from the listing), so a highlight cited in a page keeps its ¶ marker
+  whichever note is open, and "Show in notes" opens the note that cites it.
+- **Search** returns up to five matching pages per item (title or text), shown in the notes
+  group as "page in <note>"; choosing one opens the item with the page beside the document.
+- **A bug found and fixed on the way:** leaving the notes mid-typing saved through a function
+  reassigned on every render, so the last words could be saved to the note opened *next*. Saves
+  on leaving are now bound to the session that typed them (`notesFile.ts`), follow a save in
+  flight with the version it returned, and a conflict while leaving is reported
+  (`ERR_NOTES_LEFT_UNSAVED`) rather than lost.
+
+Known gaps: a page cannot be renamed yet; a page's images resolve against the item's own
+`assets/`, which is where pasting puts them; the link row does not show how many pages are
+inside the page it opens (the Pages panel does).
+
+Verified: gate green. Rust: core 8 (front matter round trip, newer vs damaged, titles, ids,
+descendants past a cycle), fs 8 (list, create, load, save conflict, unreadable kept), app 6
+(commands against temp vaults, delete to `.trash`), search 9 plus the contract fixture. Unit:
+IPC schemas against the fixtures, page links (twin, read back, written over `/page`'s line,
+removed on delete), the page tree, search rows, and `useNotesPages.test.ts` for leaving a page
+mid-typing (sabotaged: three fail). Journeys (`pages.spec.ts`): `/page` names a page and its
+link opens it beside the document with the item still marked open and no sidebar row; the
+way up and the trail; Link here; delete asks, counts and takes the link out; ⌘P opens a page.
+Sabotage, each failing its journey: the link not opening; links not removed on delete; Link
+here dead; search opening the notes instead of the page.
+
 **2026-11-14 · Page tones, as readers offer them, in place of one dark page**
 The user, after the first dark page: *"can't we have a more readable dark mode color of the
 background of the pdf … it is too dark currently … something which is more pleasant to the

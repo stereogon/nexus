@@ -17,6 +17,7 @@ import { flashLine, flashOn } from "../flash";
 import { findPreviews, type Preview } from "./find";
 import { markupDecorations } from "./markup";
 import { noteMarkDecorations } from "./noteMarks";
+import { PageLinkWidget } from "./pageLinkWidget";
 import { CitationWidget, ImageWidget, MathWidget, SpacedWidget } from "./widgets";
 
 export interface PreviewContext {
@@ -24,6 +25,8 @@ export interface PreviewContext {
   readonly onCite: (id: string) => void;
   /** The URL an image path loads from, or `null` if it is not one to load. */
   readonly imageUrl: (src: string) => string | null;
+  /** A page link was pressed. */
+  readonly onPage: (id: string) => void;
 }
 
 /** Whether any cursor or selection touches `from`–`to`, ends included. */
@@ -35,6 +38,7 @@ function touched(state: EditorState, from: number, to: number): boolean {
 function isBlock(preview: Preview): boolean {
   return (
     preview.kind === "citation" ||
+    preview.kind === "page" ||
     preview.kind === "mermaid" ||
     preview.kind === "chart" ||
     (preview.kind === "math" && preview.display)
@@ -43,11 +47,11 @@ function isBlock(preview: Preview): boolean {
 
 /**
  * Whether a preview opens into its Markdown while the cursor is in it. A formula or a
- * diagram is written as source, so it opens to be edited; a citation or an image is an
- * element, as in Notion — kept or deleted whole, never edited (2026-11-07).
+ * diagram is written as source, so it opens to be edited; a citation, an image or a page
+ * link is an element, as in Notion — kept or deleted whole, never edited (2026-11-07).
  */
 function opens(preview: Preview): boolean {
-  return preview.kind !== "citation" && preview.kind !== "image";
+  return preview.kind !== "citation" && preview.kind !== "image" && preview.kind !== "page";
 }
 
 function widgetFor(preview: Preview, context: PreviewContext, lit: string): WidgetType {
@@ -62,6 +66,8 @@ function widgetFor(preview: Preview, context: PreviewContext, lit: string): Widg
       return new ChartWidget(preview.source);
     case "image":
       return new ImageWidget(preview.src, preview.alt, context.imageUrl(preview.src));
+    case "page":
+      return new PageLinkWidget(preview.id, preview.title, context.onPage);
   }
 }
 

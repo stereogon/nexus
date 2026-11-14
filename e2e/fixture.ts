@@ -44,6 +44,8 @@ export interface Fixture {
   readonly annotations: Readonly<Record<string, readonly Annotation[]>>;
   /** Each lecture's `notes.md`, keyed by directory; absent means none yet. */
   readonly notes?: Readonly<Record<string, string>>;
+  /** Each item's pages (2026-11-14), keyed by directory; absent means none. */
+  readonly itemPages?: Readonly<Record<string, readonly SeededPage[]>>;
   /** Commands answered with a failure, for journeys about what the window does then. */
   readonly failing?: readonly string[];
   /** This device's remembered places, as a previous session left them. */
@@ -67,6 +69,15 @@ export interface Fixture {
   readonly pageTone?: PageTone;
   /** What the clipboard holds as text, for ⌘⇧V; absent means no text. */
   readonly clipboard?: string;
+}
+
+/** A page inside an item's notes, as a journey seeds it. */
+export interface SeededPage {
+  readonly id: string;
+  readonly title: string;
+  /** The page it is inside; `null` for one in the item's own notes. */
+  readonly parent: string | null;
+  readonly text: string;
 }
 
 /** Slide-shaped, because most of what this app opens is a lecture deck. */

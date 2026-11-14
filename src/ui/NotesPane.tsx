@@ -18,7 +18,11 @@ import type { PageHeading } from "../notes/pageHeading";
 import { Failure } from "./Failure";
 import { NotesEditor, type NotesHandle } from "./NotesEditor";
 import { acceptNotesDrops } from "./notesDrop";
+import { NotesConflict } from "./NotesConflict";
 import { NotesHeader, type Alone } from "./NotesHeader";
+import { PagesControl } from "./PagesPanel";
+import type { ItemPages } from "./useItemPages";
+import { useNotePages } from "./useNotePages";
 import { useNotes } from "./useNotes";
 
 /** Why a pasted image was not kept, in words the reader can act on. */
@@ -45,11 +49,12 @@ export function NotesPane({
   onReady,
   hidden,
   reveal,
-  onCited,
   width,
   alone,
   onNotesOnly,
   heading,
+  item,
+  itemTitle,
 }: {
   readonly vault: string;
   readonly directory: string;
@@ -62,8 +67,6 @@ export function NotesPane({
   readonly hidden: boolean;
   /** A highlight to show the citation of. */
   readonly reveal: { readonly id: string; readonly nonce: number } | null;
-  /** The cited highlights changed. */
-  readonly onCited: (ids: ReadonlySet<string>) => void;
   /** The width chosen with the divider, or `null` for the stylesheet's default. */
   readonly width: number | null;
   /**
@@ -75,12 +78,17 @@ export function NotesPane({
   readonly onNotesOnly?: () => void;
   /** The title and the line under it, drawn above the writing. */
   readonly heading: PageHeading;
+  /** The item's pages, and which note is on screen: its own notes or one of them. */
+  readonly item: ItemPages;
+  /** The item's name, the first step of a page's path. */
+  readonly itemTitle: string;
 }) {
-  const notes = useNotes(vault, directory);
+  const notes = useNotes(vault, directory, item.open);
+  const { open: note, noteCited } = item;
 
   useEffect(() => {
-    onCited(notes.cited);
-  }, [notes.cited, onCited]);
+    noteCited(note, notes.cited);
+  }, [notes.cited, noteCited, note]);
   const [pasteProblem, setPasteProblem] = useState<string | null>(null);
   const [pasteFailure, setPasteFailure] = useState<CommandError | null>(null);
   const [dropping, setDropping] = useState(false);
@@ -90,6 +98,7 @@ export function NotesPane({
   const [formatting, setFormatting] = useState(alone !== null);
   const pane = useRef<HTMLElement | null>(null);
   const editor = useRef<NotesHandle | null>(null);
+  const pages = useNotePages({ vault, directory, item, itemTitle, linked: notes.linked, editor });
 
   // The editor's handle, kept here for drops as well as handed up to `Reading`.
   const handles = useCallback(
@@ -181,6 +190,9 @@ export function NotesPane({
     >
       <NotesHeader
         alone={alone}
+        onCrumb={item.openNote}
+        pages={<PagesControl note={pages.panel} />}
+        trail={pages.trail}
         formatting={formatting}
         onFormatting={() => {
           setFormatting((open) => !open);
@@ -191,25 +203,7 @@ export function NotesPane({
       />
 
       {notes.onDisk !== null && (
-        <div className="notes-conflict" role="alert">
-          <p>
-            <strong>notes.md was changed outside Nexus</strong> — on another device or in another
-            app — while you were writing here. Your text is still in the editor and has not
-            been saved over it.
-          </p>
-          <details>
-            <summary>Show the other version</summary>
-            <pre>{notes.onDisk.text === "" ? "(empty)" : notes.onDisk.text}</pre>
-          </details>
-          <div className="notes-conflict-actions">
-            <button onClick={notes.keepMine} type="button">
-              Keep mine
-            </button>
-            <button className="secondary" onClick={notes.takeTheirs} type="button">
-              Use the other version
-            </button>
-          </div>
-        </div>
+        <NotesConflict onDisk={notes.onDisk} onKeepMine={notes.keepMine} onPage={item.open !== null} onTakeTheirs={notes.takeTheirs} />
       )}
 
       {notes.failure !== null && <Failure error={notes.failure} />}
@@ -232,9 +226,15 @@ export function NotesPane({
           formatting={formatting}
           page={alone !== null}
           heading={heading}
+          onNewPage={pages.makePage}
+          onPage={item.openNote}
+          onUp={() => {
+            item.openNote(pages.trail.at(-2)?.note ?? null);
+          }}
           text={notes.loaded.text}
         />
       )}
+      {pages.dialog}
     </aside>
   );
 }

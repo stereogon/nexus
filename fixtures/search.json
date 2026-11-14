@@ -52,6 +52,30 @@
               "matched": "leader"
             }
           }
+        ],
+        "pages": [
+          {
+            "id": "pg-1",
+            "noteLines": 1,
+            "notes": [
+              {
+                "line": 1,
+                "snippet": {
+                  "after": " elected?",
+                  "before": "Why is the ",
+                  "matched": "leader"
+                }
+              }
+            ],
+            "parent": null,
+            "parentTitle": null,
+            "title": "Leader ideas",
+            "titleMatch": {
+              "after": " ideas",
+              "before": "",
+              "matched": "Leader"
+            }
+          }
         ]
       }
     ],

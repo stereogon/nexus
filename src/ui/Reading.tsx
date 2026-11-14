@@ -9,13 +9,17 @@
  * The notes stay mounted while hidden, so hiding and showing them never costs the
  * cursor or the undo history. ⌘\ toggles them, as `claude-spec.md` §2.3 names, and the
  * divider between the two sets how wide they are.
+ *
+ * The notes pane shows the item's own notes or one of its pages (2026-11-14,
+ * `useItemPages`). A highlight counts as cited wherever its citation lives, and "show in
+ * notes" opens the note that cites it; "Link to notes" cites into the note on screen.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { Annotation } from "../ipc/annotations";
 import type { OpenedDocument } from "../ipc/document";
 import { citationBlock } from "../notes/citation";
-import type { PageHeading } from "../notes/pageHeading";
+import { headingMeta, type PageHeading } from "../notes/pageHeading";
 import { parentOf, spoken } from "./folders";
 import { PaneDivider } from "./PaneDivider";
 import type { NotesHandle } from "./NotesEditor";
@@ -25,6 +29,8 @@ import type { Jump } from "./useJump";
 import type { Arrival } from "./useArrival";
 import { useMetaShortcut } from "./useMetaShortcut";
 import { useNotesWidth } from "./useNotesWidth";
+import { noteCiting, pathTo, type NoteKey } from "./pageTree";
+import { useItemPages } from "./useItemPages";
 
 export function Reading({
   document,
@@ -51,12 +57,15 @@ export function Reading({
   const sizing = useNotesWidth(area);
   const [notesOpen, setNotesOpen] = useState(true);
   const [jump, setJump] = useState<Jump | null>(null);
-  const [cited, setCited] = useState<ReadonlySet<string>>(new Set());
+  const item = useItemPages(vault, directory);
+  const { open: openNote, openNote: showNote, cites } = item;
   const [reveal, setReveal] = useState<{ readonly id: string; readonly nonce: number } | null>(null);
 
   // Citations made before the editor exists — the notes still loading — wait here rather
   // than being dropped.
   const waiting = useRef<string[]>([]);
+  // A citation to show once the note citing it has opened.
+  const revealing = useRef<string | null>(null);
   // Which lecture's notes the editor holds, as state so an arrival waiting for them runs
   // once they settle; and the arrival already acted on, so it is not acted on twice.
   const [notesReadyFor, setNotesReadyFor] = useState<string | null>(null);
@@ -76,7 +85,11 @@ export function Reading({
     setJump(null);
     setReveal(null);
     waiting.current = [];
+    revealing.current = null;
   }, [directory]);
+
+  // Which note the editor holds, as `notesReadyFor` records it.
+  const here = `${directory}#${openNote ?? ""}`;
 
   // After the reset above, so an arrival made with the lecture's opening survives it.
   //
@@ -98,11 +111,22 @@ export function Reading({
 
     setNotesOpen(true);
 
-    if (notesReadyFor === directory) {
-      arrived.current = arrival.nonce;
-      notes.current?.showLine(arrival.target.line);
+    const target = arrival.target;
+    const wanted: NoteKey = target.kind === "page" ? target.page : null;
+
+    if (openNote !== wanted) {
+      showNote(wanted);
+      return;
     }
-  }, [arrival, directory, notesReadyFor]);
+
+    if (notesReadyFor === here) {
+      arrived.current = arrival.nonce;
+
+      if (target.line !== null) {
+        notes.current?.showLine(target.line);
+      }
+    }
+  }, [arrival, directory, notesReadyFor, here, openNote, showNote]);
 
   const link = useCallback((annotation: Annotation) => {
     const block = citationBlock(annotation);
@@ -114,28 +138,56 @@ export function Reading({
       return;
     }
 
-    notes.current.insertCitation(block);
+    notes.current.insertBlock(block);
   }, []);
 
   const ready = useCallback(() => {
     const queued = waiting.current.splice(0);
 
     for (const block of queued) {
-      notes.current?.insertCitation(block);
+      notes.current?.insertBlock(block);
     }
 
-    setNotesReadyFor(directory);
-  }, [directory]);
+    setNotesReadyFor(here);
+
+    if (revealing.current !== null) {
+      const id = revealing.current;
+
+      revealing.current = null;
+      setReveal((previous) => ({ id, nonce: (previous?.nonce ?? 0) + 1 }));
+    }
+  }, [here]);
 
   const cite = useCallback((id: string) => {
     setJump((previous) => ({ id, nonce: (previous?.nonce ?? 0) + 1 }));
   }, []);
 
   // From a highlight to the notes: show them if hidden, and the line citing it.
-  const showInNotes = useCallback((id: string) => {
-    setNotesOpen(true);
-    setReveal((previous) => ({ id, nonce: (previous?.nonce ?? 0) + 1 }));
-  }, []);
+  const showInNotes = useCallback(
+    (id: string) => {
+      const citing = noteCiting(cites, id, openNote);
+
+      setNotesOpen(true);
+
+      // Cited in another of the item's notes: open that one, and show it once it is ready.
+      if (citing !== undefined && citing !== openNote) {
+        revealing.current = id;
+        showNote(citing);
+        return;
+      }
+
+      setReveal((previous) => ({ id, nonce: (previous?.nonce ?? 0) + 1 }));
+    },
+    [cites, openNote, showNote],
+  );
+
+  // A page's heading is its own: its name, when it was made, and the note it is in.
+  const path = openNote === null ? [] : pathTo(item.pages, openNote);
+  const page = path.at(-1);
+  const noteHeading: PageHeading =
+    page === undefined
+      ? heading
+      : { title: page.title, meta: headingMeta(page.created, []), up: path.at(-2)?.title ?? title };
 
   // The document hidden and its notes shown alone, as a page (2026-11-09); side by side is
   // the default. The notes pane stays the same component throughout, so the cursor, the
@@ -158,13 +210,14 @@ export function Reading({
     return (
       <div className="reading" ref={area}>
         <NotesPane
-          heading={heading}
+          heading={noteHeading}
+          item={item}
+          itemTitle={title}
           alone={{ title, place: spoken(parentOf(directory)), onClose }}
           directory={directory}
           handle={notes}
           hidden={false}
           onCite={cite}
-          onCited={setCited}
           onHide={onClose}
           onReady={ready}
           reveal={reveal}
@@ -182,7 +235,7 @@ export function Reading({
           directory={directory}
           document={document}
           jump={jump}
-          notesLink={{ cited, show: showInNotes }}
+          notesLink={{ cited: item.cited, show: showInNotes }}
           notesOpen={notesOpen}
           onClose={onClose}
           onLinkToNotes={link}
@@ -193,7 +246,9 @@ export function Reading({
       )}
       {documentShown && notesOpen && <PaneDivider label="Notes width" sizing={sizing} title="Drag to resize the notes" />}
       <NotesPane
-        heading={heading}
+        heading={noteHeading}
+        item={item}
+        itemTitle={title}
         directory={directory}
         handle={notes}
         hidden={documentShown && !notesOpen}
@@ -202,7 +257,6 @@ export function Reading({
           setDocumentShown(false);
         }}
         onCite={cite}
-        onCited={setCited}
         onHide={() => {
           setNotesOpen(false);
         }}

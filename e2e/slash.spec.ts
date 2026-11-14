@@ -23,7 +23,7 @@ test.beforeEach(async ({ page }) => {
 test("/ opens the blocks, typing narrows them, ↓ and Enter choose", async ({ page }) => {
   await page.keyboard.type("/");
   await expect(menu(page)).toBeVisible();
-  await expect(menu(page).getByRole("option")).toHaveCount(14);
+  await expect(menu(page).getByRole("option")).toHaveCount(15);
 
   await page.keyboard.type("head");
   await expect(menu(page).getByRole("option")).toHaveText(["Heading 1", "Heading 2", "Heading 3"]);
