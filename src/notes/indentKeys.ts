@@ -8,9 +8,11 @@
  * someone using the keyboard.
  */
 import { indentLess, indentMore } from "@codemirror/commands";
-import { syntaxTree } from "@codemirror/language";
+import { ensureSyntaxTree, syntaxTree } from "@codemirror/language";
 import { Prec, type EditorState, type Extension } from "@codemirror/state";
 import { keymap, type EditorView } from "@codemirror/view";
+
+import { renumbered } from "./listNumbers";
 
 /** A list line: its indentation, and the width of its marker with the space after it. */
 const LIST = /^(\s*)([-*+]\s+|\d+[.)]\s+)/;
@@ -103,7 +105,13 @@ function shift(view: EditorView, inward: boolean): boolean {
     );
   }
 
-  view.dispatch({ changes, userEvent: inward ? "indent" : "dedent" });
+  // Then the digits, in the same step so one undo takes both back: a list nested by this
+  // starts at 1, and the one it left counts on without it (`listNumbers.ts`).
+  const userEvent = inward ? "indent" : "dedent";
+  const shifted = view.state.update({ changes }).state;
+
+  ensureSyntaxTree(shifted, shifted.doc.length, 200);
+  view.dispatch({ changes, userEvent }, { changes: renumbered(shifted), sequential: true, userEvent });
 
   return true;
 }

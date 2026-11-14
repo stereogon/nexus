@@ -17,8 +17,9 @@ import type { EditorState, Range } from "@codemirror/state";
 import { Decoration } from "@codemirror/view";
 
 import { calloutOf } from "../callout";
+import { itemNumber, listLabel } from "../listNumbers";
 import { CalloutHeadWidget } from "./calloutWidget";
-import { BulletWidget, CheckboxWidget, CodeFootWidget, CodeHeaderWidget, RuleWidget } from "./markupWidgets";
+import { BulletWidget, CheckboxWidget, CodeFootWidget, CodeHeaderWidget, NumberWidget, RuleWidget } from "./markupWidgets";
 import { parseTable, tableStart } from "./table";
 import { TableEditorWidget } from "./tableEditor";
 import { SpacedWidget } from "./widgets";
@@ -189,14 +190,35 @@ export function markupDecorations(
         }
 
         case "ListMark": {
+          const item = node.node.parent;
+          const list = item?.parent ?? null;
+
           // A to-do is drawn as its box alone, as the canvas draws it: the list's own `-`
           // before it would put a bullet beside the box.
-          const isTask = (node.node.parent?.getChild("Task") ?? null) !== null;
-
-          if (isTask) {
+          if ((item?.getChild("Task") ?? null) !== null) {
             hideWithSpace(node.from, node.to);
-          } else if (node.node.parent?.parent?.name === "BulletList") {
-            out.push(Decoration.replace({ widget: new BulletWidget(lists - 1) }).range(node.from, node.to));
+            return true;
+          }
+
+          if (item === null || list === null) {
+            return true;
+          }
+
+          const depth = lists - 1;
+          const widget = list.name === "BulletList" ? new BulletWidget(depth) : new NumberWidget(listLabel(itemNumber(state, item), depth));
+          const line = doc.lineAt(node.from);
+
+          if (doc.sliceString(line.from, node.from).trim() === "") {
+            // The indentation, the mark and the space after it are drawn as the marker, and
+            // the line's padding nests it and hangs it (2026-11-14): wrapped words line up
+            // after the marker, not under it, and each level sits a marker's width further in.
+            const spaces = /^[ \t]*/.exec(doc.sliceString(node.to, line.to))?.[0].length ?? 0;
+
+            out.push(Decoration.line({ class: "md-li", attributes: { style: `--md-depth: ${String(depth)}` } }).range(line.from));
+            out.push(Decoration.replace({ widget }).range(line.from, node.to + spaces));
+          } else if (list.name === "BulletList") {
+            // A list inside a quote or callout keeps the `>` before it, so only its mark is drawn.
+            out.push(Decoration.replace({ widget }).range(node.from, node.to));
           }
           return true;
         }

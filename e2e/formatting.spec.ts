@@ -94,8 +94,9 @@ test("a list button numbers every selected line", async ({ page }) => {
   await page.keyboard.press("Shift+End");
   await bar(page).getByRole("button", { name: "Numbered list" }).click({ delay: 150 });
 
-  await expect(line(page, "Raft elects")).toContainText("1. Raft elects");
-  await expect(line(page, "second line")).toContainText("2. second line");
+  // Drawn as markers, as bullets are (2026-11-14); the file says `1. ` and `2. `.
+  await expect(line(page, "Raft elects").locator(".md-number")).toHaveText("1.");
+  await expect(line(page, "second line").locator(".md-number")).toHaveText("2.");
 });
 
 test("a link wraps the words and leaves the cursor for the address", async ({ page }) => {

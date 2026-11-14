@@ -478,6 +478,42 @@ a rail at the window's edge at most 48px wide, Settings at its foot opening the 
 the library opened from it and shown pressed; gone again with the sidebar. The hiding journey
 now measures the title's start from the window's edge. Sabotage: without the rail, it fails.
 
+**2026-11-14 · Lists: hanging indent, nesting a step in, and a, b, c one level down**
+The user: *"nested bullets are not supported. also bullet points's next line start from under
+the bullet symbol, instead of after a tabbed space … support nested bullets so someone can do
+1.a 1.b … 2 levels are fine"*. Reproduced: Tab did nest (since 2026-11-09), but a nested item
+sat two narrow spaces in; a wrapped item's words ran back under its bullet; and a nested
+numbered item kept counting its parent's numbers (`2.`, `3.`) since nothing renumbered them.
+
+- **Drawn:** a list line's indentation, mark and space are replaced by its marker, and the
+  line's padding does the rest: each level one marker's width (1.6em) in, the first line hung
+  so wrapped words line up after the marker (`.md-li` in `notes/theme.ts`, beside CodeMirror's
+  own line padding, which a stylesheet cannot outrank). A list inside a quote keeps its `>`,
+  so only its mark is drawn there, as before. To-dos are unchanged.
+- **Counted, not typed:** a numbered item's label is drawn from the list's shape
+  (`listNumbers.ts`), as Markdown renderers and Notion count: 1, 2, 3 at the top (from the
+  first item's own number), a, b, c one level in, i, ii, iii below that. The digits are hidden
+  like a bullet's `-`, so the cursor settles after them and Backspace at the start of the
+  words makes the line text, as for bullets. **This reverses** the 2026-11-07 choice to show a
+  numbered list's digits as typed text: a nested list could not say `a.` otherwise.
+- **The file stays Markdown:** `1.`, `2.` at every level. Tab and Shift-Tab rewrite the digits
+  of every numbered list to match what is drawn, in the same undo step, so a list nested by
+  Tab starts at 1 and the list it left counts on without it.
+- Two older journeys asserted the old look (`2.` for a nested item, `1. ` with its space) and
+  now assert the drawn labels; `hiddenPrefix`'s unit test now counts a number's mark.
+
+Verified: gate green (1193 unit, 252 journeys). Unit: labels (decimal, letters past z,
+roman), labels from the tree not the digits, a top-level start kept, a list under a bullet
+from a; renumbering a nested list from 1 and the outer list on. Journeys (`lists.spec.ts`):
+a wrapped item's visual lines start at one x, a nested bullet sits further in; Tab makes `a.`
+and writes `   1.`, Enter gives `b.`, Shift-Tab gives `2.` and the file reads so. Sabotage,
+each failing: no hanging indent; labels ignoring depth. Looked at in a screenshot.
+**Seen once and not explained:** the first full gate after this change failed seven journeys
+at the end of the run, six on one-minute timeouts and one (`pages.spec.ts`, delete) on its
+assertion that the link left the saved text. All seven passed alone, and the next full gate
+passed. Recorded rather than dismissed; if the Pages delete journey fails again, it is the
+place to start.
+
 **2026-11-14 · Backspace moves a heading up over a blank line, still a heading**
 The user: *"when we click in front of a heading and click backspace, the heading goes to the
 previous line which is fine, but becomes normal text instead of remaining a heading"*.

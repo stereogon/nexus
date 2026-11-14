@@ -114,11 +114,12 @@ describe("Backspace at an element's edge", () => {
 });
 
 describe("the hidden part of a line's start", () => {
-  it("counts a heading, list, to-do or quote mark, and not a number", () => {
+  it("counts a heading, list, number, to-do or quote mark, with a nested list's indent", () => {
     expect(hiddenPrefix("## Plans")).toBe(3);
     expect(hiddenPrefix("- [ ] milk")).toBe(6);
     expect(hiddenPrefix("> quote")).toBe(2);
-    expect(hiddenPrefix("1. first")).toBe(0);
+    expect(hiddenPrefix("1. first")).toBe(3);
+    expect(hiddenPrefix("   10. tenth")).toBe(7);
     expect(hiddenPrefix("plain")).toBe(0);
   });
 });

@@ -124,14 +124,15 @@ const PREFIX = /^(\s*)(#{1,6}\s+|[-*+]\s+\[[ xX]\]\s+|[-*+]\s+|\d+[.)]\s+|>\s?)?
 
 /**
  * How much of a line's start is a mark the notes keep hidden — a heading's `# `, a list's
- * `- `, a to-do's `- [ ] `, a quote's `> ` — or 0 for none. A numbered list's `1. ` is
- * shown, so it is not counted: there is no hidden text to type in front of.
+ * `- ` or `1. `, a to-do's `- [ ] `, a quote's `> ` — or 0 for none. A numbered list's
+ * digits are hidden too since 2026-11-14, drawn from the list's shape (`listNumbers.ts`) so
+ * a nested list can count a, b, c.
  */
 export function hiddenPrefix(line: string): number {
   const match = PREFIX.exec(line);
   const marker = match?.[2] ?? "";
 
-  return marker === "" || /^\d/.test(marker) ? 0 : (match?.[1]?.length ?? 0) + marker.length;
+  return marker === "" ? 0 : (match?.[1]?.length ?? 0) + marker.length;
 }
 
 /** What kind of block a line is. */

@@ -145,7 +145,8 @@ test("emphasis renders with stars and underscores alike", async ({ page }) => {
 test("both lists render: bullets for unordered, numbers for ordered, nested", async ({ page }) => {
   await expect(line(page, "Item 2b").locator(".md-bullet")).toHaveText("•");
   await expect(line(page, "Item 3a").first().locator(".md-bullet")).toHaveText("◦");
-  await expect(line(page, "Item 3b").last()).toContainText("2.");
+  // An ordered list nested one level counts in letters (2026-11-14).
+  await expect(line(page, "Item 3b").last().locator(".md-number")).toHaveText("b.");
 });
 
 test("the image is recognised and explained, naming its path", async ({ page }) => {

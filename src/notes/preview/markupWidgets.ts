@@ -26,6 +26,26 @@ export class BulletWidget extends WidgetType {
   }
 }
 
+/** A numbered item's label, `3.`, `c.` or `iii.`, counted by `listNumbers.ts`. */
+export class NumberWidget extends WidgetType {
+  constructor(readonly label: string) {
+    super();
+  }
+
+  override eq(other: NumberWidget): boolean {
+    return other.label === this.label;
+  }
+
+  override toDOM(): HTMLElement {
+    const number = document.createElement("span");
+
+    number.className = "md-number";
+    number.textContent = this.label;
+
+    return number;
+  }
+}
+
 /** A task's box. Clicking it toggles `[ ]` and `[x]` in the text itself. */
 export class CheckboxWidget extends WidgetType {
   constructor(

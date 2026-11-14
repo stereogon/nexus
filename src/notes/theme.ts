@@ -64,6 +64,12 @@ const editorTheme = EditorView.theme({
 
   // Line-level styles for the live preview, here rather than in a stylesheet: CodeMirror's
   // own `.cm-line` padding is injected after the app's CSS and would win there.
+  // A list item (2026-11-14), `--md-marker` from `markdown.css`: nested a marker's width per level, its first line hung so the
+  // marker sits in the padding and wrapped words line up with the first word.
+  ".md-li": {
+    paddingLeft: "calc((var(--md-depth) + 1) * var(--md-marker))",
+    textIndent: "calc(-1 * var(--md-marker))",
+  },
   ".md-quote": {
     borderLeft: "3px solid var(--border-strong)",
     paddingLeft: "14px",

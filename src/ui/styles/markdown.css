@@ -142,11 +142,31 @@ span.md-problem {
 
 /* ---- Ordinary Markdown, drawn by the live preview (`src/notes/preview/markup.ts`) ---- */
 
-.md-bullet {
+/* A list's marker is as wide as a nesting step, so a list line's hanging indent (`.md-li`,
+   in `notes/theme.ts`, where it beats CodeMirror's own line padding) lines its words up
+   after it. The marker is not indented itself: an inline-block inherits the line's
+   negative indent. */
+.md-li,
+.md-bullet,
+.md-number {
+  --md-marker: 1.6em;
+}
+
+.md-bullet,
+.md-number {
   display: inline-block;
-  width: 1.1em;
+  width: var(--md-marker);
+  text-indent: 0;
+}
+
+.md-bullet {
   color: var(--accent);
   font-weight: 700;
+}
+
+.md-number {
+  color: var(--text-meta);
+  font-variant-numeric: tabular-nums;
 }
 
 /* A to-do's box, drawn as the canvas draws it (2026-11-07): a rounded square, filled with

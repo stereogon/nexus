@@ -77,10 +77,18 @@ describe("off the cursor's line", () => {
     expect(lines).toContainEqual({ line: 1, cls: "md-quote" });
   });
 
-  it("draws a bullet for an unordered item and leaves an ordered number alone", () => {
-    const doc = `- first\n1. second${END}`;
+  it("draws an item's indent, mark and space as its marker, and hangs its line", () => {
+    const doc = `- first\n  - nested\n1. second${END}`;
+    const { replaced, lines } = render(doc, last(doc));
 
-    expect(render(doc, last(doc)).replaced).toEqual(["-"]);
+    expect(replaced).toEqual(["- ", "  - ", "1. "]);
+    expect(lines.filter((line) => line.cls === "md-li").map((line) => line.line)).toEqual([1, 2, 3]);
+  });
+
+  it("draws only the mark of a list inside a quote, which keeps its `>`", () => {
+    const doc = `> - quoted${END}`;
+
+    expect(render(doc, last(doc)).replaced).toContain("-");
   });
 
   it("draws a task as its box alone, with no bullet beside it", () => {
