@@ -6,7 +6,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { READING, standardFixture } from "./fixture";
 import { openLecture, openNexus, saved } from "./nexus";
 
-const NOTES = ["Raft elects a leader by majority.", "Use `==x==` in code.", "", "The end."].join("\n");
+const NOTES = ["Raft elects a leader by majority.", "Use `==x==` in code.", "", "The end.", "", "How fast ==can we go ?=={question} now."].join("\n");
 
 const notes = (page: Page) => page.getByRole("complementary", { name: "Notes" });
 const line = (page: Page, text: string) => notes(page).locator(".cm-line").filter({ hasText: text });
@@ -86,4 +86,31 @@ test("deleting all of a highlight's words takes the highlight with them, leaving
 
   // The first line only: the second rightly keeps its `==x==`, inside code.
   await expect.poll(async () => (await saved(page)).split("\n")[0]).toBe("Raft elects a leader by .");
+});
+
+test("a highlight carries its meaning's letter after its words, as the document's do", async ({ page }) => {
+  await selectLastWord(page);
+  await bar(page).getByRole("button", { name: "Exam / important" }).click({ delay: 150 });
+
+  const glyph = line(page, "Raft elects").locator('.md-mark-glyph[data-semantic="exam"]');
+
+  await expect(glyph).toHaveAttribute("data-glyph", "E");
+  await expect(line(page, "can we go").locator('.md-mark-glyph[data-semantic="question"]')).toHaveAttribute("data-glyph", "Q");
+
+  // Drawn, not text: the line reads as its words alone.
+  await expect(line(page, "Raft elects")).toHaveText("Raft elects a leader by majority.");
+  expect(await glyph.evaluate((element) => getComputedStyle(element, "::after").content)).toBe('"E"');
+});
+
+test("Backspace on a highlight's last letter, after a space, keeps the highlight", async ({ page }) => {
+  const words = line(page, "can we go").locator('.md-mark[data-semantic="question"]');
+  const box = await words.boundingBox();
+
+  expect(box).not.toBeNull();
+  await words.click({ position: { x: (box?.width ?? 0) - 1, y: (box?.height ?? 0) / 2 } });
+  await page.keyboard.press("Backspace");
+
+  await expect(words).toHaveText("can we go");
+  await expect(line(page, "How fast")).not.toContainText("==");
+  await expect.poll(async () => (await saved(page)).split("\n")[5]).toBe("How fast ==can we go=={question}  now.");
 });

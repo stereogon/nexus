@@ -478,6 +478,36 @@ a rail at the window's edge at most 48px wide, Settings at its foot opening the 
 the library opened from it and shown pressed; gone again with the sidebar. The hiding journey
 now measures the title's start from the window's edge. Sabotage: without the rail, it fails.
 
+**2026-11-14 · A bullet under text is no heading; highlights show their letter, and survive a Backspace**
+Three reports from the user, with a screenshot of the third.
+- *"when i hit enter at the end of a normal text line, and start a bullet point the text line
+  above becomes a heading."* Cause: CommonMark's setext heading. A line of `-` alone under a
+  paragraph underlines it as a heading, and typing `- ` passes through exactly that, so the
+  line above took heading 2's style (and the `-` was hidden as its mark) until the bullet had
+  words. The notes only write `#` headings, so the parser now drops setext headings
+  (`notes/language.ts`, `remove: ["SetextHeading"]`), which the editor and the tests now share.
+  Trade-off: a file written elsewhere with underlined headings shows them as text over a rule
+  (`---`) or as text (`===`). Nothing in Nexus writes that form.
+- *"the highlights on the notes, do not show the K, Q, D, E labels … like it shows in the
+  pdf."* The closing marks are now drawn as the meaning's letter after the words, coloured as
+  the document's badge (`noteMarks.ts`, `noteMarks.css`, split from `markdown.css` for length).
+  The letter comes from `::after` and an attribute, so the line's text, as copied or read, is
+  still the words alone.
+- *"when we delete the last character of the highlight … it starts showing the starting =="*.
+  Cause: the words were `… it ?`. Deleting `?` left `==… it ==`, and a highlight cannot end
+  in a space (the `==` convention, kept so other apps read the file), so it stopped being one.
+  A single deletion that would leave a space touching the marks now moves the space outside
+  them, `==… it== ` (`markEdges.ts`). Not done: typing a space at the end still unmakes the
+  highlight until the next letter; a deletion at several cursors at once is left as it was;
+  bold and italic have the same rule and are not mended.
+
+Verified: gate green. Unit: `language.test.ts` (no setext; `- item` still a list, `---` a
+rule, `##` a heading), `markEdges.test.ts` (end and start mended, cursor placed; whole
+highlights, code and typing left alone). Journeys: `lists.spec.ts` (a line keeps its size as
+`- ` is typed under it, then the bullet saves), `noteMarks.spec.ts` (E and Q drawn, the line's
+text unchanged; Backspace on `?` keeps the question highlight and saves the space outside).
+Sabotage: each fails with its fix taken out.
+
 **2026-11-14 · Lists: hanging indent, nesting a step in, and a, b, c one level down**
 The user: *"nested bullets are not supported. also bullet points's next line start from under
 the bullet symbol, instead of after a tabbed space … support nested bullets so someone can do

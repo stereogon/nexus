@@ -6,13 +6,12 @@
  * Pages (2026-11-14) add three: a page link pressed, a page's way up, and `/page`.
  */
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
-import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { Compartment, type Extension } from "@codemirror/state";
 import { drawSelection, EditorView, keymap, placeholder, type ViewUpdate } from "@codemirror/view";
 
 import { chartOpener, type ChartAt } from "../notes/chartEditing";
 import { citeLinks } from "../notes/citeLinks";
-import { codeLanguages } from "../notes/codeLanguages";
+import { notesMarkdown } from "../notes/language";
 import { noteEditing } from "../notes/editing";
 import { lineFlash } from "../notes/flash";
 import { findInNotes } from "../notes/findInNotes";
@@ -67,7 +66,7 @@ export function notesExtensions(setup: NotesSetup): Extension {
     keymap.of([...formatKeys, ...defaultKeymap, ...historyKeymap]),
     // GitHub-flavoured: tables, strikethrough and task lists, which plain CommonMark
     // does not have. Without it a table was not even recognised (2026-11-05).
-    markdown({ base: markdownLanguage, codeLanguages }),
+    notesMarkdown,
     EditorView.lineWrapping,
     // Drawn by the editor: WebKit did not paint its caret below the title (2026-11-07).
     drawSelection(),

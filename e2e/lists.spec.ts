@@ -65,3 +65,23 @@ test("Tab nests a numbered item as a, Enter counts on to b, and Shift-Tab brings
   await expect(line(page, "third").locator(".md-number")).toHaveText("2.");
   await expect.poll(() => saved(page)).toBe("1. first\n   1. second\n2. third");
 });
+
+test("starting a bullet under a line of text leaves that line as text, not a heading", async ({ page }) => {
+  await open(page, "Words above\n\nThe end.");
+
+  const size = () => line(page, "Words above").evaluate((element) => getComputedStyle(element.querySelector("span") ?? element).fontSize);
+  const before = await size();
+
+  await line(page, "Words above").click();
+  await page.keyboard.press("End");
+  await page.keyboard.press("Enter");
+  await page.keyboard.type("- ");
+
+  // `-` alone under text is how Markdown underlines a heading; the notes do not read it so,
+  // and the line keeps the size of text rather than taking a heading's.
+  expect(await size()).toBe(before);
+
+  await page.keyboard.type("item");
+  await expect(line(page, "item").locator(".md-bullet")).toHaveCount(1);
+  await expect.poll(() => saved(page)).toContain("Words above\n- item");
+});

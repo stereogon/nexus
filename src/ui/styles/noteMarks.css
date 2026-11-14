@@ -1,0 +1,61 @@
+/*
+ * Highlights in the notes (`notes/preview/noteMarks.ts`), moved out of `markdown.css` on
+ * 2026-11-14 when the meaning's letter joined them.
+ */
+
+/* Words highlighted in the notes, in the same four meanings and washes as the document's
+   highlights (`tokens.css`), so a term marked "exam" looks the same in both places. */
+.md-mark {
+  padding: 1px 2px;
+  border-radius: 3px;
+}
+
+.md-mark[data-semantic="key"] {
+  background: var(--highlight-key);
+}
+
+.md-mark[data-semantic="definition"] {
+  background: var(--highlight-definition);
+}
+
+.md-mark[data-semantic="exam"] {
+  background: var(--highlight-exam);
+}
+
+.md-mark[data-semantic="question"] {
+  background: var(--highlight-question);
+}
+
+/* The meaning's letter just after the words, drawn like the document's badge
+   (`highlights.css`): white on the meaning's colour, ink on amber. */
+.md-mark-glyph::after {
+  content: attr(data-glyph);
+  display: inline-block;
+  margin-left: 2px;
+  padding: 0 3px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 14px;
+  vertical-align: super;
+  color: #ffffff;
+  opacity: 0.85;
+}
+
+.md-mark-glyph[data-semantic="key"]::after {
+  background: var(--semantic-key);
+  color: var(--semantic-key-ink);
+}
+
+.md-mark-glyph[data-semantic="definition"]::after {
+  background: var(--semantic-definition);
+}
+
+.md-mark-glyph[data-semantic="exam"]::after {
+  background: var(--semantic-exam);
+}
+
+.md-mark-glyph[data-semantic="question"]::after {
+  background: var(--semantic-question);
+}
