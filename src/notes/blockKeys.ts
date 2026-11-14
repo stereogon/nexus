@@ -13,7 +13,7 @@ import { EditorState, Prec, type Extension, type Line } from "@codemirror/state"
 import { EditorView, keymap } from "@codemirror/view";
 
 import { calloutOf } from "./callout";
-import { hiddenPrefix } from "./format";
+import { blockOf, hiddenPrefix } from "./format";
 import { isCitationLine } from "./preview/find";
 
 /** A fenced code block, by its lines: the opening fence, and the closing one if it has one. */
@@ -113,7 +113,12 @@ const keepCursorVisible = EditorState.transactionFilter.of((transaction) => {
 
 /**
  * Backspace at the edge of an element acts on the element. At the start of a heading's or
- * a to-do's words it needs nothing here: CodeMirror's own deletes a hidden range whole.
+ * a to-do's words it mostly needs nothing here: CodeMirror's own deletes a hidden range
+ * whole, which makes the line text.
+ *
+ * Except a heading with a blank line above it (2026-11-14, at the user's request): the
+ * blank line goes and the heading moves up, still a heading. Making it text first left the
+ * heading lost by the time it moved. With words above, the first press still makes it text.
  */
 function backspace(view: EditorView): boolean {
   const { state } = view;
@@ -131,6 +136,15 @@ function backspace(view: EditorView): boolean {
     const marker = state.doc.line(line.number - 1);
 
     view.dispatch({ changes: { from: marker.from, to: line.from } });
+    return true;
+  }
+
+  const start = line.from + hiddenPrefix(line.text);
+
+  if (line.number > 1 && range.head === start && /^h[1-3]$/.test(blockOf(line.text)) && state.doc.line(line.number - 1).text.trim() === "") {
+    const blank = state.doc.line(line.number - 1);
+
+    view.dispatch({ changes: { from: blank.from, to: line.from }, selection: { anchor: start - line.from + blank.from } });
     return true;
   }
 

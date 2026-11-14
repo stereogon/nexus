@@ -37,6 +37,21 @@ test("# and a space make a heading, with no # to be seen; Backspace makes it tex
   await expect.poll(() => saved(page)).not.toContain("# Plans");
 });
 
+test("Backspace before a heading with a blank line above moves it up, still a heading", async ({ page }) => {
+  await line(page, "Last line").click();
+  await page.keyboard.press("End");
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("Enter");
+  await page.keyboard.type("# Plans");
+  await expect.poll(() => saved(page)).toMatch(/Last line\n\n# Plans$/u);
+
+  await page.keyboard.press("Home");
+  await page.keyboard.press("Backspace");
+  // The cursor stays at the start of its words, so typing carries on in the heading.
+  await page.keyboard.type("New ");
+  await expect.poll(() => saved(page)).toMatch(/Last line\n# New Plans$/u);
+});
+
 test("← from the start of a heading's words goes up a line, not into its hidden #", async ({ page }) => {
   await line(page, "Last line").click();
   await page.keyboard.press("End");

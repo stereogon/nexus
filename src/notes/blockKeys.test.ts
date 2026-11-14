@@ -85,6 +85,14 @@ function backspaceAt(doc: string, at: (state: EditorState) => number): string {
 }
 
 describe("Backspace at an element's edge", () => {
+  it("moves a heading up over a blank line, still a heading", () => {
+    expect(backspaceAt("Intro\n\n## Plans\nAfter", (state) => lineStart(state, 3) + 3)).toBe("Intro\n## Plans\nAfter");
+  });
+
+  it("leaves a heading under words to CodeMirror, which makes it text", () => {
+    expect(backspaceAt("Intro\n## Plans", (state) => lineStart(state, 2) + 3)).toBe("Intro\n## Plans");
+  });
+
   it("removes a citation whole from the start of the line after it", () => {
     expect(backspaceAt(`above\n${CITE}\nbelow`, (state) => lineStart(state, 3))).toBe("above\nbelow");
   });

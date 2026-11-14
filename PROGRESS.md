@@ -478,6 +478,18 @@ a rail at the window's edge at most 48px wide, Settings at its foot opening the 
 the library opened from it and shown pressed; gone again with the sidebar. The hiding journey
 now measures the title's start from the window's edge. Sabotage: without the rail, it fails.
 
+**2026-11-14 · Backspace moves a heading up over a blank line, still a heading**
+The user: *"when we click in front of a heading and click backspace, the heading goes to the
+previous line which is fine, but becomes normal text instead of remaining a heading"*.
+Reproduced: with a blank line above, the first press made it text in place (CodeMirror deleting
+the hidden `# ` whole) and the second moved the text up. Now, at the start of a heading's words
+with a blank line above, Backspace removes the blank line and the heading keeps its level,
+the cursor still at the start of its words. With words directly above, the first press still
+makes it text, as before and as Notion does; joining a heading into a sentence has no single
+right answer, so that case was left alone. Verified: gate green; unit (moved over a blank line;
+under words, declined) and a journey typing on in the moved heading, both failing with the
+rule disabled.
+
 **2026-11-14 · The error panel and item editor are islands too**
 The user: *"you haven't put the islands theme to the diagnostics page"*. Both open as a
 `.side-panel` in the pane row, which the Islands rule did not name, so they stayed flush
