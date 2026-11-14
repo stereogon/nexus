@@ -77,6 +77,15 @@ test("a page has a way up to the note it is in, and the trail goes up any number
   await expect(line(page, "Alpha line")).toBeVisible();
 });
 
+test("the Pages button stays where it is while its panel is open", async ({ page }) => {
+  const before = await pagesButton(page).boundingBox();
+
+  await pagesButton(page).click();
+  await expect(panel(page)).toBeVisible();
+
+  expect(await pagesButton(page).boundingBox()).toEqual(before);
+});
+
 test("the Pages panel puts back the link of a page whose link was taken out", async ({ page }) => {
   await pagesButton(page).click();
 

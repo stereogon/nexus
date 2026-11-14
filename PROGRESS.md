@@ -518,6 +518,12 @@ here"), and deletes after a warning. Drawn on the canvas first (the Pages boards
   flight with the version it returned, and a conflict while leaving is reported
   (`ERR_NOTES_LEFT_UNSAVED`) rather than lost.
 
+Fixed after the first build (the user: *"when i click on the pages in the note button, the
+button jumps to the left"*): the open panel renders between the Pages button and the Aa
+toggle, so `.notes-pages-button + .notes-format-toggle`, which cancels the toggle's auto margin,
+stopped matching and two auto margins split the space. Now `~`, any later sibling. A journey
+holds the button's box unchanged while the panel is open; with `+` back, it fails.
+
 Known gaps: a page cannot be renamed yet; a page's images resolve against the item's own
 `assets/`, which is where pasting puts them; the link row does not show how many pages are
 inside the page it opens (the Pages panel does).

@@ -165,7 +165,9 @@
   cursor: pointer;
 }
 
-.notes-pages-button + .notes-format-toggle {
+/* Any later sibling, not only the next: the panel, while open, is rendered between the two,
+   and the toggle's own auto margin would then split the space and move the button. */
+.notes-pages-button ~ .notes-format-toggle {
   margin-left: 0;
 }
 
