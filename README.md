@@ -151,7 +151,9 @@ The screenshots use the test suite's sample vault, not real notes. They are reta
   Dark, Funky, Solar, Sakura, Sepia, Sky, Meadow, Citrus, Lagoon, Indigo, Neon, Fjord,
   Forest, Ocean, Terminal, Midnight, Emerald, Ember and Aurora — or follow macOS between
   Paper and Ink, chosen in Settings (the gear at the foot of the sidebar). Every one is
-  contrast-tested, and the page stays white in all of them. Where a theme's accent would
+  contrast-tested, and the page stays white in all of them unless you choose **dark pages**
+  (Settings → Documents, or the moon in a document's bar), which inverts pages in dark
+  themes — photos and scans too, so it is off until you turn it on. Where a theme's accent would
   clash with a highlight colour, that highlight takes another colour in that theme; its
   letter (K/D/E/Q) stays.
 - A font, in Settings: the theme's own, **Readable** (Atkinson Hyperlegible Next) or

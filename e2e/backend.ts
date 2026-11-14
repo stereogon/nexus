@@ -17,6 +17,7 @@ import { z } from "zod";
 
 import { FONTS } from "../src/ipc/font";
 import { WINDOW_LAYOUTS } from "../src/ipc/layout";
+import { PAGE_TONES } from "../src/ipc/pageTone";
 import type { LectureRow } from "../src/ipc/vault";
 import { annotationHandlers } from "./answers/annotations";
 import { folderHandlers, foldersOf, type Held } from "./answers/folders";
@@ -60,6 +61,7 @@ export function backend(fixture: Fixture): (command: string, args?: InvokeArgs) 
   let lastLecture = fixture.lastLecture ?? null;
   let layout = fixture.layout ?? "classic";
   let font = fixture.font ?? "theme";
+  let pageTone = fixture.pageTone ?? "printed";
   // Documents whose notice was asked not to be shown again; per-device, like the positions.
   const quietNotices = new Set<string>();
 
@@ -74,6 +76,11 @@ export function backend(fixture: Fixture): (command: string, args?: InvokeArgs) 
     last_font: () => font,
     remember_font: (args) => {
       font = z.object({ font: z.enum(FONTS) }).parse(args).font;
+      return null;
+    },
+    last_page_tone: () => pageTone,
+    remember_page_tone: (args) => {
+      pageTone = z.object({ tone: z.enum(PAGE_TONES) }).parse(args).tone;
       return null;
     },
     last_window_layout: () => layout,

@@ -10,6 +10,7 @@
 import type { Annotation } from "../src/ipc/annotations";
 import type { DocumentRisk } from "../src/ipc/document";
 import type { Font } from "../src/ipc/font";
+import type { PageTone } from "../src/ipc/pageTone";
 import type { WindowLayout } from "../src/ipc/layout";
 import type { LectureRow } from "../src/ipc/vault";
 
@@ -62,6 +63,8 @@ export interface Fixture {
   readonly layout?: WindowLayout;
   /** The font this device last chose; absent means none yet, so the theme's. */
   readonly font?: Font;
+  /** How this device last chose to draw pages in a dark theme; absent means as printed. */
+  readonly pageTone?: PageTone;
   /** What the clipboard holds as text, for ⌘⇧V; absent means no text. */
   readonly clipboard?: string;
 }

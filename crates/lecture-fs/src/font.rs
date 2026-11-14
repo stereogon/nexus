@@ -14,10 +14,7 @@ use std::path::Path;
 use lecture_core::CoreError;
 use serde::{Deserialize, Serialize};
 
-use crate::device_state::state_base;
-use crate::error::io_error;
-use crate::storage::AtomicFsStorage;
-use crate::vault_root::VaultRoot;
+use crate::device_word;
 
 /// Names the font to use on launch.
 pub const FONT_FILE_NAME: &str = "font.txt";
@@ -61,38 +58,24 @@ impl fmt::Display for Font {
     }
 }
 
-fn file_path() -> Result<lecture_core::RelativePath, CoreError> {
-    lecture_core::RelativePath::parse(FONT_FILE_NAME)
-}
-
 /// Records `font` for this device, under `base`.
 ///
 /// # Errors
 ///
 /// Returns [`CoreError::Io`] if `base` cannot be created or the write fails.
 pub fn remember(base: &Path, font: Font) -> Result<(), CoreError> {
-    std::fs::create_dir_all(base)
-        .map_err(|e| io_error("create the app support folder", base, e))?;
-
-    let storage = AtomicFsStorage::new(VaultRoot::open(base)?);
-
-    storage.write(&file_path()?, format!("{font}\n").as_bytes())
+    device_word::remember(base, FONT_FILE_NAME, font.word())
 }
 
 /// The font recorded for this device, or the theme's.
 ///
-/// Infallible, like [`crate::window_layout::recall`]: nothing recorded, a file that will not
-/// read and a hand-edited one all mean "use the theme's font".
+/// Infallible: nothing recorded, a file that will not read and a hand-edited one all mean
+/// the default.
 #[must_use]
 pub fn recall(base: &Path) -> Font {
-    let read = || {
-        let storage = AtomicFsStorage::new(VaultRoot::open(base).ok()?);
-        let bytes = storage.read(&file_path().ok()?).ok()?;
-
-        Font::from_word(String::from_utf8(bytes).ok()?.trim())
-    };
-
-    read().unwrap_or_default()
+    device_word::recall(base, FONT_FILE_NAME)
+        .and_then(|word| Font::from_word(&word))
+        .unwrap_or_default()
 }
 
 /// Records `font` in the real Application Support directory.
@@ -101,14 +84,11 @@ pub fn recall(base: &Path) -> Font {
 ///
 /// As [`remember`], plus [`CoreError::HomeDirectoryUnavailable`] if `HOME` is unset.
 pub fn remember_for_this_device(font: Font) -> Result<(), CoreError> {
-    let home = std::env::var_os("HOME").ok_or(CoreError::HomeDirectoryUnavailable)?;
-
-    remember(&state_base(Path::new(&home)), font)
+    remember(&device_word::this_device()?, font)
 }
 
 /// The font for this device, from the real Application Support directory.
 #[must_use]
 pub fn recall_for_this_device() -> Font {
-    std::env::var_os("HOME")
-        .map_or_else(Font::default, |home| recall(&state_base(Path::new(&home))))
+    device_word::this_device().map_or_else(|_| Font::default(), |base| recall(&base))
 }

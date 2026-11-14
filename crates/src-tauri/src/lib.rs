@@ -39,7 +39,9 @@ pub use layout::{
 };
 pub use picker::{pick_document, pick_vault_directory};
 pub use reorganize::{apply_reorganize, preview_reorganize};
-pub use theme::{last_font, last_theme, remember_font, remember_theme};
+pub use theme::{
+    last_font, last_page_tone, last_theme, remember_font, remember_page_tone, remember_theme,
+};
 pub use vault::{
     CommandError, LectureRow, ProblemRow, VaultSummary, last_vault, open_vault, remember_vault,
 };
@@ -81,6 +83,8 @@ pub fn run() -> Result<(), tauri::Error> {
             last_window_layout,
             last_font,
             remember_font,
+            last_page_tone,
+            remember_page_tone,
             remember_window_layout,
             position::lecture_position,
             position::remember_position,

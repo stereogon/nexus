@@ -1,0 +1,112 @@
+/**
+ * Dark pages (2026-11-14, at the user's request, amending §3's "no dark-mode PDF
+ * inversion"): in a dark theme, when chosen, a document's pages are inverted to sit with it.
+ * Off unless chosen, because photographs and scans invert as well.
+ *
+ * Only the page's picture is inverted, never what the app draws on it, so highlights keep
+ * their meanings' colours and stickies their accent. `hue-rotate` turns the colours back
+ * round after the inversion, so red stays red and only light and dark change places; 0.92
+ * rather than 1 puts white at #141414, not black, which is kinder to read on. Keyed on
+ * `data-scheme`, which `applyTheme` writes, and `data-pages`, which `pageTone.ts` writes.
+ */
+
+/* The page's own colours, re-said on the page: `applyTheme` writes the theme's on the root
+   inline, which a stylesheet cannot outrank there. The accent drawn on the page becomes the
+   theme's own, made for a dark ground, in place of the ink made for white. */
+:root[data-scheme="dark"][data-pages="dark"] .pdf-page {
+  --page: #141414;
+  --accent-ink: var(--accent);
+}
+
+:root[data-scheme="dark"][data-pages="dark"] .pdf-canvas {
+  filter: invert(0.92) hue-rotate(180deg);
+}
+
+/* Multiply darkens, so on a dark page a highlight vanished; screen lightens, so it tints. */
+:root[data-scheme="dark"][data-pages="dark"] .highlight,
+:root[data-scheme="dark"][data-pages="dark"] .find-mark {
+  mix-blend-mode: screen;
+}
+
+/* The marks drawn on white, drawn on the dark page instead. */
+:root[data-scheme="dark"][data-pages="dark"] .sticky-icon,
+:root[data-scheme="dark"][data-pages="dark"] .highlight-notes {
+  background: var(--page);
+}
+
+:root[data-scheme="dark"][data-pages="dark"] .sticky-icon:hover,
+:root[data-scheme="dark"][data-pages="dark"] .sticky-icon:focus-visible,
+:root[data-scheme="dark"][data-pages="dark"] .highlight-notes:hover,
+:root[data-scheme="dark"][data-pages="dark"] .highlight-notes:focus-visible {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* The moon in the document's bar: only where it does something. */
+:root:not([data-scheme="dark"]) .page-tone-toggle {
+  display: none;
+}
+
+/* ---------------------------------------------------------------------------------
+   The switch in Settings (`PageToneChoice`).
+   --------------------------------------------------------------------------------- */
+.page-tone-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-family: var(--font-ui);
+  text-align: left;
+  white-space: normal;
+  cursor: pointer;
+}
+
+.page-tone-words {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.page-tone-label {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.page-tone-line {
+  color: var(--text-meta);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.page-tone-choice .switch {
+  position: relative;
+  flex: 0 0 34px;
+  height: 20px;
+  margin-left: auto;
+  border-radius: 10px;
+  background: var(--border-strong);
+}
+
+.page-tone-choice .switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--surface);
+}
+
+.page-tone-choice[aria-checked="true"] .switch {
+  background: var(--accent);
+}
+
+.page-tone-choice[aria-checked="true"] .switch::after {
+  left: 16px;
+  background: var(--on-accent);
+}

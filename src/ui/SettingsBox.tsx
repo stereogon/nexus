@@ -1,5 +1,5 @@
 /**
- * Settings: the theme, the font and the window's layout (2026-11-14), the error panel and the vault,
+ * Settings: the theme, the font, dark pages and the window's layout (2026-11-14), the error panel and the vault,
  * behind one control at the foot of the sidebar.
  *
  * Asked for on 2026-11-07: *"it is not always required that you put icons together and
@@ -16,6 +16,7 @@ import type { WindowLayout } from "../ipc/layout";
 import { FontChoices } from "./FontChoices";
 import { LayoutChoices } from "./LayoutChoices";
 import type { MenuAt } from "./menuPlacement";
+import { PageToneChoice } from "./PageToneChoice";
 import { ThemeChoices } from "./ThemeChoices";
 import type { ThemeName } from "./themes";
 import { useFloating } from "./useFloating";
@@ -75,6 +76,13 @@ export function SettingsBox({
           Font
         </h3>
         <FontChoices font={font} onChoose={onChooseFont} />
+      </section>
+
+      <section aria-labelledby="settings-documents" className="settings-section">
+        <h3 className="settings-title" id="settings-documents">
+          Documents
+        </h3>
+        <PageToneChoice />
       </section>
 
       <section aria-labelledby="settings-layout" className="settings-section">

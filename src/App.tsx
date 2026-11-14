@@ -44,6 +44,7 @@ import { useSearchWindow } from "./ui/useSearchWindow";
 import { useSidebar } from "./ui/useSidebar";
 import { useSidebarWidth } from "./ui/useSidebarWidth";
 import { useTheme } from "./ui/useTheme";
+import { loadPageTone } from "./ui/pageTone";
 import { useFont } from "./ui/useFont";
 import { useWindowLayout } from "./ui/useWindowLayout";
 import { WindowBar } from "./ui/WindowBar";
@@ -63,6 +64,10 @@ export function App() {
   const appearance = useTheme();
   const layout = useWindowLayout();
   const font = useFont();
+  // Dark pages are read by the document's bar and Settings from their own store.
+  useEffect(() => {
+    void loadPageTone();
+  }, []);
   const notice = useNotice();
   const forgetEditing = useCallback(() => {
     setEditing(null);

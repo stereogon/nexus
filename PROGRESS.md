@@ -478,6 +478,44 @@ a rail at the window's edge at most 48px wide, Settings at its foot opening the 
 the library opened from it and shown pressed; gone again with the sidebar. The hiding journey
 now measures the title's start from the window's edge. Sabotage: without the rail, it fails.
 
+**2026-11-14 · Dark pages, by choice (amending §3)**
+The user: *"can we actually have a preference of if people want the pdf to be inverted (dark
+mode) or want the pdfs to be in its usual color? i think it is a good thing to have"*. §3
+ruled inversion out, so this was raised before building; the user chose it as an opt-in, off
+by default, and §3 carries a dated amendment.
+
+- **What is inverted:** the page's canvas only, `invert(0.92) hue-rotate(180deg)` — white
+  becomes #141414 rather than black, and colours keep their hue. Highlights, find marks,
+  stickies and the text layer are layers above it and are never inverted. Highlights and find
+  marks blend by `screen` on a dark page (`multiply` made them vanish); the sticky glyph and
+  the notes-link marker, drawn on white, take the dark page; on-page chrome takes the theme's
+  `accent`, since `accentInk` is darkened for white. `applyTheme` writes tokens inline on the
+  root, which a stylesheet cannot outrank there, so the page's tokens are re-said on
+  `.pdf-page`.
+- **Only in dark themes.** In a light theme the choice does nothing and the moon is hidden.
+- **Two controls, one choice:** Settings → Documents (a switch that says photos and scans
+  invert too) and a moon in the document's bar, for turning it off for a scanned page in one
+  click. They are far apart in the tree, so the tone lives in a module store read with
+  `useSyncExternalStore` (`pageTone.ts`, the `errorLog` pattern) rather than as a prop through
+  every pane. A choice made before the recorded tone arrives at launch is not undone by it.
+- **Per device**, in `page-tone.txt` (`lecture_fs::page_tone`). With the layout and the font
+  this was the third copy of the same one-word-file code, so the three now share
+  `lecture_fs::device_word` (write atomically, read infallibly); each keeps its own type,
+  words and default.
+- Drawn on the canvas first (row "Fonts, and dark pages", which also draws the Font section
+  built earlier).
+
+Verified: gate green. Rust: the tone's round trip, its default, an unreadable file reading as
+printed; the layout's and font's tests unchanged and passing on the shared helper. Unit: the
+store applies the recorded tone, applies and records a choice, and keeps a choice made before
+the recorded tone arrives. Journeys (`darkPages.spec.ts`): off at first, the moon inverts the
+canvas and darkens the page, the highlight layer is not inverted and blends by screen, and
+the moon undoes it; Settings' switch is the same choice and says what it costs; a light
+theme stays as printed with no moon though dark was chosen; a device that chose dark opens
+dark. Sabotage, each failing: no inversion; multiply kept; the dark-theme guard dropped; the
+recorded tone never loaded; the Settings switch dead; the launch guard removed. Looked at in a
+screenshot of Ink with three highlights and a sticky on a dark page.
+
 **2026-11-14 · A font setting, after Slack's, and Funky's own face**
 The user: *"can we also add support for other fonts like slack … monospace font, and maybe
 some other more readable font, which is outside the brand identity that is also fine, and
@@ -500,8 +538,8 @@ person's over the theme's, and brings the brand's Bricolage headings back.
   Mono rules kept, since Mono was not part of this change — so `fonts.css` is now the
   script's output with the earlier Mono rules spliced back. A later rerun will bring the
   newer Mono with it, which is fine.
-- **Not on the canvas yet.** The Settings box's Font section was built without being drawn
-  there first.
+- **Not on the canvas at first.** The Font section was built before it was drawn; it was drawn
+  afterwards, in the row added for dark pages.
 
 Verified: gate green. Rust: the font's round trip, its default, an unreadable file reading
 as the theme's. Unit: the three Font radios, the theme's checked, each chosen. Journeys

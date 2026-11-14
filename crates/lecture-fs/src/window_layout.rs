@@ -14,10 +14,7 @@ use std::path::Path;
 use lecture_core::CoreError;
 use serde::{Deserialize, Serialize};
 
-use crate::device_state::state_base;
-use crate::error::io_error;
-use crate::storage::AtomicFsStorage;
-use crate::vault_root::VaultRoot;
+use crate::device_word;
 
 /// Names the layout to use on launch.
 pub const LAYOUT_FILE_NAME: &str = "window-layout.txt";
@@ -58,38 +55,24 @@ impl fmt::Display for WindowLayout {
     }
 }
 
-fn file_path() -> Result<lecture_core::RelativePath, CoreError> {
-    lecture_core::RelativePath::parse(LAYOUT_FILE_NAME)
-}
-
 /// Records `layout` for this device, under `base`.
 ///
 /// # Errors
 ///
 /// Returns [`CoreError::Io`] if `base` cannot be created or the write fails.
 pub fn remember(base: &Path, layout: WindowLayout) -> Result<(), CoreError> {
-    std::fs::create_dir_all(base)
-        .map_err(|e| io_error("create the app support folder", base, e))?;
-
-    let storage = AtomicFsStorage::new(VaultRoot::open(base)?);
-
-    storage.write(&file_path()?, format!("{layout}\n").as_bytes())
+    device_word::remember(base, LAYOUT_FILE_NAME, layout.word())
 }
 
 /// The layout recorded for this device, or Classic.
 ///
-/// Infallible, like [`crate::pane_width::recall`]: nothing recorded, a file that will not
-/// read and a hand-edited one all mean "open in Classic".
+/// Infallible: nothing recorded, a file that will not read and a hand-edited one all mean
+/// the default.
 #[must_use]
 pub fn recall(base: &Path) -> WindowLayout {
-    let read = || {
-        let storage = AtomicFsStorage::new(VaultRoot::open(base).ok()?);
-        let bytes = storage.read(&file_path().ok()?).ok()?;
-
-        WindowLayout::from_word(String::from_utf8(bytes).ok()?.trim())
-    };
-
-    read().unwrap_or_default()
+    device_word::recall(base, LAYOUT_FILE_NAME)
+        .and_then(|word| WindowLayout::from_word(&word))
+        .unwrap_or_default()
 }
 
 /// Records `layout` in the real Application Support directory.
@@ -98,15 +81,11 @@ pub fn recall(base: &Path) -> WindowLayout {
 ///
 /// As [`remember`], plus [`CoreError::HomeDirectoryUnavailable`] if `HOME` is unset.
 pub fn remember_for_this_device(layout: WindowLayout) -> Result<(), CoreError> {
-    let home = std::env::var_os("HOME").ok_or(CoreError::HomeDirectoryUnavailable)?;
-
-    remember(&state_base(Path::new(&home)), layout)
+    remember(&device_word::this_device()?, layout)
 }
 
 /// The layout for this device, from the real Application Support directory.
 #[must_use]
 pub fn recall_for_this_device() -> WindowLayout {
-    std::env::var_os("HOME").map_or_else(WindowLayout::default, |home| {
-        recall(&state_base(Path::new(&home)))
-    })
+    device_word::this_device().map_or_else(|_| WindowLayout::default(), |base| recall(&base))
 }

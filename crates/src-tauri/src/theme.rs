@@ -1,4 +1,5 @@
-//! Reading and recording which theme this device uses, and which font (2026-11-14).
+//! Reading and recording which theme this device uses, which font, and whether documents'
+//! pages go dark in a dark theme (both 2026-11-14).
 //!
 //! Two commands, matching `remember_vault` / `last_vault`: the store is per-device state
 //! outside the vault (§3), and the window asks for it on launch and writes it back when
@@ -8,6 +9,7 @@ use std::str::FromStr;
 
 use lecture_core::Theme;
 use lecture_fs::font::{self, Font};
+use lecture_fs::page_tone::{self, PageTone};
 use lecture_fs::{logging, theme};
 
 /// The theme this device is set to, as the name the UI uses.
@@ -50,5 +52,20 @@ pub fn last_font() -> Font {
 pub fn remember_font(font: Font) {
     if let Err(error) = font::remember_for_this_device(font) {
         logging::failure("record the font", &error);
+    }
+}
+
+/// How this device draws documents' pages in a dark theme: as printed, or dark.
+#[tauri::command]
+#[must_use]
+pub fn last_page_tone() -> PageTone {
+    page_tone::recall_for_this_device()
+}
+
+/// Records the page tone, infallible as [`remember_theme`] is and for the same reason.
+#[tauri::command]
+pub fn remember_page_tone(tone: PageTone) {
+    if let Err(error) = page_tone::remember_for_this_device(tone) {
+        logging::failure("record the page tone", &error);
     }
 }

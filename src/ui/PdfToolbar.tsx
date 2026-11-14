@@ -7,7 +7,12 @@
  * is awkward on a touchpad), drawn as the canvas's tool control. The canvas also draws a
  * Sticky tool; sticky notes are made from the highlight menu, so there is no third tool
  * until there is something for it to do.
+ *
+ * The moon (2026-11-14) turns dark pages on and off, the same choice as Settings has; it is
+ * shown in dark themes only, where it does something (`darkPages.css`).
  */
+import { MoonIcon } from "./icons";
+import { choosePageTone, usePageTone } from "./pageTone";
 import type { ViewMode } from "./viewMode";
 
 export function PdfToolbar({
@@ -36,6 +41,8 @@ export function PdfToolbar({
   readonly notesOpen: boolean;
   readonly onNotes: () => void;
 }) {
+  const darkPages = usePageTone() === "dark";
+
   return (
     <div className="viewer-bar pane-head" data-tauri-drag-region="">
       <span className="viewer-title" data-tauri-drag-region="">
@@ -87,6 +94,18 @@ export function PdfToolbar({
         </button>
       </div>
 
+      <button
+        aria-label="Dark pages"
+        aria-pressed={darkPages}
+        className="chrome-icon page-tone-toggle"
+        onClick={() => {
+          choosePageTone(darkPages ? "printed" : "dark");
+        }}
+        title="Dark pages: photos and scans invert too"
+        type="button"
+      >
+        <MoonIcon />
+      </button>
       <button aria-label="Find in document" className="chrome-icon" onClick={onFind} title="Find (⌘F)" type="button">
         <svg aria-hidden="true" fill="none" height="16" stroke="currentColor" strokeLinecap="round" strokeWidth="1.4" viewBox="0 0 16 16" width="16">
           <circle cx="7" cy="7" r="4.5" />

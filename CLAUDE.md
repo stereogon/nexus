@@ -247,6 +247,14 @@ and explain why. Rationale is recorded in `PROGRESS.md`.
   are the starting point those values were tuned from.)*
 - **No dark-mode PDF inversion.** Inverting a document corrupts photographs, colour-coded
   diagrams and scans. The page stays light in both themes, on a dark bed.
+  *(Amended 2026-11-14 at the user's request: inversion is now a **choice**, never a
+  default. Settings → Documents → "Dark pages in dark themes", or the moon in a document's
+  bar, inverts the page's picture — `invert(0.92) hue-rotate(180deg)`, so hues survive — in
+  dark themes only, and says on the switch that photos and scans invert too. Highlights,
+  stickies and the text layer are never inverted; on a dark page highlights blend by
+  `screen`, and on-page chrome uses the theme's `accent` in place of `accentInk`. Off unless
+  chosen, per device. The reasoning that ruled it out still holds, which is why it is the
+  person's call and not the app's. Rules in `src/ui/styles/darkPages.css`.)*
 - The document surface is light in both themes, so page-drawn annotation chrome uses
   `accentInk` (sized for white) while app chrome uses the theme `accent`.
 - *(Amended 2026-11-07: the accent is now per theme — Paper's is `#A8195E`, Ink's

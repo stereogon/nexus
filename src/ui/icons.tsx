@@ -66,6 +66,15 @@ export function ErrorsIcon() {
   );
 }
 
+/** A crescent: dark pages, in a document's bar. */
+export function MoonIcon() {
+  return (
+    <Icon>
+      <path d="M12.5 9.6A5 5 0 016.4 3.5a5 5 0 106.1 6.1z" />
+    </Icon>
+  );
+}
+
 /** A palette: the control opens the theme picker. */
 export function ThemeIcon() {
   return (
