@@ -38,6 +38,7 @@ pub mod storage;
 pub mod theme;
 pub mod vault;
 pub mod vault_root;
+pub mod window_layout;
 
 pub use annotation_store::AnnotationStore;
 pub use asset_store::{AssetSave, AssetStore, Refusal, assets_dir};

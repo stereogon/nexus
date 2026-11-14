@@ -50,6 +50,8 @@ function footing(theme: ThemeName = "system") {
     onShowErrors: vi.fn(),
     theme,
     onChooseTheme: vi.fn(),
+    layout: "classic" as const,
+    onChooseLayout: vi.fn(),
   };
 }
 
@@ -74,10 +76,8 @@ function show(
     onEdit: vi.fn(),
     onMake: vi.fn(),
     onImport: vi.fn(),
-    onHide: vi.fn(),
     onChooseVault: vi.fn(),
     foot: footing(),
-    onSearch: vi.fn(),
     ...over,
   };
 
@@ -221,24 +221,6 @@ describe("what the sidebar calls", () => {
     fireEvent.click(screen.getByRole("menuitem", { name: "Open another vault…" }));
 
     expect(props.onChooseVault).toHaveBeenCalledOnce();
-  });
-
-  it("hides itself from its own control", () => {
-    const props = show(VAULT);
-
-    fireEvent.click(screen.getByRole("button", { name: "Hide sidebar" }));
-
-    expect(props.onHide).toHaveBeenCalledOnce();
-  });
-
-  it("opens the search window from its control, which says the shortcut", () => {
-    const props = show(VAULT);
-    const control = screen.getByRole("button", { name: /Search everything/u });
-
-    fireEvent.click(control);
-
-    expect(props.onSearch).toHaveBeenCalledOnce();
-    expect(control.textContent).toContain("⌘P");
   });
 });
 

@@ -32,7 +32,6 @@ import { Sidebar } from "./ui/Sidebar";
 import { SidebarFoot } from "./ui/SidebarFoot";
 import { nameOf, parentOf, vaultNameOf } from "./ui/folders";
 import { existingFolder, sidebarRows } from "./ui/sidebarRows";
-import { SidebarIcon } from "./ui/icons";
 import { useAddDocuments } from "./ui/useAddDocuments";
 import { useErrorPanel } from "./ui/useErrorPanel";
 import { useFinding } from "./ui/useFinding";
@@ -45,6 +44,8 @@ import { useSearchWindow } from "./ui/useSearchWindow";
 import { useSidebar } from "./ui/useSidebar";
 import { useSidebarWidth } from "./ui/useSidebarWidth";
 import { useTheme } from "./ui/useTheme";
+import { useWindowLayout } from "./ui/useWindowLayout";
+import { WindowBar } from "./ui/WindowBar";
 import { lecturesOf, rootOf } from "./ui/vaultState";
 import { useVault } from "./ui/useVault";
 import { headingMeta } from "./notes/pageHeading";
@@ -59,6 +60,7 @@ export function App() {
   const remembered = useRememberedVault();
   const reading = useOpenLecture();
   const appearance = useTheme();
+  const layout = useWindowLayout();
   const notice = useNotice();
   const forgetEditing = useCallback(() => {
     setEditing(null);
@@ -128,24 +130,14 @@ export function App() {
     onShowErrors: errorPanel.show,
     theme: appearance.theme,
     onChooseTheme: appearance.choose,
+    layout: layout.layout,
+    onChooseLayout: layout.choose,
   };
 
 
   return (
     <div className="app">
-      {/* Beside the window's own buttons, only while the sidebar that holds the hide
-          control is hidden; the leftmost header leaves room for both (`--lead-inset`). */}
-      {!sidebar.shown && (
-        <button
-          aria-label="Show sidebar"
-          className="chrome-icon sidebar-show"
-          onClick={sidebar.toggle}
-          title="Show sidebar"
-          type="button"
-        >
-          <SidebarIcon />
-        </button>
-      )}
+      <WindowBar onSearch={searching.show} onToggleSidebar={sidebar.toggle} sidebarShown={sidebar.shown} />
 
       <div className="panes" data-sidebar={sidebar.shown ? "shown" : "hidden"} ref={panes}>
         {sidebar.shown && (
@@ -155,11 +147,9 @@ export function App() {
             onEdit={setEditing}
             onFolder={goToFolder}
             onImport={add}
-            onHide={sidebar.toggle}
             onChooseVault={choose}
             foot={foot}
             onMake={actions.make}
-            onSearch={searching.show}
             onOpen={(lecture) => {
               reading.open(summary.root, lecture);
             }}
@@ -203,7 +193,7 @@ export function App() {
           />
         ) : (
           <main className="pane">
-            <div className="pane-head lead pane-strip" data-tauri-drag-region="" />
+            <div className="pane-head pane-strip" data-tauri-drag-region="" />
             {reading.failure !== null && <Failure error={reading.failure} />}
             {zone.failure !== null && <Failure error={zone.failure} />}
 

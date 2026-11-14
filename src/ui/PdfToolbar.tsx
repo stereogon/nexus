@@ -37,7 +37,7 @@ export function PdfToolbar({
   readonly onNotes: () => void;
 }) {
   return (
-    <div className="viewer-bar pane-head lead" data-tauri-drag-region="">
+    <div className="viewer-bar pane-head" data-tauri-drag-region="">
       <span className="viewer-title" data-tauri-drag-region="">
         {place !== "" && <span className="viewer-place">{`${place} /`}</span>}
         {title}

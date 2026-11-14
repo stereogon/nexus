@@ -1,6 +1,6 @@
 /**
- * Settings: the theme, the error panel and the vault, behind one control at the foot of
- * the sidebar.
+ * Settings: the theme, the window's layout (2026-11-14), the error panel and the vault,
+ * behind one control at the foot of the sidebar.
  *
  * Asked for on 2026-11-07: *"it is not always required that you put icons together and
  * visible … we can have a settings icon, and that can open a box to select these things,
@@ -11,6 +11,8 @@
  * A dialog rather than a menu, because it holds a radio group and buttons rather than a
  * list of commands. Escape or a click elsewhere closes it.
  */
+import type { WindowLayout } from "../ipc/layout";
+import { LayoutChoices } from "./LayoutChoices";
 import type { MenuAt } from "./menuPlacement";
 import { ThemeChoices } from "./ThemeChoices";
 import type { ThemeName } from "./themes";
@@ -22,6 +24,8 @@ export function SettingsBox({
   root,
   theme,
   onChooseTheme,
+  layout,
+  onChooseLayout,
   errors,
   onShowErrors,
   onDismiss,
@@ -30,6 +34,8 @@ export function SettingsBox({
   readonly root: string;
   readonly theme: ThemeName;
   readonly onChooseTheme: (theme: ThemeName) => void;
+  readonly layout: WindowLayout;
+  readonly onChooseLayout: (layout: WindowLayout) => void;
   /** How many errors have been shown since launch. */
   readonly errors: number;
   readonly onShowErrors: () => void;
@@ -56,6 +62,13 @@ export function SettingsBox({
           Theme
         </h3>
         <ThemeChoices onChoose={onChooseTheme} theme={theme} />
+      </section>
+
+      <section aria-labelledby="settings-layout" className="settings-section">
+        <h3 className="settings-title" id="settings-layout">
+          Layout
+        </h3>
+        <LayoutChoices layout={layout} onChoose={onChooseLayout} />
       </section>
 
       <section aria-labelledby="settings-diagnostics" className="settings-section">

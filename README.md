@@ -137,6 +137,8 @@ The screenshots use the test suite's sample vault, not real notes. They are reta
   brings it back. Side by side is the default.
 - Saves as you type. The divider between document and notes can be dragged, and so can the
   sidebar's edge; both widths are remembered on this Mac.
+- A bar across the top holds the sidebar's toggle and Search everything. With the sidebar
+  hidden, a slim rail keeps its N, the highlights library and Settings.
 
 **Linking**
 - **Link to notes** saves the highlight and inserts a citation at your cursor:
@@ -152,6 +154,8 @@ The screenshots use the test suite's sample vault, not real notes. They are reta
   contrast-tested, and the page stays white in all of them. Where a theme's accent would
   clash with a highlight colour, that highlight takes another colour in that theme; its
   letter (K/D/E/Q) stays.
+- Two layouts, in Settings: **Classic**, panes edge to edge, or **Islands**, each pane a
+  rounded island on one base, in every theme.
 
 **Diagnostics**
 - An error panel (`⌘0`, or Settings → Errors since launch) lists every error shown since

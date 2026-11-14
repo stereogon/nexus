@@ -4,10 +4,12 @@
  * at the user's request: one settings control rather than an icon each).
  *
  * With the sidebar hidden, the same two controls stand in a narrow rail down the window's
- * left edge (`rail`, 2026-11-14, at the user's request), so neither goes away with it.
+ * left edge (`rail`, 2026-11-14, at the user's request), so neither goes away with it, under
+ * the sidebar's N.
  */
 import { useState, useSyncExternalStore } from "react";
 
+import type { WindowLayout } from "../ipc/layout";
 import { onErrorsChanged, shownErrors } from "./errorLog";
 import { GearIcon, HighlightsIcon } from "./icons";
 import type { MenuAt } from "./menuPlacement";
@@ -22,22 +24,32 @@ export function SidebarFoot({
   onShowErrors,
   theme,
   onChooseTheme,
+  layout,
+  onChooseLayout,
   rail = false,
 }: {
   readonly root: string;
-  /** Drawn as the rail beside a hidden sidebar: the two controls alone, one above the other. */
+  /** Drawn as the rail beside a hidden sidebar: the N, and the two controls one above the other. */
   readonly rail?: boolean;
   readonly libraryShown: boolean;
   readonly onToggleLibrary: () => void;
   readonly onShowErrors: () => void;
   readonly theme: ThemeName;
   readonly onChooseTheme: (theme: ThemeName) => void;
+  readonly layout: WindowLayout;
+  readonly onChooseLayout: (layout: WindowLayout) => void;
 }) {
   const [settings, setSettings] = useState<MenuAt | null>(null);
   const errors = useSyncExternalStore(onErrorsChanged, shownErrors).length;
 
   return (
     <div className={rail ? "sidebar-rail" : "sidebar-foot"}>
+      {/* The sidebar's own mark at the top of the rail, so the closed sidebar still carries it. */}
+      {rail && (
+        <span aria-label="Nexus" className="vault-mark rail-mark" role="img">
+          N
+        </span>
+      )}
       <button
         aria-label="Highlights library"
         aria-pressed={libraryShown}
@@ -75,6 +87,8 @@ export function SidebarFoot({
         <SettingsBox
           at={settings}
           errors={errors}
+          layout={layout}
+          onChooseLayout={onChooseLayout}
           onChooseTheme={onChooseTheme}
           onDismiss={() => {
             setSettings(null);

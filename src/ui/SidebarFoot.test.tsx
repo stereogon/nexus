@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 /**
- * The sidebar's foot: the library on its own, and Settings, which holds the theme and the
- * error panel (2026-11-07) and says on its control when there have been errors.
+ * The sidebar's foot: the library on its own, and Settings, which holds the theme, the layout
+ * (2026-11-14) and the error panel (2026-11-07) and says on its control when there have been
+ * errors. And the same controls as the rail beside a hidden sidebar, under the N.
  */
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { clearErrors, noteError } from "./errorLog";
@@ -15,8 +16,11 @@ afterEach(() => {
   clearErrors();
 });
 
-function show(theme: ThemeName = "system") {
+function show(theme: ThemeName = "system", rail = false) {
   const props = {
+    rail,
+    layout: "classic" as const,
+    onChooseLayout: vi.fn(),
     root: "/Users/me/NexusVault",
     libraryShown: false,
     onToggleLibrary: vi.fn(),
@@ -39,7 +43,7 @@ describe("the foot of the sidebar", () => {
 
     const settings = screen.getByRole("dialog", { name: "Settings" });
     expect(screen.getByRole("radio", { name: /Neon/u }).getAttribute("aria-checked")).toBe("true");
-    expect(screen.getAllByRole("radio")).toHaveLength(25);
+    expect(within(screen.getByRole("radiogroup", { name: "Theme" })).getAllByRole("radio")).toHaveLength(25);
     expect(settings.textContent).toContain("/Users/me/NexusVault");
 
     fireEvent.click(screen.getByRole("radio", { name: /Sepia/u }));
@@ -49,6 +53,30 @@ describe("the foot of the sidebar", () => {
 
     fireEvent.keyDown(document, { key: "Escape" });
     expect(screen.queryByRole("dialog", { name: "Settings" })).toBeNull();
+  });
+
+  it("chooses the layout in Settings, Classic checked to start with, and stays open", () => {
+    const props = show();
+
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+
+    const layouts = within(screen.getByRole("radiogroup", { name: "Layout" }));
+
+    expect(layouts.getByRole("radio", { name: /Classic/u }).getAttribute("aria-checked")).toBe("true");
+    expect(layouts.getByRole("radio", { name: /Islands/u }).getAttribute("aria-checked")).toBe("false");
+
+    fireEvent.click(layouts.getByRole("radio", { name: /Islands/u }));
+    expect(props.onChooseLayout).toHaveBeenCalledWith("islands");
+    expect(screen.getByRole("dialog", { name: "Settings" })).not.toBeNull();
+  });
+
+  it("as the rail, carries the N above the same two controls, and no path", () => {
+    show("system", true);
+
+    expect(screen.getByRole("img", { name: "Nexus" }).textContent).toBe("N");
+    expect(screen.getByRole("button", { name: "Highlights library" })).not.toBeNull();
+    expect(screen.getByRole("button", { name: "Settings" })).not.toBeNull();
+    expect(screen.queryByText("/Users/me/NexusVault")).toBeNull();
   });
 
   it("opens the error panel from Settings, and closes Settings on the way", () => {

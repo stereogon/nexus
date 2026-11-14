@@ -1,0 +1,192 @@
+/**
+ * The window's frame, from the canvas's Layouts row (2026-11-14): the window bar, the rail's
+ * mark, the Islands layout, and the pictures that choose between the layouts in Settings.
+ *
+ * Classic is what every other stylesheet draws: panes edge to edge, divided by hairlines.
+ * Islands is drawn here alone, keyed on `data-layout` on the root (`useWindowLayout`), so a
+ * pane's own stylesheet never has to know which layout it is in.
+ */
+
+/* The window bar (`WindowBar`): a 40px strip across the top that the window's own buttons
+   sit in, holding the sidebar's toggle and search, as VS Code's does. Every pane starts
+   under it, so no header leaves room for the window's buttons any more. The three columns
+   keep search centred on the window whatever the sides hold. */
+.window-bar {
+  flex: 0 0 40px;
+  display: grid;
+  grid-template-columns: 1fr minmax(0, 440px) 1fr;
+  align-items: center;
+  gap: 12px;
+  background: var(--chrome);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Clears the window's buttons, which `trafficLightPosition` centres in the bar. */
+.window-bar-lead {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding-left: 76px;
+}
+
+.window-bar-trail {
+  height: 100%;
+}
+
+.window-bar button.window-search {
+  height: 28px;
+  font-size: 12.5px;
+}
+
+/* The sidebar's N at the head of the rail, the controls kept at its foot. */
+.vault-mark.rail-mark {
+  width: 26px;
+  height: 26px;
+  margin-bottom: auto;
+  border-radius: 7px;
+  font-size: 15px;
+}
+
+/* ---------------------------------------------------------------------------------
+   Islands: one base under the whole window, each pane a rounded island on it. The base
+   is `--island-base`, derived from the theme's chrome (`themes/islands.ts`).
+   --------------------------------------------------------------------------------- */
+:root[data-layout="islands"] .app {
+  background: var(--island-base);
+}
+
+:root[data-layout="islands"] .window-bar {
+  background: transparent;
+  border-bottom: none;
+}
+
+:root[data-layout="islands"] .panes {
+  padding: 0 6px 6px;
+}
+
+/* The ring is a shadow, not a border, so it takes no width and a pane measures the same in
+   both layouts. */
+:root[data-layout="islands"] .sidebar,
+:root[data-layout="islands"] .sidebar-rail,
+:root[data-layout="islands"] .viewer,
+:root[data-layout="islands"] .notes-pane,
+:root[data-layout="islands"] .panes > .pane {
+  border: none;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px var(--border);
+}
+
+/* The gap between islands is the divider's, so dragging still works between them. */
+:root[data-layout="islands"] .pane-divider {
+  flex: 0 0 6px;
+}
+
+/* The rail beside a pane has no divider, so it keeps its gap itself. */
+:root[data-layout="islands"] .sidebar-rail {
+  flex-basis: 44px;
+  margin-right: 6px;
+}
+
+/* ---------------------------------------------------------------------------------
+   Choosing a layout in Settings (`LayoutChoices`): two cards side by side, each a small
+   picture of its layout over its name and a line about it.
+   --------------------------------------------------------------------------------- */
+.layout-choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.layout-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3px;
+  padding: 8px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: var(--font-ui);
+  text-align: left;
+  white-space: normal;
+  cursor: pointer;
+}
+
+.layout-choice:hover {
+  border-color: var(--border-strong);
+}
+
+.layout-choice[aria-checked="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.layout-label {
+  margin-top: 5px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.layout-choice[aria-checked="true"] .layout-label {
+  color: var(--accent);
+}
+
+.layout-line {
+  color: var(--text-meta);
+  font-size: 11.5px;
+  line-height: 1.35;
+}
+
+/* The picture: a bar, then sidebar, document and notes. */
+.layout-picture {
+  display: flex;
+  flex-direction: column;
+  height: 58px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--chrome);
+}
+
+.layout-picture-bar {
+  flex: 0 0 9px;
+  border-bottom: 1px solid var(--border);
+}
+
+.layout-picture-panes {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: 1fr 2fr 1.4fr;
+}
+
+.layout-picture-panes > span {
+  background: var(--surface);
+}
+
+.layout-picture-panes > span:first-child {
+  background: var(--chrome);
+}
+
+.layout-picture[data-layout="classic"] .layout-picture-panes > span + span {
+  border-left: 1px solid var(--border);
+}
+
+.layout-picture[data-layout="islands"] {
+  background: var(--island-base);
+}
+
+.layout-picture[data-layout="islands"] .layout-picture-bar {
+  border-bottom: none;
+}
+
+.layout-picture[data-layout="islands"] .layout-picture-panes {
+  gap: 3px;
+  padding: 0 3px 3px;
+}
+
+.layout-picture[data-layout="islands"] .layout-picture-panes > span {
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px var(--border);
+}

@@ -106,31 +106,29 @@ test("renaming the open lecture renames it on screen", async ({ page }) => {
   await expect(page.locator(".viewer-title")).toHaveText("week-2 /2. The Requirements Engineering Process");
 });
 
-test("hiding the sidebar leaves room beside the window's own buttons, and shows it again", async ({ page }) => {
-  // With the title bar gone (2026-11-07) the window's buttons sit over the leftmost
-  // header; the sidebar's top strip makes room for them, and without it the header must.
+test("the window bar holds the sidebar's toggle and search, and every pane starts under it", async ({ page }) => {
+  // The window's own buttons sit in the bar (2026-11-14), so no pane's header makes room for
+  // them: the header's inset is the same with the sidebar shown or hidden.
+  const bar = page.locator(".window-bar");
   const inset = () => page.locator(".viewer-bar").evaluate((element) => Number.parseFloat(getComputedStyle(element).paddingLeft));
+  const barBox = await bar.boundingBox();
+  const toggle = await bar.getByRole("button", { name: "Hide sidebar" }).boundingBox();
 
+  expect(barBox?.height).toBe(40);
+  // Clear of the window's buttons, which end about 70px in.
+  expect(toggle?.x ?? 0).toBeGreaterThanOrEqual(72);
+  expect((await page.locator(".viewer-bar").boundingBox())?.y ?? 0).toBeGreaterThanOrEqual(40);
   expect(await inset()).toBeLessThan(40);
 
-  await page.getByRole("button", { name: "Hide sidebar" }).click();
-
+  await bar.getByRole("button", { name: "Hide sidebar" }).click();
   await expect(page.locator(".sidebar")).toHaveCount(0);
-  // Measured from the window's edge: the header now starts after the rail (2026-11-14).
-  const start = async () => ((await page.locator(".viewer-bar").boundingBox())?.x ?? 0) + (await inset());
-
-  expect(await start()).toBeGreaterThanOrEqual(120);
-
-  // The title starts clear of the Show sidebar control, not under its edge.
-  const control = await page.getByRole("button", { name: "Show sidebar" }).boundingBox();
-  const title = await page.locator(".viewer-title").boundingBox();
-
-  expect((title?.x ?? 0) - ((control?.x ?? 0) + (control?.width ?? 0))).toBeGreaterThanOrEqual(8);
-
-  await page.getByRole("button", { name: "Show sidebar" }).click();
-
-  await expect(page.locator(".sidebar")).toBeVisible();
   expect(await inset()).toBeLessThan(40);
+
+  await bar.getByRole("button", { name: "Show sidebar" }).click();
+  await expect(page.locator(".sidebar")).toBeVisible();
+
+  await bar.getByRole("button", { name: /Search everything/u }).click();
+  await expect(page.getByRole("dialog", { name: "Search everything" })).toBeVisible();
 });
 
 test("with the sidebar hidden, a rail keeps the highlights library and Settings at hand", async ({ page }) => {
@@ -140,12 +138,15 @@ test("with the sidebar hidden, a rail keeps the highlights library and Settings 
   await page.getByRole("button", { name: "Hide sidebar" }).click();
   await expect(page.locator(".sidebar")).toHaveCount(0);
 
-  // Down the window's left edge, the controls at its foot, as the sidebar has them.
+  // Down the window's left edge, the sidebar's N at its head and the controls at its foot,
+  // as the sidebar has them.
   const box = await rail.boundingBox();
+  const mark = await rail.getByRole("img", { name: "Nexus" }).boundingBox();
   const gear = await rail.getByRole("button", { name: "Settings" }).boundingBox();
 
   expect(box?.x ?? -1).toBe(0);
   expect(box?.width ?? 0).toBeLessThanOrEqual(48);
+  expect((mark?.y ?? 0) - (box?.y ?? 0)).toBeLessThan(20);
   expect((gear?.y ?? 0) + (gear?.height ?? 0)).toBeGreaterThan((box?.y ?? 0) + (box?.height ?? 0) - 60);
 
   await rail.getByRole("button", { name: "Settings" }).click();

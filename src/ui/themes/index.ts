@@ -22,6 +22,7 @@
 import { DARK_THEMES } from "./dark";
 import { DARK_COLOUR_THEMES } from "./darkColours";
 import { highlightsOf, highlightTokens, type HighlightSet } from "./highlights";
+import { islandBase } from "./islands";
 import { LIGHT_THEMES } from "./light";
 import { LIGHT_COLOUR_THEMES } from "./lightColours";
 
@@ -146,7 +147,8 @@ export function resolve(name: ThemeName, systemDark: boolean): PaletteName {
 }
 
 /**
- * Puts a theme on the document: its palette and its highlight colours as custom properties
+ * Puts a theme on the document: its palette, its highlight colours and its Islands base
+ * (`./islands`) as custom properties
  * on the root, which win over `tokens.css`, and `data-scheme` for the colours shared by
  * every dark theme.
  */
@@ -154,7 +156,12 @@ export function applyTheme(root: HTMLElement, name: PaletteName): void {
   const theme = THEMES[name];
 
   // Every highlight token is written, swapped or not, so one theme's swap never outlives it.
-  const tokens = { ...theme.palette, ...highlightTokens(highlightsOf(theme.highlights), theme.scheme) };
+  const tokens = {
+    ...theme.palette,
+    ...highlightTokens(highlightsOf(theme.highlights), theme.scheme),
+    // Drawn only in the Islands layout, but set always, so switching layout needs no theme work.
+    "island-base": islandBase(theme),
+  };
 
   for (const [token, value] of Object.entries<string>(tokens)) {
     root.style.setProperty(`--${token}`, value);

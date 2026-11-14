@@ -11,6 +11,7 @@ import { describe, expect, it } from "vitest";
 
 import { STANDARD_HIGHLIGHTS, highlightsOf, type Highlight } from "./highlights";
 import { PALETTE_ORDER, THEME_NAMES, THEMES, applyTheme, resolve, type Palette } from "./index";
+import { islandBase, mixed } from "./islands";
 
 const TOKENS = import.meta.glob<string>("../styles/tokens.css", { query: "?raw", import: "default", eager: true });
 
@@ -87,6 +88,14 @@ const hueOfColour = (colour: string) => hueOf(solid(colour)).hue;
 const BODY_TEXT: readonly (keyof Palette)[] = ["text", "text-secondary", "text-meta", "row-text"];
 const GROUNDS: readonly (keyof Palette)[] = ["chrome", "surface", "field"];
 
+describe("mixing two colours", () => {
+  it("goes the given share of the way", () => {
+    expect(mixed("#000000", "#ffffff", 0.5)).toBe("#808080");
+    expect(mixed("#f6f4ef", "#1c1b19", 0)).toBe("#f6f4ef");
+    expect(mixed("#f6f4ef", "#1c1b19", 1)).toBe("#1c1b19");
+  });
+});
+
 describe.each(PALETTE_ORDER)("the %s theme", (name) => {
   const palette = THEMES[name].palette;
 
@@ -108,6 +117,19 @@ describe.each(PALETTE_ORDER)("the %s theme", (name) => {
     expect(ratio(accent, solid(palette.surface))).toBeGreaterThanOrEqual(4.5);
     expect(ratio(accent, solid(palette.chrome))).toBeGreaterThanOrEqual(4.5);
     expect(ratio(accent, over(palette["accent-soft"], palette.chrome)), "on a selected row").toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("keeps the window bar's controls readable on the Islands base, which sets the islands apart", () => {
+    const base = solid(islandBase(THEMES[name]));
+
+    // The sidebar toggle is an icon on the base: 3:1, as for any control's outline.
+    expect(ratio(solid(palette["text-meta"]), base), "text-meta on the base").toBeGreaterThanOrEqual(3);
+    // Set apart from the islands by its colour, as every light theme is, or by the hairline
+    // ring each island has (`layouts.css`), which carries the darkest themes, whose chrome
+    // is already too near black for a darker base to show.
+    const apart = Math.max(ratio(base, solid(palette.chrome)), ratio(solid(palette.border), base));
+
+    expect(apart, "the islands set apart from the base").toBeGreaterThanOrEqual(1.12);
   });
 
   it("keeps a label on the accent readable", () => {

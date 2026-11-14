@@ -1,5 +1,5 @@
 /**
- * The sidebar: search, the folder breadcrumb, the rows, and the buttons that add to it.
+ * The sidebar: the folder breadcrumb, the rows, and the buttons that add to it.
  *
  * The largest single pane, and the one that changed most often -- its own file means a row
  * tweak no longer involves opening a stylesheet that also knows about PDF text layers.
@@ -16,12 +16,8 @@
 }
 
 /* Opens the ⌘P search window: drawn as the redesign's quiet field on the chrome, with the
-   shortcut at its end, since that is what it stands for. */
-.sidebar-search {
-  flex: 0 0 auto;
-  padding: 0 12px 12px;
-}
-
+   shortcut at its end, since that is what it stands for. In the window bar since
+   2026-11-14, which sizes it there. */
 button.search-open {
   width: 100%;
   height: 34px;
@@ -215,16 +211,16 @@ button.row-edit:focus-visible {
 
 /* The sidebar's foot controls, kept down the window's left edge while the sidebar is hidden
    (2026-11-14, at the user's request; not on the canvas, which has no hidden sidebar): a
-   strip of the sidebar's chrome, the controls at its foot where the sidebar has them. */
+   strip of the sidebar's chrome, the controls at its foot where the sidebar has them, under
+   the sidebar's N (the canvas's Layouts row). */
 .sidebar-rail {
   flex: 0 0 48px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
   align-items: center;
   gap: 4px;
-  padding: 8px 0;
+  padding: 12px 0 8px;
   background: var(--chrome);
   border-right: 1px solid var(--border);
 }

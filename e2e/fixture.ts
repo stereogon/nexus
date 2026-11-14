@@ -9,6 +9,7 @@
  */
 import type { Annotation } from "../src/ipc/annotations";
 import type { DocumentRisk } from "../src/ipc/document";
+import type { WindowLayout } from "../src/ipc/layout";
 import type { LectureRow } from "../src/ipc/vault";
 
 declare global {
@@ -56,6 +57,8 @@ export interface Fixture {
   readonly folders?: readonly string[];
   /** What screening found in each document, keyed by directory; absent means nothing. */
   readonly risks?: Readonly<Record<string, readonly DocumentRisk[]>>;
+  /** The window layout this device last chose; absent means none yet, so Classic. */
+  readonly layout?: WindowLayout;
   /** What the clipboard holds as text, for ⌘⇧V; absent means no text. */
   readonly clipboard?: string;
 }

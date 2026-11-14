@@ -90,6 +90,10 @@
   /* The accent at a tenth, for a selected row's bed. An explicit value per theme rather
      than a `color-mix`, as with `accent-wash` above. */
   --accent-soft: rgba(168, 25, 94, 0.09);
+
+  /* The Islands layout's base, behind every pane (`layouts.css`). Worked out per theme by
+     `themes/islands.ts`; Paper's here, as the starting point. */
+  --island-base: #e0deda;
   /* The exam semantic at a tenth, for the pill on a lecture that could not be converted.
      An explicit value per theme, like the other washes in this file. */
   --exam-wash: rgba(224, 82, 60, 0.12);

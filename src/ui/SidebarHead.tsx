@@ -1,16 +1,13 @@
 /**
- * The top of the sidebar, from the redesign canvas (2026-11-07): room for the window's own
- * buttons with a control to hide the sidebar, then the vault — its name opens a menu to
- * switch vaults — and the one "+" that makes a note or folder or imports a document into
- * the folder showing.
- *
- * The strip is a window drag region: with the title bar gone (`titleBarStyle: Overlay`),
- * the app's own header strips are where the window is moved from.
+ * The top of the sidebar, from the redesign canvas (2026-11-07): the vault — its name opens a
+ * menu to switch vaults — and the one "+" that makes a note or folder or imports a document
+ * into the folder showing. The strip above it, with room for the window's buttons and the
+ * control to hide the sidebar, became the window bar (`WindowBar`, 2026-11-14).
  */
 import { useState } from "react";
 
 import { vaultNameOf } from "./folders";
-import { ChevronDownIcon, FolderIcon, ImportIcon, NoteIcon, PlusIcon, SidebarIcon } from "./icons";
+import { ChevronDownIcon, FolderIcon, ImportIcon, NoteIcon, PlusIcon } from "./icons";
 import type { MenuAt } from "./menuPlacement";
 import { PopMenu, under } from "./PopMenu";
 import type { Making } from "./sidebarRows";
@@ -18,7 +15,6 @@ import type { Making } from "./sidebarRows";
 export function SidebarHead({
   root,
   busy,
-  onHide,
   onMake,
   onImport,
   onChooseVault,
@@ -26,7 +22,6 @@ export function SidebarHead({
 }: {
   readonly root: string;
   readonly busy: boolean;
-  readonly onHide: () => void;
   readonly onMake: (making: Making) => void;
   readonly onImport: () => void;
   readonly onChooseVault: () => void;
@@ -40,12 +35,6 @@ export function SidebarHead({
 
   return (
     <>
-      <div className="sidebar-top" data-tauri-drag-region="">
-        <button aria-label="Hide sidebar" className="chrome-icon" onClick={onHide} title="Hide sidebar" type="button">
-          <SidebarIcon />
-        </button>
-      </div>
-
       <div className="sidebar-vault">
         <button
           aria-expanded={open?.menu === "vault"}

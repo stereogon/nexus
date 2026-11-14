@@ -36,6 +36,10 @@ test("Settings closes on Escape and on a click elsewhere", async ({ page }) => {
   await expect(picker(page)).toHaveCount(0);
 
   await page.getByRole("button", { name: "Settings" }).click();
-  await page.locator(".viewer-bed").click({ position: { x: 5, y: 5 } });
+  // The bed's far corner: the box, taller since the Layout section (2026-11-14), covers the
+  // near one, where a click lands inside it.
+  const bed = await page.locator(".viewer-bed").boundingBox();
+
+  await page.locator(".viewer-bed").click({ position: { x: (bed?.width ?? 10) - 5, y: 5 } });
   await expect(picker(page)).toHaveCount(0);
 });

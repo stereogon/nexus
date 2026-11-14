@@ -41,7 +41,7 @@ export function NotesHeader({
   readonly onNotesOnly: (() => void) | undefined;
 }) {
   return (
-    <header className={alone === null ? "notes-bar pane-head" : "notes-bar pane-head lead"} data-tauri-drag-region="">
+    <header className="notes-bar pane-head" data-tauri-drag-region="">
       <span className="notes-title" data-tauri-drag-region="">
         {alone !== null && alone.place !== "" && <span className="viewer-place">{`${alone.place} /`}</span>}
         {alone === null ? "Notes" : alone.title}

@@ -34,7 +34,9 @@ pub use annotations::{
 pub use document::open_document;
 pub use edit::edit_lecture;
 pub use import::{import_document, importable_formats};
-pub use layout::{last_pane_width, remember_pane_width};
+pub use layout::{
+    last_pane_width, last_window_layout, remember_pane_width, remember_window_layout,
+};
 pub use picker::{pick_document, pick_vault_directory};
 pub use reorganize::{apply_reorganize, preview_reorganize};
 pub use theme::{last_theme, remember_theme};
@@ -76,6 +78,8 @@ pub fn run() -> Result<(), tauri::Error> {
             remember_theme,
             last_pane_width,
             remember_pane_width,
+            last_window_layout,
+            remember_window_layout,
             position::lecture_position,
             position::remember_position,
             position::last_lecture,

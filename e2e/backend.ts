@@ -15,6 +15,7 @@
 import type { InvokeArgs } from "@tauri-apps/api/core";
 import { z } from "zod";
 
+import { WINDOW_LAYOUTS } from "../src/ipc/layout";
 import type { LectureRow } from "../src/ipc/vault";
 import { annotationHandlers } from "./answers/annotations";
 import { folderHandlers, foldersOf, type Held } from "./answers/folders";
@@ -56,6 +57,7 @@ export function backend(fixture: Fixture): (command: string, args?: InvokeArgs) 
   const paneWidths = new Map<string, number>();
   const positions = new Map(Object.entries(fixture.positions ?? {}));
   let lastLecture = fixture.lastLecture ?? null;
+  let layout = fixture.layout ?? "classic";
   // Documents whose notice was asked not to be shown again; per-device, like the positions.
   const quietNotices = new Set<string>();
 
@@ -67,6 +69,11 @@ export function backend(fixture: Fixture): (command: string, args?: InvokeArgs) 
     // it an empty body, answering `undefined` — caught by reading the result.)
     remember_vault: () => null,
     remember_theme: () => null,
+    last_window_layout: () => layout,
+    remember_window_layout: (args) => {
+      layout = z.object({ layout: z.enum(WINDOW_LAYOUTS) }).parse(args).layout;
+      return null;
+    },
     last_pane_width: (args) => paneWidths.get(Pane.parse(args).pane) ?? null,
     lecture_position: (args) => positions.get(InLecture.parse(args).directory) ?? null,
     remember_position: (args) => {

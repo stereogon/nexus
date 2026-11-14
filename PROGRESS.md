@@ -478,6 +478,50 @@ a rail at the window's edge at most 48px wide, Settings at its foot opening the 
 the library opened from it and shown pressed; gone again with the sidebar. The hiding journey
 now measures the title's start from the window's edge. Sabotage: without the rail, it fails.
 
+**2026-11-14 · A window bar, the Islands layout, and the rail's N (the canvas's Layouts row)**
+The user asked for an Islands layout like JetBrains', the canvas drawn first; then for the
+sidebar's coloured N at the head of the rail, a VS Code-like strip across the top with
+controls moved into it, and the hidden sidebar's rail as an island of its own. All of it was
+drawn on the redesign canvas first, then built from it:
+
+- **The window bar** (`WindowBar`): 40px across the top, the window's own buttons at its
+  left, then Hide/Show sidebar, and Search everything (⌘P) centred on the window. Both
+  controls left the sidebar, whose 52px top strip and search field went with them, and the
+  fixed Show sidebar button and the leftmost header's 90px inset are gone: every pane now
+  starts under the bar, so no header makes room for the window's buttons in either state.
+  `trafficLightPosition` is set to `{x: 16, y: 13}` to centre the buttons in the bar —
+  **not verified in the real window**, which the harness cannot show; it is a number to
+  adjust by eye after one launch.
+- **Islands** (`layouts.css`, keyed on `data-layout` on the root): one base under the
+  window, each pane — sidebar, rail, document, notes, the empty and library panes — a 10px
+  rounded island on it, 6px apart, with a 1px ring drawn as a shadow so a pane measures the
+  same in both layouts. The 6px gaps are the dividers' own width, so resizing still works
+  from them. The base is **derived per theme** (`themes/islands.ts`) rather than added to
+  all twenty-four theme definitions: light chrome mixed 10% toward its text, dark chrome
+  45% toward black, near-black chrome 8% toward its text (Contrast Dark's chrome is black,
+  so nothing is darker). `themes.test.ts` holds every theme to quiet text at 3:1 on the base
+  and to a visible island edge, `max(base vs chrome, ring vs base) ≥ 1.12` — a criterion
+  picked from the printed ratios of every theme after a plain base-vs-chrome bar failed the
+  dark themes and a ring bar failed the light ones.
+- **The setting**: Settings → Layout, Classic or Islands, each with a small picture,
+  applied at once. Per-device (§3), in `window-layout.txt` beside the theme
+  (`lecture_fs::window_layout`; unknown or missing content reads as Classic).
+- **The rail's N**: the sidebar's own mark heads the rail; the controls stay at its foot.
+
+Verified: gate green. Rust: the layout's round trip, its default, and an unreadable file
+reading as Classic. Unit: the Layout radios in Settings, the rail's N, the window bar's two
+controls. Journeys: the bar's 40px height, its toggle clear of the window's buttons, panes
+under it, the header inset unchanged by hiding the sidebar, search from the bar
+(`layout.spec.ts`); the rail's N at its head; choosing Islands rounds every pane, shows the
+base between them and makes the bar transparent, and Classic undoes it; a device that chose
+Islands opens in it, the rail an island off the window's edge (`windowLayout.spec.ts`).
+Sabotage, each failing its journey: islands without the radius; the bar without its lead
+padding; the N pushed to the rail's foot; the recorded layout ignored at launch. That the
+choice is *recorded* is proved in Rust, not by a journey: the harness's backend lives for one
+page load, so it cannot show a relaunch. A Settings journey that clicked the document's
+top-left corner to dismiss the box now clicks its far corner, because the taller box covers
+the near one.
+
 **2026-11-14 · ⌘F works from inside a table cell**
 The user: *"when my cursor is inside a table, the cmd + f does not work"*. A cell is its own
 editable box inside the table's widget, and CodeMirror ignores keys pressed in a widget, so

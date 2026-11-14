@@ -1,7 +1,7 @@
 /**
  * The vault, one folder at a time.
  *
- * The vault switcher and the "+" (`SidebarHead`), the control that opens ⌘P search, a
+ * The vault switcher and the "+" (`SidebarHead`), a
  * breadcrumb saying which folder is showing, its folders and items, and the library, errors
  * and theme controls at the foot (`SidebarFoot`). Whatever is added goes into the folder on
  * screen, so nothing has to be filed afterwards.
@@ -9,7 +9,8 @@
  * the result.
  *
  * Laid out from the redesign canvas (2026-11-07), which drew the folder sidebar chosen with
- * the user on 2026-11-06 (`sidebarRows.ts` says why).
+ * the user on 2026-11-06 (`sidebarRows.ts` says why). The control that opens ⌘P search and
+ * the one that hides the sidebar are in the window bar (`WindowBar`, 2026-11-14).
  */
 import { useRef, useState } from "react";
 
@@ -21,15 +22,6 @@ import { useMetaShortcut } from "./useMetaShortcut";
 import { useSidebarDrag, type Dragged } from "./useSidebarDrag";
 import { Folder, Lecture, NameField, Problems } from "./SidebarLecture";
 import type { Making, SidebarRow } from "./sidebarRows";
-
-function SearchIcon() {
-  return (
-    <svg aria-hidden="true" height="14" viewBox="0 0 14 14" width="14">
-      <circle cx="6" cy="6" fill="none" r="4.3" stroke="currentColor" strokeWidth="1.3" />
-      <path d="M9.3 9.3 L12.5 12.5" stroke="currentColor" strokeLinecap="round" strokeWidth="1.3" />
-    </svg>
-  );
-}
 
 /** Where the list is: the vault, then each folder down to the one showing. */
 function Crumbs({
@@ -104,10 +96,8 @@ export function Sidebar({
   onEdit,
   onMake,
   onImport,
-  onHide,
   onChooseVault,
   foot,
-  onSearch,
   width,
   onMove,
 }: {
@@ -126,12 +116,9 @@ export function Sidebar({
   readonly onMake: (making: Making, name: string) => void;
   /** Picks documents to import into the folder showing. */
   readonly onImport: () => void;
-  readonly onHide: () => void;
   readonly onChooseVault: () => void;
   /** The library, error panel and theme controls at the foot. */
   readonly foot: Omit<Parameters<typeof SidebarFoot>[0], "root">;
-  /** Opens the ⌘P search window. */
-  readonly onSearch: () => void;
   /** A dragged width, or `null` for the stylesheet's. */
   readonly width: number | null;
   /** An item or folder dragged onto a folder, to move it there (`useSidebarDrag`). */
@@ -160,20 +147,11 @@ export function Sidebar({
       <SidebarHead
         busy={busy}
         onChooseVault={onChooseVault}
-        onHide={onHide}
         onImport={onImport}
         onMake={setMaking}
         place={folder === "" ? vaultNameOf(root) : nameOf(folder)}
         root={root}
       />
-
-      <div className="sidebar-search">
-        <button className="search-open" onClick={onSearch} type="button">
-          <SearchIcon />
-          <span>Search everything</span>
-          <span className="kbd">⌘P</span>
-        </button>
-      </div>
 
       <Crumbs folder={folder} onFolder={onFolder} root={root} />
 

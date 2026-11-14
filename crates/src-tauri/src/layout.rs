@@ -1,4 +1,5 @@
-//! Reading and recording how wide this device shows the notes and the sidebar.
+//! Reading and recording how wide this device shows the notes and the sidebar, and which
+//! window layout it uses (Classic or Islands, 2026-11-14).
 //!
 //! Two commands, matching `last_theme` / `remember_theme`, and infallible for the same
 //! reasons: the window is already drawn at the width being recorded, so a failed write
@@ -7,6 +8,7 @@
 
 use lecture_fs::logging;
 use lecture_fs::pane_width::{self, Pane};
+use lecture_fs::window_layout::{self, WindowLayout};
 
 /// The width this device last chose for `pane`, in CSS pixels, or `null` for the default.
 #[tauri::command]
@@ -20,5 +22,20 @@ pub fn last_pane_width(pane: Pane) -> Option<u32> {
 pub fn remember_pane_width(pane: Pane, width: u32) {
     if let Err(error) = pane_width::remember_for_this_device(pane, width) {
         logging::failure("record a pane width", &error);
+    }
+}
+
+/// The layout this device last chose: Classic or Islands.
+#[tauri::command]
+#[must_use]
+pub fn last_window_layout() -> WindowLayout {
+    window_layout::recall_for_this_device()
+}
+
+/// Records the window layout.
+#[tauri::command]
+pub fn remember_window_layout(layout: WindowLayout) {
+    if let Err(error) = window_layout::remember_for_this_device(layout) {
+        logging::failure("record the window layout", &error);
     }
 }
