@@ -15,6 +15,7 @@
 import type { InvokeArgs } from "@tauri-apps/api/core";
 import { z } from "zod";
 
+import { FONTS } from "../src/ipc/font";
 import { WINDOW_LAYOUTS } from "../src/ipc/layout";
 import type { LectureRow } from "../src/ipc/vault";
 import { annotationHandlers } from "./answers/annotations";
@@ -58,6 +59,7 @@ export function backend(fixture: Fixture): (command: string, args?: InvokeArgs) 
   const positions = new Map(Object.entries(fixture.positions ?? {}));
   let lastLecture = fixture.lastLecture ?? null;
   let layout = fixture.layout ?? "classic";
+  let font = fixture.font ?? "theme";
   // Documents whose notice was asked not to be shown again; per-device, like the positions.
   const quietNotices = new Set<string>();
 
@@ -69,6 +71,11 @@ export function backend(fixture: Fixture): (command: string, args?: InvokeArgs) 
     // it an empty body, answering `undefined` — caught by reading the result.)
     remember_vault: () => null,
     remember_theme: () => null,
+    last_font: () => font,
+    remember_font: (args) => {
+      font = z.object({ font: z.enum(FONTS) }).parse(args).font;
+      return null;
+    },
     last_window_layout: () => layout,
     remember_window_layout: (args) => {
       layout = z.object({ layout: z.enum(WINDOW_LAYOUTS) }).parse(args).layout;

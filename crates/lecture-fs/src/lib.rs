@@ -22,6 +22,7 @@ pub mod asset_store;
 pub mod clock;
 pub mod device_state;
 pub mod document_scan;
+pub mod font;
 pub mod ids;
 mod import;
 mod index_store;

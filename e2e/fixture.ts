@@ -9,6 +9,7 @@
  */
 import type { Annotation } from "../src/ipc/annotations";
 import type { DocumentRisk } from "../src/ipc/document";
+import type { Font } from "../src/ipc/font";
 import type { WindowLayout } from "../src/ipc/layout";
 import type { LectureRow } from "../src/ipc/vault";
 
@@ -59,6 +60,8 @@ export interface Fixture {
   readonly risks?: Readonly<Record<string, readonly DocumentRisk[]>>;
   /** The window layout this device last chose; absent means none yet, so Classic. */
   readonly layout?: WindowLayout;
+  /** The font this device last chose; absent means none yet, so the theme's. */
+  readonly font?: Font;
   /** What the clipboard holds as text, for ⌘⇧V; absent means no text. */
   readonly clipboard?: string;
 }

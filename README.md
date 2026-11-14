@@ -154,6 +154,8 @@ The screenshots use the test suite's sample vault, not real notes. They are reta
   contrast-tested, and the page stays white in all of them. Where a theme's accent would
   clash with a highlight colour, that highlight takes another colour in that theme; its
   letter (K/D/E/Q) stays.
+- A font, in Settings: the theme's own, **Readable** (Atkinson Hyperlegible Next) or
+  **Mono** (IBM Plex Mono). Funky comes in its own face, Recursive Casual.
 - Two layouts, in Settings: **Classic**, panes edge to edge, or **Islands**, each pane a
   rounded island on one base, in every theme.
 

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
- * The sidebar's foot: the library on its own, and Settings, which holds the theme, the layout
- * (2026-11-14) and the error panel (2026-11-07) and says on its control when there have been
+ * The sidebar's foot: the library on its own, and Settings, which holds the theme, the font and
+ * the layout (2026-11-14) and the error panel (2026-11-07) and says on its control when there have been
  * errors. And the same controls as the rail beside a hidden sidebar, under the N.
  */
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
@@ -21,6 +21,8 @@ function show(theme: ThemeName = "system", rail = false) {
     rail,
     layout: "classic" as const,
     onChooseLayout: vi.fn(),
+    font: "theme" as const,
+    onChooseFont: vi.fn(),
     root: "/Users/me/NexusVault",
     libraryShown: false,
     onToggleLibrary: vi.fn(),
@@ -67,6 +69,23 @@ describe("the foot of the sidebar", () => {
 
     fireEvent.click(layouts.getByRole("radio", { name: /Islands/u }));
     expect(props.onChooseLayout).toHaveBeenCalledWith("islands");
+    expect(screen.getByRole("dialog", { name: "Settings" })).not.toBeNull();
+  });
+
+  it("chooses the font in Settings, the theme's checked to start with, and stays open", () => {
+    const props = show();
+
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+
+    const fonts = within(screen.getByRole("radiogroup", { name: "Font" }));
+
+    expect(fonts.getAllByRole("radio")).toHaveLength(3);
+    expect(fonts.getByRole("radio", { name: /^Theme/u }).getAttribute("aria-checked")).toBe("true");
+
+    fireEvent.click(fonts.getByRole("radio", { name: /Readable/u }));
+    expect(props.onChooseFont).toHaveBeenCalledWith("readable");
+    fireEvent.click(fonts.getByRole("radio", { name: /Mono/u }));
+    expect(props.onChooseFont).toHaveBeenCalledWith("mono");
     expect(screen.getByRole("dialog", { name: "Settings" })).not.toBeNull();
   });
 

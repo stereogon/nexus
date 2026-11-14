@@ -1,5 +1,5 @@
 /**
- * Settings: the theme, the window's layout (2026-11-14), the error panel and the vault,
+ * Settings: the theme, the font and the window's layout (2026-11-14), the error panel and the vault,
  * behind one control at the foot of the sidebar.
  *
  * Asked for on 2026-11-07: *"it is not always required that you put icons together and
@@ -11,7 +11,9 @@
  * A dialog rather than a menu, because it holds a radio group and buttons rather than a
  * list of commands. Escape or a click elsewhere closes it.
  */
+import type { Font } from "../ipc/font";
 import type { WindowLayout } from "../ipc/layout";
+import { FontChoices } from "./FontChoices";
 import { LayoutChoices } from "./LayoutChoices";
 import type { MenuAt } from "./menuPlacement";
 import { ThemeChoices } from "./ThemeChoices";
@@ -24,6 +26,8 @@ export function SettingsBox({
   root,
   theme,
   onChooseTheme,
+  font,
+  onChooseFont,
   layout,
   onChooseLayout,
   errors,
@@ -34,6 +38,8 @@ export function SettingsBox({
   readonly root: string;
   readonly theme: ThemeName;
   readonly onChooseTheme: (theme: ThemeName) => void;
+  readonly font: Font;
+  readonly onChooseFont: (font: Font) => void;
   readonly layout: WindowLayout;
   readonly onChooseLayout: (layout: WindowLayout) => void;
   /** How many errors have been shown since launch. */
@@ -62,6 +68,13 @@ export function SettingsBox({
           Theme
         </h3>
         <ThemeChoices onChoose={onChooseTheme} theme={theme} />
+      </section>
+
+      <section aria-labelledby="settings-font" className="settings-section">
+        <h3 className="settings-title" id="settings-font">
+          Font
+        </h3>
+        <FontChoices font={font} onChoose={onChooseFont} />
       </section>
 
       <section aria-labelledby="settings-layout" className="settings-section">

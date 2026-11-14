@@ -44,6 +44,7 @@ import { useSearchWindow } from "./ui/useSearchWindow";
 import { useSidebar } from "./ui/useSidebar";
 import { useSidebarWidth } from "./ui/useSidebarWidth";
 import { useTheme } from "./ui/useTheme";
+import { useFont } from "./ui/useFont";
 import { useWindowLayout } from "./ui/useWindowLayout";
 import { WindowBar } from "./ui/WindowBar";
 import { lecturesOf, rootOf } from "./ui/vaultState";
@@ -61,6 +62,7 @@ export function App() {
   const reading = useOpenLecture();
   const appearance = useTheme();
   const layout = useWindowLayout();
+  const font = useFont();
   const notice = useNotice();
   const forgetEditing = useCallback(() => {
     setEditing(null);
@@ -130,6 +132,8 @@ export function App() {
     onShowErrors: errorPanel.show,
     theme: appearance.theme,
     onChooseTheme: appearance.choose,
+    font: font.font,
+    onChooseFont: font.choose,
     layout: layout.layout,
     onChooseLayout: layout.choose,
   };

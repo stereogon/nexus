@@ -1,0 +1,106 @@
+/**
+ * The window's font (2026-11-14, at the user's request, after Slack's setting): the theme's
+ * own, Readable or Mono, chosen in Settings (`FontChoices`), and the face a theme brings.
+ *
+ * Only the interface and the notes' prose change. Code, paths and keys stay in Plex Mono,
+ * and the page is the document's own. Keyed on `data-theme`, which `applyTheme` writes, and
+ * `data-font`, which `useFont` writes; the theme's palette is untouched.
+ */
+
+/* Funky's own: Recursive's Casual cut, rounded and loose, for the seventies record sleeve,
+   in its headings too. Bundled pinned at Casual (`scripts/fetch-fonts.py`). */
+:root[data-theme="funky"] {
+  --font-brand: "Recursive", "Bricolage Grotesque", -apple-system, sans-serif;
+  --font-ui: "Recursive", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-prose: "Recursive", -apple-system, sans-serif;
+}
+
+/* A chosen font is the person's over the theme's, and brings the brand's headings back.
+   After the theme's rule and as specific, so it wins in Funky too. */
+:root[data-font="readable"],
+:root[data-font="mono"] {
+  --font-brand: "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+:root[data-font="readable"] {
+  --font-ui: "Atkinson Hyperlegible Next", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-prose: "Atkinson Hyperlegible Next", -apple-system, sans-serif;
+}
+
+:root[data-font="mono"] {
+  --font-ui: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-prose: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* ---------------------------------------------------------------------------------
+   Choosing a font in Settings: three cards, each with a sample in its own face.
+   --------------------------------------------------------------------------------- */
+.font-choices {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.font-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3px;
+  padding: 8px 10px 10px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: var(--font-ui);
+  text-align: left;
+  white-space: normal;
+  cursor: pointer;
+}
+
+.font-choice:hover {
+  border-color: var(--border-strong);
+}
+
+.font-choice[aria-checked="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+/* Each card in its own face, whatever the window is in: the theme's card in the faces
+   the theme brings. */
+.font-choice[data-font="theme"] .font-sample {
+  font-family: "IBM Plex Sans", sans-serif;
+}
+
+:root[data-theme="funky"] .font-choice[data-font="theme"] .font-sample {
+  font-family: "Recursive", sans-serif;
+}
+
+.font-choice[data-font="readable"] .font-sample {
+  font-family: "Atkinson Hyperlegible Next", sans-serif;
+}
+
+.font-choice[data-font="mono"] .font-sample {
+  font-family: "IBM Plex Mono", monospace;
+}
+
+.font-sample {
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.font-label {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.font-choice[aria-checked="true"] .font-label {
+  color: var(--accent);
+}
+
+.font-line {
+  color: var(--text-meta);
+  font-size: 11.5px;
+  line-height: 1.35;
+}

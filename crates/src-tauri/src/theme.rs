@@ -1,4 +1,4 @@
-//! Reading and recording which theme this device uses.
+//! Reading and recording which theme this device uses, and which font (2026-11-14).
 //!
 //! Two commands, matching `remember_vault` / `last_vault`: the store is per-device state
 //! outside the vault (§3), and the window asks for it on launch and writes it back when
@@ -7,6 +7,7 @@
 use std::str::FromStr;
 
 use lecture_core::Theme;
+use lecture_fs::font::{self, Font};
 use lecture_fs::{logging, theme};
 
 /// The theme this device is set to, as the name the UI uses.
@@ -34,5 +35,20 @@ pub fn remember_theme(name: &str) {
             }
         }
         Err(error) => logging::failure("understand the chosen theme", &error),
+    }
+}
+
+/// The font this device last chose: the theme's own, Readable or Mono.
+#[tauri::command]
+#[must_use]
+pub fn last_font() -> Font {
+    font::recall_for_this_device()
+}
+
+/// Records the chosen font, infallible as [`remember_theme`] is and for the same reason.
+#[tauri::command]
+pub fn remember_font(font: Font) {
+    if let Err(error) = font::remember_for_this_device(font) {
+        logging::failure("record the font", &error);
     }
 }

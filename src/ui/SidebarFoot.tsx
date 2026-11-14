@@ -9,6 +9,7 @@
  */
 import { useState, useSyncExternalStore } from "react";
 
+import type { Font } from "../ipc/font";
 import type { WindowLayout } from "../ipc/layout";
 import { onErrorsChanged, shownErrors } from "./errorLog";
 import { GearIcon, HighlightsIcon } from "./icons";
@@ -24,6 +25,8 @@ export function SidebarFoot({
   onShowErrors,
   theme,
   onChooseTheme,
+  font,
+  onChooseFont,
   layout,
   onChooseLayout,
   rail = false,
@@ -36,6 +39,8 @@ export function SidebarFoot({
   readonly onShowErrors: () => void;
   readonly theme: ThemeName;
   readonly onChooseTheme: (theme: ThemeName) => void;
+  readonly font: Font;
+  readonly onChooseFont: (font: Font) => void;
   readonly layout: WindowLayout;
   readonly onChooseLayout: (layout: WindowLayout) => void;
 }) {
@@ -87,7 +92,9 @@ export function SidebarFoot({
         <SettingsBox
           at={settings}
           errors={errors}
+          font={font}
           layout={layout}
+          onChooseFont={onChooseFont}
           onChooseLayout={onChooseLayout}
           onChooseTheme={onChooseTheme}
           onDismiss={() => {

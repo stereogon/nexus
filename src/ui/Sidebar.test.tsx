@@ -51,6 +51,8 @@ function footing(theme: ThemeName = "system") {
     theme,
     onChooseTheme: vi.fn(),
     layout: "classic" as const,
+    font: "theme" as const,
+    onChooseFont: vi.fn(),
     onChooseLayout: vi.fn(),
   };
 }

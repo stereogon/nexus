@@ -478,6 +478,40 @@ a rail at the window's edge at most 48px wide, Settings at its foot opening the 
 the library opened from it and shown pressed; gone again with the sidebar. The hiding journey
 now measures the title's start from the window's edge. Sabotage: without the rail, it fails.
 
+**2026-11-14 · A font setting, after Slack's, and Funky's own face**
+The user: *"can we also add support for other fonts like slack … monospace font, and maybe
+some other more readable font, which is outside the brand identity that is also fine, and
+maybe for the funky theme, we can use a funky font, that is readable but still pretty modern
+cool and funky"*. Settings → Font: **Theme** (the theme's own), **Readable** (Atkinson
+Hyperlegible Next, drawn by the Braille Institute to tell similar letters apart) and **Mono**
+(IBM Plex Mono, already bundled). **Funky** brings **Recursive** in its Casual cut — rounded,
+loose, still a text face — for its interface, notes and headings. A chosen font is the
+person's over the theme's, and brings the brand's Bricolage headings back.
+
+- Only the interface (`--font-ui`) and the notes' prose (`--font-prose`) change; code, paths
+  and keys stay Plex Mono, and the page is the document's own. Everything already read those
+  variables, so the change is one stylesheet (`typefaces.css`) keyed on `data-theme`, which
+  `applyTheme` writes, and `data-font`, which `useFont` writes. No palette changed.
+- Per-device (§3), in `font.txt` beside the theme (`lecture_fs::font`), as the layout is.
+- The two faces were fetched by the user's leave through `scripts/fetch-fonts.py`, the one
+  network-touching script, now listing them; Recursive is requested with Casual pinned at 1
+  and its other axes left out, so one 400–700 file per subset serves it. Rerunning the script
+  also found Google had re-encoded Plex Mono; those new files were dropped and the committed
+  Mono rules kept, since Mono was not part of this change — so `fonts.css` is now the
+  script's output with the earlier Mono rules spliced back. A later rerun will bring the
+  newer Mono with it, which is fine.
+- **Not on the canvas yet.** The Settings box's Font section was built without being drawn
+  there first.
+
+Verified: gate green. Rust: the font's round trip, its default, an unreadable file reading
+as the theme's. Unit: the three Font radios, the theme's checked, each chosen. Journeys
+(`fonts.spec.ts`): Readable and Mono change the computed family of the sidebar and the notes
+and Theme undoes it, with Atkinson actually loaded (`document.fonts.load`), not a fallback;
+Funky draws in Recursive, loaded, and Readable wins over it; a device that chose Mono opens
+in it. Sabotage, each failing its journey: Funky's rule removed; Readable's rule removed;
+the recorded font ignored at launch; the Atkinson face renamed so it is not bundled. Looked
+at in a screenshot of Funky with notes open, and of the Font section.
+
 **2026-11-14 · A window bar, the Islands layout, and the rail's N (the canvas's Layouts row)**
 The user asked for an Islands layout like JetBrains', the canvas drawn first; then for the
 sidebar's coloured N at the head of the rail, a VS Code-like strip across the top with
@@ -6564,7 +6598,9 @@ Not started. To settle before building:
 ## 5. Licences
 
 Fonts, all SIL OFL 1.1 and therefore bundleable into a distributed binary:
-Bricolage Grotesque, IBM Plex Sans, IBM Plex Mono, Literata.
+Bricolage Grotesque, IBM Plex Sans, IBM Plex Mono, Literata; and, since 2026-11-14,
+Atkinson Hyperlegible Next (Braille Institute) and Recursive (Arrow Type), their licences
+read from Google Fonts' `ofl/*/METADATA.pb` that day.
 
 Rust dependencies in use, with the version resolved on 2026-10-27:
 
