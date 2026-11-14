@@ -131,3 +131,18 @@ test("the strip under the notes' header formats a cell's selected words", async 
   await expect.poll(() => row(page)).toContain("| ~~fed~~ **ambiguity**");
   await expect(strip.getByRole("button", { name: "Strikethrough" })).toHaveAttribute("aria-pressed", "true");
 });
+
+test("⌘F in a cell opens the notes' find, looking for the cell's selected words", async ({ page }) => {
+  await select(page, "doubt");
+  await page.keyboard.press("Meta+f");
+
+  const bar = page.getByRole("search", { name: "Find in notes" });
+
+  await expect(bar.getByRole("searchbox", { name: "Find in notes" })).toBeFocused();
+  await expect(bar.getByRole("searchbox", { name: "Find in notes" })).toHaveValue("doubt");
+  await expect(page.getByRole("search", { name: "Find in document" })).toHaveCount(0);
+  // Found, and selected at the first Enter: a cell's selection is not the editor's.
+  await expect(bar.locator(".find-count")).toHaveText("1 found");
+  await page.keyboard.press("Enter");
+  await expect(bar.locator(".find-count")).toHaveText("1 of 1");
+});

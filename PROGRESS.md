@@ -463,6 +463,18 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-14 · ⌘F works from inside a table cell**
+The user: *"when my cursor is inside a table, the cmd + f does not work"*. A cell is its own
+editable box inside the table's widget, and CodeMirror ignores keys pressed in a widget, so
+the notes' ⌘F never ran and the document's took the key. The cell's own key handler
+(`tableEditor.ts`) now opens the notes' find, passing the cell's selected words, since a
+cell's selection is the browser's rather than the editor's (`openFind` takes them as an
+optional argument). The count then reads "1 found" until the first Enter selects a match.
+
+Verified: gate green. A journey in `tableCellFormat.spec.ts`: ⌘F with words selected in a
+cell opens the notes' bar with them, not the document's, and Enter selects the match.
+Sabotage: with the cell's ⌘F unbound, it fails.
+
 **2026-11-13 · Find and replace in the notes; Enter after bold keeps its `**`**
 The user: *"we definitely need search and replace functionality in the notes"*, and *"when we
 click enter right after a bolded text, the "**" move to the next line"*.

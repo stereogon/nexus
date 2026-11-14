@@ -17,6 +17,7 @@ import { WidgetType, type EditorView } from "@codemirror/view";
 import { hasHeader, withCell, withRow, type Cell } from "../tableModel";
 import type { Table } from "./table";
 import type { Inline } from "../format";
+import { openFind } from "../findInNotes";
 import { caretIn, cellMarkdown, drawCell, insertPlain } from "./tableCell";
 import { formatCell } from "./tableCellFormat";
 import { editTable, leave } from "./tableEdits";
@@ -28,7 +29,7 @@ const cellOf = (input: HTMLElement): Cell => ({ row: Number(input.dataset.row), 
 /** The format keys a cell answers to, as the rest of the notes binds them (`formatKeys`). */
 const FORMAT_KEYS: Readonly<Record<string, Inline | undefined>> = { b: "bold", i: "italic", "Shift-s": "strike", e: "code" };
 
-/** What the keys do in a cell: select its words, move between cells, add a row at the end, undo, leave. */
+/** What the keys do in a cell: select its words, format, find, move between cells, add a row at the end, undo, leave. */
 function onKey(event: KeyboardEvent, view: EditorView, wrap: HTMLElement, input: HTMLElement, rows: () => number): void {
   const at = cellOf(input);
   const inputs = [...wrap.querySelectorAll<HTMLElement>(".md-cell-input")];
@@ -52,6 +53,14 @@ function onKey(event: KeyboardEvent, view: EditorView, wrap: HTMLElement, input:
   if (kind !== undefined) {
     event.preventDefault();
     formatCell(view, input, kind);
+    return;
+  }
+
+  if ((event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === "f") {
+    // The notes' find, as from anywhere else in the notes: the editor's keys never see a
+    // key pressed in a cell, and left alone the document's ⌘F took it (reported 2026-11-14).
+    event.preventDefault();
+    openFind(view, input.ownerDocument.getSelection()?.toString() ?? "");
     return;
   }
 

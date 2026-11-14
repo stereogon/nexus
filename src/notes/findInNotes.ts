@@ -169,12 +169,13 @@ export function replaceAll(view: EditorView, replacement: string): number {
 
 /**
  * Opens the bar: looking for the selected words if a few are selected on one line, or else
- * for what it last looked for.
+ * for what it last looked for. A table cell's selection is the browser's, not the editor's,
+ * so a cell passes its own `selected` words.
  */
-export function openFind(view: EditorView): boolean {
+export function openFind(view: EditorView, selected?: string): boolean {
   const { from, to } = view.state.selection.main;
-  const selected = view.state.sliceDoc(from, to);
-  const query = from < to && !selected.includes("\n") ? selected : (view.state.field(notesFind, false)?.query ?? "");
+  const words = selected ?? view.state.sliceDoc(from, to);
+  const query = words !== "" && !words.includes("\n") ? words : (view.state.field(notesFind, false)?.query ?? "");
 
   view.dispatch({ effects: setFind.of({ query, open: true }) });
 
@@ -185,7 +186,7 @@ export function openFind(view: EditorView): boolean {
 export const findInNotes: Extension = [
   notesFind,
   keymap.of([
-    { key: "Mod-f", run: openFind },
+    { key: "Mod-f", run: (view) => openFind(view) },
     { key: "Escape", run: closeFind },
   ]),
 ];
