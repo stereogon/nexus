@@ -29,6 +29,7 @@ import { HighlightsLibrary } from "./ui/HighlightsLibrary";
 import { ErrorPanel } from "./ui/ErrorPanel";
 import { Reading } from "./ui/Reading";
 import { Sidebar } from "./ui/Sidebar";
+import { SidebarFoot } from "./ui/SidebarFoot";
 import { nameOf, parentOf, vaultNameOf } from "./ui/folders";
 import { existingFolder, sidebarRows } from "./ui/sidebarRows";
 import { SidebarIcon } from "./ui/icons";
@@ -120,6 +121,14 @@ export function App() {
   const open = reading.lecture;
   // Held to what the vault still has, so a folder removed in Finder steps up, not to nothing.
   const showing = existingFolder(summary, folder);
+  // The highlights library and Settings: at the sidebar's foot, or in the rail when it is hidden.
+  const foot = {
+    libraryShown: finding.library,
+    onToggleLibrary: finding.toggleLibrary,
+    onShowErrors: errorPanel.show,
+    theme: appearance.theme,
+    onChooseTheme: appearance.choose,
+  };
 
 
   return (
@@ -148,13 +157,7 @@ export function App() {
             onImport={add}
             onHide={sidebar.toggle}
             onChooseVault={choose}
-            foot={{
-              libraryShown: finding.library,
-              onToggleLibrary: finding.toggleLibrary,
-              onShowErrors: errorPanel.show,
-              theme: appearance.theme,
-              onChooseTheme: appearance.choose,
-            }}
+            foot={foot}
             onMake={actions.make}
             onSearch={searching.show}
             onOpen={(lecture) => {
@@ -177,6 +180,7 @@ export function App() {
             }}
           />
         )}
+        {!sidebar.shown && <SidebarFoot rail root={summary.root} {...foot} />}
         {sidebar.shown && <PaneDivider label="Sidebar width" sizing={sidebarSizing} title="Drag to resize the sidebar" />}
 
         {finding.library ? (

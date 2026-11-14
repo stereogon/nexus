@@ -463,6 +463,21 @@ either way). Proved by adding a component with a class the stylesheets never men
 watching the test fail **without** touching the test file — which is precisely what it
 could not do before.
 
+**2026-11-14 · With the sidebar hidden, a rail keeps the highlights library and Settings**
+The user: *"the highlights page button and the settings button should be visible even when
+the sidebar is closed, we can have a small sidebar panel that is always visible"*. A 48px
+rail down the window's left edge, in the sidebar's chrome, shows while the sidebar is hidden,
+with the two controls at its foot where the sidebar has them. It is the sidebar's own foot
+(`SidebarFoot` with `rail`), so the controls, their states and the Settings box are the
+same ones, not copies. Show sidebar stays beside the window's buttons; the leftmost
+header's inset drops from 138 to 90 since it now starts after the rail, leaving the title
+where it was. Not on the canvas, which has no hidden-sidebar state.
+
+Verified: gate green. A journey in `layout.spec.ts`: no rail with the sidebar shown; hidden,
+a rail at the window's edge at most 48px wide, Settings at its foot opening the Settings box,
+the library opened from it and shown pressed; gone again with the sidebar. The hiding journey
+now measures the title's start from the window's edge. Sabotage: without the rail, it fails.
+
 **2026-11-14 · ⌘F works from inside a table cell**
 The user: *"when my cursor is inside a table, the cmd + f does not work"*. A cell is its own
 editable box inside the table's widget, and CodeMirror ignores keys pressed in a widget, so

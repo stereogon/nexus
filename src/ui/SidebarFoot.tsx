@@ -2,6 +2,9 @@
  * The foot of the sidebar: the highlights library, which is something read, and Settings,
  * which holds the things set rarely — the theme, the error panel, the vault (2026-11-07,
  * at the user's request: one settings control rather than an icon each).
+ *
+ * With the sidebar hidden, the same two controls stand in a narrow rail down the window's
+ * left edge (`rail`, 2026-11-14, at the user's request), so neither goes away with it.
  */
 import { useState, useSyncExternalStore } from "react";
 
@@ -19,8 +22,11 @@ export function SidebarFoot({
   onShowErrors,
   theme,
   onChooseTheme,
+  rail = false,
 }: {
   readonly root: string;
+  /** Drawn as the rail beside a hidden sidebar: the two controls alone, one above the other. */
+  readonly rail?: boolean;
   readonly libraryShown: boolean;
   readonly onToggleLibrary: () => void;
   readonly onShowErrors: () => void;
@@ -31,7 +37,7 @@ export function SidebarFoot({
   const errors = useSyncExternalStore(onErrorsChanged, shownErrors).length;
 
   return (
-    <div className="sidebar-foot">
+    <div className={rail ? "sidebar-rail" : "sidebar-foot"}>
       <button
         aria-label="Highlights library"
         aria-pressed={libraryShown}
@@ -60,9 +66,11 @@ export function SidebarFoot({
         <GearIcon />
         {errors > 0 && <span aria-hidden="true" className="settings-badge" />}
       </button>
-      <span className="sidebar-path" title={root}>
-        {shortPath(root)}
-      </span>
+      {!rail && (
+        <span className="sidebar-path" title={root}>
+          {shortPath(root)}
+        </span>
+      )}
       {settings !== null && (
         <SettingsBox
           at={settings}

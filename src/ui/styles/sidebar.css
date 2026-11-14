@@ -213,6 +213,22 @@ button.row-edit:focus-visible {
   font-size: 11px;
 }
 
+/* The sidebar's foot controls, kept down the window's left edge while the sidebar is hidden
+   (2026-11-14, at the user's request; not on the canvas, which has no hidden sidebar): a
+   strip of the sidebar's chrome, the controls at its foot where the sidebar has them. */
+.sidebar-rail {
+  flex: 0 0 48px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 0;
+  background: var(--chrome);
+  border-right: 1px solid var(--border);
+}
+
 /* No `direction: rtl` here. It was a trick to keep the end of a long path visible, and it
    moved the leading slash to the end: `/Users/me/NexusVault` was drawn as
    `Users/me/NexusVault/`. The tail is chosen in `shortPath` instead, where it can be

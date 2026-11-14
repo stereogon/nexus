@@ -116,7 +116,10 @@ test("hiding the sidebar leaves room beside the window's own buttons, and shows 
   await page.getByRole("button", { name: "Hide sidebar" }).click();
 
   await expect(page.locator(".sidebar")).toHaveCount(0);
-  expect(await inset()).toBeGreaterThanOrEqual(120);
+  // Measured from the window's edge: the header now starts after the rail (2026-11-14).
+  const start = async () => ((await page.locator(".viewer-bar").boundingBox())?.x ?? 0) + (await inset());
+
+  expect(await start()).toBeGreaterThanOrEqual(120);
 
   // The title starts clear of the Show sidebar control, not under its edge.
   const control = await page.getByRole("button", { name: "Show sidebar" }).boundingBox();
@@ -128,6 +131,33 @@ test("hiding the sidebar leaves room beside the window's own buttons, and shows 
 
   await expect(page.locator(".sidebar")).toBeVisible();
   expect(await inset()).toBeLessThan(40);
+});
+
+test("with the sidebar hidden, a rail keeps the highlights library and Settings at hand", async ({ page }) => {
+  const rail = page.locator(".sidebar-rail");
+
+  await expect(rail).toHaveCount(0);
+  await page.getByRole("button", { name: "Hide sidebar" }).click();
+  await expect(page.locator(".sidebar")).toHaveCount(0);
+
+  // Down the window's left edge, the controls at its foot, as the sidebar has them.
+  const box = await rail.boundingBox();
+  const gear = await rail.getByRole("button", { name: "Settings" }).boundingBox();
+
+  expect(box?.x ?? -1).toBe(0);
+  expect(box?.width ?? 0).toBeLessThanOrEqual(48);
+  expect((gear?.y ?? 0) + (gear?.height ?? 0)).toBeGreaterThan((box?.y ?? 0) + (box?.height ?? 0) - 60);
+
+  await rail.getByRole("button", { name: "Settings" }).click();
+  await expect(page.getByRole("dialog", { name: "Settings" })).toBeVisible();
+  await page.keyboard.press("Escape");
+
+  await rail.getByRole("button", { name: "Highlights library" }).click();
+  await expect(page.locator("#library-heading")).toBeVisible();
+  await expect(rail.getByRole("button", { name: "Highlights library" })).toHaveAttribute("aria-pressed", "true");
+
+  await page.getByRole("button", { name: "Show sidebar" }).click();
+  await expect(rail).toHaveCount(0);
 });
 
 test("the page controls float at the foot, and the last page scrolls clear of them", async ({ page }) => {
