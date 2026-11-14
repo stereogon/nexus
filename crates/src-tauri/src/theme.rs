@@ -1,5 +1,5 @@
-//! Reading and recording which theme this device uses, which font, and whether documents'
-//! pages go dark in a dark theme (both 2026-11-14).
+//! Reading and recording which theme this device uses, which font, and which tone documents'
+//! pages are drawn in (both 2026-11-14).
 //!
 //! Two commands, matching `remember_vault` / `last_vault`: the store is per-device state
 //! outside the vault (§3), and the window asks for it on launch and writes it back when
@@ -55,7 +55,7 @@ pub fn remember_font(font: Font) {
     }
 }
 
-/// How this device draws documents' pages in a dark theme: as printed, or dark.
+/// The tone this device draws documents' pages in: as printed, sepia, dusk or night.
 #[tauri::command]
 #[must_use]
 pub fn last_page_tone() -> PageTone {

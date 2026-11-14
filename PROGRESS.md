@@ -478,6 +478,40 @@ a rail at the window's edge at most 48px wide, Settings at its foot opening the 
 the library opened from it and shown pressed; gone again with the sidebar. The hiding journey
 now measures the title's start from the window's edge. Sabotage: without the rail, it fails.
 
+**2026-11-14 · Page tones, as readers offer them, in place of one dark page**
+The user, after the first dark page: *"can't we have a more readable dark mode color of the
+background of the pdf … it is too dark currently … something which is more pleasant to the
+eyes, something like the options other pdf or book readers provide"*. The single dark tone
+inverted white to #141414 and black to near-white: night-mode contrast, harsh to read long.
+Now four tones, as Apple Books and Kindle offer: **Printed**, **Sepia** (#F4ECD8), **Dusk**
+(warm grey #3A3734, text about #D7D6D5) and **Night** (#161616, text about #BEBEBE). Drawn on
+the canvas first (row "Fonts, and page tones").
+
+- **How:** the page's canvas is blended onto the tone's paper (`--page`) inside an isolated
+  page. Sepia multiplies it on, so white becomes paper and ink stays ink. Dusk and Night
+  invert it with hue kept, dim its light (`brightness` 0.8 and 0.72), and screen it onto
+  their paper, so black becomes the paper and white a soft light grey. That is what lets a
+  dark tone choose both its paper and its text, which inversion alone cannot.
+- **In every theme,** as readers do: Sepia is as wanted in Paper as Dusk is in Ink. The moon is
+  therefore always shown, and opens a menu of the four (`PopMenu` items now take an optional
+  `checked`, drawn as `menuitemradio`); Settings shows four swatches of each paper and text.
+- On Dusk and Night, highlights and find marks screen and on-page chrome takes the accent
+  lightened (`color-mix` with white); stickies and the notes marker take the paper on all three.
+- **A device that chose the earlier "dark" keeps a dark page**: Rust reads the word as Dusk.
+- The earlier entry's styles, `darkPages.css`, are now `pageTones.css`.
+
+Verified: gate green. Rust: every tone's round trip, the default, an unreadable word as
+Printed, `dark` as Dusk. Unit: the store, as before, on the new tones. Journeys
+(`pageTones.spec.ts`): Printed at first; Dusk from the moon draws grey paper, the canvas
+inverted, dimmed and screened, the highlight screened and not inverted, and Printed undoes it,
+the menu ticking the tone in force; Sepia in a light theme multiplies with nothing inverted;
+Settings' four swatches are the same choice, and Night is its own paper and dimmer text; a
+device that chose Dusk opens with it. Sabotage, each failing: Dusk undimmed; Sepia not
+multiplied; highlights multiplied on a dark paper; the menu's tick dropped; Settings' swatch
+dead. Looked at in screenshots of Dusk with the menu open, Night, and Sepia in Paper. Two
+older queries for the Sepia *theme* were scoped to the Theme group, since a page tone now
+shares the name.
+
 **2026-11-14 · Dark pages, by choice (amending §3)**
 The user: *"can we actually have a preference of if people want the pdf to be inverted (dark
 mode) or want the pdfs to be in its usual color? i think it is a good thing to have"*. §3

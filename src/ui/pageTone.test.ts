@@ -1,13 +1,13 @@
 // @vitest-environment jsdom
 /**
- * The dark-pages store: a choice applies at once and is recorded, and the recorded tone,
+ * The page-tone store: a choice applies at once and is recorded, and the recorded tone,
  * arriving after launch, never undoes a choice made before it arrived.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const ipc = vi.hoisted(() => ({
-  lastPageTone: vi.fn<() => Promise<"printed" | "dark">>(),
-  rememberPageTone: vi.fn<(tone: "printed" | "dark") => Promise<void>>(),
+  lastPageTone: vi.fn<() => Promise<"printed" | "sepia" | "dusk" | "night">>(),
+  rememberPageTone: vi.fn<(tone: "printed" | "sepia" | "dusk" | "night") => Promise<void>>(),
 }));
 
 vi.mock("../ipc/pageTone", () => ipc);
@@ -21,23 +21,23 @@ beforeEach(() => {
 
 describe("the page tone", () => {
   it("applies the recorded tone at launch", async () => {
-    ipc.lastPageTone.mockResolvedValue("dark");
+    ipc.lastPageTone.mockResolvedValue("dusk");
     const { loadPageTone } = await import("./pageTone");
 
     await loadPageTone();
-    expect(document.documentElement.getAttribute("data-pages")).toBe("dark");
+    expect(document.documentElement.getAttribute("data-pages")).toBe("dusk");
   });
 
   it("applies a choice at once and records it", async () => {
     const { choosePageTone } = await import("./pageTone");
 
-    choosePageTone("dark");
-    expect(document.documentElement.getAttribute("data-pages")).toBe("dark");
-    expect(ipc.rememberPageTone).toHaveBeenCalledWith("dark");
+    choosePageTone("night");
+    expect(document.documentElement.getAttribute("data-pages")).toBe("night");
+    expect(ipc.rememberPageTone).toHaveBeenCalledWith("night");
   });
 
   it("keeps a choice made before the recorded tone arrives", async () => {
-    let arrive: (tone: "printed" | "dark") => void = () => undefined;
+    let arrive: (tone: "printed" | "sepia" | "dusk" | "night") => void = () => undefined;
     ipc.lastPageTone.mockReturnValue(
       new Promise((resolve) => {
         arrive = resolve;
@@ -46,10 +46,10 @@ describe("the page tone", () => {
     const { choosePageTone, loadPageTone } = await import("./pageTone");
 
     const loading = loadPageTone();
-    choosePageTone("dark");
+    choosePageTone("night");
     arrive("printed");
     await loading;
 
-    expect(document.documentElement.getAttribute("data-pages")).toBe("dark");
+    expect(document.documentElement.getAttribute("data-pages")).toBe("night");
   });
 });

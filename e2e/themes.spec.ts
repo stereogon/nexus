@@ -26,7 +26,7 @@ test("choosing a theme repaints the window at once, and the page stays white", a
   expect(await background(page, ".pdf-page")).toBe("rgb(255, 255, 255)");
 
   // Tried one after another without reopening the menu.
-  await picker(page).getByRole("radio", { name: /Sepia/u }).click();
+  await picker(page).getByRole("radiogroup", { name: "Theme" }).getByRole("radio", { name: /Sepia/u }).click();
   await expect.poll(() => background(page, ".sidebar")).toBe("rgb(244, 236, 216)");
 });
 

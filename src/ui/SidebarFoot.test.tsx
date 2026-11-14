@@ -48,7 +48,7 @@ describe("the foot of the sidebar", () => {
     expect(within(screen.getByRole("radiogroup", { name: "Theme" })).getAllByRole("radio")).toHaveLength(25);
     expect(settings.textContent).toContain("/Users/me/NexusVault");
 
-    fireEvent.click(screen.getByRole("radio", { name: /Sepia/u }));
+    fireEvent.click(within(screen.getByRole("radiogroup", { name: "Theme" })).getByRole("radio", { name: /Sepia/u }));
     expect(props.onChooseTheme).toHaveBeenCalledWith("sepia");
     // Left open, so themes can be tried one after another.
     expect(screen.getByRole("dialog", { name: "Settings" })).not.toBeNull();

@@ -255,6 +255,12 @@ and explain why. Rationale is recorded in `PROGRESS.md`.
   `screen`, and on-page chrome uses the theme's `accent` in place of `accentInk`. Off unless
   chosen, per device. The reasoning that ruled it out still holds, which is why it is the
   person's call and not the app's. Rules in `src/ui/styles/darkPages.css`.)*
+  *(Amended again 2026-11-14 at the user's request: the single dark page, #141414 with
+  white text, read as too dark. It is now a **page tone**, as book and PDF readers offer —
+  Printed, Sepia, Dusk, Night — chosen in Settings or from the moon, in **every** theme, not
+  dark themes only. The page's picture is laid on the tone's paper: multiplied onto Sepia;
+  inverted with hue kept, dimmed, and screened onto Dusk and Night, so their text is a soft
+  light grey. Still Printed unless chosen. Rules now in `src/ui/styles/pageTones.css`.)*
 - The document surface is light in both themes, so page-drawn annotation chrome uses
   `accentInk` (sized for white) while app chrome uses the theme `accent`.
 - *(Amended 2026-11-07: the accent is now per theme — Paper's is `#A8195E`, Ink's

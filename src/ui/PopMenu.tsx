@@ -1,11 +1,12 @@
 /**
- * A small floating menu: the sidebar's "+" and the vault switcher.
+ * A small floating menu: the sidebar's "+", the vault switcher, and a document's page tone.
  *
  * Real `menuitem` buttons, so Tab and screen readers find them; Escape and a click
  * elsewhere close it, and choosing an item closes it too.
  */
 import type { ReactNode } from "react";
 
+import { CheckIcon } from "./icons";
 import type { MenuAt } from "./menuPlacement";
 import { useFloating } from "./useFloating";
 import { useDismissOutside } from "./usePopover";
@@ -22,6 +23,8 @@ export interface MenuItem {
   readonly icon?: ReactNode;
   /** A shortcut that really does this, shown at the end. */
   readonly keys?: string;
+  /** Present for a choice among the items, as the page tone is: whether it is the one chosen. */
+  readonly checked?: boolean;
   readonly onSelect: () => void;
 }
 
@@ -58,11 +61,13 @@ export function PopMenu({
             onDismiss();
             item.onSelect();
           }}
-          role="menuitem"
+          aria-checked={item.checked}
+          role={item.checked === undefined ? "menuitem" : "menuitemradio"}
           type="button"
         >
           {item.icon}
           <span className="pop-label">{item.label}</span>
+          {item.checked === true && <CheckIcon />}
           {item.keys !== undefined && (
             <span aria-hidden="true" className="pop-keys">
               {item.keys}

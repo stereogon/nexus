@@ -1,10 +1,10 @@
 /**
- * Whether documents' pages go dark in a dark theme (2026-11-14, at the user's request,
- * amending §3): chosen in Settings, and turned on or off from the moon in a document's bar.
+ * The tone documents' pages are drawn in (2026-11-14, at the user's request, amending §3):
+ * chosen in Settings, or from the moon in a document's bar.
  *
  * A module-level store read with `useSyncExternalStore`, as `errorLog` is, because the two
  * controls are far apart in the tree and a prop through every pane between them would be
- * all wiring. Written onto the document as `data-pages`, which `darkPages.css` keys on.
+ * all wiring. Written onto the document as `data-pages`, which `pageTones.css` keys on.
  */
 import { useSyncExternalStore } from "react";
 

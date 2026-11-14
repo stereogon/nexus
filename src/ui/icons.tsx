@@ -66,7 +66,16 @@ export function ErrorsIcon() {
   );
 }
 
-/** A crescent: dark pages, in a document's bar. */
+/** A tick: the item chosen, in a menu of choices. */
+export function CheckIcon() {
+  return (
+    <Icon size={14}>
+      <path d="M3.5 8.5l3 3 6-7" />
+    </Icon>
+  );
+}
+
+/** A crescent: the page tone, in a document's bar. */
 export function MoonIcon() {
   return (
     <Icon>

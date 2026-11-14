@@ -1,5 +1,6 @@
 /**
- * How this device draws documents' pages in a dark theme (2026-11-14): as printed, or dark.
+ * The tone this device draws documents' pages in (2026-11-14): as printed, sepia, dusk or
+ * night.
  *
  * Per-device state (§3), kept beside the theme in Application Support, as the theme is.
  */
@@ -7,7 +8,7 @@ import { invoke } from "@tauri-apps/api/core";
 import * as z from "zod";
 
 /** The choices, named as `lecture_fs::page_tone::PageTone` names them. */
-export const PAGE_TONES = ["printed", "dark"] as const;
+export const PAGE_TONES = ["printed", "sepia", "dusk", "night"] as const;
 
 export type PageTone = (typeof PAGE_TONES)[number];
 

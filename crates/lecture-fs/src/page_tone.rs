@@ -1,7 +1,7 @@
-//! Whether this device shows documents' pages dark in a dark theme (2026-11-14, at the
-//! user's request; amending §3, which had ruled inversion out). Off unless chosen: inverting
-//! a page turns photographs and scans into negatives, so it is the person's call, made
-//! knowing that, and never the app's default.
+//! The tone this device draws documents' pages in (2026-11-14, at the user's request;
+//! amending §3, which had ruled inversion out): as printed, or a reader's paper — sepia, dusk
+//! or night. As printed unless chosen: a tone changes photographs and scans with the page, so
+//! it is the person's call, made knowing that, and never the app's default.
 //!
 //! `page-tone.txt` in `~/Library/Application Support/Nexus/`, beside the theme, the font and
 //! the layout (§3, per-device state outside the vault).
@@ -17,15 +17,19 @@ use crate::device_word;
 /// Names the page tone to use on launch.
 pub const PAGE_TONE_FILE_NAME: &str = "page-tone.txt";
 
-/// How a document's pages are drawn in a dark theme, as the window names it.
+/// How a document's pages are drawn, as the window names it.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum PageTone {
-    /// As printed: the page stays light, on a dark bed.
+    /// As printed.
     #[default]
     Printed,
-    /// Inverted, keeping each colour's hue, to sit with the dark theme.
-    Dark,
+    /// Warm paper, the page laid on it.
+    Sepia,
+    /// A soft grey page with light text, the page inverted keeping each colour's hue.
+    Dusk,
+    /// The darkest page, its light text dimmed.
+    Night,
 }
 
 impl PageTone {
@@ -34,14 +38,23 @@ impl PageTone {
     pub fn word(self) -> &'static str {
         match self {
             Self::Printed => "printed",
-            Self::Dark => "dark",
+            Self::Sepia => "sepia",
+            Self::Dusk => "dusk",
+            Self::Night => "night",
         }
     }
 
     /// The tone `word` names, or `None` if it names none.
+    ///
+    /// `dark` was the one dark tone for an afternoon (2026-11-14) before the four, and is read
+    /// as Dusk, which is what that choice became, so a device that chose it keeps a dark page.
     #[must_use]
     pub fn from_word(word: &str) -> Option<Self> {
-        [Self::Printed, Self::Dark]
+        if word == "dark" {
+            return Some(Self::Dusk);
+        }
+
+        [Self::Printed, Self::Sepia, Self::Dusk, Self::Night]
             .into_iter()
             .find(|tone| tone.word() == word)
     }

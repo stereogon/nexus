@@ -1,0 +1,200 @@
+/**
+ * Page tones (2026-11-14, at the user's request, amending §3's "no dark-mode PDF
+ * inversion"), as book and PDF readers offer them: Printed, Sepia, Dusk and Night, in every
+ * theme. A first single dark tone, white at #141414 with white text, read as too dark; these
+ * are the paper colours readers settle on, and the text on the dark ones is dimmed rather
+ * than white.
+ *
+ * The page's picture is laid on the tone's paper, `--page`. Sepia multiplies it on, so white
+ * becomes paper and ink stays ink. Dusk and Night first invert it, `hue-rotate` turning the
+ * colours back round so red stays red, dim its light with `brightness`, and lighten it onto
+ * their paper with `screen`, so black becomes paper and white a soft light text. Only the
+ * picture changes: highlights, stickies and the text layer are drawn over it as they were.
+ * Keyed on `data-pages`, which `pageTone.ts` writes.
+ *
+ * Re-said on `.pdf-page`, because `applyTheme` writes the theme's tokens inline on the root,
+ * which a stylesheet cannot outrank there. `isolation` keeps the blend inside the page.
+ */
+:root[data-pages="sepia"] .pdf-page,
+:root[data-pages="dusk"] .pdf-page,
+:root[data-pages="night"] .pdf-page {
+  isolation: isolate;
+}
+
+:root[data-pages="sepia"] .pdf-page {
+  --page: #f4ecd8;
+}
+
+:root[data-pages="sepia"] .pdf-canvas {
+  mix-blend-mode: multiply;
+}
+
+/* The dark papers. The accent drawn on the page is lightened, since the ink made for white
+   would sink into them. */
+:root[data-pages="dusk"] .pdf-page {
+  --page: #3a3734;
+  --accent-ink: color-mix(in srgb, var(--accent) 55%, #ffffff);
+}
+
+:root[data-pages="night"] .pdf-page {
+  --page: #161616;
+  --accent-ink: color-mix(in srgb, var(--accent) 55%, #ffffff);
+}
+
+:root[data-pages="dusk"] .pdf-canvas {
+  filter: invert(1) hue-rotate(180deg) brightness(0.8);
+  mix-blend-mode: screen;
+}
+
+:root[data-pages="night"] .pdf-canvas {
+  filter: invert(1) hue-rotate(180deg) brightness(0.72);
+  mix-blend-mode: screen;
+}
+
+/* Multiply darkens, so on a dark paper a highlight vanished; screen lightens, so it tints. */
+:root[data-pages="dusk"] .highlight,
+:root[data-pages="dusk"] .find-mark,
+:root[data-pages="night"] .highlight,
+:root[data-pages="night"] .find-mark {
+  mix-blend-mode: screen;
+}
+
+/* The marks drawn on white, drawn on the paper instead. */
+:root[data-pages="sepia"] .sticky-icon,
+:root[data-pages="sepia"] .highlight-notes,
+:root[data-pages="dusk"] .sticky-icon,
+:root[data-pages="dusk"] .highlight-notes,
+:root[data-pages="night"] .sticky-icon,
+:root[data-pages="night"] .highlight-notes {
+  background: var(--page);
+}
+
+:root[data-pages="dusk"] .sticky-icon:hover,
+:root[data-pages="dusk"] .sticky-icon:focus-visible,
+:root[data-pages="dusk"] .highlight-notes:hover,
+:root[data-pages="dusk"] .highlight-notes:focus-visible,
+:root[data-pages="night"] .sticky-icon:hover,
+:root[data-pages="night"] .sticky-icon:focus-visible,
+:root[data-pages="night"] .highlight-notes:hover,
+:root[data-pages="night"] .highlight-notes:focus-visible {
+  color: var(--page);
+}
+
+/* ---------------------------------------------------------------------------------
+   Choosing a tone: swatches in Settings (`PageToneChoices`), and in the moon's menu.
+   Each swatch is the tone's own paper and text, whatever the window is in.
+   --------------------------------------------------------------------------------- */
+.page-tones {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.page-tone {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-family: var(--font-ui);
+  text-align: left;
+  cursor: pointer;
+}
+
+.page-tone-paper {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  height: 54px;
+  padding: 0 9px;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px var(--border);
+}
+
+.page-tone-paper > span {
+  height: 3px;
+  border-radius: 2px;
+  background: currentcolor;
+  opacity: 0.55;
+}
+
+.page-tone-paper > span:first-child {
+  width: 70%;
+  height: 4px;
+  opacity: 0.85;
+}
+
+.page-tone-paper > span:nth-child(2) {
+  width: 90%;
+}
+
+.page-tone-paper > span:nth-child(3) {
+  width: 60%;
+}
+
+.page-tone:hover .page-tone-paper {
+  box-shadow: 0 0 0 1px var(--border-strong);
+}
+
+.page-tone[aria-checked="true"] .page-tone-paper {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.page-tone-label {
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.page-tone[aria-checked="true"] .page-tone-label {
+  color: var(--accent);
+}
+
+.page-tone-hint {
+  margin: 8px 0 0;
+  color: var(--text-meta);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* The small swatch beside each tone in the moon's menu. */
+.page-tone-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px var(--border-strong);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.page-tone-chip,
+.page-tone-paper {
+  background: var(--tone-paper);
+  color: var(--tone-ink);
+}
+
+[data-tone="printed"] {
+  --tone-paper: #ffffff;
+  --tone-ink: #1e1e1e;
+}
+
+[data-tone="sepia"] {
+  --tone-paper: #f4ecd8;
+  --tone-ink: #3b2f22;
+}
+
+[data-tone="dusk"] {
+  --tone-paper: #3a3734;
+  --tone-ink: #dcd7cf;
+}
+
+[data-tone="night"] {
+  --tone-paper: #161616;
+  --tone-ink: #bdbdbd;
+}

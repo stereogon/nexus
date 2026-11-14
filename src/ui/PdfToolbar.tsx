@@ -8,11 +8,16 @@
  * Sticky tool; sticky notes are made from the highlight menu, so there is no third tool
  * until there is something for it to do.
  *
- * The moon (2026-11-14) turns dark pages on and off, the same choice as Settings has; it is
- * shown in dark themes only, where it does something (`darkPages.css`).
+ * The moon (2026-11-14) opens the page tones — Printed, Sepia, Dusk, Night — the same choice
+ * as Settings has, a click from the page, for turning a tone off for a scan (`pageTones.css`).
  */
+import { useState } from "react";
+
 import { MoonIcon } from "./icons";
+import type { MenuAt } from "./menuPlacement";
 import { choosePageTone, usePageTone } from "./pageTone";
+import { TONES } from "./pageTones";
+import { PopMenu, under } from "./PopMenu";
 import type { ViewMode } from "./viewMode";
 
 export function PdfToolbar({
@@ -41,7 +46,8 @@ export function PdfToolbar({
   readonly notesOpen: boolean;
   readonly onNotes: () => void;
 }) {
-  const darkPages = usePageTone() === "dark";
+  const tone = usePageTone();
+  const [tones, setTones] = useState<MenuAt | null>(null);
 
   return (
     <div className="viewer-bar pane-head" data-tauri-drag-region="">
@@ -95,17 +101,45 @@ export function PdfToolbar({
       </div>
 
       <button
-        aria-label="Dark pages"
-        aria-pressed={darkPages}
-        className="chrome-icon page-tone-toggle"
-        onClick={() => {
-          choosePageTone(darkPages ? "printed" : "dark");
+        aria-expanded={tones !== null}
+        aria-haspopup="menu"
+        aria-label="Page tone"
+        aria-pressed={tone !== "printed"}
+        className="chrome-icon"
+        data-opens="page-tone"
+        onClick={(event) => {
+          const control = event.currentTarget;
+
+          setTones((open) => (open === null ? under(control, "right", 220) : null));
         }}
-        title="Dark pages: photos and scans invert too"
+        title="Page tone"
         type="button"
       >
         <MoonIcon />
       </button>
+      {tones !== null && (
+        <PopMenu
+          at={tones}
+          items={TONES.map(({ name, label }) => ({
+            label,
+            checked: name === tone,
+            icon: (
+              <span aria-hidden="true" className="page-tone-chip" data-tone={name}>
+                A
+              </span>
+            ),
+            onSelect: () => {
+              choosePageTone(name);
+            },
+          }))}
+          label="Page tone"
+          note="Photos and scans change with the page."
+          onDismiss={() => {
+            setTones(null);
+          }}
+          opener="page-tone"
+        />
+      )}
       <button aria-label="Find in document" className="chrome-icon" onClick={onFind} title="Find (⌘F)" type="button">
         <svg aria-hidden="true" fill="none" height="16" stroke="currentColor" strokeLinecap="round" strokeWidth="1.4" viewBox="0 0 16 16" width="16">
           <circle cx="7" cy="7" r="4.5" />
