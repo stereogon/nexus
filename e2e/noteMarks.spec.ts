@@ -6,7 +6,16 @@ import { expect, test, type Page } from "@playwright/test";
 import { READING, standardFixture } from "./fixture";
 import { openLecture, openNexus, saved } from "./nexus";
 
-const NOTES = ["Raft elects a leader by majority.", "Use `==x==` in code.", "", "The end.", "", "How fast ==can we go ?=={question} now."].join("\n");
+const NOTES = [
+  "Raft elects a leader by majority.",
+  "Use `==x==` in code.",
+  "",
+  "The end.",
+  "",
+  "How fast ==can we go ?=={question} now.",
+  "",
+  "- ==No ACKs means congestion.== in a list",
+].join("\n");
 
 const notes = (page: Page) => page.getByRole("complementary", { name: "Notes" });
 const line = (page: Page, text: string) => notes(page).locator(".cm-line").filter({ hasText: text });
@@ -113,4 +122,11 @@ test("Backspace on a highlight's last letter, after a space, keeps the highlight
   await expect(words).toHaveText("can we go");
   await expect(line(page, "How fast")).not.toContainText("==");
   await expect.poll(async () => (await saved(page)).split("\n")[5]).toBe("How fast ==can we go=={question}  now.");
+});
+
+test("in a list item the letter sits after the words, not pulled back by the hanging indent", async ({ page }) => {
+  const glyph = line(page, "in a list").locator('.md-mark-glyph[data-semantic="key"]');
+
+  await expect(glyph).toHaveAttribute("data-glyph", "K");
+  expect(await glyph.evaluate((element) => getComputedStyle(element, "::after").textIndent)).toBe("0px");
 });

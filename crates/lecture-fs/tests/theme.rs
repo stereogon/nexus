@@ -142,6 +142,7 @@ fn every_theme_is_written_and_read_back_as_itself() {
         "emerald",
         "ember",
         "aurora",
+        "cyberpunk",
     ] {
         let theme: Theme = name.parse().unwrap();
 

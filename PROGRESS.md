@@ -478,6 +478,52 @@ a rail at the window's edge at most 48px wide, Settings at its foot opening the 
 the library opened from it and shown pressed; gone again with the sidebar. The hiding journey
 now measures the title's start from the window's edge. Sabotage: without the rail, it fails.
 
+**2026-11-15 · Coloured words, the K in its place, Funky redone, Cyberpunk 2077, and no Readable font**
+Asked for together, with a screenshot of the first:
+- *"there is some issue with rendering the K at the right place in the notes."* In a list
+  item the letter was drawn a marker's width back over the words. Cause: the letter is an
+  `::after` inline block, and an inline block takes its line's `text-indent`, which in a
+  list item is the hanging indent (-1.6em). Its box stayed after the words; its letter moved
+  back. `text-indent: 0` on it (`noteMarks.css`).
+- *"why don't we add Text color options like notion? … simple text color, other is a Text
+  border with color"*. Researched from Notion's help page (customize-and-style-your-content):
+  the A in the selection toolbar holds text colours and background colours; nothing draws a
+  border, so the coloured box is Notion's background. Built as the canvas's new artboard
+  "Text colour" (drawn first, as asked): an A in the format bar opens Text and Background,
+  Default and Notion's nine each. Stored as Notion's own Markdown writes it, `<span
+  color="red">` and `color="red_bg"`, so the two apps read each other's colours and any
+  other reader shows the words; hidden like every other mark, one colour to a span,
+  repainted or unwrapped from inside (`notes/paint.ts`, `preview/paintSpans.ts`,
+  `PaintMenu.tsx`). Counted among the constructs, so deleting all its words takes the tags
+  (`constructs.ts`). One text and one background set for light themes and one for dark
+  (`paint.css`), not one per theme: `paint.test.ts` holds each text colour at 4.5:1 on every
+  theme's note ground, and the theme's text at 4.5:1 on every background — 25 themes × 9.
+  The contrast arithmetic moved from `themes.test.ts` to `themes/contrast.ts` to be shared.
+  Not done: Notion's `/red` in the slash menu, colouring inside a table cell, and a text
+  colour and a background on the same words at once.
+- *"for the funky theme, i want a better color pallete that is more pleasing to eyes and
+  modern."* Peach, cream and electric violet in place of orange chrome and deep teal; its
+  question highlight goes back to the standard blue, the violet accent being 53° from it.
+- *"i also want a theme named cyberpunk 2077 … eye pleasing + matching the vibe"*.
+  Blue-black, cool white and a softened signal yellow (`#f5e663`). The yellow is 14° from the
+  amber key, so the key highlight swaps to a light neon pink (`PINK_KEY`, `#ff9ad0`), light
+  enough for the dark K (7:1). A first darker pink failed that test and was lightened rather
+  than the rule changed; the canvas was corrected to match. Added to the Rust `Theme` as
+  `cyberpunk`.
+- *"remove the readable font from the fonts options, i think system font works for that."*
+  Gone from Settings, `Font` and the stylesheets. A device that saved `readable` is read as
+  System (`font::from_word`, tested), since `font.txt` is a file already on someone's disk.
+  The two Atkinson woff2 files are left in place, unreferenced: deleting files not made this
+  session needs the user's word.
+
+Verified: gate green. Unit: `paint.test.ts` (spans found, Notion's form written, wrap,
+repaint, background, unwrap), `themes/paint.test.ts`, the theme set (25), Rust `font.rs`
+(readable → System) and `theme.rs` (cyberpunk). Journeys: `paint.spec.ts` (red text saved and
+hidden-tagged, ringed when reopened, swapped for a yellow background, Default takes it off;
+Escape closes the menu), `noteMarks.spec.ts` (the letter in a list item has no indent),
+`themes.spec.ts` (Cyberpunk 2077: its ground, a white page, its pink key), `fonts.spec.ts`
+(three choices). Sabotage: each fails with its fix taken out.
+
 **2026-11-14 · A bullet under text is no heading; highlights show their letter, and survive a Backspace**
 Three reports from the user, with a screenshot of the third.
 - *"when i hit enter at the end of a normal text line, and start a bullet point the text line
@@ -6838,6 +6884,9 @@ Fonts, all SIL OFL 1.1 and therefore bundleable into a distributed binary:
 Bricolage Grotesque, IBM Plex Sans, IBM Plex Mono, Literata; and, since 2026-11-14,
 Atkinson Hyperlegible Next (Braille Institute) and Recursive (Arrow Type), their licences
 read from Google Fonts' `ofl/*/METADATA.pb` that day.
+*(2026-11-15: Atkinson Hyperlegible Next is no longer referenced, the Readable font having
+been taken out. Its two woff2 files are still in `src/ui/fonts/`, unbundled, until the user
+agrees to their deletion.)*
 
 Rust dependencies in use, with the version resolved on 2026-10-27:
 

@@ -1,9 +1,9 @@
 /**
- * Highlighting in the notes editor: applying a mark to the selection, and where the
- * four-colour bar goes for it.
+ * Highlighting in the notes editor: applying a mark or a colour to the selection, and where
+ * the format bar goes for it.
  *
- * The rules — what wrapping, recolouring or removing changes — are `marks.ts`, pure and
- * tested; this applies them to a live editor.
+ * The rules — what wrapping, recolouring or removing changes — are `marks.ts` and `paint.ts`,
+ * pure and tested; this applies them to a live editor.
  */
 import { Annotation } from "@codemirror/state";
 import type { EditorView, KeyBinding } from "@codemirror/view";
@@ -12,12 +12,26 @@ import type { HighlightSemantic } from "../ipc/annotations";
 import type { MenuAt } from "../ui/menuPlacement";
 import type { FormatState } from "../ui/NotesFormatBar";
 import { blockOf, cursorInside, hasInline, inlineAtCursor, linkAround, setBlock, toggleInline, type Block, type Inline } from "./format";
-import { markChanges, marksIn } from "./marks";
+import { markChanges, marksIn, type Change } from "./marks";
+import { paintChanges, paintsIn, type Paint } from "./paint";
 
 /** Marks, recolours or unmarks the selection; `true` if anything changed. */
 export function markSelection(view: EditorView, semantic: HighlightSemantic | null): boolean {
   const { from, to } = view.state.selection.main;
-  const changes = markChanges(view.state.doc.toString(), from, to, semantic);
+
+  return applyAndLeave(view, markChanges(view.state.doc.toString(), from, to, semantic));
+}
+
+/** Colours, recolours or takes the colour off the selection; `true` if anything changed. */
+export function paintSelection(view: EditorView, paint: Paint | null): boolean {
+  const { from, to } = view.state.selection.main;
+
+  return applyAndLeave(view, paintChanges(view.state.doc.toString(), from, to, paint));
+}
+
+/** Applies `changes` and leaves the cursor after the selection; `false` if there were none. */
+function applyAndLeave(view: EditorView, changes: readonly Change[]): boolean {
+  const { to } = view.state.selection.main;
 
   if (changes.length === 0) {
     return false;
@@ -97,6 +111,7 @@ export function formatStateOf(view: EditorView): FormatState {
   const doc = view.state.doc.toString();
   const line = view.state.doc.lineAt(from);
   const around = marksIn(line.text, line.from).find((mark) => mark.from <= from && to <= mark.to);
+  const painted = paintsIn(line.text, line.from).find((span) => span.from <= from && to <= span.to);
   // A selection is judged by its edges; a bare cursor by whether its line has the format
   // open where it is, which is what typing into a chosen format leaves.
   const has = (kind: Inline) =>
@@ -111,6 +126,7 @@ export function formatStateOf(view: EditorView): FormatState {
     },
     block: blockOf(line.text),
     highlight: around?.semantic ?? null,
+    paint: painted?.paint ?? null,
   };
 }
 

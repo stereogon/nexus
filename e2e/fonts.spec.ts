@@ -1,6 +1,6 @@
 /**
  * The window's font (2026-11-14, at the user's request, after Slack's setting): the theme's
- * own, Readable, Mono or System, chosen in Settings and drawn at once in the interface and the notes;
+ * own, Mono or System, chosen in Settings and drawn at once in the interface and the notes;
  * Funky brings its own, Recursive; and the one this device chose is the one it opens in.
  */
 import { expect, test, type Page } from "@playwright/test";
@@ -21,19 +21,13 @@ async function open(page: Page, fixture = standardFixture()): Promise<void> {
   await openLecture(page, READING.title);
 }
 
-test("choosing Readable, Mono or System draws the interface and the notes in it, and Theme undoes it", async ({ page }) => {
+test("choosing Mono or System draws the interface and the notes in it, and Theme undoes it", async ({ page }) => {
   await open(page);
   expect(await family(page, UI)).toMatch(/^"?IBM Plex Sans/u);
   expect(await family(page, NOTES)).toMatch(/^"?Literata/u);
 
   await page.getByRole("button", { name: "Settings" }).click();
-  await fonts(page).getByRole("radio", { name: /Readable/u }).click();
-
-  await expect(page.locator("html")).toHaveAttribute("data-font", "readable");
-  expect(await family(page, UI)).toMatch(/^"?Atkinson Hyperlegible Next/u);
-  expect(await family(page, NOTES)).toMatch(/^"?Atkinson Hyperlegible Next/u);
-  expect(await loaded(page, "Atkinson Hyperlegible Next")).toBe(true);
-
+  await expect(fonts(page).getByRole("radio")).toHaveCount(3);
   await fonts(page).getByRole("radio", { name: /Mono/u }).click();
   expect(await family(page, UI)).toMatch(/^"?IBM Plex Mono/u);
   expect(await family(page, NOTES)).toMatch(/^"?IBM Plex Mono/u);
@@ -56,8 +50,8 @@ test("Funky brings Recursive, and a chosen font is the person's over the theme's
   expect(await family(page, NOTES)).toMatch(/^"?Recursive/u);
   expect(await loaded(page, "Recursive")).toBe(true);
 
-  await fonts(page).getByRole("radio", { name: /Readable/u }).click();
-  expect(await family(page, NOTES)).toMatch(/^"?Atkinson Hyperlegible Next/u);
+  await fonts(page).getByRole("radio", { name: /System/u }).click();
+  expect(await family(page, NOTES)).toMatch(/^-apple-system/u);
 });
 
 test("the window opens in the font this device last chose", async ({ page }) => {

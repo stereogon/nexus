@@ -4,9 +4,9 @@
  * some swap a highlight colour is in `./highlights.ts`.
  */
 import type { Theme } from "./index";
-import { CRIMSON_EXAM, LIME_DEFINITION, VIOLET_QUESTION, YELLOW_KEY } from "./highlights";
+import { CRIMSON_EXAM, LIME_DEFINITION, PINK_KEY, VIOLET_QUESTION, YELLOW_KEY } from "./highlights";
 
-export const DARK_COLOUR_THEMES: Readonly<Record<"midnight" | "emerald" | "ember" | "aurora", Theme>> = {
+export const DARK_COLOUR_THEMES: Readonly<Record<"midnight" | "emerald" | "ember" | "aurora" | "cyberpunk", Theme>> = {
   midnight: {
     label: "Midnight",
     scheme: "dark",
@@ -133,6 +133,41 @@ export const DARK_COLOUR_THEMES: Readonly<Record<"midnight" | "emerald" | "ember
       "kbd-border": "#30474f",
       "code-bg": "#17262b",
       "code-border": "#293c42",
+    },
+  },
+  // Asked for by name (2026-11-15), "eye pleasing + matching the vibe": Night City's
+  // blue-black and cool white, and its signal yellow softened to sit on the eye for a whole
+  // evening. The yellow is too near amber for the key highlight, so that turns neon pink.
+  cyberpunk: {
+    label: "Cyberpunk 2077",
+    scheme: "dark",
+    mood: "Night City after rain: blue-black, cool white and a signal yellow.",
+    highlights: { key: PINK_KEY },
+    palette: {
+      accent: "#f5e663",
+      "on-accent": "#1a1700",
+      "accent-soft": "rgba(245, 230, 99, 0.14)",
+      "accent-wash": "rgba(245, 230, 99, 0.09)",
+      "accent-ink": "#736a00",
+      "page-selection": "rgba(115, 106, 0, 0.3)",
+      scrim: "rgba(10, 13, 22, 0.88)",
+      chrome: "#0a0d16",
+      surface: "#111623",
+      "viewer-bed": "#06080e",
+      border: "#232b3d",
+      "border-strong": "#313b52",
+      text: "#e6ecf5",
+      "text-secondary": "#c0cadb",
+      "text-meta": "#8e9bb3",
+      "text-faint": "#7a87a0",
+      "row-text": "#d3dbe8",
+      field: "#161c2b",
+      track: "#161c2b",
+      "segment-on": "#1f2738",
+      kbd: "#1a2131",
+      "kbd-border": "#2c3548",
+      "code-bg": "#0e1320",
+      "code-border": "#232b3d",
     },
   },
 };

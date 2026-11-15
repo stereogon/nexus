@@ -114,7 +114,10 @@ The screenshots use the test suite's sample vault, not real notes. They are reta
   pastes plain text instead.
 - A Notion-style format bar over a selection, or docked open from the notes' **Aa** button
   to choose a format before writing; shortcuts too, plus highlighting in the notes in the
-  same four meanings.
+  same four meanings, each with its letter.
+- Coloured words, as in Notion: the **A** in the format bar colours the text or the
+  background behind it, in Notion's nine colours. Saved as Notion writes it,
+  `<span color="red">…</span>`, so Notion and Nexus read each other's colours.
 - Markdown underneath, never on screen: `# ` makes a heading and disappears, as in Notion.
   Copying gives the Markdown.
 - Notion-style handles: hover a line for `+` (add a line below) and `⋮⋮` (drag to move it,
@@ -156,9 +159,9 @@ The screenshots use the test suite's sample vault, not real notes. They are reta
   vault's `.trash`).
 
 **Look**
-- Twenty-four themes in every colour — Paper, Ink, Plain, Graphite, Contrast, Contrast
+- Twenty-five themes in every colour — Paper, Ink, Plain, Graphite, Contrast, Contrast
   Dark, Funky, Solar, Sakura, Sepia, Sky, Meadow, Citrus, Lagoon, Indigo, Neon, Fjord,
-  Forest, Ocean, Terminal, Midnight, Emerald, Ember and Aurora — or follow macOS between
+  Forest, Ocean, Terminal, Midnight, Emerald, Ember, Aurora and Cyberpunk 2077 — or follow macOS between
   Paper and Ink, chosen in Settings (the gear at the foot of the sidebar). Every one is
   contrast-tested.
 - A **page tone** for documents, as readers have: Printed, Sepia, Dusk or Night, from the
@@ -166,8 +169,8 @@ The screenshots use the test suite's sample vault, not real notes. They are reta
   page, so it stays Printed until you choose. Where a theme's accent would
   clash with a highlight colour, that highlight takes another colour in that theme; its
   letter (K/D/E/Q) stays.
-- A font, in Settings: the theme's own, **Readable** (Atkinson Hyperlegible Next),
-  **Mono** (IBM Plex Mono) or **System** (the Mac's own, San Francisco). Funky comes in its own face, Recursive Casual.
+- A font, in Settings: the theme's own, **Mono** (IBM Plex Mono) or **System** (the Mac's
+  own, San Francisco). Funky comes in its own face, Recursive Casual.
 - Two layouts, in Settings: **Classic**, panes edge to edge, or **Islands**, each pane a
   rounded island on one base, in every theme.
 

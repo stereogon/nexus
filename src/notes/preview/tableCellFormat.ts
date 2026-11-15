@@ -152,7 +152,7 @@ export function cellFormatting(
 
   return {
     at: box === undefined ? null : { left: box.left, top: box.bottom + 8, above: box.top - 8 },
-    state: { inline: { bold: has("bold"), italic: has("italic"), strike: has("strike"), code: has("code") }, block: "paragraph", highlight: null },
+    state: { inline: { bold: has("bold"), italic: has("italic"), strike: has("strike"), code: has("code") }, block: "paragraph", highlight: null, paint: null },
     selected: selected !== null && selected.from !== selected.to,
     inCell: true,
   };

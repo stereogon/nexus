@@ -1,0 +1,221 @@
+/*
+ * Coloured words in the notes (`notes/paint.ts`, 2026-11-15): Notion's nine colours, as text
+ * or behind it, and the menu they are chosen from (the A in the format bar).
+ *
+ * One set for light themes and one for dark, rather than one per theme: each text colour is
+ * 4.5:1 or better on every theme's note ground of its scheme, and each background is a wash
+ * of its hue, so it sits on any ground. `paint.test.ts` measures both against every theme.
+ */
+
+:root {
+  --paint-gray: #6b6964;
+  --paint-brown: #87573f;
+  --paint-orange: #b0560a;
+  --paint-yellow: #8a6510;
+  --paint-green: #2c7650;
+  --paint-blue: #286b9c;
+  --paint-purple: #7a4ca8;
+  --paint-pink: #ad3577;
+  --paint-red: #bf352b;
+  --paint-gray-bg: rgba(120, 118, 114, 0.14);
+  --paint-brown-bg: rgba(159, 107, 83, 0.16);
+  --paint-orange-bg: rgba(224, 124, 30, 0.16);
+  --paint-yellow-bg: rgba(230, 180, 40, 0.22);
+  --paint-green-bg: rgba(68, 131, 97, 0.16);
+  --paint-blue-bg: rgba(51, 126, 169, 0.15);
+  --paint-purple-bg: rgba(144, 101, 176, 0.16);
+  --paint-pink-bg: rgba(193, 76, 138, 0.14);
+  --paint-red-bg: rgba(212, 76, 71, 0.15);
+}
+
+:root[data-scheme="dark"] {
+  --paint-gray: #b0aea9;
+  --paint-brown: #dca58b;
+  --paint-orange: #f2a462;
+  --paint-yellow: #e8c56a;
+  --paint-green: #6ccf98;
+  --paint-blue: #7cc0f2;
+  --paint-purple: #c8a6f4;
+  --paint-pink: #f498c6;
+  --paint-red: #fa968c;
+  --paint-gray-bg: rgba(150, 148, 144, 0.26);
+  --paint-brown-bg: rgba(170, 112, 84, 0.3);
+  --paint-orange-bg: rgba(226, 128, 40, 0.28);
+  --paint-yellow-bg: rgba(232, 178, 46, 0.28);
+  --paint-green-bg: rgba(72, 160, 110, 0.28);
+  --paint-blue-bg: rgba(60, 140, 200, 0.3);
+  --paint-purple-bg: rgba(144, 101, 176, 0.3);
+  --paint-pink-bg: rgba(200, 80, 140, 0.28);
+  --paint-red-bg: rgba(220, 80, 72, 0.28);
+}
+
+/* Behind the words, a little room either side, as a highlight has. */
+.md-paint[data-paint$="_bg"] {
+  padding: 1px 2px;
+  border-radius: 3px;
+}
+
+.md-paint[data-paint="gray"],
+.paint-pick[data-paint="gray"] {
+  color: var(--paint-gray);
+}
+
+.md-paint[data-paint="brown"],
+.paint-pick[data-paint="brown"] {
+  color: var(--paint-brown);
+}
+
+.md-paint[data-paint="orange"],
+.paint-pick[data-paint="orange"] {
+  color: var(--paint-orange);
+}
+
+.md-paint[data-paint="yellow"],
+.paint-pick[data-paint="yellow"] {
+  color: var(--paint-yellow);
+}
+
+.md-paint[data-paint="green"],
+.paint-pick[data-paint="green"] {
+  color: var(--paint-green);
+}
+
+.md-paint[data-paint="blue"],
+.paint-pick[data-paint="blue"] {
+  color: var(--paint-blue);
+}
+
+.md-paint[data-paint="purple"],
+.paint-pick[data-paint="purple"] {
+  color: var(--paint-purple);
+}
+
+.md-paint[data-paint="pink"],
+.paint-pick[data-paint="pink"] {
+  color: var(--paint-pink);
+}
+
+.md-paint[data-paint="red"],
+.paint-pick[data-paint="red"] {
+  color: var(--paint-red);
+}
+
+.md-paint[data-paint="gray_bg"],
+.paint-pick[data-paint="gray_bg"] {
+  background: var(--paint-gray-bg);
+}
+
+.md-paint[data-paint="brown_bg"],
+.paint-pick[data-paint="brown_bg"] {
+  background: var(--paint-brown-bg);
+}
+
+.md-paint[data-paint="orange_bg"],
+.paint-pick[data-paint="orange_bg"] {
+  background: var(--paint-orange-bg);
+}
+
+.md-paint[data-paint="yellow_bg"],
+.paint-pick[data-paint="yellow_bg"] {
+  background: var(--paint-yellow-bg);
+}
+
+.md-paint[data-paint="green_bg"],
+.paint-pick[data-paint="green_bg"] {
+  background: var(--paint-green-bg);
+}
+
+.md-paint[data-paint="blue_bg"],
+.paint-pick[data-paint="blue_bg"] {
+  background: var(--paint-blue-bg);
+}
+
+.md-paint[data-paint="purple_bg"],
+.paint-pick[data-paint="purple_bg"] {
+  background: var(--paint-purple-bg);
+}
+
+.md-paint[data-paint="pink_bg"],
+.paint-pick[data-paint="pink_bg"] {
+  background: var(--paint-pink-bg);
+}
+
+.md-paint[data-paint="red_bg"],
+.paint-pick[data-paint="red_bg"] {
+  background: var(--paint-red-bg);
+}
+
+/* The menu, under the A, as the canvas draws it: Text, then Background, five to a row.
+   Against the window, as the bar is, and kept inside it (`useFloating`). */
+.paint-button {
+  gap: 3px;
+  font-family: var(--font-prose);
+  font-weight: 600;
+}
+
+.paint-menu {
+  position: fixed;
+  z-index: 21;
+  width: 252px;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+}
+
+.paint-menu-title {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-meta);
+}
+
+.paint-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 40px);
+  gap: 6px;
+}
+
+.paint-pick {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: transparent;
+  font-family: var(--font-prose);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.paint-pick:hover,
+.paint-pick:focus-visible {
+  border-color: var(--text-faint);
+  outline: none;
+}
+
+.paint-pick[aria-pressed="true"] {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.paint-menu-foot {
+  margin: 0;
+  padding-top: 10px;
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-meta);
+}

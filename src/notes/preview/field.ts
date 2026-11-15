@@ -17,6 +17,7 @@ import { flashLine, flashOn } from "../flash";
 import { findPreviews, type Preview } from "./find";
 import { markupDecorations } from "./markup";
 import { noteMarkDecorations } from "./noteMarks";
+import { paintDecorations } from "./paintSpans";
 import { PageLinkWidget } from "./pageLinkWidget";
 import { CitationWidget, ImageWidget, MathWidget, SpacedWidget } from "./widgets";
 
@@ -110,6 +111,7 @@ function decorations(state: EditorState, context: PreviewContext): DecorationSet
       ...live,
       ...markup.decorations,
       ...noteMarkDecorations(state, claimed),
+      ...paintDecorations(state, claimed),
     ],
     true,
   );

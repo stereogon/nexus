@@ -45,7 +45,7 @@ describe("the foot of the sidebar", () => {
 
     const settings = screen.getByRole("dialog", { name: "Settings" });
     expect(screen.getByRole("radio", { name: /Neon/u }).getAttribute("aria-checked")).toBe("true");
-    expect(within(screen.getByRole("radiogroup", { name: "Theme" })).getAllByRole("radio")).toHaveLength(25);
+    expect(within(screen.getByRole("radiogroup", { name: "Theme" })).getAllByRole("radio")).toHaveLength(26);
     expect(settings.textContent).toContain("/Users/me/NexusVault");
 
     fireEvent.click(within(screen.getByRole("radiogroup", { name: "Theme" })).getByRole("radio", { name: /Sepia/u }));
@@ -79,11 +79,9 @@ describe("the foot of the sidebar", () => {
 
     const fonts = within(screen.getByRole("radiogroup", { name: "Font" }));
 
-    expect(fonts.getAllByRole("radio")).toHaveLength(4);
+    expect(fonts.getAllByRole("radio")).toHaveLength(3);
     expect(fonts.getByRole("radio", { name: /^Theme/u }).getAttribute("aria-checked")).toBe("true");
 
-    fireEvent.click(fonts.getByRole("radio", { name: /Readable/u }));
-    expect(props.onChooseFont).toHaveBeenCalledWith("readable");
     fireEvent.click(fonts.getByRole("radio", { name: /Mono/u }));
     expect(props.onChooseFont).toHaveBeenCalledWith("mono");
     fireEvent.click(fonts.getByRole("radio", { name: /System/u }));

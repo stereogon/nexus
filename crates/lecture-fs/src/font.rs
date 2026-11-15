@@ -1,6 +1,8 @@
 //! Which font this device draws the window in (2026-11-14, at the user's request, after
-//! Slack's setting): the theme's own, a face made for legibility, monospace, or the Mac's
-//! own (added the same day, at the user's request, after comparing Notion's sidebar).
+//! Slack's setting): the theme's own, monospace, or the Mac's own (added the same day, at
+//! the user's request, after comparing Notion's sidebar). A face made for legibility,
+//! Atkinson Hyperlegible, was one too until 2026-11-15, when the user found the Mac's own did
+//! that job; a device that had chosen it is given the Mac's own.
 //!
 //! `font.txt` in `~/Library/Application Support/Nexus/`, beside [`crate::theme`] and
 //! [`crate::window_layout`] and for the same reasons: §3 puts per-device state outside the
@@ -20,6 +22,9 @@ use crate::device_word;
 /// Names the font to use on launch.
 pub const FONT_FILE_NAME: &str = "font.txt";
 
+/// The word a device that chose Atkinson Hyperlegible has recorded.
+const RETIRED_READABLE: &str = "readable";
+
 /// A font, as the window names it.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -27,8 +32,6 @@ pub enum Font {
     /// The theme's own: the brand's faces, or the one a theme brings, as Funky does.
     #[default]
     Theme,
-    /// Atkinson Hyperlegible Next, made for legibility.
-    Readable,
     /// IBM Plex Mono, everywhere.
     Mono,
     /// The system's own face: San Francisco on macOS, as Apple's apps and Notion use.
@@ -41,16 +44,20 @@ impl Font {
     pub fn word(self) -> &'static str {
         match self {
             Self::Theme => "theme",
-            Self::Readable => "readable",
             Self::Mono => "mono",
             Self::System => "system",
         }
     }
 
-    /// The font `word` names, or `None` if it names none.
+    /// The font `word` names, or `None` if it names none. `readable`, the legible face
+    /// taken out on 2026-11-15, names the Mac's own, which took its place.
     #[must_use]
     pub fn from_word(word: &str) -> Option<Self> {
-        [Self::Theme, Self::Readable, Self::Mono, Self::System]
+        if word == RETIRED_READABLE {
+            return Some(Self::System);
+        }
+
+        [Self::Theme, Self::Mono, Self::System]
             .into_iter()
             .find(|font| font.word() == word)
     }

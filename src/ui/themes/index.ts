@@ -10,7 +10,8 @@
  * saw the page's icons not matching the theme around them. The four highlight meanings keep their letters everywhere; their colours
  * move aside in a theme whose accent would clash (`./highlights`). Fifteen at first, all but
  * three of the accents pink; the user asked for blues, greens and more (2026-11-07), and
- * the set grew to twenty-four.
+ * the set grew to twenty-four. Cyberpunk 2077 made twenty-five (2026-11-15), and Funky was
+ * redone the same day, its orange chrome and teal too loud for the user's eyes.
  *
  * Kept here rather than as stylesheet blocks so the colours exist once: `useTheme`
  * writes the chosen palette onto the document, and `themes.test.ts` measures the same
@@ -53,6 +54,7 @@ export const THEME_NAMES = [
   "emerald",
   "ember",
   "aurora",
+  "cyberpunk",
 ] as const;
 
 export type ThemeName = (typeof THEME_NAMES)[number];
@@ -135,6 +137,7 @@ export const PALETTE_ORDER: readonly PaletteName[] = [
   "emerald",
   "ember",
   "aurora",
+  "cyberpunk",
 ];
 
 /** The palette a theme name stands for, given whether macOS is in dark mode. */

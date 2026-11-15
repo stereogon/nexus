@@ -37,7 +37,7 @@ pub enum Theme {
     ContrastDark,
     /// Midnight violet with an electric cyan.
     Neon,
-    /// Butter yellow and electric violet.
+    /// Peach, cream and electric violet.
     Funky,
     /// Solarized cream and slate.
     Solar,
@@ -71,11 +71,13 @@ pub enum Theme {
     Ember,
     /// Polar night and a teal glow.
     Aurora,
+    /// Blue-black, cool white and a signal yellow.
+    Cyberpunk,
 }
 
 /// Every theme and its stored spelling, which is also what the UI sends. One table, so
 /// the two directions cannot disagree.
-const NAMES: [(Theme, &str); 25] = [
+const NAMES: [(Theme, &str); 26] = [
     (Theme::System, "system"),
     (Theme::Paper, "paper"),
     (Theme::Ink, "ink"),
@@ -101,6 +103,7 @@ const NAMES: [(Theme, &str); 25] = [
     (Theme::Emerald, "emerald"),
     (Theme::Ember, "ember"),
     (Theme::Aurora, "aurora"),
+    (Theme::Cyberpunk, "cyberpunk"),
 ];
 
 impl Theme {

@@ -7,7 +7,6 @@ import type { Font } from "../ipc/font";
 
 const CHOICES: readonly { readonly name: Font; readonly label: string; readonly line: string }[] = [
   { name: "theme", label: "Theme", line: "The theme’s own: Plex Sans and Literata, or Funky’s Recursive." },
-  { name: "readable", label: "Readable", line: "Atkinson Hyperlegible, made to tell every letter apart." },
   { name: "mono", label: "Mono", line: "IBM Plex Mono, every letter the same width." },
   { name: "system", label: "System", line: "The Mac’s own, San Francisco, as Apple’s apps use." },
 ];

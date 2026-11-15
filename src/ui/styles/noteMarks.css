@@ -27,10 +27,13 @@
 }
 
 /* The meaning's letter just after the words, drawn like the document's badge
-   (`highlights.css`): white on the meaning's colour, ink on amber. */
+   (`highlights.css`): white on the meaning's colour, ink on amber. `text-indent: 0`, as an
+   inline block takes the line's: in a list item that is the hanging indent, and the letter
+   was drawn a marker's width back over the words (seen in a screenshot, 2026-11-15). */
 .md-mark-glyph::after {
   content: attr(data-glyph);
   display: inline-block;
+  text-indent: 0;
   margin-left: 2px;
   padding: 0 3px;
   border-radius: 3px;

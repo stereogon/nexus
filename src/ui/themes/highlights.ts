@@ -40,6 +40,8 @@ export const TEAL_DEFINITION: Highlight = { colour: "#0f8fa3", wash: "rgba(15, 1
 export const LIME_DEFINITION: Highlight = { colour: "#5e9a22", wash: "rgba(94, 154, 34, 0.3)" };
 export const YELLOW_KEY: Highlight = { colour: "#e3c414", wash: "rgba(227, 196, 20, 0.42)" };
 export const CRIMSON_EXAM: Highlight = { colour: "#d42a3c", wash: "rgba(212, 42, 60, 0.24)" };
+/** For a yellow accent, which leaves amber and yellow no room: a light neon pink, light enough for the dark K. */
+export const PINK_KEY: Highlight = { colour: "#ff9ad0", wash: "rgba(255, 120, 190, 0.34)" };
 
 /** A theme's four: the standard ones, with its swaps. */
 export function highlightsOf(swaps: Partial<HighlightSet> | undefined): HighlightSet {

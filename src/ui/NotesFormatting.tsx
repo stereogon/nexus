@@ -6,7 +6,7 @@
 import type { EditorView } from "@codemirror/view";
 import type { RefObject } from "react";
 
-import { barFor, formatBlock, formatInline, formatLink, formatStateOf, markSelection } from "../notes/markSelection";
+import { barFor, formatBlock, formatInline, formatLink, formatStateOf, markSelection, paintSelection } from "../notes/markSelection";
 import { activeCell, cellFormatting, formatCell } from "../notes/preview/tableCellFormat";
 import type { MenuAt } from "./menuPlacement";
 import { NotesFormatBar, NotesFormatStrip, type FormatState } from "./NotesFormatBar";
@@ -74,6 +74,9 @@ export function NotesFormatting({
     onLink: apply(formatLink),
     onHighlight: (semantic: Parameters<typeof markSelection>[1]) => {
       apply((editor) => markSelection(editor, semantic))();
+    },
+    onPaint: (paint: Parameters<typeof paintSelection>[1]) => {
+      apply((editor) => paintSelection(editor, paint))();
     },
   };
 

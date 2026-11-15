@@ -5,13 +5,16 @@
  * The controls are one component, so the two can never offer different things.
  *
  * Inline styles — bold, italic, strikethrough, code, link — then block types — three
- * heading levels, bulleted, numbered and task lists, quote — then the highlights. Each
- * shows pressed when the selection already has it, and pressing it again takes it off.
+ * heading levels, bulleted, numbered and task lists, quote — then a colour (`PaintMenu`,
+ * 2026-11-15) and the highlights. Each shows pressed when the selection already has it, and
+ * pressing it again takes it off.
  * Not on the canvas, which has no notes toolbar; designed here, owing an artboard.
  */
 import type { HighlightSemantic } from "../ipc/annotations";
 import type { Block, Inline } from "../notes/format";
+import type { Paint } from "../notes/paint";
 import type { MenuAt } from "./menuPlacement";
+import { PaintControl } from "./PaintMenu";
 import { SEMANTIC_GLYPH, SEMANTIC_LABEL, SEMANTICS } from "./semantics";
 import { useFloating } from "./useFloating";
 
@@ -20,6 +23,8 @@ export interface FormatState {
   readonly inline: Readonly<Record<Inline, boolean>>;
   readonly block: Block;
   readonly highlight: HighlightSemantic | null;
+  /** The colour the selection is in (`notes/paint.ts`). */
+  readonly paint: Paint | null;
 }
 
 // Each button's glyph is set in its own style, by a class named in full so it can be found.
@@ -54,6 +59,7 @@ interface Handlers {
   readonly onBlock: (kind: Block) => void;
   readonly onLink: () => void;
   readonly onHighlight: (semantic: HighlightSemantic | null) => void;
+  readonly onPaint: (paint: Paint | null) => void;
 }
 
 /** Pressing a control must not take focus from the selection or cursor it applies to. */
@@ -61,7 +67,7 @@ const keepFocus = (event: { preventDefault: () => void }) => {
   event.preventDefault();
 };
 
-function FormatControls({ state, selected, inCell, onInline, onBlock, onLink, onHighlight }: Handlers) {
+function FormatControls({ state, selected, inCell, onInline, onBlock, onLink, onHighlight, onPaint }: Handlers) {
   const tip = (label: string, keys: string) => (keys === "" ? label : `${label} (${keys})`);
   // An empty highlight would be invisible, so the colours wait for words; inside an
   // existing highlight they recolour or remove it.
@@ -106,6 +112,10 @@ function FormatControls({ state, selected, inCell, onInline, onBlock, onLink, on
           {glyph}
         </button>
       ))}
+
+      <span aria-hidden="true" className="format-divider" />
+
+      <PaintControl current={state.paint} disabled={inCell || !(selected || state.paint !== null)} onPaint={onPaint} />
 
       <span aria-hidden="true" className="format-divider" />
 

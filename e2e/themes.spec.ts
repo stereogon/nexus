@@ -1,5 +1,5 @@
 /**
- * Themes (2026-11-07): twenty-four of them, chosen in Settings, applied at once, with the
+ * Themes (2026-11-07): twenty-five of them since Cyberpunk 2077 (2026-11-15), chosen in Settings, applied at once, with the
  * page left white in every one (CLAUDE.md §3: no inverted documents).
  */
 import { expect, test, type Page } from "@playwright/test";
@@ -42,4 +42,15 @@ test("Settings closes on Escape and on a click elsewhere", async ({ page }) => {
 
   await page.locator(".viewer-bed").click({ position: { x: (bed?.width ?? 10) - 5, y: 5 } });
   await expect(picker(page)).toHaveCount(0);
+});
+
+test("Cyberpunk 2077 is offered, blue-black with its key highlight pink", async ({ page }) => {
+  await page.getByRole("button", { name: "Settings" }).click();
+  await picker(page).getByRole("radiogroup", { name: "Theme" }).getByRole("radio", { name: /Cyberpunk 2077/u }).click();
+
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "cyberpunk");
+  // Its ground, #0a0d16, and the page still white.
+  await expect.poll(() => background(page, ".sidebar")).toBe("rgb(10, 13, 22)");
+  expect(await background(page, ".pdf-page")).toBe("rgb(255, 255, 255)");
+  expect(await page.locator("html").evaluate((root) => root.style.getPropertyValue("--semantic-key"))).toBe("#ff9ad0");
 });
