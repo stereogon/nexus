@@ -49,6 +49,11 @@
   --paint-red-bg: rgba(220, 80, 72, 0.28);
 }
 
+/* A text colour is set on what is inside the span too: the editor wraps a list's words, a
+   quote's and bold in spans of its own, and a list's set the secondary grey, which won over
+   an inherited colour. Seen by the user on 2026-11-15: background showed, text colour did
+   not, the notes being mostly lists. */
+
 /* Behind the words, a little room either side, as a highlight has. */
 .md-paint[data-paint$="_bg"] {
   padding: 1px 2px;
@@ -56,46 +61,55 @@
 }
 
 .md-paint[data-paint="gray"],
+.md-paint[data-paint="gray"] *,
 .paint-pick[data-paint="gray"] {
   color: var(--paint-gray);
 }
 
 .md-paint[data-paint="brown"],
+.md-paint[data-paint="brown"] *,
 .paint-pick[data-paint="brown"] {
   color: var(--paint-brown);
 }
 
 .md-paint[data-paint="orange"],
+.md-paint[data-paint="orange"] *,
 .paint-pick[data-paint="orange"] {
   color: var(--paint-orange);
 }
 
 .md-paint[data-paint="yellow"],
+.md-paint[data-paint="yellow"] *,
 .paint-pick[data-paint="yellow"] {
   color: var(--paint-yellow);
 }
 
 .md-paint[data-paint="green"],
+.md-paint[data-paint="green"] *,
 .paint-pick[data-paint="green"] {
   color: var(--paint-green);
 }
 
 .md-paint[data-paint="blue"],
+.md-paint[data-paint="blue"] *,
 .paint-pick[data-paint="blue"] {
   color: var(--paint-blue);
 }
 
 .md-paint[data-paint="purple"],
+.md-paint[data-paint="purple"] *,
 .paint-pick[data-paint="purple"] {
   color: var(--paint-purple);
 }
 
 .md-paint[data-paint="pink"],
+.md-paint[data-paint="pink"] *,
 .paint-pick[data-paint="pink"] {
   color: var(--paint-pink);
 }
 
 .md-paint[data-paint="red"],
+.md-paint[data-paint="red"] *,
 .paint-pick[data-paint="red"] {
   color: var(--paint-red);
 }

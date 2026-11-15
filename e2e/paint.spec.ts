@@ -7,7 +7,17 @@ import { expect, test, type Page } from "@playwright/test";
 import { READING, standardFixture } from "./fixture";
 import { openLecture, openNexus, saved } from "./nexus";
 
-const NOTES = ["TCP begins in slow start.", "", "The end."].join("\n");
+const NOTES = [
+  "TCP begins in slow start.",
+  "",
+  "The end.",
+  "",
+  '- a bullet with <span color="red">red words</span> in it',
+  "",
+  '## A heading with <span color="blue">blue words</span>',
+  "",
+  '> a quote with **<span color="green">green bold</span>** words',
+].join("\n");
 
 const notes = (page: Page) => page.getByRole("complementary", { name: "Notes" });
 const line = (page: Page, text: string) => notes(page).locator(".cm-line").filter({ hasText: text });
@@ -70,4 +80,30 @@ test("the colour menu closes on Escape, and waits for words to be selected", asy
   await menu(page).getByRole("button", { name: "Blue text" }).focus();
   await page.keyboard.press("Escape");
   await expect(menu(page)).toHaveCount(0);
+});
+
+/** The colour the letters of `words` are actually drawn in: their own text node's element. */
+function drawnIn(page: Page, words: string): Promise<string> {
+  return notes(page).locator(".cm-content").evaluate((content, wanted) => {
+    const walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT);
+
+    for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+      if (node.textContent?.includes(wanted) === true && node.parentElement !== null) {
+        return getComputedStyle(node.parentElement).color;
+      }
+    }
+    return "not found";
+  }, words);
+}
+
+test("the letters take the text colour in a list, a heading and bold in a quote, not only in a paragraph", async ({ page }) => {
+  await line(page, "The end.").click();
+
+  const red = await notes(page).locator('.md-paint[data-paint="red"]').evaluate((element) => getComputedStyle(element).color);
+  const blue = await notes(page).locator('.md-paint[data-paint="blue"]').evaluate((element) => getComputedStyle(element).color);
+  const green = await notes(page).locator('.md-paint[data-paint="green"]').evaluate((element) => getComputedStyle(element).color);
+
+  expect(await drawnIn(page, "red words")).toBe(red);
+  expect(await drawnIn(page, "blue words")).toBe(blue);
+  expect(await drawnIn(page, "green bold")).toBe(green);
 });

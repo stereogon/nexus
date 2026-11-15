@@ -478,6 +478,19 @@ a rail at the window's edge at most 48px wide, Settings at its foot opening the 
 the library opened from it and shown pressed; gone again with the sidebar. The hiding journey
 now measures the title's start from the window's edge. Sabotage: without the rail, it fails.
 
+**2026-11-15 · Text colour drawn in lists, headings and quotes too**
+The user: *"only the background color option is working but the text color is not
+visible"*. Cause: the colour was set on the span alone, and the editor's syntax highlighting
+wraps a list's words (and a quote's, and bold) in spans of its own inside it; the list's
+span sets `--text-secondary`, which beat the inherited colour. A background shows through
+nested spans, which is why only it worked. The journey in `paint.spec.ts` coloured a plain
+paragraph, the one place with no inner span, so it passed. Each text colour now applies to
+the span's descendants too (`paint.css`).
+
+Verified: gate green. New journey in `paint.spec.ts`: the colour the letters are actually
+drawn in, read from their own text node, in a bullet, a heading and bold in a quote. It
+failed before the fix (grey `rgb(78, 74, 67)` for red) and passes after.
+
 **2026-11-15 · Coloured words, the K in its place, Funky redone, Cyberpunk 2077, and no Readable font**
 Asked for together, with a screenshot of the first:
 - *"there is some issue with rendering the K at the right place in the notes."* In a list
