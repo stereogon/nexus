@@ -38,7 +38,11 @@ export function useItemPages(vault: string, directory: string): ItemPages {
   const [pages, setPages] = useState<readonly PageSummary[]>([]);
   const [unreadable, setUnreadable] = useState(0);
   const [failure, setFailure] = useState<CommandError | null>(null);
-  const [open, setOpen] = useState<NoteKey>(null);
+  // The note chosen, with the item it was chosen in. On a move to another item the render
+  // that first has the new directory still holds the old choice, and a page id asked of the
+  // wrong item is ERR_PAGE_NOT_FOUND; read against the item, it is the item's notes at once.
+  const [chosen, setChosen] = useState<{ readonly directory: string; readonly note: NoteKey }>({ directory, note: null });
+  const open = chosen.directory === directory ? chosen.note : null;
   const [fromDisk, setFromDisk] = useState<ReadonlyMap<NoteKey, ReadonlySet<string>>>(new Map());
   const [live, setLive] = useState<ReadonlyMap<NoteKey, ReadonlySet<string>>>(new Map());
   // Which item the latest listing was asked for, so one for an item left is dropped.
@@ -68,7 +72,7 @@ export function useItemPages(vault: string, directory: string): ItemPages {
     setPages([]);
     setUnreadable(0);
     setFailure(null);
-    setOpen(null);
+    setChosen({ directory, note: null });
     setFromDisk(new Map());
     setLive(new Map());
     void refresh();
@@ -86,6 +90,13 @@ export function useItemPages(vault: string, directory: string): ItemPages {
     );
   }, [vault, directory, refresh]);
 
+  const openNote = useCallback(
+    (note: NoteKey) => {
+      setChosen({ directory, note });
+    },
+    [directory],
+  );
+
   const noteCited = useCallback((note: NoteKey, ids: ReadonlySet<string>) => {
     setLive((known) => (known.get(note) === ids ? known : new Map([...known, [note, ids]])));
   }, []);
@@ -95,5 +106,5 @@ export function useItemPages(vault: string, directory: string): ItemPages {
   const cites = useMemo(() => new Map([...fromDisk, ...live]), [fromDisk, live]);
   const cited = useMemo(() => citedAnywhere(cites), [cites]);
 
-  return { pages, unreadable, failure, open, openNote: setOpen, refresh, cites, cited, noteCited };
+  return { pages, unreadable, failure, open, openNote, refresh, cites, cited, noteCited };
 }

@@ -478,6 +478,20 @@ a rail at the window's edge at most 48px wide, Settings at its foot opening the 
 the library opened from it and shown pressed; gone again with the sidebar. The hiding journey
 now measures the title's start from the window's edge. Sabotage: without the rail, it fails.
 
+**2026-11-17 · ERR_PAGE_NOT_FOUND on moving to another item with a page open**
+The user saw ERR_PAGE_NOT_FOUND in the error panel again and again, having deleted no page.
+Cause: `useItemPages` kept the open page as plain state and reset it to the item's notes in
+an effect, after the render. The render that first had the new item's directory still held
+the old item's page, and `useNotes` (a child, whose effect runs first) asked the new item
+for it. The answer, not found, reached the error panel whenever it came back before the
+reset's own render. Nothing was lost; the next render opened the new item's notes. The
+chosen note is now kept with the item it was chosen in, and read against the current item,
+so a page never outlives its item for even one render.
+
+Verified: gate green. New `useItemPages.test.ts` chains the two hooks as `Reading` and
+`NotesPane` do: with a page open, moving to another item asks it for no page. It failed
+before the fix (`loadPage` called with the new item and the old page) and passes after.
+
 **2026-11-15 · Text colour drawn in lists, headings and quotes too**
 The user: *"only the background color option is working but the text color is not
 visible"*. Cause: the colour was set on the span alone, and the editor's syntax highlighting
