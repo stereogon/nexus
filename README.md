@@ -4,6 +4,15 @@
 
 # Nexus
 
+<p>
+  <a href="https://github.com/stereogon/nexus/actions/workflows/ci.yml"><img src="https://github.com/stereogon/nexus/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI status"></a>
+  <img src="https://img.shields.io/badge/platform-macOS-lightgrey?logo=apple" alt="Platform: macOS">
+  <img src="https://img.shields.io/badge/Tauri-2-24C8DB?logo=tauri&amp;logoColor=white" alt="Tauri 2">
+  <img src="https://img.shields.io/badge/Rust-1.97-B7410E?logo=rust" alt="Rust 1.97">
+  <img src="https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&amp;logoColor=white" alt="TypeScript, strict">
+  <img src="https://img.shields.io/badge/licence-all%20rights%20reserved-lightgrey" alt="Licence: all rights reserved">
+</p>
+
 **A local-first macOS app for Markdown notes — on their own, or beside the documents they are about.**
 
 Keep plain notes in folders, or open a PDF, slide deck or handout on the left with its notes
