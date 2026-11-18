@@ -4,11 +4,11 @@
  * off the cursor's line. Run against a real CodeMirror state with the GFM parser, so the
  * node names are the parser's own.
  */
-import { ensureSyntaxTree } from "@codemirror/language";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { EditorSelection, EditorState } from "@codemirror/state";
 import { describe, expect, it } from "vitest";
 
+import { parsedWhole } from "../language";
 import { markupDecorations } from "./markup";
 
 /** The note, with the cursor at the end of line `cursorLine` (1-based). */
@@ -20,9 +20,7 @@ function render(
   at?: number,
 ) {
   const draft = EditorState.create({ doc, extensions: [markdown({ base: markdownLanguage })] });
-  const state = draft.update({ selection: EditorSelection.cursor(at ?? draft.doc.line(cursorLine).to) }).state;
-
-  ensureSyntaxTree(state, state.doc.length, 5000);
+  const state = parsedWhole(draft.update({ selection: EditorSelection.cursor(at ?? draft.doc.line(cursorLine).to) }).state);
 
   const { decorations, tables } = markupDecorations(state, claimed);
   const replaced = decorations

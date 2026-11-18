@@ -1,18 +1,16 @@
 /**
  * Deleting all of a formatted text takes its marks with it; deleting part of it does not.
  */
-import { ensureSyntaxTree } from "@codemirror/language";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { EditorState } from "@codemirror/state";
 import { describe, expect, it } from "vitest";
 
 import { dropEmptiedMarks } from "./emptiedMarks";
+import { parsedWhole } from "./language";
 
 /** `doc` after deleting `from`–`to` as Backspace on a selection does. */
 function deleting(doc: string, words: string, part = words): string {
-  const state = EditorState.create({ doc, extensions: [markdown({ base: markdownLanguage }), dropEmptiedMarks] });
-
-  ensureSyntaxTree(state, state.doc.length, 5000);
+  const state = parsedWhole(EditorState.create({ doc, extensions: [markdown({ base: markdownLanguage }), dropEmptiedMarks] }));
 
   const from = doc.indexOf(words) + words.indexOf(part);
 

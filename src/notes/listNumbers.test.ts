@@ -2,20 +2,17 @@
  * A numbered list's numbers: counted from its shape, a, b, c one level in, and written
  * back to the file's digits when Tab moves lines between levels.
  */
-import { ensureSyntaxTree } from "@codemirror/language";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { EditorState } from "@codemirror/state";
 import { describe, expect, it } from "vitest";
 
+import { parsedWhole } from "./language";
 import { listLabel, renumbered } from "./listNumbers";
 import { markupDecorations } from "./preview/markup";
 import { NumberWidget } from "./preview/markupWidgets";
 
 function stateOf(doc: string): EditorState {
-  const state = EditorState.create({ doc, extensions: [markdown({ base: markdownLanguage })] });
-
-  ensureSyntaxTree(state, state.doc.length, 5000);
-  return state;
+  return parsedWhole(EditorState.create({ doc, extensions: [markdown({ base: markdownLanguage })] }));
 }
 
 /** The labels the notes draw, top to bottom. */

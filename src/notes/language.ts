@@ -10,8 +10,26 @@
  * editor does.
  */
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
-import type { Extension } from "@codemirror/state";
+import { ensureSyntaxTree } from "@codemirror/language";
+import type { EditorState, Extension } from "@codemirror/state";
 
 import { codeLanguages } from "./codeLanguages";
 
 export const notesMarkdown: Extension = markdown({ base: markdownLanguage, codeLanguages, extensions: { remove: ["SetextHeading"] } });
+
+/**
+ * `state` with its syntax tree parsed to the end, given up to `timeout` ms, so that
+ * `syntaxTree` read from it sees the whole document (2026-11-18).
+ *
+ * `ensureSyntaxTree` alone is not that. It parses further in the state's parse context and
+ * returns the tree, but `syntaxTree(state)` still answers with the tree the state was made
+ * with, parsed in CodeMirror's 20 ms budget — whole on a fast machine, cut short on a slow
+ * one. A transaction is where a state takes up its context's newer tree, so an empty one
+ * hands back the same document with the tree complete. Found when a list's labels test
+ * failed on a busy CI runner, having seen only the first item.
+ */
+export function parsedWhole(state: EditorState, timeout = 5000): EditorState {
+  ensureSyntaxTree(state, state.doc.length, timeout);
+
+  return state.update({}).state;
+}

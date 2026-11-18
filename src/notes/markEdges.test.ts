@@ -1,18 +1,15 @@
 /**
  * Deleting inside a highlight keeps it one, moving a space that would touch its marks outside them.
  */
-import { ensureSyntaxTree } from "@codemirror/language";
 import { EditorState } from "@codemirror/state";
 import { describe, expect, it } from "vitest";
 
-import { notesMarkdown } from "./language";
+import { notesMarkdown, parsedWhole } from "./language";
 import { keepMarksWhole } from "./markEdges";
 
 /** `doc` after deleting `part` with the cursor left where it was, as Backspace does, and where the cursor lands, as `|`. */
 function deleting(doc: string, part: string, userEvent = "delete.backward"): string {
-  const state = EditorState.create({ doc, extensions: [notesMarkdown, keepMarksWhole] });
-
-  ensureSyntaxTree(state, state.doc.length, 5000);
+  const state = parsedWhole(EditorState.create({ doc, extensions: [notesMarkdown, keepMarksWhole] }));
 
   const from = doc.indexOf(part);
   const after = state.update({ changes: { from, to: from + part.length }, selection: { anchor: from }, userEvent }).state;

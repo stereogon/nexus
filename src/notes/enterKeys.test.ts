@@ -2,24 +2,24 @@
  * Enter in formatted words keeps the marks with the words: past the closing marks at the
  * end, before the opening ones at the start, and closed and opened again in the middle.
  */
-import { ensureSyntaxTree } from "@codemirror/language";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { EditorState, type Transaction } from "@codemirror/state";
 import { describe, expect, it } from "vitest";
 
 import { enterInFormat } from "./enterKeys";
+import { parsedWhole } from "./language";
 
 /** `doc`, `|` marking the cursor, after Enter; `null` if Enter was left to Markdown's own. */
 function enter(marked: string): string | null {
   const at = marked.indexOf("|");
-  const state = EditorState.create({
-    doc: marked.replace("|", ""),
-    selection: { anchor: at },
-    extensions: markdown({ base: markdownLanguage }),
-  });
+  const state = parsedWhole(
+    EditorState.create({
+      doc: marked.replace("|", ""),
+      selection: { anchor: at },
+      extensions: markdown({ base: markdownLanguage }),
+    }),
+  );
   const made: Transaction[] = [];
-
-  ensureSyntaxTree(state, state.doc.length, 5000);
 
   const ran = enterInFormat({ state, dispatch: (transaction) => made.push(transaction) });
   const done = made[0];

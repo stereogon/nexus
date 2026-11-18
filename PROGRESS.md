@@ -478,6 +478,23 @@ a rail at the window's edge at most 48px wide, Settings at its foot opening the 
 the library opened from it and shown pressed; gone again with the sidebar. The hiding journey
 now measures the title's start from the window's edge. Sabotage: without the rail, it fails.
 
+**2026-11-18 · CI red on a test that read a half-parsed tree**
+CI failed on `ab90225`, a README-only commit: `listNumbers.test.ts` saw one label, `1.`,
+where four were expected. The same code had passed CI one commit before and locally. Cause:
+the test helpers called `ensureSyntaxTree(state, …)` and then read `syntaxTree(state)`.
+The first parses further in the state's parse context, but the second answers with the
+tree the state was *made* with, which CodeMirror parses within a 20 ms budget; a busy CI
+runner did not finish four lines in it. Six test helpers had the pattern, and so did
+`indentKeys.ts`, where Tab's renumbering on a long note could have missed lists past what
+was parsed. Fixed once: `parsedWhole(state)` in `language.ts` finishes the parse and runs an
+empty transaction, which is where a state takes up its context's newer tree; every one of
+those places uses it.
+
+Verified: gate green. New tests in `language.test.ts` parse 40,000 list lines, too many for
+the 20 ms budget on any machine, so the outcome does not depend on the runner. Sabotage:
+with the empty transaction removed, the tree covers 3,002 of 468,893 characters and the
+test fails.
+
 **2026-11-18 · Ready for a public repository**
 The user: *"update the readme images and other things to make it ready for public
 repository"*. Screenshots retaken from the sample fixture (never real notes), and a fifth,

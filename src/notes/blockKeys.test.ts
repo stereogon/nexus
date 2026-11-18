@@ -3,7 +3,6 @@
  * Where the cursor may stand with the marks hidden, and what Backspace does at an element's
  * edge. Against real editor states with the GFM parser, so the code blocks are the parser's.
  */
-import { ensureSyntaxTree } from "@codemirror/language";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { EditorState } from "@codemirror/state";
 import { EditorView, runScopeHandlers } from "@codemirror/view";
@@ -11,15 +10,12 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { blockKeys, settled } from "./blockKeys";
 import { hiddenPrefix } from "./format";
+import { parsedWhole } from "./language";
 
 const CITE = '> 📌 **[Page 4](cite://hl-1)**: *"Raft"*';
 
 function stateOf(doc: string): EditorState {
-  const state = EditorState.create({ doc, extensions: [markdown({ base: markdownLanguage })] });
-
-  ensureSyntaxTree(state, state.doc.length, 5000);
-
-  return state;
+  return parsedWhole(EditorState.create({ doc, extensions: [markdown({ base: markdownLanguage })] }));
 }
 
 const lineStart = (state: EditorState, line: number) => state.doc.line(line).from;
@@ -76,9 +72,8 @@ function backspaceAt(doc: string, at: (state: EditorState) => number): string {
 
   view = new EditorView({
     parent: document.body,
-    state: EditorState.create({ doc, selection: { anchor: at(state) }, extensions: [markdown({ base: markdownLanguage }), blockKeys] }),
+    state: parsedWhole(EditorState.create({ doc, selection: { anchor: at(state) }, extensions: [markdown({ base: markdownLanguage }), blockKeys] })),
   });
-  ensureSyntaxTree(view.state, view.state.doc.length, 5000);
   runScopeHandlers(view, new KeyboardEvent("keydown", { key: "Backspace" }), "editor");
 
   return view.state.doc.toString();
