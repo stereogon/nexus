@@ -11,28 +11,29 @@ on the right, tied together: highlight a sentence on a page, press **Link to not
 citation lands in your notes that jumps back to that exact spot. Everything is plain files
 in a folder you choose. Nothing leaves your Mac.
 
-> **Status:** in active development (version 0.1.0). It is built for one person's own use
-> and is not a released product. See [What works today](#what-works-today) and
-> [Not built yet](#not-built-yet) for an honest picture.
+> **Status:** in active development (version 0.1.0). It was built for its author's own use
+> and is shared as it is: there is no published download, and no support is promised. See
+> [What works today](#what-works-today) and [Not built yet](#not-built-yet) for an honest
+> picture.
 
 ![A document on the left with highlights, and its notes on the right with a citation, to-dos, a code block and a formula, in the Paper theme](docs/screenshots/workspace-light.png)
 
 <table>
   <tr>
     <td><img src="docs/screenshots/workspace-dark.png" alt="The same workspace in the Midnight theme; the page stays white"></td>
-    <td><img src="docs/screenshots/themes.png" alt="Settings open on the Funky theme, showing all twenty-four themes"></td>
+    <td><img src="docs/screenshots/themes.png" alt="Settings open on the Funky theme, showing all twenty-five themes, the fonts and the page tones"></td>
   </tr>
   <tr>
     <td align="center">Midnight, one of the dark themes. The page stays white.</td>
-    <td align="center">Twenty-four themes, chosen in Settings.</td>
+    <td align="center">Twenty-five themes, chosen in Settings.</td>
   </tr>
   <tr>
     <td><img src="docs/screenshots/search.png" alt="The ⌘P search window over the workspace"></td>
-    <td></td>
+    <td><img src="docs/screenshots/notes.png" alt="Notes on their own in the Cyberpunk 2077 theme: coloured words, a key-concept highlight, a Tip callout and a table"></td>
   </tr>
   <tr>
     <td align="center">⌘P searches documents, notes and folders.</td>
-    <td></td>
+    <td align="center">Notes only, in Cyberpunk 2077: colours, a callout, a table.</td>
   </tr>
 </table>
 
@@ -161,8 +162,8 @@ The screenshots use the test suite's sample vault, not real notes. They are reta
 **Look**
 - Twenty-five themes in every colour — Paper, Ink, Plain, Graphite, Contrast, Contrast
   Dark, Funky, Solar, Sakura, Sepia, Sky, Meadow, Citrus, Lagoon, Indigo, Neon, Fjord,
-  Forest, Ocean, Terminal, Midnight, Emerald, Ember, Aurora and Cyberpunk 2077 — or follow macOS between
-  Paper and Ink, chosen in Settings (the gear at the foot of the sidebar). Every one is
+  Forest, Ocean, Terminal, Midnight, Emerald, Ember, Aurora and Cyberpunk 2077 — or follow
+  macOS between Paper and Ink, chosen in Settings (the gear at the foot of the sidebar). Every one is
   contrast-tested.
 - A **page tone** for documents, as readers have: Printed, Sepia, Dusk or Night, from the
   moon in a document's bar or in Settings, in any theme. Photos and scans change with the
@@ -193,11 +194,10 @@ Recorded in [`PROGRESS.md`](./PROGRESS.md) with the reasoning for each:
 - The rest of the diagnostics drawer: past logs, converter output, timings.
 - Telling you when LibreOffice is missing (imports wait safely until it is installed).
 - Restyling parts of the UI from the approved design canvas.
-- From the comparison with Notion (2026-11-09), not yet built: find and replace in the notes
-  (needs `@codemirror/search` installed), toggle lists, links between items with backlinks (pages link within an item),
-  colouring for more code languages (Python and others each need a package), and the format
-  bar offering Diagram, Chart, Table and Callout. Text colours, underline and columns have
-  no Markdown form, so they are left out.
+- From the comparison with Notion (2026-11-09), not yet built: toggle lists, links between
+  items with backlinks (pages link within an item), colouring for more code languages
+  (Python and others each need a package), and the format bar offering Diagram, Chart,
+  Table and Callout. Underline and columns have no Markdown form, so they are left out.
 - An MCP server, so AI agents (Claude and others) can search, read and add to a vault
   directly. Planned; see `PROGRESS.md` for the questions it raises first.
 
@@ -207,7 +207,7 @@ Recorded in [`PROGRESS.md`](./PROGRESS.md) with the reasoning for each:
 |---|---|
 | `⌘O` | Import a document |
 | `⌘P` | Search window: names, notes and highlights in every folder |
-| `⌘F` | Find in the open document |
+| `⌘F` | Find in the open document (in the notes: find and replace) |
 | `⌘\` | Show or hide the notes |
 | `⌘Z` / `⌘⇧Z` | Undo / redo highlights and sticky notes (in the notes: your typing) |
 | `⌘0` | Error panel |
@@ -383,6 +383,8 @@ sandboxing, and Nexus needs to read the vault folder you choose and to run Libre
 
 ## Licence
 
-No licence has been chosen for Nexus yet, so all rights are reserved by default. Every bundled
+Nexus is published without a licence, so all rights are reserved. GitHub's terms let you
+view the code and fork it on GitHub; copying, redistributing or reusing it beyond that
+needs the author's permission. Every bundled
 font, crate and package has its licence recorded in [`PROGRESS.md`](./PROGRESS.md#5-licences).
 All fonts are under the SIL Open Font License.

@@ -478,6 +478,21 @@ a rail at the window's edge at most 48px wide, Settings at its foot opening the 
 the library opened from it and shown pressed; gone again with the sidebar. The hiding journey
 now measures the title's start from the window's edge. Sabotage: without the rail, it fails.
 
+**2026-11-18 · Ready for a public repository**
+The user: *"update the readme images and other things to make it ready for public
+repository"*. Screenshots retaken from the sample fixture (never real notes), and a fifth,
+`notes.png`, added: notes only in Cyberpunk 2077, with coloured words, a highlight, a
+callout and a table. The README's stale lines corrected: twenty-five themes, not
+twenty-four; find and replace and text colours had been listed as not built. Licence: the
+user chose **none**, so the README now says plainly that all rights are reserved and what
+GitHub's terms allow. The unused Atkinson woff2 files deleted, at the user's word. A home
+folder named in `path.ts` and its test replaced by a generic one. Audited: no secrets,
+keys or `.env` files tracked; no junk (`.DS_Store`, `.idea`, `test-results`) tracked.
+Left as they are, and said to the user: `CLAUDE.md` names this machine's project path, and
+every commit carries the author's email, which a public repository shows.
+
+Verified: gate green; the five screenshots looked at, each one.
+
 **2026-11-17 · ERR_PAGE_NOT_FOUND on moving to another item with a page open**
 The user saw ERR_PAGE_NOT_FOUND in the error panel again and again, having deleted no page.
 Cause: `useItemPages` kept the open page as plain state and reset it to the item's notes in
@@ -541,7 +556,7 @@ Asked for together, with a screenshot of the first:
   Gone from Settings, `Font` and the stylesheets. A device that saved `readable` is read as
   System (`font::from_word`, tested), since `font.txt` is a file already on someone's disk.
   The two Atkinson woff2 files are left in place, unreferenced: deleting files not made this
-  session needs the user's word.
+  session needs the user's word. *(Deleted 2026-11-18, with it.)*
 
 Verified: gate green. Unit: `paint.test.ts` (spans found, Notion's form written, wrap,
 repaint, background, unwrap), `themes/paint.test.ts`, the theme set (25), Rust `font.rs`
@@ -6912,8 +6927,7 @@ Bricolage Grotesque, IBM Plex Sans, IBM Plex Mono, Literata; and, since 2026-11-
 Atkinson Hyperlegible Next (Braille Institute) and Recursive (Arrow Type), their licences
 read from Google Fonts' `ofl/*/METADATA.pb` that day.
 *(2026-11-15: Atkinson Hyperlegible Next is no longer referenced, the Readable font having
-been taken out. Its two woff2 files are still in `src/ui/fonts/`, unbundled, until the user
-agrees to their deletion.)*
+been taken out. Its two woff2 files were deleted on 2026-11-18, at the user's word.)*
 
 Rust dependencies in use, with the version resolved on 2026-10-27:
 

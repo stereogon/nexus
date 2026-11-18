@@ -76,7 +76,7 @@ test("workspace, dark", async ({ page }) => {
 
 test("themes", async ({ page }) => {
   await open(page);
-  await theme(page, /Funky/u);
+  await theme(page, /^Funky$/u);
   await page.getByRole("button", { name: "Settings" }).click();
   await rest(page);
   await page.screenshot({ path: `${OUT}/themes.png` });
@@ -89,4 +89,29 @@ test("search", async ({ page }) => {
   await page.keyboard.type("process");
   await rest(page);
   await page.screenshot({ path: `${OUT}/search.png` });
+});
+
+const WRITING = [
+  "## Why a log?",
+  "",
+  'A follower <span color="green">only appends</span>: a ==committed entry== is never rewritten.',
+  "",
+  "> [!TIP]",
+  '> A leader with a <span color="red_bg">stale term</span> steps down the moment it hears a higher one.',
+  "",
+  "| Role | Sends | On timeout |",
+  "|---|---|---|",
+  "| Follower | nothing | becomes a candidate |",
+  "| Candidate | votes | starts a new term |",
+  "| Leader | heartbeats | — |",
+].join("\n");
+
+test("notes", async ({ page }) => {
+  await openNexus(page, { ...standardFixture(), notes: { [READING.directory]: WRITING } });
+  await openLecture(page, READING.title);
+  await expect(page.locator(".md-paint").first()).toBeVisible();
+  await theme(page, /Cyberpunk/u);
+  await page.getByRole("button", { name: "Notes only" }).click();
+  await rest(page);
+  await page.screenshot({ path: `${OUT}/notes.png` });
 });

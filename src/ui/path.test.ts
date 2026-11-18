@@ -4,7 +4,7 @@ import { shortPath } from "./path";
 
 describe("the vault path in the sidebar's footer", () => {
   it("keeps the end, which is the part that identifies the vault", () => {
-    expect(shortPath("/Users/chandangupta/Developer/NexusVault")).toBe(
+    expect(shortPath("/Users/alex/Developer/NexusVault")).toBe(
       "…/Developer/NexusVault",
     );
   });

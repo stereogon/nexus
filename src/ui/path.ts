@@ -5,7 +5,7 @@
  * A vault path short enough for the sidebar's footer.
  *
  * The footer is 264px wide and a vault path is usually far longer, so what matters is the
- * end of it — `NexusVault` identifies the vault, `/Users/chandangupta` does not. Plain
+ * end of it — `NexusVault` identifies the vault, `/Users/alex` does not. Plain
  * truncation keeps the wrong half, and the first attempt at this used `direction: rtl` to
  * keep the tail visible, which moved the leading slash to the end and drew
  * `/Users/me/NexusVault` as `Users/me/NexusVault/`.
