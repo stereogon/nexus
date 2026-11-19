@@ -478,6 +478,20 @@ a rail at the window's edge at most 48px wide, Settings at its foot opening the 
 the library opened from it and shown pressed; gone again with the sidebar. The hiding journey
 now measures the title's start from the window's edge. Sabotage: without the rail, it fails.
 
+**2026-11-19 · Dependabot**
+The user asked how to have dependencies updated automatically. `.github/dependabot.yml`
+asks for weekly updates of npm, Cargo and GitHub Actions. Minor and patch bumps come as one
+PR per ecosystem and a major bump on its own; Tauri's packages move together on each side,
+since its crates and npm packages share versions. Every PR runs the full gate through
+`ci.yml`, which already runs on `pull_request`. Tradeoff: grouping means one failing bump
+holds up the rest of its group's PR, which is accepted to avoid a dozen PRs a week. A bump
+can bring a new transitive dependency, whose licence still needs a look before merging
+(§1.2). Nothing here changes when the user reviews: Dependabot proposes, and nothing merges by
+itself.
+
+Verified: the file parses as YAML with the three ecosystems. GitHub's own check of it only
+happens once it is pushed.
+
 **2026-11-18 · CI red on a test that read a half-parsed tree**
 CI failed on `ab90225`, a README-only commit: `listNumbers.test.ts` saw one label, `1.`,
 where four were expected. The same code had passed CI one commit before and locally. Cause:
